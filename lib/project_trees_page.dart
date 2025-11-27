@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'tree_input_page.dart';
+import 'tree_input_page_v2.dart'; // 引入 V2 頁面
 import 'tree_survey_page.dart';
 import 'ai_assistant_page.dart';
 import '../services/api_service.dart'; // 引入 ApiService
 import '../services/project_service.dart'; // 引入 ProjectService
 import '../services/tree_service.dart'; // 引入 TreeService
+import 'widgets/add_tree_dialog.dart'; // 引入 AddTreeSelectionDialog
 
 class ProjectTreesPage extends StatefulWidget {
   final String projectName;
@@ -262,6 +264,17 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
     });
   }
 
+  // [REFACTOR] 使用 Dialog 選擇 V1/V2
+  void _showAddDialog() {
+    AddTreeSelectionDialog.show(
+      context,
+      initialData: {'project_name': widget.projectName}, // 這裡使用 project_name
+      onDataChanged: () {
+        _fetchProjectData(); // 刷新頁面
+      },
+    );
+  }
+
   void _navigateToViewAllTrees() {
     Navigator.push(
       context,
@@ -421,7 +434,7 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
                       ),
                     ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToAddTree,
+        onPressed: _showAddDialog,
         backgroundColor: Colors.green,
         tooltip: '新增樹木資料',
         child: const Icon(Icons.add),

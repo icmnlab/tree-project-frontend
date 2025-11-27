@@ -6,6 +6,7 @@ import 'tree_input_page_v2.dart'; // 引入 V2 頁面
 import 'ai_assistant_page.dart';
 import 'tree_survey_detail_page.dart';
 import 'services/api_service.dart'; // 引入 ApiService
+import 'widgets/add_tree_dialog.dart'; // 引入 AddTreeSelectionDialog
 
 class TreeSurveyPage extends StatefulWidget {
   final String? projectName;
@@ -384,14 +385,11 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                         );
                       },
                     ),
-      floatingActionButton: GestureDetector(
-        onLongPress: _navigateToAddProjectV2, // 長按進入 V2
-        child: FloatingActionButton(
-          onPressed: _navigateToAddProject,
-          backgroundColor: Colors.green,
-          tooltip: '新增樹木資料 (長按進入 V2)',
-          child: const Icon(Icons.add),
-        ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddDialog,
+        backgroundColor: Colors.green,
+        tooltip: '新增樹木資料',
+        child: const Icon(Icons.add),
       ),
     );
   }
