@@ -108,6 +108,8 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
 
     _populateFormWithData(widget.treeData);
 
+    projectCodeController.addListener(_onProjectCodeChanged);
+
     treeHeightController.addListener(_updateCarbonCalculations);
     dbhController.addListener(_updateCarbonCalculations);
   }
@@ -173,6 +175,43 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
     }
   }
 
+  void _onProjectCodeChanged() {
+    // 當專案代碼變更，且不為空時，自動生成新的專案樹木編號
+    if (projectCodeController.text.isNotEmpty) {
+      // 避免與初始值相同時重複觸發（雖然這裡邏輯上是允許移動到同專案並獲取新編號，但通常是換專案）
+      // 這裡我們簡單地每次變更都去抓取最新的可用編號，確保無衝突
+      _generateProjectTreeNumber();
+    }
+  }
+
+  Future<void> _generateProjectTreeNumber() async {
+    try {
+      final projectCode = projectCodeController.text;
+      logDebug('專案代碼變更: $projectCode，正在生成新的專案樹木編號');
+
+      final response = await _treeService.getNextProjectTreeNumber(projectCode);
+      if (!mounted) return;
+
+      if (response['success'] == true) {
+        logDebug('API 返回的下一個專案樹木編號: ${response['nextNumber']}');
+        setState(() {
+          projectTreeController.text = 'PT-${response['nextNumber']}';
+        });
+
+        // 提示用戶編號已更新
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('專案已變更，自動分配新編號: PT-${response['nextNumber']}'),
+            duration: const Duration(seconds: 2),
+            backgroundColor: Colors.teal,
+          ),
+        );
+      }
+    } catch (e) {
+      logDebug('生成專案樹木編號時發生錯誤: $e');
+    }
+  }
+
   void _updateCarbonCalculations() {
     if (!_autoCalculateEnabled) return;
     try {
@@ -193,6 +232,7 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
     // Dispose all controllers
     treeHeightController.removeListener(_updateCarbonCalculations);
     dbhController.removeListener(_updateCarbonCalculations);
+    projectCodeController.removeListener(_onProjectCodeChanged);
     projectAreaController.dispose();
     projectCodeController.dispose();
     projectNameController.dispose();
@@ -228,6 +268,7 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
         "project_area": projectAreaController.text,
         "project_code": projectCodeController.text,
         "project_name": projectNameController.text,
+        "project_tree_id": projectTreeController.text,
         "species_id": treeIdController.text,
         "species_name": treeNameController.text,
         "x_coord": double.tryParse(xCoordController.text) ?? 0,
@@ -697,8 +738,19 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
                 ? const Center(child: CircularProgressIndicator())
                 : ListView.builder(
                     shrinkWrap: true,
-                    itemCount: _projectAreas.length,
+                    itemCount: _projectAreas.length + 1, // +1 for Add option
                     itemBuilder: (context, index) {
+                      if (index == _projectAreas.length) {
+                        return ListTile(
+                          leading: const Icon(Icons.add, color: Colors.teal),
+                          title: const Text('新增專案區位...',
+                              style: TextStyle(color: Colors.teal)),
+                          onTap: () {
+                            Navigator.pop(context);
+                            _showAddProjectAreaDialog();
+                          },
+                        );
+                      }
                       final area = _projectAreas[index];
                       return ListTile(
                         title: Text(area['area_name'] ?? ''),
@@ -719,6 +771,68 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
         );
       },
     );
+  }
+
+  void _showAddProjectAreaDialog() {
+    final areaNameController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('新增專案區位'),
+        content: TextField(
+            controller: areaNameController,
+            decoration: const InputDecoration(labelText: '專案區位名稱')),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context), child: const Text('取消')),
+          ElevatedButton(
+            onPressed: () async {
+              if (areaNameController.text.isNotEmpty) {
+                Navigator.pop(context);
+                await _addProjectArea(areaNameController.text);
+              }
+            },
+            child: const Text('新增'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _addProjectArea(String areaName) async {
+    try {
+      Position? position;
+      try {
+        position = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.high);
+      } catch (e) {
+        // Ignore
+      }
+      final requestData = {
+        'area_name': areaName,
+        'description': areaName + '專案區位',
+        'isSubmit': true,
+        if (position != null) 'xCoord': position.longitude,
+        if (position != null) 'yCoord': position.latitude,
+      };
+      final response = await _projectAreaService.addProjectArea(requestData);
+      if (response['success'] == true) {
+        await _loadProjectAreas();
+        projectAreaController.text = areaName;
+        // Reset project info as area changed
+        projectNameController.clear();
+        projectCodeController.clear();
+        _updateFilteredProjects(areaName);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('專案區位新增成功')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('新增失敗: $e')),
+      );
+    }
   }
 
   Widget _buildProjectNameField() {
@@ -763,32 +877,102 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
             width: double.maxFinite,
             child: _loadingFilteredProjects
                 ? const Center(child: CircularProgressIndicator())
-                : _filteredProjects.isEmpty
-                    ? const Text('此區位下沒有專案')
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: _filteredProjects.length,
-                        itemBuilder: (context, index) {
-                          final project = _filteredProjects[index];
-                          return ListTile(
-                            title: Text(project['name'] ?? '未知專案'),
-                            subtitle: Text('代碼: ${project['code'] ?? '未知'}'),
-                            onTap: () {
-                              setState(() {
-                                projectNameController.text =
-                                    project['name'] ?? '';
-                                projectCodeController.text =
-                                    project['code'] ?? '';
-                              });
-                              Navigator.pop(context);
-                            },
-                          );
+                : ListView.builder(
+                    shrinkWrap: true,
+                    itemCount:
+                        _filteredProjects.length + 1, // +1 for Add option
+                    itemBuilder: (context, index) {
+                      if (index == _filteredProjects.length) {
+                        return ListTile(
+                          leading: const Icon(Icons.add, color: Colors.teal),
+                          title: const Text('新增專案...',
+                              style: TextStyle(color: Colors.teal)),
+                          onTap: () {
+                            Navigator.pop(context);
+                            _showAddProjectDialog();
+                          },
+                        );
+                      }
+                      final project = _filteredProjects[index];
+                      return ListTile(
+                        title: Text(project['name'] ?? '未知專案'),
+                        subtitle: Text('代碼: ${project['code'] ?? '未知'}'),
+                        onTap: () {
+                          setState(() {
+                            projectNameController.text = project['name'] ?? '';
+                            projectCodeController.text = project['code'] ?? '';
+                          });
+                          Navigator.pop(context);
                         },
-                      ),
+                      );
+                    },
+                  ),
           ),
         );
       },
     );
+  }
+
+  void _showAddProjectDialog() {
+    final newProjectNameController = TextEditingController();
+    final addFormKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('新增專案'),
+          content: Form(
+            key: addFormKey,
+            child: TextFormField(
+              controller: newProjectNameController,
+              decoration: const InputDecoration(labelText: '新專案名稱'),
+              validator: (value) => value!.isEmpty ? '請輸入專案名稱' : null,
+            ),
+          ),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('取消')),
+            ElevatedButton(
+              onPressed: () async {
+                if (addFormKey.currentState!.validate()) {
+                  Navigator.pop(context);
+                  await _addProject(newProjectNameController.text);
+                }
+              },
+              child: const Text('新增'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _addProject(String projectName) async {
+    setState(() => _isLoading = true);
+    try {
+      final response = await _projectService.addProject(
+          projectName, projectAreaController.text);
+      if (response['success'] == true) {
+        final newProject = response['project'];
+        setState(() {
+          projectNameController.text = newProject['name'];
+          projectCodeController.text = newProject['code'];
+        });
+        await _updateFilteredProjects(projectAreaController.text);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('專案 "$projectName" 新增成功')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('新增專案時連線錯誤: $e')),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   Widget _buildCarbonFields() {
