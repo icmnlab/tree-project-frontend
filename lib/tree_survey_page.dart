@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'tree_input_page.dart';
+import 'tree_input_page_v2.dart'; // 引入 V2 頁面
 import 'ai_assistant_page.dart';
 import 'tree_survey_detail_page.dart';
 import 'services/api_service.dart'; // 引入 ApiService
@@ -203,6 +204,36 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
     });
   }
 
+  // V2 導航邏輯
+  void _navigateToAddProjectV2() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('進入 V2 新增模式 (後端生成 ID)'),
+        backgroundColor: Colors.teal,
+        duration: Duration(seconds: 1),
+      ),
+    );
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TreeInputPageV2(
+          treeData: widget.projectName != null
+              ? {
+                  'project_name': widget.projectName
+                } // 注意：V2 可能使用不同的鍵名，但在 populate 時會映射
+              : widget.areaName != null
+                  ? {'project_location': widget.areaName}
+                  : {},
+        ),
+      ),
+    ).then((_) {
+      setState(() {
+        _cleanupUnusedData().then((_) => _fetchTrees());
+      });
+    });
+  }
+
   void _showAiAssistant() {
     Navigator.push(
       context,
@@ -353,11 +384,14 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                         );
                       },
                     ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _navigateToAddProject,
-        backgroundColor: Colors.green,
-        tooltip: '新增樹木資料',
-        child: const Icon(Icons.add),
+      floatingActionButton: GestureDetector(
+        onLongPress: _navigateToAddProjectV2, // 長按進入 V2
+        child: FloatingActionButton(
+          onPressed: _navigateToAddProject,
+          backgroundColor: Colors.green,
+          tooltip: '新增樹木資料 (長按進入 V2)',
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
