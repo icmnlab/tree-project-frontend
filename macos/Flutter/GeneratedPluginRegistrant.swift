@@ -7,7 +7,7 @@ import Foundation
 
 import file_picker
 import file_selector_macos
-import flutter_blue_plus_darwin
+import flutter_blue_plus
 import flutter_secure_storage_macos
 import geolocator_apple
 import mobile_scanner

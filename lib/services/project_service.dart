@@ -20,8 +20,7 @@ class ProjectService {
     return await ApiService.get('projects/by_area/$encodedArea');
   }
 
-  Future<Map<String, dynamic>> addProject(
-      String name, String area) async {
+  Future<Map<String, dynamic>> addProject(String name, String area) async {
     return await ApiService.post('projects/add', {'name': name, 'area': area});
   }
 }

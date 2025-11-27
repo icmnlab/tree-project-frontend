@@ -89,6 +89,11 @@ class TreeService {
     return response.data;
   }
 
+  Future<Map<String, dynamic>> batchImportTreesV2(
+      Map<String, dynamic> payload) async {
+    return await ApiService.post('tree_survey/batch_import', payload);
+  }
+
   Future<void> cleanupTemporaryData() async {
     // This method is intended to clean up temporary or incomplete data on the backend.
     // The endpoint 'project_areas/cleanup' is used here based on the original http call.

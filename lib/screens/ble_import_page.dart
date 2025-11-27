@@ -5,6 +5,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../services/ble_data_processor.dart'; // 引入解析器
 import 'manual_input_page.dart'; // 引入手動補全頁面
+import 'manual_input_page_v2.dart'; // 引入 V2 頁面
 
 class BleImportPage extends StatefulWidget {
   const BleImportPage({super.key});
@@ -16,6 +17,7 @@ class BleImportPage extends StatefulWidget {
 class _BleImportPageState extends State<BleImportPage> {
   // 狀態變數
   bool _isScanning = false;
+  bool _useV2Import = false; // [DEV] 切換 V2 匯入邏輯
   List<ScanResult> _scanResults = [];
   BluetoothDevice? _connectedDevice;
   bool _isConnecting = false;
@@ -627,6 +629,26 @@ class _BleImportPageState extends State<BleImportPage> {
       appBar: AppBar(
         title: const Text('從儀器匯入數據'),
         actions: [
+          // [DEV] V2 切換開關
+          Row(
+            children: [
+              const Text('V2', style: TextStyle(fontSize: 12)),
+              Switch(
+                value: _useV2Import,
+                onChanged: (val) {
+                  setState(() => _useV2Import = val);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content:
+                          Text(val ? '已切換至 V2 匯入 (批量API)' : '已切換至 V1 匯入 (舊版)'),
+                      duration: const Duration(seconds: 1),
+                    ),
+                  );
+                },
+                activeColor: Colors.tealAccent,
+              ),
+            ],
+          ),
           if (_connectedDevice != null)
             IconButton(
               icon: const Icon(Icons.bluetooth_disabled),
@@ -831,20 +853,40 @@ class _BleImportPageState extends State<BleImportPage> {
                             return;
                           }
 
-                          // 導航到手動補全頁面，並在返回後重置狀態
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  ManualInputPage(importedData: parsedData),
-                            ),
-                          ).then((_) {
-                            // [FIX] 從手動頁面返回時，重置所有狀態，防止殘留數據導致的崩潰
-                            _resetState();
-                          });
+                          // 根據開關決定導航到 V1 或 V2
+                          if (_useV2Import) {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    ManualInputPageV2(importedData: parsedData),
+                              ),
+                            ).then((_) {
+                              // [FIX] 從手動頁面返回時，重置所有狀態，防止殘留數據導致的崩潰
+                              _resetState();
+                            });
+                          } else {
+                            // 舊版邏輯
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    ManualInputPage(importedData: parsedData),
+                              ),
+                            ).then((_) {
+                              // [FIX] 從手動頁面返回時，重置所有狀態，防止殘留數據導致的崩潰
+                              _resetState();
+                            });
+                          }
                         }
                       : null,
-                  child: Text('解析並匯入數據 (${_receivedCsvLines.length}筆)'),
+                  child: Text(
+                      _useV2Import
+                          ? '解析並匯入數據 (V2 Batch)'
+                          : '解析並匯入數據 (${_receivedCsvLines.length}筆)',
+                      style: TextStyle(
+                          color: _useV2Import ? Colors.teal : null,
+                          fontWeight: _useV2Import ? FontWeight.bold : null)),
                 ),
               ),
               // [UX] 新增返回按鈕，允許手動清除數據並返回掃描頁

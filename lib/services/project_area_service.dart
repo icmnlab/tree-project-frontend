@@ -14,6 +14,10 @@ class ProjectAreaService {
     return ApiService.post('project_areas', areaData);
   }
 
+  Future<Map<String, dynamic>> deleteProjectArea(int id) async {
+    return ApiService.delete('project_areas/$id');
+  }
+
   Future<void> cleanupProjectAreas() async {
     await ApiService.post('project_areas/cleanup', {});
   }

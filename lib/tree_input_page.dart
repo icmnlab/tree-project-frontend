@@ -540,7 +540,8 @@ class _TreeInputPageState extends State<TreeInputPage> {
       // Refactored to use TreeService
       Map<String, dynamic> response;
       if (_isEditing) {
-        response = await _treeService.updateTree(_currentTreeData!['id'], data);
+        response = await _treeService.updateTree(
+            _currentTreeData!['id'].toString(), data);
       } else {
         response = await _treeService.addTree(data);
       }
