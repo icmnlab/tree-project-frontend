@@ -1363,17 +1363,7 @@ class _AdminPageState extends State<AdminPage> {
         backgroundColor:
             Theme.of(context).colorScheme.primary, // Ensure high contrast
         elevation: 1, // Subtle elevation
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () {
-            if (Navigator.canPop(context)) {
-              Navigator.of(context).pop();
-            } else {
-              Navigator.of(context).pushReplacementNamed('/home');
-            }
-          },
-          tooltip: '返回',
-        ),
+        automaticallyImplyLeading: false, // Hide the back arrow
         actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
