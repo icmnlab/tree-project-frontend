@@ -1276,6 +1276,8 @@ class _AdminPageState extends State<AdminPage> {
                         _tokenController),
                     _buildScriptButton(
                         '生成深度知識向量', 'generateEmbeddings', _tokenController),
+                    _buildScriptButton('AI 撰寫樹種知識',
+                        'generate_species_knowledge', _tokenController),
                   ],
                 ),
               ],
