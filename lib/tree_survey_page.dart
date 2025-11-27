@@ -386,7 +386,21 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                       },
                     ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddDialog,
+        onPressed: () {
+          // V2: 呼叫選擇對話框，而不是直接導航
+          AddTreeSelectionDialog.show(
+            context,
+            initialData: widget.projectName != null
+                ? {'project_name': widget.projectName}
+                : widget.areaName != null
+                    ? {'project_location': widget.areaName}
+                    : {},
+            onDataChanged: () {
+              // 返回頁面時，先清理，再獲取最新樹木數據
+              _cleanupUnusedData().then((_) => _fetchTrees());
+            },
+          );
+        },
         backgroundColor: Colors.green,
         tooltip: '新增樹木資料',
         child: const Icon(Icons.add),

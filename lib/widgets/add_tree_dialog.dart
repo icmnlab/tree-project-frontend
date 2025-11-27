@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import '../screens/tree_input_page.dart';
-import '../screens/tree_input_page_v2.dart';
+import '../tree_input_page.dart';
+import '../tree_input_page_v2.dart';
 
 class AddTreeSelectionDialog extends StatelessWidget {
   final Map<String, dynamic> initialData;
@@ -73,4 +73,3 @@ class AddTreeSelectionDialog extends StatelessWidget {
     );
   }
 }
-
