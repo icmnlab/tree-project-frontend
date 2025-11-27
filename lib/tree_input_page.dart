@@ -564,7 +564,7 @@ class _TreeInputPageState extends State<TreeInputPage> {
           Navigator.pop(context, true);
         } else {
           returnedData['id'] = response['id'];
-          Navigator.pop(context, returnedData);
+        Navigator.pop(context, returnedData);
         }
       } else {
         String errorMsg = response['message'] ?? '伺服器錯誤';

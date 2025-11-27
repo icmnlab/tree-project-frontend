@@ -52,6 +52,14 @@ app.*.map.json
 .env.*
 !.env.example
 
+# Signing files
+key.properties
+**/*.jks
+**/*.keystore
+
+# Logs
+flutter_run_log.txt
+
 # iOS/XCode related
 **/ios/**/*.mode1v3
 **/ios/**/*.mode2v3
