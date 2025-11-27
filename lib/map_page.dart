@@ -654,7 +654,7 @@ class _MapPageState extends State<MapPage> {
           // 自訂定位按鈕
           if (_hasLocationPermission)
             Positioned(
-              right: 10,
+              left: 10,
               bottom: 80, // 調整為更高的位置
               child: FloatingActionButton(
                 heroTag: 'locationButton',

@@ -47,9 +47,11 @@ class _LoginPageState extends State<LoginPage> {
 
         // 根據登入類型導航到不同頁面
         if (_loginType == 'admin') {
-          Navigator.pushReplacementNamed(context, '/admin');
+          // 使用 pushReplacement 確保登入頁被移出堆疊，但如果是從 AdminPage 登出後再登入，這可能會導致導航錯亂
+          // 更好的方式是使用 pushNamedAndRemoveUntil，確保堆疊乾淨
+          Navigator.pushNamedAndRemoveUntil(context, '/admin', (route) => false);
         } else {
-          Navigator.pushReplacementNamed(context, '/home');
+          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
         }
       } else {
         ScaffoldMessenger.of(context).showSnackBar(

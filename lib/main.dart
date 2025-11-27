@@ -136,6 +136,8 @@ class MyApp extends StatelessWidget {
       theme: createAppTheme(),
       initialRoute: '/login',
       routes: {
+        '/': (context) =>
+            const LoginPage(), // Default route for logout redirect
         '/login': (context) => const LoginPage(),
         '/home': (context) => const AuthGuard(child: HomePage()),
         '/admin': (context) =>
@@ -144,9 +146,9 @@ class MyApp extends StatelessWidget {
         '/statistics': (context) => const StatisticsPage(),
         '/map': (context) => const MapPage(),
         '/ai-assistant': (context) => AIAssistantPage(
-          userId: 'user-${DateTime.now().millisecondsSinceEpoch}',
-          selectedProjectAreas: const [],
-        ),
+              userId: 'user-${DateTime.now().millisecondsSinceEpoch}',
+              selectedProjectAreas: const [],
+            ),
         '/ai-sustainability-report': (context) =>
             const AISustainabilityReportScreen(),
         '/cities': (context) => const CitiesPage(),

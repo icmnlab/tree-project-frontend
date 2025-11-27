@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:provider/provider.dart';
+// import 'package:provider/provider.dart'; // Unused
 import 'screens/api_key_management_screen.dart';
 import 'screens/user_form_screen.dart';
 import 'services/user_service.dart';
@@ -10,9 +10,9 @@ import 'services/admin_service.dart';
 import 'models/project.dart';
 import 'config/app_config.dart'; // Import AppConfig
 import '../services/api_service.dart';
-import '../services/auth_service.dart';
+// import '../services/auth_service.dart'; // Unused
 
-// 定義專案資料結構
+// 定義專案資料結構 - 已移至 models/project.dart，此處註解代碼可移除以避免混淆
 /*
 class Project {
   final String code; // 專案代碼現在應始終視為 String，即使來源是數字
@@ -48,11 +48,19 @@ class _AdminPageState extends State<AdminPage> {
   List<Project> _projectsForExport = [];
   List<String> _selectedProjectCodesForMultiExport = []; // 用於儲存多選的專案代碼
   bool _isLoadingProjects = false;
+  final TextEditingController _tokenController =
+      TextEditingController(); // Create controller as a state variable
 
   // Services
   final UserService _userService = UserService();
   final ProjectService _projectService = ProjectService();
   final AdminService _adminService = AdminService();
+
+  @override
+  void dispose() {
+    _tokenController.dispose(); // Dispose of the controller
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -87,9 +95,19 @@ class _AdminPageState extends State<AdminPage> {
     try {
       final users = await _userService.fetchUsers();
       setState(() {
-        _users = users
-            .map((user) => {...user, 'is_active': user['is_active'] == 1})
-            .toList();
+        _users = users.map((user) {
+          // [FIX] Backend now guarantees boolean, but keeping robust parsing logic just in case
+          // Handle various types: bool, int (0/1), or string ("true"/"false")
+          bool isActive = true;
+          if (user['is_active'] is bool) {
+            isActive = user['is_active'];
+          } else if (user['is_active'] is int) {
+            isActive = user['is_active'] == 1;
+          } else if (user['is_active'] is String) {
+            isActive = user['is_active'].toString().toLowerCase() == 'true';
+          }
+          return {...user, 'is_active': isActive};
+        }).toList();
       });
     } catch (e) {
       if (mounted) {
@@ -806,7 +824,9 @@ class _AdminPageState extends State<AdminPage> {
         leading: CircleAvatar(
           backgroundColor: _getRoleColor(role ?? ''),
           child: Text(
-            role != null && role.isNotEmpty ? role[0].toUpperCase() : 'U',
+            (role != null && role.isNotEmpty)
+                ? role[0].toUpperCase()
+                : 'U', // 增加安全檢查，若 role 為空則顯示 'U'
             style: const TextStyle(
                 color: Colors.white, fontWeight: FontWeight.bold),
           ),
@@ -1210,14 +1230,161 @@ class _AdminPageState extends State<AdminPage> {
     );
   }
 
+  Widget _buildAdminZone() {
+    // 為了安全起見，我們可以要求輸入 Admin API Token 才能執行操作
+    // 使用 class member _tokenController
+
+    return Center(
+      child: SingleChildScrollView(
+        // Add scroll view to prevent overflow
+        padding: const EdgeInsets.all(24.0),
+        child: Card(
+          elevation: 4,
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '後端腳本管理',
+                  style: Theme.of(context).textTheme.headlineSmall,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  '手動觸發後端維護腳本。請謹慎使用，某些腳本可能需要較長時間執行。',
+                  style: TextStyle(color: Colors.grey),
+                ),
+                const SizedBox(height: 24),
+                TextField(
+                  controller: _tokenController,
+                  decoration: const InputDecoration(
+                    labelText: 'Admin API Token',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.vpn_key),
+                  ),
+                  obscureText: true,
+                ),
+                const SizedBox(height: 24),
+                Wrap(
+                  spacing: 16.0,
+                  runSpacing: 16.0,
+                  children: [
+                    _buildScriptButton('更新基礎知識庫',
+                        'populate_knowledge_from_survey', _tokenController),
+                    _buildScriptButton('更新區域評分', 'populateSpeciesRegionScore',
+                        _tokenController),
+                    _buildScriptButton(
+                        '生成深度知識向量', 'generateEmbeddings', _tokenController),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildScriptButton(
+      String label, String scriptName, TextEditingController tokenController) {
+    return ElevatedButton.icon(
+      icon: const Icon(Icons.play_arrow),
+      label: Text(label),
+      onPressed: () => _runBackendScript(scriptName, tokenController.text),
+      style: ElevatedButton.styleFrom(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      ),
+    );
+  }
+
+  Future<void> _runBackendScript(String scriptName, String token) async {
+    if (token.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('請輸入 Admin API Token')),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiService.baseUrl}/admin/run-script'),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-admin-token': token,
+        },
+        body: jsonEncode({'scriptName': scriptName}),
+      );
+
+      final data = jsonDecode(response.body);
+      if (mounted) {
+        if (data['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('腳本執行成功: ${data['message']}')),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('腳本執行失敗: ${data['message']}')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        // Try to show the raw body if json decode fails, truncated
+        String errorMessage = e.toString();
+        if (e is FormatException) {
+          errorMessage = "伺服器回應格式錯誤 (非 JSON)";
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('發生錯誤: $errorMessage')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('管理後臺'),
+        title: const Text(
+          '管理後臺',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+        ),
         backgroundColor:
-            Theme.of(context).colorScheme.inversePrimary, // Use theme color
+            Theme.of(context).colorScheme.primary, // Ensure high contrast
         elevation: 1, // Subtle elevation
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.of(context).pop();
+            } else {
+              Navigator.of(context).pushReplacementNamed('/home');
+            }
+          },
+          tooltip: '返回',
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout, color: Colors.white),
+            onPressed: () {
+              // 使用 pushNamedAndRemoveUntil 確保完全登出並清除路由堆疊
+              Navigator.of(context)
+                  .pushNamedAndRemoveUntil('/login', (route) => false);
+            },
+            tooltip: '登出',
+          ),
+        ],
       ),
       body: Container(
         // Optional: Keep gradient or use a simpler background
@@ -1269,6 +1436,10 @@ class _AdminPageState extends State<AdminPage> {
                   icon: Icon(Icons.settings),
                   label: Text('系統設定'),
                 ),
+                NavigationRailDestination(
+                  icon: Icon(Icons.build),
+                  label: Text('管理員專區'),
+                ),
               ],
             ),
             const VerticalDivider(thickness: 1, width: 1),
@@ -1283,7 +1454,9 @@ class _AdminPageState extends State<AdminPage> {
                             ? _buildBackupOptions()
                             : _selectedIndex == 3
                                 ? _buildApiKeyOptions()
-                                : _buildSystemSettings(),
+                                : _selectedIndex == 4
+                                    ? _buildSystemSettings()
+                                    : _buildAdminZone(),
               ),
             ),
           ],
