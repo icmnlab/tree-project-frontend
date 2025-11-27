@@ -45,5 +45,36 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
+
+	<!-- Google Maps 設定 -->
+	<key>GMSApiKey</key>
+	<string>AIzaSyCH3AURjQGOLtwvVGx8f5XBH92_L3JimRU</string>
+	<key>io.flutter.embedded_views_preview</key>
+	<true/>
+
+	<!-- 權限宣告 -->
+	<!-- 相機與相簿 (image_picker, mobile_scanner) -->
+	<key>NSCameraUsageDescription</key>
+	<string>我們需要相機權限來掃描樹木 QR Code 及拍攝現場照片，以進行樹木調查與記錄。</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>我們需要相簿權限以選取樹木照片進行上傳與建檔。</string>
+
+	<!-- 定位 (geolocator, google_maps) -->
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>我們需要您的位置來標記樹木的座標並進行導航，確保樹木位置資料的準確性。</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>我們需要您的位置來標記樹木的座標並進行導航。</string>
+
+	<!-- 藍牙 (flutter_blue_plus) -->
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>我們需要藍牙權限來連接外部樹木檢測設備，以獲取詳細的檢測數據。</string>
+	<key>NSBluetoothPeripheralUsageDescription</key>
+	<string>我們需要藍牙權限來連接外部樹木檢測設備。</string>
+
+	<!-- 檔案下載與預覽 (open_file, etc) -->
+	<key>UIFileSharingEnabled</key>
+	<true/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<true/>
 </dict>
 </plist>

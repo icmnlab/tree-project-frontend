@@ -119,7 +119,7 @@ flutter:
 
 flutter_launcher_icons:
   android: true
-  ios: false # 暫時禁用 iOS，因為目前在 Windows 環境下開發
+  ios: true # 已啟用 iOS 圖示生成，以便後續 Mac 開發使用
   image_path: "assets/images/app_icon.png"
   adaptive_icon_background: "#FFFFFF"
   adaptive_icon_foreground: "assets/images/app_icon.png"
