@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'tree_input_page.dart';
 import 'services/carbon_calculation_service.dart';
 import '../services/api_service.dart'; // 引入 ApiService
+import 'tree_edit_page_v2.dart'; // [V2] 引入新的編輯頁面
+import '../services/tree_service.dart'; // [V2] 引入 TreeService
 
 class TreeSurveyDetailPage extends StatefulWidget {
   final dynamic treeData;
@@ -22,24 +24,79 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
     super.initState();
     // 觸發一次性的背景清理任務
     ApiService.triggerCleanup();
-    _treeData = widget.treeData;
+    _treeData = Map<String, dynamic>.from(widget.treeData);
   }
 
   void _editTree() async {
+    // [V2 REVISED] Always show a dialog to let the user choose the edit mode.
+    // This allows using the V2 editor for V1 data, facilitating migration.
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('選擇編輯模式'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.article, color: Colors.green),
+                title: const Text('標準編輯器 (V1)'),
+                subtitle: const Text('使用舊版介面修改'),
+                onTap: () {
+                  Navigator.pop(dialogContext); // Close dialog
+                  _navigateToEditor(TreeInputPage(
+                    treeData: _treeData,
+                    isEdit: true,
+                  ));
+                },
+              ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.brush, color: Colors.teal),
+                title: const Text('新版編輯器 (V2)'),
+                subtitle: const Text('使用新版介面修改 (推薦)'),
+                onTap: () {
+                  Navigator.pop(dialogContext); // Close dialog
+                  _navigateToEditor(TreeEditPageV2(treeData: _treeData));
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // [V2 NEW] Helper method to handle navigation and data refreshing.
+  Future<void> _navigateToEditor(Widget editPage) async {
     final result = await Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => TreeInputPage(
-          treeData: _treeData,
-          isEdit: true,
-        ),
-      ),
+      MaterialPageRoute(builder: (context) => editPage),
     );
 
-    if (result != null && result is Map<String, dynamic>) {
+    if (result == true) {
+      _refreshTreeData();
+    }
+  }
+
+  // [V2] 新增一個方法來從後端重新獲取最新的樹木資料
+  Future<void> _refreshTreeData() async {
+    final treeService = TreeService();
+    try {
+      final treeId = _treeData['id'].toString();
+      final response = await treeService.getTreeById(treeId);
+      if (response['success'] == true && response['data'] != null) {
+        if (mounted) {
       setState(() {
-        _treeData = result;
+            _treeData = response['data'];
       });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('無法重新整理資料')));
+      }
     }
   }
 

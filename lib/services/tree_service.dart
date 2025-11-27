@@ -44,6 +44,11 @@ class TreeService {
     return await ApiService.delete('tree_survey/$id');
   }
 
+  // [V2 NEW] Get a single tree by its ID
+  Future<Map<String, dynamic>> getTreeById(String id) async {
+    return await ApiService.get('tree_survey/by_id/$id');
+  }
+
   Future<Map<String, dynamic>> deletePlaceholderTree(String id) async {
     return await ApiService.delete('tree_survey/placeholder/$id');
   }
@@ -97,6 +102,12 @@ class TreeService {
   Future<Map<String, dynamic>> createTreeV2(
       Map<String, dynamic> treeData) async {
     return await ApiService.post('tree_survey/create_v2', treeData);
+  }
+
+  // [V2 NEW] Update a tree via the V2 endpoint
+  Future<Map<String, dynamic>> updateTreeV2(
+      String id, Map<String, dynamic> treeData) async {
+    return await ApiService.put('tree_survey/update_v2/$id', treeData);
   }
 
   Future<void> cleanupTemporaryData() async {

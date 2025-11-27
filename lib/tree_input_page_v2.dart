@@ -722,6 +722,84 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
     }
   }
 
+  // [V2 NEW] 新增樹種的邏輯
+  Future<void> _addSpecies(String name) async {
+    try {
+      final response = await _speciesService.addSpecies(name);
+      if (!mounted) return;
+
+      if (response['success'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('新增樹種成功: $name')),
+        );
+
+        // 創建新的樹種 Map
+        final newSpecies = {
+          'id': response['id'],
+          'name': response['name'],
+        };
+
+        // 更新本地樹種列表緩存並選中它
+        setState(() {
+          _speciesList.add(newSpecies);
+          _speciesList.sort((a, b) => a['name'].compareTo(b['name']));
+        });
+        _onSpeciesSelected(newSpecies);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('新增樹種失敗: ${response['message']}')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('新增樹種錯誤: $e')),
+      );
+    }
+  }
+
+  // [V2 NEW] 顯示新增樹種的對話框
+  void _showAddSpeciesDialog(String prefilledName) {
+    final nameController = TextEditingController(text: prefilledName);
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('新增樹種'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: '樹種名稱'),
+                autofocus: true,
+              ),
+              const SizedBox(height: 8),
+              const Text('樹種編號將由系統自動產生',
+                  style: TextStyle(fontSize: 12, color: Colors.grey)),
+            ],
+          ),
+          actions: [
+            TextButton(
+              child: const Text('取消'),
+              onPressed: () => Navigator.of(context).pop(),
+            ),
+            ElevatedButton(
+              child: const Text('新增'),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
+              onPressed: () async {
+                if (nameController.text.isNotEmpty) {
+                  Navigator.of(context).pop(); // Close the add dialog
+                  await _addSpecies(nameController.text);
+                }
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   // Dialogs (Project Area, Project, Species) - reusing logic but with V2 theme
   void _showProjectAreaDialog() {
     final areaController = TextEditingController();
@@ -1033,7 +1111,25 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
                     if (_loadingSpecies)
                       const Center(child: CircularProgressIndicator())
                     else if (showNoResults) ...[
-                      // ... Add species button
+                      const Expanded(
+                        child: Center(
+                          child: Text('沒有找到符合的樹種',
+                              style: TextStyle(color: Colors.grey)),
+                        ),
+                      ),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.add),
+                        label: Text('新增樹種: ${searchController.text}'),
+                        onPressed: () {
+                          Navigator.pop(context); // Close search dialog
+                          _showAddSpeciesDialog(searchController.text);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.teal,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 16), // Add some spacing
                     ] else
                       Expanded(
                         child: ListView.builder(
@@ -1259,48 +1355,51 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : Stepper(
-              type: StepperType.vertical,
-              currentStep: _currentStep,
-              onStepContinue: () {
-                if (_currentStep < getSteps().length - 1) {
-                  setState(() => _currentStep++);
-                } else {
-                  submitData();
-                }
-              },
-              onStepCancel: () {
-                if (_currentStep > 0) {
-                  setState(() => _currentStep--);
-                }
-              },
-              controlsBuilder: (context, details) {
-                return Padding(
-                  padding: const EdgeInsets.only(top: 16.0),
-                  child: Row(
-                    children: [
-                      ElevatedButton(
-                        onPressed: details.onStepContinue,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.teal,
-                          foregroundColor: Colors.white,
+          : Form(
+              key: _formKey,
+              child: Stepper(
+                type: StepperType.vertical,
+                currentStep: _currentStep,
+                onStepContinue: () {
+                  if (_currentStep < getSteps().length - 1) {
+                    setState(() => _currentStep++);
+                  } else {
+                    submitData();
+                  }
+                },
+                onStepCancel: () {
+                  if (_currentStep > 0) {
+                    setState(() => _currentStep--);
+                  }
+                },
+                controlsBuilder: (context, details) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 16.0),
+                    child: Row(
+                      children: [
+                        ElevatedButton(
+                          onPressed: details.onStepContinue,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.teal,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: Text(_currentStep == getSteps().length - 1
+                              ? '提交 (V2)'
+                              : '下一步'),
                         ),
-                        child: Text(_currentStep == getSteps().length - 1
-                            ? '提交 (V2)'
-                            : '下一步'),
-                      ),
-                      if (_currentStep > 0) ...[
-                        const SizedBox(width: 12),
-                        TextButton(
-                          onPressed: details.onStepCancel,
-                          child: const Text('上一步'),
-                        ),
+                        if (_currentStep > 0) ...[
+                          const SizedBox(width: 12),
+                          TextButton(
+                            onPressed: details.onStepCancel,
+                            child: const Text('上一步'),
+                          ),
+                        ],
                       ],
-                    ],
-                  ),
-                );
-              },
-              steps: getSteps(),
+                    ),
+                  );
+                },
+                steps: getSteps(),
+              ),
             ),
     );
   }

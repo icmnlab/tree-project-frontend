@@ -560,10 +560,12 @@ class _TreeInputPageState extends State<TreeInputPage> {
             Map<String, dynamic>.from(data);
         if (_isEditing) {
           returnedData['id'] = _currentTreeData!['id'];
+          // [V2 COMPATIBILITY] In edit mode, return true on success to trigger refresh.
+          Navigator.pop(context, true);
         } else {
           returnedData['id'] = response['id'];
+          Navigator.pop(context, returnedData);
         }
-        Navigator.pop(context, returnedData);
       } else {
         String errorMsg = response['message'] ?? '伺服器錯誤';
         logDebug('請求失敗: $errorMsg，響應體: $response');
