@@ -40,6 +40,7 @@ class AdminPage extends StatefulWidget {
 
 class _AdminPageState extends State<AdminPage> {
   int _selectedIndex = 0;
+  bool _isRailExtended = true; // 控制側邊欄展開狀態
   List<Map<String, dynamic>> _users = [];
   bool _isLoading = false;
   String _searchQuery = '';
@@ -1250,11 +1251,12 @@ class _AdminPageState extends State<AdminPage> {
               style: TextStyle(color: Colors.grey, fontSize: 16),
             ),
             const SizedBox(height: 24),
-            
+
             // Admin Token 輸入框
             Card(
               elevation: 2,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: TextField(
@@ -1434,12 +1436,14 @@ class _AdminPageState extends State<AdminPage> {
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton.icon(
-                    onPressed: () => _runBackendScript(scriptName, tokenController.text),
+                    onPressed: () =>
+                        _runBackendScript(scriptName, tokenController.text),
                     icon: const Icon(Icons.play_circle_outline, size: 20),
                     label: const Text('執行腳本'),
                     style: TextButton.styleFrom(
                       foregroundColor: color,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
                     ),
                   ),
                 ),
@@ -1509,6 +1513,17 @@ class _AdminPageState extends State<AdminPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        // 新增側邊欄控制按鈕
+        leading: IconButton(
+          icon: Icon(_isRailExtended ? Icons.menu_open : Icons.menu),
+          color: Colors.white,
+          tooltip: _isRailExtended ? '收起選單' : '展開選單',
+          onPressed: () {
+            setState(() {
+              _isRailExtended = !_isRailExtended;
+            });
+          },
+        ),
         title: const Text(
           '管理後臺',
           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
@@ -1516,7 +1531,7 @@ class _AdminPageState extends State<AdminPage> {
         backgroundColor:
             Theme.of(context).colorScheme.primary, // Ensure high contrast
         elevation: 1, // Subtle elevation
-        automaticallyImplyLeading: false, // Hide the back arrow
+        // automaticallyImplyLeading: false, // Removed to allow custom leading
         actions: [
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
@@ -1542,12 +1557,19 @@ class _AdminPageState extends State<AdminPage> {
           children: [
             NavigationRail(
               selectedIndex: _selectedIndex,
+              extended: _isRailExtended, // 綁定狀態
+              minWidth: 56, // 收起時的寬度
+              minExtendedWidth: 180, // 展開時的寬度
               onDestinationSelected: (int index) {
                 setState(() {
                   _selectedIndex = index;
                 });
               },
-              labelType: NavigationRailLabelType.all,
+              labelType: _isRailExtended
+                  ? NavigationRailLabelType
+                      .none // 展開時 labelType 必須為 none (Flutter 限制)
+                  : NavigationRailLabelType
+                      .all, // 收起時顯示 label (或者也用 none 僅顯示 icon)
               backgroundColor:
                   Theme.of(context).colorScheme.surface, // Use theme color
               indicatorColor: Theme.of(context)
