@@ -1254,9 +1254,10 @@ class _AdminPageState extends State<AdminPage> {
 
             // Admin Token 輸入框
             Card(
-              elevation: 2,
+              elevation: 0,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Colors.grey.shade300)),
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: TextField(
@@ -1266,6 +1267,7 @@ class _AdminPageState extends State<AdminPage> {
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.vpn_key),
                     helperText: '為了安全，所有維運操作都需要驗證管理員 Token。',
+                    helperMaxLines: 2, // 確保提示文字不會被截斷
                   ),
                   obscureText: true,
                 ),
@@ -1275,83 +1277,69 @@ class _AdminPageState extends State<AdminPage> {
 
             _buildSectionTitle('知識庫工程 (Knowledge Engineering)'),
             const SizedBox(height: 16),
-            LayoutBuilder(builder: (context, constraints) {
-              return Wrap(
-                spacing: 16.0,
-                runSpacing: 16.0,
-                children: [
-                  _buildScriptCard(
-                    title: '更新調查數據知識庫',
-                    description: '將最新的「實地樹木調查記錄」同步至 AI 知識庫，讓 AI 能回答關於特定樹木的問題。',
-                    icon: Icons.sync,
-                    color: Colors.blue,
-                    scriptName: 'populate_knowledge_from_survey',
-                    tokenController: _tokenController,
-                    width: (constraints.maxWidth - 16) / 2,
-                  ),
-                  _buildScriptCard(
-                    title: '更新樹種科學數據庫',
-                    description: '將硬性科學指標（如碳吸存量、耐旱性）轉化為 AI 可理解的知識片段。',
-                    icon: Icons.science,
-                    color: Colors.teal,
-                    scriptName: 'generateEmbeddings',
-                    tokenController: _tokenController,
-                    width: (constraints.maxWidth - 16) / 2,
-                  ),
-                ],
-              );
-            }),
+            // 強制垂直排列，每個腳本一張卡片，佔滿寬度
+            Column(
+              children: [
+                _buildScriptCard(
+                  title: '更新調查數據知識庫',
+                  description: '將最新的「實地樹木調查記錄」同步至 AI 知識庫，讓 AI 能回答關於特定樹木的問題。',
+                  icon: Icons.sync,
+                  color: Colors.blue,
+                  scriptName: 'populate_knowledge_from_survey',
+                  tokenController: _tokenController,
+                ),
+                const SizedBox(height: 16),
+                _buildScriptCard(
+                  title: '更新樹種科學數據庫',
+                  description: '將硬性科學指標（如碳吸存量、耐旱性）轉化為 AI 可理解的知識片段。',
+                  icon: Icons.science,
+                  color: Colors.teal,
+                  scriptName: 'generateEmbeddings',
+                  tokenController: _tokenController,
+                ),
+              ],
+            ),
 
             const SizedBox(height: 32),
             _buildSectionTitle('AI 內容生成 (Content Generation)'),
             const SizedBox(height: 16),
-            LayoutBuilder(builder: (context, constraints) {
-              return Wrap(
-                spacing: 16.0,
-                runSpacing: 16.0,
-                children: [
-                  _buildScriptCard(
-                    title: 'AI 撰寫樹種深度文章',
-                    description: '使用 LLM 為每個樹種自動撰寫詳細的百科全書式介紹文章。(僅針對新樹種生成，耗時較長)',
-                    icon: Icons.auto_awesome,
-                    color: Colors.purple,
-                    scriptName: 'generate_species_knowledge',
-                    tokenController: _tokenController,
-                    width: (constraints.maxWidth - 16) / 2,
-                  ),
-                  _buildScriptCard(
-                    title: '擴充樹種同義詞索引',
-                    description: '自動補充樹種的學名、別名與多語言名稱，提升搜尋準確度。',
-                    icon: Icons.translate,
-                    color: Colors.indigo,
-                    scriptName: 'enrich_species_synonyms',
-                    tokenController: _tokenController,
-                    width: (constraints.maxWidth - 16) / 2,
-                  ),
-                ],
-              );
-            }),
+            Column(
+              children: [
+                _buildScriptCard(
+                  title: 'AI 撰寫樹種深度文章',
+                  description: '使用 LLM 為每個樹種自動撰寫詳細的百科全書式介紹文章。(僅針對新樹種生成，耗時較長)',
+                  icon: Icons.auto_awesome,
+                  color: Colors.purple,
+                  scriptName: 'generate_species_knowledge',
+                  tokenController: _tokenController,
+                ),
+                const SizedBox(height: 16),
+                _buildScriptCard(
+                  title: '擴充樹種同義詞索引',
+                  description: '自動補充樹種的學名、別名與多語言名稱，提升搜尋準確度。',
+                  icon: Icons.translate,
+                  color: Colors.indigo,
+                  scriptName: 'enrich_species_synonyms',
+                  tokenController: _tokenController,
+                ),
+              ],
+            ),
 
             const SizedBox(height: 32),
             _buildSectionTitle('系統計算 (System Calculation)'),
             const SizedBox(height: 16),
-            LayoutBuilder(builder: (context, constraints) {
-              return Wrap(
-                spacing: 16.0,
-                runSpacing: 16.0,
-                children: [
-                  _buildScriptCard(
-                    title: '重算樹種區域評分',
-                    description: '根據樹種特性，重新計算所有樹種在台灣各區域的適植性評分。',
-                    icon: Icons.calculate,
-                    color: Colors.orange,
-                    scriptName: 'populateSpeciesRegionScore',
-                    tokenController: _tokenController,
-                    width: constraints.maxWidth, // Full width
-                  ),
-                ],
-              );
-            }),
+            Column(
+              children: [
+                _buildScriptCard(
+                  title: '重算樹種區域評分',
+                  description: '根據樹種特性，重新計算所有樹種在台灣各區域的適植性評分。',
+                  icon: Icons.calculate,
+                  color: Colors.orange,
+                  scriptName: 'populateSpeciesRegionScore',
+                  tokenController: _tokenController,
+                ),
+              ],
+            ),
             const SizedBox(height: 40),
           ],
         ),
@@ -1368,11 +1356,14 @@ class _AdminPageState extends State<AdminPage> {
           color: Theme.of(context).colorScheme.primary,
         ),
         const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+        Expanded(
+          // 使用 Expanded 防止標題過長溢出
+          child: Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ],
@@ -1386,69 +1377,68 @@ class _AdminPageState extends State<AdminPage> {
     required Color color,
     required String scriptName,
     required TextEditingController tokenController,
-    required double width,
+    // width 參數已移除
   }) {
-    return SizedBox(
-      width: width,
-      child: Card(
-        elevation: 2,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () => _runBackendScript(scriptName, tokenController.text),
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => _runBackendScript(scriptName, tokenController.text),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 28),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
-                      child: Icon(icon, color: color, size: 24),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                    const SizedBox(height: 8),
+                    Text(
+                      description,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[700],
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: OutlinedButton.icon(
+                        onPressed: () =>
+                            _runBackendScript(scriptName, tokenController.text),
+                        icon: Icon(Icons.play_circle_outline,
+                            size: 18, color: color),
+                        label: Text('執行腳本', style: TextStyle(color: color)),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: color.withOpacity(0.5)),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 8),
                         ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  description,
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[700],
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton.icon(
-                    onPressed: () =>
-                        _runBackendScript(scriptName, tokenController.text),
-                    icon: const Icon(Icons.play_circle_outline, size: 20),
-                    label: const Text('執行腳本'),
-                    style: TextButton.styleFrom(
-                      foregroundColor: color,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
