@@ -58,11 +58,19 @@ class _MessageBubble extends StatelessWidget {
               ? CrossAxisAlignment.end
               : CrossAxisAlignment.start,
           children: [
-            Text(
-              message.content,
-              style: TextStyle(
-                color: message.isUser ? Colors.black87 : Colors.green.shade900,
+            MarkdownBody(
+              data: message.content,
+              selectable: true,
+              styleSheet: MarkdownStyleSheet(
+                p: TextStyle(
+                  color: message.isUser ? Colors.black87 : Colors.green.shade900,
+                ),
               ),
+              onTapLink: (text, href, title) {
+                if (href != null) {
+                  launchUrl(Uri.parse(href), mode: LaunchMode.externalApplication);
+                }
+              },
             ),
             if (!message.isUser &&
                 message.sources != null &&
