@@ -1231,73 +1231,222 @@ class _AdminPageState extends State<AdminPage> {
   }
 
   Widget _buildAdminZone() {
-    // 為了安全起見，我們可以要求輸入 Admin API Token 才能執行操作
-    // 使用 class member _tokenController
-
     return Center(
       child: SingleChildScrollView(
-        // Add scroll view to prevent overflow
         padding: const EdgeInsets.all(24.0),
-        child: Card(
-          elevation: 4,
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '後端腳本管理',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  '手動觸發後端維護腳本。請謹慎使用，某些腳本可能需要較長時間執行。',
-                  style: TextStyle(color: Colors.grey),
-                ),
-                const SizedBox(height: 24),
-                TextField(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '後端維運工具箱',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              '這裡提供了一系列自動化腳本，用於維護資料庫一致性、生成 AI 知識庫以及優化系統效能。請根據需求選擇執行。',
+              style: TextStyle(color: Colors.grey, fontSize: 16),
+            ),
+            const SizedBox(height: 24),
+            
+            // Admin Token 輸入框
+            Card(
+              elevation: 2,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: TextField(
                   controller: _tokenController,
                   decoration: const InputDecoration(
-                    labelText: 'Admin API Token',
+                    labelText: 'Admin API Token (執行腳本所需)',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.vpn_key),
+                    helperText: '為了安全，所有維運操作都需要驗證管理員 Token。',
                   ),
                   obscureText: true,
                 ),
-                const SizedBox(height: 24),
-                Wrap(
-                  spacing: 16.0,
-                  runSpacing: 16.0,
-                  children: [
-                    _buildScriptButton('更新基礎知識庫',
-                        'populate_knowledge_from_survey', _tokenController),
-                    _buildScriptButton('更新區域評分', 'populateSpeciesRegionScore',
-                        _tokenController),
-                    _buildScriptButton(
-                        '生成深度知識向量', 'generateEmbeddings', _tokenController),
-                    _buildScriptButton('AI 撰寫樹種知識',
-                        'generate_species_knowledge', _tokenController),
-                    _buildScriptButton('擴充樹種同義詞 (AI)',
-                        'enrich_species_synonyms', _tokenController),
-                  ],
-                ),
-              ],
+              ),
             ),
-          ),
+            const SizedBox(height: 24),
+
+            _buildSectionTitle('知識庫工程 (Knowledge Engineering)'),
+            const SizedBox(height: 16),
+            LayoutBuilder(builder: (context, constraints) {
+              return Wrap(
+                spacing: 16.0,
+                runSpacing: 16.0,
+                children: [
+                  _buildScriptCard(
+                    title: '更新調查數據知識庫',
+                    description: '將最新的「實地樹木調查記錄」同步至 AI 知識庫，讓 AI 能回答關於特定樹木的問題。',
+                    icon: Icons.sync,
+                    color: Colors.blue,
+                    scriptName: 'populate_knowledge_from_survey',
+                    tokenController: _tokenController,
+                    width: (constraints.maxWidth - 16) / 2,
+                  ),
+                  _buildScriptCard(
+                    title: '更新樹種科學數據庫',
+                    description: '將硬性科學指標（如碳吸存量、耐旱性）轉化為 AI 可理解的知識片段。',
+                    icon: Icons.science,
+                    color: Colors.teal,
+                    scriptName: 'generateEmbeddings',
+                    tokenController: _tokenController,
+                    width: (constraints.maxWidth - 16) / 2,
+                  ),
+                ],
+              );
+            }),
+
+            const SizedBox(height: 32),
+            _buildSectionTitle('AI 內容生成 (Content Generation)'),
+            const SizedBox(height: 16),
+            LayoutBuilder(builder: (context, constraints) {
+              return Wrap(
+                spacing: 16.0,
+                runSpacing: 16.0,
+                children: [
+                  _buildScriptCard(
+                    title: 'AI 撰寫樹種深度文章',
+                    description: '使用 LLM 為每個樹種自動撰寫詳細的百科全書式介紹文章。(僅針對新樹種生成，耗時較長)',
+                    icon: Icons.auto_awesome,
+                    color: Colors.purple,
+                    scriptName: 'generate_species_knowledge',
+                    tokenController: _tokenController,
+                    width: (constraints.maxWidth - 16) / 2,
+                  ),
+                  _buildScriptCard(
+                    title: '擴充樹種同義詞索引',
+                    description: '自動補充樹種的學名、別名與多語言名稱，提升搜尋準確度。',
+                    icon: Icons.translate,
+                    color: Colors.indigo,
+                    scriptName: 'enrich_species_synonyms',
+                    tokenController: _tokenController,
+                    width: (constraints.maxWidth - 16) / 2,
+                  ),
+                ],
+              );
+            }),
+
+            const SizedBox(height: 32),
+            _buildSectionTitle('系統計算 (System Calculation)'),
+            const SizedBox(height: 16),
+            LayoutBuilder(builder: (context, constraints) {
+              return Wrap(
+                spacing: 16.0,
+                runSpacing: 16.0,
+                children: [
+                  _buildScriptCard(
+                    title: '重算樹種區域評分',
+                    description: '根據樹種特性，重新計算所有樹種在台灣各區域的適植性評分。',
+                    icon: Icons.calculate,
+                    color: Colors.orange,
+                    scriptName: 'populateSpeciesRegionScore',
+                    tokenController: _tokenController,
+                    width: constraints.maxWidth, // Full width
+                  ),
+                ],
+              );
+            }),
+            const SizedBox(height: 40),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildScriptButton(
-      String label, String scriptName, TextEditingController tokenController) {
-    return ElevatedButton.icon(
-      icon: const Icon(Icons.play_arrow),
-      label: Text(label),
-      onPressed: () => _runBackendScript(scriptName, tokenController.text),
-      style: ElevatedButton.styleFrom(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+  Widget _buildSectionTitle(String title) {
+    return Row(
+      children: [
+        Container(
+          width: 4,
+          height: 24,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        const SizedBox(width: 8),
+        Text(
+          title,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildScriptCard({
+    required String title,
+    required String description,
+    required IconData icon,
+    required Color color,
+    required String scriptName,
+    required TextEditingController tokenController,
+    required double width,
+  }) {
+    return SizedBox(
+      width: width,
+      child: Card(
+        elevation: 2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => _runBackendScript(scriptName, tokenController.text),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(icon, color: color, size: 24),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[700],
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: () => _runBackendScript(scriptName, tokenController.text),
+                    icon: const Icon(Icons.play_circle_outline, size: 20),
+                    label: const Text('執行腳本'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: color,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
