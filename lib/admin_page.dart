@@ -40,7 +40,7 @@ class AdminPage extends StatefulWidget {
 
 class _AdminPageState extends State<AdminPage> {
   int _selectedIndex = 0;
-  bool _isRailExtended = true; // 控制側邊欄展開狀態
+  bool _isSidebarVisible = true; // 控制側邊欄是否顯示
   List<Map<String, dynamic>> _users = [];
   bool _isLoading = false;
   String _searchQuery = '';
@@ -1515,12 +1515,12 @@ class _AdminPageState extends State<AdminPage> {
       appBar: AppBar(
         // 新增側邊欄控制按鈕
         leading: IconButton(
-          icon: Icon(_isRailExtended ? Icons.menu_open : Icons.menu),
+          icon: Icon(_isSidebarVisible ? Icons.menu_open : Icons.menu),
           color: Colors.white,
-          tooltip: _isRailExtended ? '收起選單' : '展開選單',
+          tooltip: _isSidebarVisible ? '隱藏選單' : '顯示選單',
           onPressed: () {
             setState(() {
-              _isRailExtended = !_isRailExtended;
+              _isSidebarVisible = !_isSidebarVisible;
             });
           },
         ),
@@ -1545,69 +1545,70 @@ class _AdminPageState extends State<AdminPage> {
         ],
       ),
       body: Container(
-        // Optional: Keep gradient or use a simpler background
-        // decoration: BoxDecoration(
-        //   gradient: LinearGradient(
-        //     begin: Alignment.topCenter,
-        //     end: Alignment.bottomCenter,
-        //     colors: [Colors.green.shade50, Colors.white],
-        //   ),
-        // ),
         child: Row(
           children: [
-            NavigationRail(
-              selectedIndex: _selectedIndex,
-              extended: _isRailExtended, // 綁定狀態
-              minWidth: 56, // 收起時的寬度
-              minExtendedWidth: 180, // 展開時的寬度
-              onDestinationSelected: (int index) {
-                setState(() {
-                  _selectedIndex = index;
-                });
-              },
-              labelType: _isRailExtended
-                  ? NavigationRailLabelType
-                      .none // 展開時 labelType 必須為 none (Flutter 限制)
-                  : NavigationRailLabelType
-                      .all, // 收起時顯示 label (或者也用 none 僅顯示 icon)
-              backgroundColor:
-                  Theme.of(context).colorScheme.surface, // Use theme color
-              indicatorColor: Theme.of(context)
-                  .colorScheme
-                  .primaryContainer, // Use theme color
-              selectedIconTheme:
-                  IconThemeData(color: Theme.of(context).colorScheme.primary),
-              unselectedIconTheme: IconThemeData(color: Colors.grey[600]),
-              selectedLabelTextStyle:
-                  TextStyle(color: Theme.of(context).colorScheme.primary),
-              destinations: const [
-                NavigationRailDestination(
-                  icon: Icon(Icons.people),
-                  label: Text('使用者管理'),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.file_download),
-                  label: Text('資料匯出'),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.backup),
-                  label: Text('資料備份'),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.key),
-                  label: Text('API 密鑰'),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.settings),
-                  label: Text('系統設定'),
-                ),
-                NavigationRailDestination(
-                  icon: Icon(Icons.build),
-                  label: Text('管理員專區'),
-                ),
-              ],
-            ),
-            const VerticalDivider(thickness: 1, width: 1),
+            // 只有當 _isSidebarVisible 為 true 時才顯示 NavigationRail
+            if (_isSidebarVisible)
+              NavigationRail(
+                selectedIndex: _selectedIndex,
+                // extended: true, // 始終保持展開狀態，只控制整體顯示/隱藏
+                minWidth: 72, // 標準寬度
+                minExtendedWidth: 180, // 展開寬度
+                // 這裡我們不需要 extended 屬性來控制變小，因為我們要的是整欄消失
+                // 但為了美觀，我們可以讓它始終顯示文字 (extended: true) 或者維持預設
+                // 根據使用者需求 "原本那樣我就覺得足夠了"，假設原本是 extended: false (只顯示 icon)
+                // 還是 extended: true?
+                // 使用者說 "我要的不是展開左邊的選單和變小的差別... 而是讓我沒有要選取時讓它消失"
+                // 所以 NavigationRail 本身的樣式保持不變 (有 icon 和 label)
+                // 我們使用 visibility 來控制
+                extended: false, // 保持預設 (只有 icon，或者點擊變大? 預設 NavigationRail 行為)
+                // 等等，NavigationRail 如果 extended: false，labelType 必須是 all 或 selected
+                labelType: NavigationRailLabelType.all,
+                onDestinationSelected: (int index) {
+                  setState(() {
+                    _selectedIndex = index;
+                  });
+                },
+                backgroundColor:
+                    Theme.of(context).colorScheme.surface, // Use theme color
+                indicatorColor: Theme.of(context)
+                    .colorScheme
+                    .primaryContainer, // Use theme color
+                selectedIconTheme:
+                    IconThemeData(color: Theme.of(context).colorScheme.primary),
+                unselectedIconTheme: IconThemeData(color: Colors.grey[600]),
+                selectedLabelTextStyle:
+                    TextStyle(color: Theme.of(context).colorScheme.primary),
+                destinations: const [
+                  NavigationRailDestination(
+                    icon: Icon(Icons.people),
+                    label: Text('使用者管理'),
+                  ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.file_download),
+                    label: Text('資料匯出'),
+                  ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.backup),
+                    label: Text('資料備份'),
+                  ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.key),
+                    label: Text('API 密鑰'),
+                  ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.settings),
+                    label: Text('系統設定'),
+                  ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.build),
+                    label: Text('管理員專區'),
+                  ),
+                ],
+              ),
+            if (_isSidebarVisible)
+              const VerticalDivider(thickness: 1, width: 1),
+
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
