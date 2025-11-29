@@ -423,12 +423,12 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
                       Expanded(
                           child: _buildTextField(
                               xCoordController, 'X坐標 (經度)', null,
-                              keyboardType: TextInputType.number)),
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true))),
                       const SizedBox(width: 8),
                       Expanded(
                           child: _buildTextField(
                               yCoordController, 'Y坐標 (緯度)', null,
-                              keyboardType: TextInputType.number)),
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true))),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -436,9 +436,9 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
                   const SizedBox(height: 24),
                   _buildSectionHeader('測量與備註', Icons.straighten, Colors.purple),
                   _buildTextField(treeHeightController, '樹高 (m)', null,
-                      keyboardType: TextInputType.number),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true)),
                   _buildTextField(dbhController, '胸徑 (cm)', null,
-                      keyboardType: TextInputType.number),
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true)),
                   _buildTextField(noteController, '註記', null),
                   _buildTextField(treeRemarkController, '樹木備註', null),
                   _buildTextField(surveyRemarkController, '調查備註', null),
@@ -1064,14 +1064,14 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
           carbonstorageController,
           '碳儲存量 (kg)',
           (value) => value?.isEmpty ?? true ? '請輸入碳儲存量' : null,
-          keyboardType: TextInputType.number,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
         ),
         const SizedBox(height: 16),
         _buildTextField(
           annualcarbonController,
           '推估年碳吸存量 (kg)',
           (value) => value?.isEmpty ?? true ? '請輸入推估年碳吸存量' : null,
-          keyboardType: TextInputType.number,
+          keyboardType: const TextInputType.numberWithOptions(decimal: true),
         ),
       ],
     );
