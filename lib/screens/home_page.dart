@@ -78,7 +78,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
         currentIndex: _selectedIndex,
-        selectedItemColor: Colors.green,
+        selectedItemColor: Colors.blue.shade700,
         onTap: _onItemTapped,
       ),
     );
@@ -100,7 +100,7 @@ class DashboardPage extends StatelessWidget {
           context,
           '樹木調查',
           Icons.nature,
-          Colors.green,
+          Colors.blue.shade700,
           () => Navigator.pushNamed(context, '/tree-survey'),
         ),
         _buildDashboardItem(

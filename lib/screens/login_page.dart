@@ -82,7 +82,7 @@ class _LoginPageState extends State<LoginPage> {
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
             colors: [
-              Colors.green.shade100,
+              Colors.blue.shade50,
               Colors.white,
             ],
           ),
@@ -101,14 +101,14 @@ class _LoginPageState extends State<LoginPage> {
                     Icon(
                       Icons.forest,
                       size: 80,
-                      color: Colors.green.shade700,
+                      color: Colors.blue.shade800,
                     ),
                     const SizedBox(height: 16),
                     Text(
                       '樹木調查系統',
                       style:
                           Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                color: Colors.green.shade700,
+                                color: Colors.blue.shade800,
                                 fontWeight: FontWeight.bold,
                               ),
                       textAlign: TextAlign.center,
@@ -136,7 +136,7 @@ class _LoginPageState extends State<LoginPage> {
                                   setState(() => _loginType = 'survey'),
                               style: TextButton.styleFrom(
                                 backgroundColor: _loginType == 'survey'
-                                    ? Colors.green.shade100
+                                    ? Colors.blue.shade50
                                     : Colors.transparent,
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 16),
@@ -148,7 +148,7 @@ class _LoginPageState extends State<LoginPage> {
                                 '調查登入',
                                 style: TextStyle(
                                   color: _loginType == 'survey'
-                                      ? Colors.green.shade700
+                                      ? Colors.blue.shade800
                                       : Colors.grey,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -161,7 +161,7 @@ class _LoginPageState extends State<LoginPage> {
                                   setState(() => _loginType = 'admin'),
                               style: TextButton.styleFrom(
                                 backgroundColor: _loginType == 'admin'
-                                    ? Colors.green.shade100
+                                    ? Colors.blue.shade50
                                     : Colors.transparent,
                                 padding:
                                     const EdgeInsets.symmetric(vertical: 16),
@@ -173,7 +173,7 @@ class _LoginPageState extends State<LoginPage> {
                                 '管理後臺',
                                 style: TextStyle(
                                   color: _loginType == 'admin'
-                                      ? Colors.green.shade700
+                                      ? Colors.blue.shade800
                                       : Colors.grey,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -196,7 +196,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.green.shade200),
+                          borderSide: BorderSide(color: Colors.blue.shade200),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -237,7 +237,7 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.green.shade200),
+                          borderSide: BorderSide(color: Colors.blue.shade200),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),

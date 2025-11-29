@@ -188,7 +188,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
                                     topSpecies[index]['count'].toString()) ??
                                 0)
                             .toDouble(),
-                        color: Colors.green,
+                        color: Colors.blue.shade700,
                         width: 20,
                         borderRadius: const BorderRadius.vertical(
                           top: Radius.circular(4),
@@ -488,7 +488,7 @@ class _StatisticsPageState extends State<StatisticsPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('統計分析'),
-        backgroundColor: Colors.green.shade100,
+        backgroundColor: Colors.blue.shade50,
         elevation: 0,
       ),
       body: _isLoading
