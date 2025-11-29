@@ -48,7 +48,7 @@
 
 	<!-- Google Maps 設定 -->
 	<key>GMSApiKey</key>
-	<string>AIzaSyCH3AURjQGOLtwvVGx8f5XBH92_L3JimRU</string>
+	<string>AIzaSyCme9JKEwMreEE_ZUwDcATTEwk6ow1g60U</string>
 	<key>io.flutter.embedded_views_preview</key>
 	<true/>
 

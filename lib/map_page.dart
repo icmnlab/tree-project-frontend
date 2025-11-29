@@ -527,66 +527,6 @@ class _MapPageState extends State<MapPage> {
                 ),
               ),
             ),
-          // 定位按鈕 - 放在右下角 FAB 上方
-          Positioned(
-            right: 16,
-            bottom: 90,
-            child: Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: _hasLocationPermission 
-                      ? const Color(0xFF0D47A1).withOpacity(0.3)
-                      : Colors.grey.withOpacity(0.3),
-                    blurRadius: 8,
-                    spreadRadius: 1,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: FloatingActionButton(
-                heroTag: 'locationButton',
-                mini: true,
-                backgroundColor: _hasLocationPermission 
-                  ? Colors.white 
-                  : Colors.grey.shade100,
-                elevation: 0,
-                onPressed: () async {
-                if (!_hasLocationPermission) {
-                  await _requestLocationPermission();
-                  return;
-                }
-                if (_currentPosition != null && _controller != null) {
-                  await _controller!.animateCamera(
-                    CameraUpdate.newLatLng(
-                      LatLng(
-                        _currentPosition!.latitude,
-                        _currentPosition!.longitude,
-                      ),
-                    ),
-                  );
-                } else {
-                  await _getCurrentLocation();
-                  if (_currentPosition != null && _controller != null) {
-                    await _controller!.animateCamera(
-                      CameraUpdate.newLatLng(
-                        LatLng(
-                          _currentPosition!.latitude,
-                          _currentPosition!.longitude,
-                        ),
-                      ),
-                    );
-                  }
-                }
-              },
-                child: Icon(
-                  _hasLocationPermission ? Icons.my_location : Icons.location_disabled,
-                  color: _hasLocationPermission ? const Color(0xFF0D47A1) : Colors.grey,
-                ),
-              ),
-            ),
-          ),
           Positioned(
             top: _hasLocationPermission ? 0 : 85,
             left: 0,
@@ -819,25 +759,88 @@ class _MapPageState extends State<MapPage> {
             ),
         ],
       ),
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: const Color(0xFF0D47A1).withOpacity(0.4),
-              blurRadius: 12,
-              spreadRadius: 2,
-              offset: const Offset(0, 4),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: _hasLocationPermission 
+                    ? const Color(0xFF0D47A1).withOpacity(0.3)
+                    : Colors.grey.withOpacity(0.3),
+                  blurRadius: 8,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-          ],
-        ),
-        child: FloatingActionButton(
-          onPressed: _zoomToMarkers,
-          tooltip: '顯示所有標記',
-          backgroundColor: const Color(0xFF0D47A1),
-          elevation: 0,
-          child: const Icon(Icons.zoom_out_map, color: Colors.white),
-        ),
+            child: FloatingActionButton(
+              heroTag: 'locationButton',
+              mini: true,
+              backgroundColor: _hasLocationPermission 
+                ? Colors.white 
+                : Colors.grey.shade100,
+              elevation: 0,
+              onPressed: () async {
+                if (!_hasLocationPermission) {
+                  await _requestLocationPermission();
+                  return;
+                }
+                if (_currentPosition != null && _controller != null) {
+                  await _controller!.animateCamera(
+                    CameraUpdate.newLatLng(
+                      LatLng(
+                        _currentPosition!.latitude,
+                        _currentPosition!.longitude,
+                      ),
+                    ),
+                  );
+                } else {
+                  await _getCurrentLocation();
+                  if (_currentPosition != null && _controller != null) {
+                    await _controller!.animateCamera(
+                      CameraUpdate.newLatLng(
+                        LatLng(
+                          _currentPosition!.latitude,
+                          _currentPosition!.longitude,
+                        ),
+                      ),
+                    );
+                  }
+                }
+              },
+              child: Icon(
+                _hasLocationPermission ? Icons.my_location : Icons.location_disabled,
+                color: _hasLocationPermission ? const Color(0xFF0D47A1) : Colors.grey,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF0D47A1).withOpacity(0.4),
+                  blurRadius: 12,
+                  spreadRadius: 2,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: FloatingActionButton(
+              heroTag: 'zoomButton',
+              onPressed: _zoomToMarkers,
+              tooltip: '顯示所有標記',
+              backgroundColor: const Color(0xFF0D47A1),
+              elevation: 0,
+              child: const Icon(Icons.zoom_out_map, color: Colors.white),
+            ),
+          ),
+        ],
       ),
     );
   }

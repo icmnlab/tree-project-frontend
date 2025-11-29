@@ -9,7 +9,7 @@ import GoogleMaps
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
     // 初始化 Google Maps SDK - 必須在使用任何 Google Maps 功能之前呼叫
-    GMSServices.provideAPIKey("AIzaSyCH3AURjQGOLtwvVGx8f5XBH92_L3JimRU")
+    GMSServices.provideAPIKey("AIzaSyCme9JKEwMreEE_ZUwDcATTEwk6ow1g60U")
     
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
