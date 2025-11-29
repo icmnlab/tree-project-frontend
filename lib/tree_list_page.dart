@@ -425,7 +425,7 @@ class _TreeListPageState extends State<TreeListPage> {
         for (final index in _selectedIndices) {
           final tree = _filteredTrees[index];
           final response = await http.delete(
-            Uri.parse('http://172.20.10.4:3000/api/tree_survey/${tree['id']}'),
+            Uri.parse('${ApiService.baseUrl}/tree_survey/${tree['id']}'),
           );
 
           if (response.statusCode != 200) {
@@ -590,7 +590,7 @@ class _TreeListPageState extends State<TreeListPage> {
         // 批次上傳資料
         for (var item in data) {
           final response = await http.post(
-            Uri.parse('http://172.20.10.4:3000/api/tree_survey'),
+            Uri.parse('${ApiService.baseUrl}/tree_survey'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode(item),
           );
@@ -775,7 +775,7 @@ class _TreeListPageState extends State<TreeListPage> {
               (key, value) => value == null || value.toString().isEmpty);
 
           final response = await http.put(
-            Uri.parse('http://172.20.10.4:3000/api/tree_survey/${tree['id']}'),
+            Uri.parse('${ApiService.baseUrl}/tree_survey/${tree['id']}'),
             headers: {'Content-Type': 'application/json'},
             body: jsonEncode(updateData),
           );

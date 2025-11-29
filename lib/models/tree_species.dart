@@ -27,18 +27,28 @@ class TreeSpecies {
 
   factory TreeSpecies.fromJson(Map<String, dynamic> json) {
     return TreeSpecies(
-      id: json['id'],
-      name: json['name'],
-      scientificName: json['scientificName'],
-      carbonEfficiency: json['carbonEfficiency'].toDouble(),
-      soilType: json['soilType'],
-      sunExposure: json['sunExposure'],
-      minTemperature: json['minTemperature'].toDouble(),
-      maxTemperature: json['maxTemperature'].toDouble(),
-      suitableRegions: List<String>.from(json['suitableRegions']),
-      description: json['description'],
-      carbonAbsorptionRate: json['carbonAbsorptionRate'].toDouble(),
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '未知樹種',
+      scientificName: json['scientificName']?.toString() ?? '',
+      carbonEfficiency: _parseDouble(json['carbonEfficiency']),
+      soilType: json['soilType']?.toString() ?? '壤土',
+      sunExposure: json['sunExposure']?.toString() ?? '全日照',
+      minTemperature: _parseDouble(json['minTemperature'], defaultValue: 10.0),
+      maxTemperature: _parseDouble(json['maxTemperature'], defaultValue: 35.0),
+      suitableRegions: json['suitableRegions'] != null
+          ? List<String>.from(json['suitableRegions'])
+          : <String>[],
+      description: json['description']?.toString() ?? '',
+      carbonAbsorptionRate: _parseDouble(json['carbonAbsorptionRate']),
     );
+  }
+
+  static double _parseDouble(dynamic value, {double defaultValue = 0.0}) {
+    if (value == null) return defaultValue;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? defaultValue;
+    return defaultValue;
   }
 
   Map<String, dynamic> toJson() {
