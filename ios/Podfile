@@ -48,6 +48,18 @@ post_install do |installer|
         'PERMISSION_LOCATION=1',
         'PERMISSION_BLUETOOTH=1',
       ]
+
+      # Fix for Xcode 15+ DT_TOOLCHAIN_DIR issue
+      if config.base_configuration_reference
+        xcconfig_path = config.base_configuration_reference.real_path
+        if File.exist?(xcconfig_path)
+          xcconfig = File.read(xcconfig_path)
+          if xcconfig.include?("DT_TOOLCHAIN_DIR")
+            xcconfig_mod = xcconfig.gsub('DT_TOOLCHAIN_DIR', 'TOOLCHAIN_DIR')
+            File.open(xcconfig_path, "w") { |file| file << xcconfig_mod }
+          end
+        end
+      end
     end
   end
 end
