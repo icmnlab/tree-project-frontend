@@ -25,6 +25,7 @@ class _MapPageState extends State<MapPage> {
   bool _hasLocationPermission = false;
   Position? _currentPosition;
   MapType _currentMapType = MapType.normal;
+  bool _showMenu = true;
 
   // [優化] 快取樹木資料，避免重複呼叫 API
   List<dynamic> _cachedTreeData = [];
@@ -45,7 +46,8 @@ class _MapPageState extends State<MapPage> {
 
   Future<void> _checkLocationPermission() async {
     try {
-      final status = await Permission.location.status;
+      // iOS 建議使用 locationWhenInUse
+      final status = await Permission.locationWhenInUse.status;
       
       if (status.isGranted) {
         _safeSetState(() {
@@ -72,7 +74,18 @@ class _MapPageState extends State<MapPage> {
 
   Future<void> _requestLocationPermission() async {
     try {
-      final status = await Permission.location.request();
+      // 優先檢查狀態，避免重複請求導致無反應
+      var status = await Permission.locationWhenInUse.status;
+      
+      if (status.isPermanentlyDenied) {
+        if (mounted) {
+          _showOpenSettingsDialog();
+        }
+        return;
+      }
+
+      // 請求權限
+      status = await Permission.locationWhenInUse.request();
       
       if (status.isGranted) {
         _safeSetState(() {
@@ -80,33 +93,36 @@ class _MapPageState extends State<MapPage> {
         });
         _getCurrentLocation();
       } else if (status.isPermanentlyDenied) {
-        // 使用者永久拒絕，引導到設定頁面
         if (mounted) {
-          showDialog(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text('需要位置權限'),
-              content: const Text('請在設定中開啟位置權限，以便在地圖上顯示您的位置並進行樹木定位。'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('稍後再說'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    openAppSettings();
-                  },
-                  child: const Text('前往設定'),
-                ),
-              ],
-            ),
-          );
+          _showOpenSettingsDialog();
         }
       }
     } catch (e) {
       debugPrint('請求權限錯誤: $e');
     }
+  }
+
+  void _showOpenSettingsDialog() {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('需要位置權限'),
+        content: const Text('請在設定中開啟位置權限，以便在地圖上顯示您的位置並進行樹木定位。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('稍後再說'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              openAppSettings();
+            },
+            child: const Text('前往設定'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -211,8 +227,11 @@ class _MapPageState extends State<MapPage> {
 
         final projectName = tree['專案名稱'] ?? '未知專案';
         final areaName = tree['專案區位'] ?? '未知區位';
+        // 確保 MarkerId 唯一，避免覆蓋
+        final markerId = '${tree['id']}_${x}_$y';
+        
         return Marker(
-          markerId: MarkerId(tree['id'].toString()),
+          markerId: MarkerId(markerId),
           position: LatLng(y, x),
           infoWindow: InfoWindow(
             title: tree['樹種名稱'] ?? '未知樹種',
@@ -429,6 +448,15 @@ class _MapPageState extends State<MapPage> {
         title: const Text('樹木位置地圖'),
         actions: [
           IconButton(
+            icon: Icon(_showMenu ? Icons.filter_list_off : Icons.filter_list),
+            onPressed: () {
+              setState(() {
+                _showMenu = !_showMenu;
+              });
+            },
+            tooltip: _showMenu ? '隱藏篩選選單' : '顯示篩選選單',
+          ),
+          IconButton(
             icon: const Icon(Icons.layers),
             onPressed: () {
               setState(() {
@@ -459,226 +487,228 @@ class _MapPageState extends State<MapPage> {
             markers: _markers,
             myLocationEnabled: _hasLocationPermission,
             myLocationButtonEnabled: false,
-            zoomControlsEnabled: true,
+            zoomControlsEnabled: false, // 移除 Android 預設縮放按鈕
             mapToolbarEnabled: true,
             compassEnabled: true,
             padding: EdgeInsets.only(
-              top: _hasLocationPermission ? 140 : 220,
+              top: _showMenu ? (_hasLocationPermission ? 140 : 220) : 0,
               bottom: 100,
               right: 60,
             ),
             mapType: _currentMapType,
           ),
-          if (!_hasLocationPermission)
+          if (_showMenu) ...[
+            if (!_hasLocationPermission)
+              Positioned(
+                top: 8,
+                left: 12,
+                right: 12,
+                child: SafeArea(
+                  bottom: false,
+                  child: Card(
+                    elevation: 4,
+                    color: Colors.amber.shade50,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: Colors.amber.shade300),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Row(
+                        children: [
+                          Icon(Icons.location_off, color: Colors.amber.shade700, size: 28),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  '需要位置權限',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.amber.shade900,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  '開啟後可顯示您的位置',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.amber.shade800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          ElevatedButton(
+                            onPressed: _requestLocationPermission,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.amber.shade600,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            ),
+                            child: const Text('開啟'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             Positioned(
-              top: 8,
-              left: 12,
-              right: 12,
+              top: _hasLocationPermission ? 0 : 85,
+              left: 0,
+              right: 0,
               child: SafeArea(
                 bottom: false,
-                child: Card(
-                  elevation: 4,
-                  color: Colors.amber.shade50,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(color: Colors.amber.shade300),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Row(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
                       children: [
-                        Icon(Icons.location_off, color: Colors.amber.shade700, size: 28),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0D47A1).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                '需要位置權限',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.amber.shade900,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                '開啟後可顯示您的位置',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.amber.shade800,
-                                ),
-                              ),
+                              Icon(Icons.location_city, size: 16, color: Color(0xFF0D47A1)),
+                              SizedBox(width: 4),
+                              Text('縣市',
+                                  style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0D47A1), fontSize: 13)),
                             ],
                           ),
                         ),
-                        ElevatedButton(
-                          onPressed: _requestLocationPermission,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.amber.shade600,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: DropdownButton<String>(
+                            isExpanded: true,
+                            value: _selectedCity,
+                            underline: Container(height: 1, color: Colors.grey.shade300),
+                            items: _cities.map((city) {
+                              return DropdownMenuItem<String>(
+                                value: city,
+                                child: Text(city, overflow: TextOverflow.ellipsis),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              if (value != null) {
+                                _safeSetState(() {
+                                  _selectedCity = value;
+                                });
+                                _updateProjectsForCity(value);
+                              }
+                            },
                           ),
-                          child: const Text('開啟'),
                         ),
                       ],
                     ),
-                  ),
-                ),
-              ),
-            ),
-          Positioned(
-            top: _hasLocationPermission ? 0 : 85,
-            left: 0,
-            right: 0,
-            child: SafeArea(
-              bottom: false,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withOpacity(0.1),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF00BCD4).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.folder_outlined, size: 16, color: Color(0xFF00838F)),
+                              SizedBox(width: 4),
+                              Text('專案',
+                                  style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF00838F), fontSize: 13)),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: DropdownButton<String>(
+                            isExpanded: true,
+                            value: _selectedProject,
+                            underline: Container(height: 1, color: Colors.grey.shade300),
+                            items: _filteredProjects.map((project) {
+                              return DropdownMenuItem<String>(
+                                value: project,
+                                child: Text(project, overflow: TextOverflow.ellipsis),
+                              );
+                            }).toList(),
+                            onChanged: (value) {
+                              if (value != null) {
+                                _safeSetState(() {
+                                  _selectedProject = value;
+                                });
+                                _updateMarkersFromCache();
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF1565C0), Color(0xFF0D47A1)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF0D47A1).withOpacity(0.3),
+                            blurRadius: 6,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.park, size: 14, color: Colors.white),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            '共有 ${_markers.length} 棵樹',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF0D47A1).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.location_city, size: 16, color: Color(0xFF0D47A1)),
-                            SizedBox(width: 4),
-                            Text('縣市',
-                                style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0D47A1), fontSize: 13)),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: DropdownButton<String>(
-                          isExpanded: true,
-                          value: _selectedCity,
-                          underline: Container(height: 1, color: Colors.grey.shade300),
-                          items: _cities.map((city) {
-                            return DropdownMenuItem<String>(
-                              value: city,
-                              child: Text(city, overflow: TextOverflow.ellipsis),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            if (value != null) {
-                              _safeSetState(() {
-                                _selectedCity = value;
-                              });
-                              _updateProjectsForCity(value);
-                            }
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF00BCD4).withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.folder_outlined, size: 16, color: Color(0xFF00838F)),
-                            SizedBox(width: 4),
-                            Text('專案',
-                                style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF00838F), fontSize: 13)),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: DropdownButton<String>(
-                          isExpanded: true,
-                          value: _selectedProject,
-                          underline: Container(height: 1, color: Colors.grey.shade300),
-                          items: _filteredProjects.map((project) {
-                            return DropdownMenuItem<String>(
-                              value: project,
-                              child: Text(project, overflow: TextOverflow.ellipsis),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            if (value != null) {
-                              _safeSetState(() {
-                                _selectedProject = value;
-                              });
-                              _updateMarkersFromCache();
-                            }
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF1565C0), Color(0xFF0D47A1)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF0D47A1).withOpacity(0.3),
-                          blurRadius: 6,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(4),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(Icons.park, size: 14, color: Colors.white),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '共有 ${_markers.length} 棵樹',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
               ),
             ),
           ),
-        ),
+          ],
           if (_isLoading)
             Container(
               decoration: BoxDecoration(
