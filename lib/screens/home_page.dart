@@ -61,25 +61,43 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
       body: _widgetOptions.elementAt(_selectedIndex),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: '首頁',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.folder),
-            label: '專案',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.format_list_bulleted),
-            label: '樹木列表',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.blue.shade700,
-        onTap: _onItemTapped,
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
+            ),
+          ],
+        ),
+        child: BottomNavigationBar(
+          type: BottomNavigationBarType.fixed,
+          backgroundColor: Colors.white,
+          elevation: 0,
+          items: const <BottomNavigationBarItem>[
+            BottomNavigationBarItem(
+              icon: Icon(Icons.dashboard_outlined),
+              activeIcon: Icon(Icons.dashboard),
+              label: '首頁',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.folder_outlined),
+              activeIcon: Icon(Icons.folder),
+              label: '專案',
+            ),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.format_list_bulleted_outlined),
+              activeIcon: Icon(Icons.format_list_bulleted),
+              label: '樹木列表',
+            ),
+          ],
+          currentIndex: _selectedIndex,
+          selectedItemColor: Colors.blue.shade700,
+          unselectedItemColor: Colors.grey.shade500,
+          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
+          onTap: _onItemTapped,
+        ),
       ),
     );
   }
@@ -90,12 +108,20 @@ class DashboardPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.count(
-      padding: const EdgeInsets.all(20),
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      crossAxisCount: 2,
-      children: [
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Colors.blue.shade50, Colors.white],
+        ),
+      ),
+      child: GridView.count(
+        padding: const EdgeInsets.all(16),
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        crossAxisCount: 2,
+        children: [
         _buildDashboardItem(
           context,
           '樹木調查',
@@ -149,6 +175,7 @@ class DashboardPage extends StatelessWidget {
           ),
         ),
       ],
+      ),
     );
   }
 
@@ -160,31 +187,52 @@ class DashboardPage extends StatelessWidget {
     VoidCallback onTap,
   ) {
     return Card(
-      elevation: 4,
+      elevation: 6,
+      shadowColor: color.withOpacity(0.4),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
       ),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: 48,
-              color: color,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.white,
+                color.withOpacity(0.08),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: color,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.12),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  size: 40,
+                  color: color,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 12),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: color.withOpacity(0.9),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

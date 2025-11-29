@@ -816,97 +816,118 @@ class _AdminPageState extends State<AdminPage> {
     final role = user['role'] as String?;
     final username = user['username'] as String?;
     final bool isActive = user['is_active'] as bool? ?? true; // 預設為 true，以防資料缺失
+    final roleColor = _getRoleColor(role ?? '');
 
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
-      elevation: 2.0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: _getRoleColor(role ?? ''),
-          child: Text(
-            (role != null && role.isNotEmpty)
-                ? role[0].toUpperCase()
-                : 'U', // 增加安全檢查，若 role 為空則顯示 'U'
-            style: const TextStyle(
-                color: Colors.white, fontWeight: FontWeight.bold),
+      elevation: 4.0,
+      shadowColor: roleColor.withOpacity(0.3),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.0)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14.0),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Colors.white, roleColor.withOpacity(0.05)],
           ),
         ),
-        title: Text(
-          username ?? '未知用戶名',
-          style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            if (displayName != null && displayName.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 2.0, bottom: 2.0),
-                child: Text(displayName),
-              )
-            else
-              const Padding(
-                padding: EdgeInsets.only(top: 2.0, bottom: 2.0),
-                child: Text('未設定顯示名稱',
-                    style: TextStyle(fontStyle: FontStyle.italic)),
+        child: ListTile(
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          leading: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [roleColor.withOpacity(0.8), roleColor],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-            Text(role ?? '未指定角色'),
-            Padding(
-              padding: const EdgeInsets.only(top: 4.0),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
               child: Text(
-                isActive ? '狀態：啟用' : '狀態：禁用',
-                style: TextStyle(
-                  color: isActive ? Colors.green.shade700 : Colors.red.shade700,
-                  fontWeight: FontWeight.bold,
+                (role != null && role.isNotEmpty)
+                    ? role[0].toUpperCase()
+                    : 'U',
+                style: const TextStyle(
+                    color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+            ),
+          ),
+          title: Text(
+            username ?? '未知用戶名',
+            style: TextStyle(fontWeight: FontWeight.w600, color: roleColor.withOpacity(0.9)),
+          ),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              if (displayName != null && displayName.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 2.0, bottom: 2.0),
+                  child: Text(displayName),
+                )
+              else
+                const Padding(
+                  padding: EdgeInsets.only(top: 2.0, bottom: 2.0),
+                  child: Text('未設定顯示名稱',
+                      style: TextStyle(fontStyle: FontStyle.italic)),
+                ),
+              Text(role ?? '未指定角色'),
+              Padding(
+                padding: const EdgeInsets.only(top: 4.0),
+                child: Text(
+                  isActive ? '狀態：啟用' : '狀態：禁用',
+                  style: TextStyle(
+                    color: isActive ? Colors.green.shade700 : Colors.red.shade700,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
+          trailing: PopupMenuButton<String>(
+            onSelected: (String value) {
+              if (value == 'edit') {
+                _navigateToEditUser(user);
+              } else if (value == 'toggle_status') {
+                _toggleUserStatus(user);
+              } else if (value == 'delete') {
+                _deleteUser(user); // 假設您已有 _deleteUser 方法
+              }
+            },
+            itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+              const PopupMenuItem<String>(
+                value: 'edit',
+                child: ListTile(
+                  leading: Icon(Icons.edit_note),
+                  title: Text('編輯使用者'),
+                ),
+              ),
+              PopupMenuItem<String>(
+                value: 'toggle_status',
+                child: ListTile(
+                  leading: Icon(isActive
+                      ? Icons.toggle_off_outlined
+                      : Icons.toggle_on_outlined),
+                  title: Text(isActive ? '禁用帳號' : '啟用帳號'),
+                ),
+              ),
+              const PopupMenuDivider(),
+              const PopupMenuItem<String>(
+                value: 'delete',
+                child: ListTile(
+                  leading: Icon(Icons.delete_outline, color: Colors.red),
+                  title: Text('刪除使用者', style: TextStyle(color: Colors.red)),
+                ),
+              ),
+            ],
+            icon: const Icon(Icons.more_vert, color: Colors.blueGrey),
+            tooltip: '更多操作',
+          ),
+          isThreeLine: (displayName != null && displayName.isNotEmpty),
         ),
-        trailing: PopupMenuButton<String>(
-          onSelected: (String value) {
-            if (value == 'edit') {
-              _navigateToEditUser(user);
-            } else if (value == 'toggle_status') {
-              _toggleUserStatus(user);
-            } else if (value == 'delete') {
-              _deleteUser(user); // 假設您已有 _deleteUser 方法
-            }
-          },
-          itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-            const PopupMenuItem<String>(
-              value: 'edit',
-              child: ListTile(
-                leading: Icon(Icons.edit_note),
-                title: Text('編輯使用者'),
-              ),
-            ),
-            PopupMenuItem<String>(
-              value: 'toggle_status',
-              child: ListTile(
-                leading: Icon(isActive
-                    ? Icons.toggle_off_outlined
-                    : Icons.toggle_on_outlined),
-                title: Text(isActive ? '禁用帳號' : '啟用帳號'),
-              ),
-            ),
-            const PopupMenuDivider(),
-            const PopupMenuItem<String>(
-              value: 'delete',
-              child: ListTile(
-                leading: Icon(Icons.delete_outline, color: Colors.red),
-                title: Text('刪除使用者', style: TextStyle(color: Colors.red)),
-              ),
-            ),
-          ],
-          icon: const Icon(Icons.more_vert, color: Colors.blueGrey), // 更多操作圖示
-          tooltip: '更多操作',
-        ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-        isThreeLine: (displayName != null &&
-            displayName.isNotEmpty), // Adjust if display name makes it taller
       ),
     );
   }

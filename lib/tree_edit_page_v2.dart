@@ -319,6 +319,46 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
     }
   }
 
+  // Section header builder for visual separation
+  Widget _buildSectionHeader(String title, IconData icon, Color color) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
+        borderRadius: BorderRadius.circular(10),
+        border: Border(
+          left: BorderSide(color: color, width: 4),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 22),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: color.withOpacity(0.9),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // All other helper methods (_getCurrentLocation, _buildTextField, dialogs, etc.)
   // are copied from TreeInputPageV2 and adapted for the edit context.
   // For brevity, only the core logic is shown here. Assume they exist and are functional.
@@ -329,42 +369,55 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('編輯樹木 (V2)'),
-        backgroundColor: Colors.teal.shade100,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.teal.shade600, Colors.teal.shade400],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        elevation: 4,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.teal.shade50, Colors.white],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: _isLoading
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.teal),
+                    ),
+                    const SizedBox(height: 16),
+                    Text('載入中...', style: TextStyle(color: Colors.teal.shade700)),
+                  ],
+                ),
+              )
           : Form(
               key: _formKey,
               child: ListView(
                 // Using ListView instead of Stepper for a simpler layout
                 padding: const EdgeInsets.all(16.0),
                 children: [
-                  const Text('基本資訊',
-                      style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.teal)),
-                  const Divider(),
+                  _buildSectionHeader('基本資訊', Icons.info_outline, Colors.blue),
                   _buildReadOnlyTextField(systemTreeController, '系統樹木編號'),
                   _buildReadOnlyTextField(projectTreeController, '專案樹木編號'),
                   _buildProjectAreaField(),
                   _buildProjectNameField(),
                   _buildReadOnlyTextField(projectCodeController, '專案代碼'),
                   const SizedBox(height: 24),
-                  const Text('樹木資訊',
-                      style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.teal)),
-                  const Divider(),
+                  _buildSectionHeader('樹木資訊', Icons.park, Colors.green),
                   _buildTreeSpeciesSelector(),
                   const SizedBox(height: 24),
-                  const Text('位置與狀態',
-                      style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.teal)),
-                  const Divider(),
+                  _buildSectionHeader('位置與狀態', Icons.location_on, Colors.orange),
                   Row(
                     children: [
                       Expanded(
@@ -381,12 +434,7 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
                   const SizedBox(height: 16),
                   _buildStatusField(),
                   const SizedBox(height: 24),
-                  const Text('測量與備註',
-                      style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.teal)),
-                  const Divider(),
+                  _buildSectionHeader('測量與備註', Icons.straighten, Colors.purple),
                   _buildTextField(treeHeightController, '樹高 (m)', null,
                       keyboardType: TextInputType.number),
                   _buildTextField(dbhController, '胸徑 (cm)', null,
@@ -395,28 +443,42 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
                   _buildTextField(treeRemarkController, '樹木備註', null),
                   _buildTextField(surveyRemarkController, '調查備註', null),
                   const SizedBox(height: 24),
-                  const Text('碳計算',
-                      style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.teal)),
-                  const Divider(),
+                  _buildSectionHeader('碳計算', Icons.eco, Colors.teal),
                   _buildCarbonFields(),
                   const SizedBox(height: 32),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.save),
-                    label: const Text('儲存變更'),
-                    onPressed: submitUpdateData,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      textStyle: const TextStyle(fontSize: 18),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.teal.shade400, Colors.teal.shade600],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.teal.withOpacity(0.4),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.save),
+                      label: const Text('儲存變更'),
+                      onPressed: submitUpdateData,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        shadowColor: Colors.transparent,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        textStyle: const TextStyle(fontSize: 18),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
+      ),
     );
   }
 

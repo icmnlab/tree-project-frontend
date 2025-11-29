@@ -303,8 +303,33 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                   ),
                 )
               : _trees.isEmpty
-                  ? const Center(child: Text('沒有樹木資料'))
-                  : ListView.builder(
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.park_outlined, size: 80, color: Colors.grey.shade300),
+                          const SizedBox(height: 16),
+                          Text(
+                            '沒有樹木資料',
+                            style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '點擊右下角按鈕新增第一筆資料',
+                            style: TextStyle(fontSize: 14, color: Colors.grey.shade400),
+                          ),
+                        ],
+                      ),
+                    )
+                  : Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [Colors.green.shade50, Colors.white],
+                        ),
+                      ),
+                      child: ListView.builder(
                       itemCount: _trees.length,
                       itemBuilder: (context, index) {
                         final tree = _trees[index];
@@ -312,21 +337,39 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                         final projectTreeId = tree['專案樹木'] ?? '未知';
 
                         return Card(
-                          elevation: 2,
+                          elevation: 3,
+                          shadowColor: Colors.green.withOpacity(0.2),
                           margin: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
                           ),
                           child: ListTile(
                             contentPadding: const EdgeInsets.symmetric(
                               horizontal: 16,
-                              vertical: 8,
+                              vertical: 10,
                             ),
-                            leading: CircleAvatar(
-                              backgroundColor: Colors.green,
-                              child: Text(
-                                _getLastPartOfId(systemTreeId),
-                                style: const TextStyle(color: Colors.white),
+                            leading: Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [Colors.green.shade400, Colors.green.shade600],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  _getLastPartOfId(systemTreeId),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
                             ),
                             title: Row(
@@ -334,16 +377,26 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                                 Expanded(
                                   child: Text(
                                     tree['樹種名稱'] ?? '未知樹種',
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16,
+                                      color: Colors.green.shade800,
                                     ),
                                   ),
                                 ),
-                                Text(
-                                  systemTreeId.toString(),
-                                  style: TextStyle(
-                                    color: Colors.green.shade700,
-                                    fontWeight: FontWeight.bold,
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green.shade50,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    systemTreeId.toString(),
+                                    style: TextStyle(
+                                      color: Colors.green.shade700,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -351,25 +404,64 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                             subtitle: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('位置: ${tree['專案區位']} - ${tree['專案名稱']}'),
-                                Text('狀況: ${tree['狀況'] ?? '未知'}'),
+                                const SizedBox(height: 6),
                                 Row(
                                   children: [
+                                    Icon(Icons.location_on_outlined, size: 14, color: Colors.grey.shade600),
+                                    const SizedBox(width: 4),
                                     Expanded(
                                       child: Text(
-                                        '樹高: ${(tree['樹高（公尺）'] ?? 0).toString()} 公尺, 胸徑: ${(tree['胸徑（公分）'] ?? 0).toString()} 公分',
+                                        '${tree['專案區位']} - ${tree['專案名稱']}',
+                                        style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
-                                    Text(
-                                      '專案: ${_getLastPartOfId(projectTreeId)}',
-                                      style: TextStyle(
-                                        color: Colors.grey.shade700,
-                                        fontSize: 12,
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    Icon(Icons.health_and_safety_outlined, size: 14, color: Colors.grey.shade600),
+                                    const SizedBox(width: 4),
+                                    Text('狀況: ${tree['狀況'] ?? '未知'}', style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    Icon(Icons.straighten, size: 14, color: Colors.grey.shade600),
+                                    const SizedBox(width: 4),
+                                    Expanded(
+                                      child: Text(
+                                        '樹高: ${(tree['樹高（公尺）'] ?? 0).toString()}m, 胸徑: ${(tree['胸徑（公分）'] ?? 0).toString()}cm',
+                                        style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+                                      ),
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: Colors.orange.shade50,
+                                        borderRadius: BorderRadius.circular(6),
+                                      ),
+                                      child: Text(
+                                        '專案: ${_getLastPartOfId(projectTreeId)}',
+                                        style: TextStyle(
+                                          color: Colors.orange.shade700,
+                                          fontSize: 11,
+                                        ),
                                       ),
                                     ),
                                   ],
                                 ),
                               ],
+                            ),
+                            trailing: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.green.shade50,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(Icons.chevron_right, color: Colors.green.shade600),
                             ),
                             onTap: () {
                               Navigator.push(
@@ -385,25 +477,40 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                         );
                       },
                     ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // V2: 呼叫選擇對話框，而不是直接導航
-          AddTreeSelectionDialog.show(
-            context,
-            initialData: widget.projectName != null
-                ? {'project_name': widget.projectName}
-                : widget.areaName != null
-                    ? {'project_location': widget.areaName}
-                    : {},
-            onDataChanged: () {
-              // 返回頁面時，先清理，再獲取最新樹木數據
-              _cleanupUnusedData().then((_) => _fetchTrees());
-            },
-          );
-        },
-        backgroundColor: Colors.green,
-        tooltip: '新增樹木資料',
-        child: const Icon(Icons.add),
+                    ),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.green.withOpacity(0.4),
+              blurRadius: 12,
+              spreadRadius: 2,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: FloatingActionButton(
+          onPressed: () {
+            // V2: 呼叫選擇對話框，而不是直接導航
+            AddTreeSelectionDialog.show(
+              context,
+              initialData: widget.projectName != null
+                  ? {'project_name': widget.projectName}
+                  : widget.areaName != null
+                      ? {'project_location': widget.areaName}
+                      : {},
+              onDataChanged: () {
+                // 返回頁面時，先清理，再獲取最新樹木數據
+                _cleanupUnusedData().then((_) => _fetchTrees());
+              },
+            );
+          },
+          backgroundColor: Colors.green,
+          elevation: 0,
+          tooltip: '新增樹木資料',
+          child: const Icon(Icons.add, color: Colors.white),
+        ),
       ),
     );
   }

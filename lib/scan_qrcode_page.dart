@@ -124,7 +124,16 @@ class _ScanQRCodePageState extends State<ScanQRCodePage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('掃描樹木QR碼'),
-        backgroundColor: Colors.green,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.green.shade700, Colors.green.shade500],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        elevation: 4,
       ),
       body: Column(
         children: [
@@ -174,10 +183,28 @@ class _ScanQRCodePageState extends State<ScanQRCodePage> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(
-                            Icons.check_circle,
-                            color: Colors.green,
-                            size: 72,
+                          Container(
+                            padding: const EdgeInsets.all(20),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Colors.green.shade400, Colors.green.shade600],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.green.withOpacity(0.4),
+                                  blurRadius: 20,
+                                  spreadRadius: 5,
+                                ),
+                              ],
+                            ),
+                            child: const Icon(
+                              Icons.check,
+                              color: Colors.white,
+                              size: 60,
+                            ),
                           ),
                           const SizedBox(height: 16),
                           const Text(
@@ -205,6 +232,13 @@ class _ScanQRCodePageState extends State<ScanQRCodePage> {
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.grey.shade100, Colors.white],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                ),
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [

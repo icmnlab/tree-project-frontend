@@ -999,36 +999,84 @@ class _TreeListPageState extends State<TreeListPage> {
                                       final tree = _filteredTrees[index];
                                       return Card(
                                         margin: const EdgeInsets.symmetric(
-                                          horizontal: 8.0,
-                                          vertical: 4.0,
+                                          horizontal: 12.0,
+                                          vertical: 6.0,
+                                        ),
+                                        elevation: 2,
+                                        shadowColor: Colors.green.withOpacity(0.2),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
                                         ),
                                         child: ListTile(
+                                          contentPadding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 8,
+                                          ),
                                           leading: _isSelectionMode
                                               ? Checkbox(
                                                   value: _selectedIndices
                                                       .contains(index),
                                                   onChanged: (value) =>
                                                       _toggleSelection(index),
+                                                  activeColor: Colors.green.shade600,
                                                 )
-                                              : const Icon(
-                                                  Icons.park,
-                                                  color: Colors.green,
-                                                  size: 40,
+                                              : Container(
+                                                  width: 48,
+                                                  height: 48,
+                                                  decoration: BoxDecoration(
+                                                    gradient: LinearGradient(
+                                                      colors: [Colors.green.shade400, Colors.green.shade600],
+                                                      begin: Alignment.topLeft,
+                                                      end: Alignment.bottomRight,
+                                                    ),
+                                                    borderRadius: BorderRadius.circular(12),
+                                                  ),
+                                                  child: const Icon(
+                                                    Icons.park,
+                                                    color: Colors.white,
+                                                    size: 28,
+                                                  ),
                                                 ),
                                           title: Text(
                                             tree['樹種名稱'] ?? '未知樹種',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.bold,
+                                            style: TextStyle(
+                                              fontWeight: FontWeight.w600,
+                                              fontSize: 16,
+                                              color: Colors.green.shade800,
                                             ),
                                           ),
                                           subtitle: Column(
                                             crossAxisAlignment:
                                                 CrossAxisAlignment.start,
                                             children: [
-                                              Text(
-                                                  '專案: ${tree['專案名稱'] ?? '未知專案'}'),
-                                              Text(
-                                                  '區位: ${tree['專案區位'] ?? '未知區位'}'),
+                                              const SizedBox(height: 4),
+                                              Row(
+                                                children: [
+                                                  Icon(Icons.folder_outlined, size: 14, color: Colors.grey.shade600),
+                                                  const SizedBox(width: 4),
+                                                  Expanded(
+                                                    child: Text(
+                                                      tree['專案名稱'] ?? '未知專案',
+                                                      style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              const SizedBox(height: 2),
+                                              Row(
+                                                children: [
+                                                  Icon(Icons.location_on_outlined, size: 14, color: Colors.grey.shade600),
+                                                  const SizedBox(width: 4),
+                                                  Expanded(
+                                                    child: Text(
+                                                      tree['專案區位'] ?? '未知區位',
+                                                      style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                                                      overflow: TextOverflow.ellipsis,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
                                               if (_sortBy == '樹高（公尺）')
                                                 Text(
                                                     '樹高: ${tree['樹高（公尺）']} 公尺'),
@@ -1044,7 +1092,17 @@ class _TreeListPageState extends State<TreeListPage> {
                                           ),
                                           trailing: _isSelectionMode
                                               ? null
-                                              : const Icon(Icons.chevron_right),
+                                              : Container(
+                                                  padding: const EdgeInsets.all(8),
+                                                  decoration: BoxDecoration(
+                                                    color: Colors.green.shade50,
+                                                    shape: BoxShape.circle,
+                                                  ),
+                                                  child: Icon(
+                                                    Icons.chevron_right,
+                                                    color: Colors.green.shade600,
+                                                  ),
+                                                ),
                                           onTap: _isSelectionMode
                                               ? () => _toggleSelection(index)
                                               : () {

@@ -396,48 +396,114 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
                           ),
                           const SizedBox(height: 20),
                           if (_trees.isNotEmpty) ...[
-                            Text(
-                              '最近添加的樹木',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleLarge!
-                                  .copyWith(
-                                    color: Colors.green,
-                                    fontWeight: FontWeight.bold,
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [Colors.green.shade50, Colors.green.shade100],
+                                  begin: Alignment.centerLeft,
+                                  end: Alignment.centerRight,
+                                ),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.forest, color: Colors.green.shade700),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '最近添加的樹木',
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleLarge!
+                                        .copyWith(
+                                          color: Colors.green.shade700,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                   ),
+                                ],
+                              ),
                             ),
-                            const SizedBox(height: 10),
+                            const SizedBox(height: 12),
                             ..._trees.take(5).map((tree) => Card(
                                   margin: const EdgeInsets.only(bottom: 10),
-                                  child: ListTile(
-                                    leading: const CircleAvatar(
-                                      backgroundColor: Colors.green,
-                                      child: Icon(Icons.nature,
-                                          color: Colors.white),
+                                  elevation: 3,
+                                  shadowColor: Colors.green.withOpacity(0.3),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12),
+                                      gradient: LinearGradient(
+                                        colors: [Colors.white, Colors.green.shade50],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
                                     ),
-                                    title: Text(tree['樹種名稱'] ?? '未知樹種'),
-                                    subtitle: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                            '編號: ${tree['系統樹木'] ?? '未知'} (專案: ${tree['專案樹木'] ?? '未知'})'),
-                                        Text(
-                                            '樹高: ${(tree['樹高（公尺）'] ?? 0).toString()} 公尺, 胸徑: ${(tree['胸徑（公分）'] ?? 0).toString()} 公分'),
-                                      ],
+                                    child: ListTile(
+                                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                      leading: Container(
+                                        width: 48,
+                                        height: 48,
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            colors: [Colors.green.shade400, Colors.green.shade600],
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                          ),
+                                          borderRadius: BorderRadius.circular(12),
+                                        ),
+                                        child: const Icon(Icons.nature, color: Colors.white),
+                                      ),
+                                      title: Text(
+                                        tree['樹種名稱'] ?? '未知樹種',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.green.shade800,
+                                        ),
+                                      ),
+                                      subtitle: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          const SizedBox(height: 4),
+                                          Text(
+                                              '編號: ${tree['系統樹木'] ?? '未知'} (專案: ${tree['專案樹木'] ?? '未知'})'),
+                                          Text(
+                                              '樹高: ${(tree['樹高（公尺）'] ?? 0).toString()} 公尺, 胸徑: ${(tree['胸徑（公分）'] ?? 0).toString()} 公分'),
+                                        ],
+                                      ),
+                                      isThreeLine: true,
                                     ),
-                                    isThreeLine: true,
                                   ),
                                 )),
                           ],
                         ],
                       ),
                     ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddDialog,
-        backgroundColor: Colors.green,
-        tooltip: '新增樹木資料',
-        child: const Icon(Icons.add),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.green.shade400, Colors.green.shade700],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.green.withOpacity(0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: FloatingActionButton(
+          onPressed: _showAddDialog,
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          tooltip: '新增樹木資料',
+          child: const Icon(Icons.add, size: 28),
+        ),
       ),
     );
   }

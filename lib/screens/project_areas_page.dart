@@ -469,39 +469,78 @@ class _ProjectAreasPageState extends State<ProjectAreasPage> {
                       ),
                     )
                   : ListView.builder(
+                      padding: const EdgeInsets.all(12),
                       itemCount: _areas.length,
                       itemBuilder: (context, index) {
                         final area = _areas[index];
+                        final areaColor = Colors.primaries[index % Colors.primaries.length];
                         return Card(
                           margin: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
+                            horizontal: 4,
+                            vertical: 6,
                           ),
-                          elevation: 2,
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: Colors.green.shade700,
-                              child: const Icon(
-                                Icons.location_on,
-                                color: Colors.white,
+                          elevation: 4,
+                          shadowColor: areaColor.withOpacity(0.3),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(14),
+                              gradient: LinearGradient(
+                                colors: [Colors.white, areaColor.withOpacity(0.08)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
                               ),
                             ),
-                            title: Text(
-                              area['area_name'] ?? '',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                              leading: Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [areaColor.withOpacity(0.7), areaColor],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.location_on,
+                                  color: Colors.white,
+                                  size: 26,
+                                ),
                               ),
+                              title: Text(
+                                area['area_name'] ?? '',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                  color: areaColor.withOpacity(0.9),
+                                ),
+                              ),
+                              subtitle: area['area_code'] != null
+                                  ? Padding(
+                                      padding: const EdgeInsets.only(top: 4),
+                                      child: Text('代碼: ${area['area_code']}'),
+                                    )
+                                  : null,
+                              trailing: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: areaColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(
+                                  Icons.arrow_forward_ios,
+                                  size: 16,
+                                  color: areaColor,
+                                ),
+                              ),
+                              onTap: () =>
+                                  _fetchProjectsByArea(area['area_name'] ?? ''),
                             ),
-                            subtitle: area['area_code'] != null
-                                ? Text('代碼: ${area['area_code']}')
-                                : null,
-                            trailing: const Icon(
-                              Icons.arrow_forward_ios,
-                              size: 16,
-                            ),
-                            onTap: () =>
-                                _fetchProjectsByArea(area['area_name'] ?? ''),
                           ),
                         );
                       },
@@ -527,60 +566,117 @@ class _ProjectsByAreaPage extends StatelessWidget {
         title: Text('$areaName專案'),
       ),
       body: ListView.builder(
+        padding: const EdgeInsets.all(12),
         itemCount: projects.length,
         itemBuilder: (context, index) {
           final project = projects[index];
+          final projectColor = Colors.teal;
           return Card(
             margin: const EdgeInsets.symmetric(
-              horizontal: 10,
-              vertical: 5,
+              horizontal: 4,
+              vertical: 6,
             ),
-            elevation: 2,
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: Colors.green.shade500,
-                child: const Icon(
-                  Icons.folder,
-                  color: Colors.white,
+            elevation: 4,
+            shadowColor: projectColor.withOpacity(0.3),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                gradient: LinearGradient(
+                  colors: [Colors.white, projectColor.withOpacity(0.08)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
               ),
-              title: Text(
-                project['name'],
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              subtitle: Text('代碼: ${project['code']}'),
-              trailing: const Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-              ),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ProjectTreesPage(
-                      projectName: project['name'],
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                leading: Container(
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [projectColor.shade400, projectColor.shade600],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                );
-              },
+                  child: const Icon(
+                    Icons.folder,
+                    color: Colors.white,
+                    size: 26,
+                  ),
+                ),
+                title: Text(
+                  project['name'],
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: projectColor.shade700,
+                  ),
+                ),
+                subtitle: Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text('代碼: ${project['code']}'),
+                ),
+                trailing: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: projectColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.arrow_forward_ios,
+                    size: 16,
+                    color: projectColor,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ProjectTreesPage(
+                        projectName: project['name'],
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
           );
         },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => TreeSurveyPage(areaName: areaName),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.green.shade400, Colors.green.shade700],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.green.withOpacity(0.4),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
             ),
-          );
-        },
-        backgroundColor: Colors.green,
-        tooltip: '查看所有樹木',
-        child: const Icon(Icons.list),
+          ],
+        ),
+        child: FloatingActionButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => TreeSurveyPage(areaName: areaName),
+              ),
+            );
+          },
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          tooltip: '查看所有樹木',
+          child: const Icon(Icons.list, size: 28),
+        ),
       ),
     );
   }

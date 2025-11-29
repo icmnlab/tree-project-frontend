@@ -1351,10 +1351,38 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
     return Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? '編輯樹木 (V2)' : '新增樹木 (V2)'),
-        backgroundColor: Colors.teal.shade100,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.teal.shade600, Colors.teal.shade400],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        elevation: 4,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.teal.shade50, Colors.white],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: _isLoading
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.teal),
+                    ),
+                    const SizedBox(height: 16),
+                    Text('載入中...', style: TextStyle(color: Colors.teal.shade700)),
+                  ],
+                ),
+              )
           : Form(
               key: _formKey,
               child: Stepper(
@@ -1377,15 +1405,34 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
                     padding: const EdgeInsets.only(top: 16.0),
                     child: Row(
                       children: [
-                        ElevatedButton(
-                          onPressed: details.onStepContinue,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.teal,
-                            foregroundColor: Colors.white,
+                        Container(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [Colors.teal.shade400, Colors.teal.shade600],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.teal.withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
                           ),
-                          child: Text(_currentStep == getSteps().length - 1
-                              ? '提交 (V2)'
-                              : '下一步'),
+                          child: ElevatedButton(
+                            onPressed: details.onStepContinue,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              foregroundColor: Colors.white,
+                              shadowColor: Colors.transparent,
+                              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                            ),
+                            child: Text(_currentStep == getSteps().length - 1
+                                ? '提交 (V2)'
+                                : '下一步'),
+                          ),
                         ),
                         if (_currentStep > 0) ...[
                           const SizedBox(width: 12),
@@ -1401,6 +1448,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
                 steps: getSteps(),
               ),
             ),
+      ),
     );
   }
 }

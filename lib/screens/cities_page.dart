@@ -35,91 +35,182 @@ class CitiesPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('選擇縣市'),
-      ),
-      body: Column(
-        children: [
-          // 顯示全台灣選項
-          ListTile(
-            leading: const Icon(
-              Icons.public,
-              color: Colors.blue,
-              size: 36,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.green.shade700, Colors.green.shade500],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            title: const Text(
-              '全台灣',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
+          ),
+        ),
+        elevation: 4,
+      ),
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.green.shade50, Colors.white],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: Column(
+          children: [
+            // 顯示全台灣選項
+            Container(
+              margin: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.blue.shade400, Colors.blue.shade600],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.blue.withOpacity(0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.public,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+                title: const Text(
+                  '全台灣',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
+                    color: Colors.white,
+                  ),
+                ),
+                subtitle: Text(
+                  '查看所有區位',
+                  style: TextStyle(color: Colors.white.withOpacity(0.9)),
+                ),
+                trailing: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.arrow_forward, color: Colors.white),
+                ),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ProjectAreasPage(),
+                    ),
+                  );
+                },
               ),
             ),
-            tileColor: Colors.blue.shade50,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ProjectAreasPage(),
-                ),
-              );
-            },
-          ),
-          const Divider(thickness: 1),
+            const SizedBox(height: 4),
 
-          // 縣市列表
-          Expanded(
-            child: ListView.builder(
-              itemCount: cities.length,
-              itemBuilder: (context, index) {
-                final city = cities[index];
-                final bool isCity = city['name'].toString().endsWith('市');
+            // 縣市列表
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                itemCount: cities.length,
+                itemBuilder: (context, index) {
+                  final city = cities[index];
+                  final bool isCity = city['name'].toString().endsWith('市');
+                  final cityColor = isCity ? Colors.teal : Colors.green;
 
-                return Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 5,
-                  ),
-                  elevation: 2,
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: isCity
-                          ? Colors.green.shade600
-                          : Colors.green.shade300,
-                      child: Icon(
-                        city['icon'],
-                        color: Colors.white,
+                  return Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 5,
+                    ),
+                    elevation: 3,
+                    shadowColor: cityColor.withOpacity(0.3),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        gradient: LinearGradient(
+                          colors: [Colors.white, cityColor.withOpacity(0.08)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                       ),
-                    ),
-                    title: Text(
-                      city['name'],
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    trailing: const Icon(
-                      Icons.arrow_forward_ios,
-                      size: 16,
-                    ),
-                    onTap: () {
-                      // 從城市名稱中獲取縣市簡稱，如"台北市"變成"台北"
-                      final String simpleName = city['name']
-                          .toString()
-                          .replaceAll('市', '')
-                          .replaceAll('縣', '');
-
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ProjectAreasPage(
-                            cityName: simpleName,
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                        leading: Container(
+                          width: 46,
+                          height: 46,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [cityColor.shade400, cityColor.shade600],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            city['icon'],
+                            color: Colors.white,
+                            size: 24,
                           ),
                         ),
-                      );
-                    },
-                  ),
-                );
-              },
+                        title: Text(
+                          city['name'],
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: cityColor.shade700,
+                          ),
+                        ),
+                        trailing: Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: cityColor.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
+                            Icons.arrow_forward_ios,
+                            size: 16,
+                            color: cityColor,
+                          ),
+                        ),
+                        onTap: () {
+                          // 從城市名稱中獲取縣市簡稱，如"台北市"變成"台北"
+                          final String simpleName = city['name']
+                              .toString()
+                              .replaceAll('市', '')
+                              .replaceAll('縣', '');
+
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => ProjectAreasPage(
+                                cityName: simpleName,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

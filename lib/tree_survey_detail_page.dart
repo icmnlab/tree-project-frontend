@@ -191,11 +191,19 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.green.shade50, Colors.white],
+          ),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             _buildInfoCard('基本資訊', [
               _buildInfoRow('專案區位', _treeData['專案區位']?.toString() ?? '無'),
               _buildInfoRow('專案代碼', _treeData['專案代碼']?.toString() ?? '無'),
@@ -250,33 +258,101 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
               _buildInfoRow('調查時間', _treeData['調查時間']?.toString() ?? '無'),
             ]),
           ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildInfoCard(String title, List<Widget> children) {
+    // 根據標題選擇圖標和顏色
+    IconData cardIcon;
+    Color cardColor;
+    switch (title) {
+      case '基本資訊':
+        cardIcon = Icons.info_outline;
+        cardColor = Colors.blue;
+        break;
+      case '樹木編號':
+        cardIcon = Icons.tag;
+        cardColor = Colors.orange;
+        break;
+      case '樹種資訊':
+        cardIcon = Icons.park;
+        cardColor = Colors.green;
+        break;
+      case '位置資訊':
+        cardIcon = Icons.location_on;
+        cardColor = Colors.red;
+        break;
+      case '狀況資訊':
+        cardIcon = Icons.health_and_safety;
+        cardColor = Colors.teal;
+        break;
+      case '測量數據':
+        cardIcon = Icons.straighten;
+        cardColor = Colors.purple;
+        break;
+      case '碳數據':
+        cardIcon = Icons.eco;
+        cardColor = Colors.green.shade700;
+        break;
+      case '調查資訊':
+        cardIcon = Icons.assignment;
+        cardColor = Colors.indigo;
+        break;
+      default:
+        cardIcon = Icons.article;
+        cardColor = Colors.grey;
+    }
+
     return Card(
-      elevation: 2,
+      elevation: 4,
+      shadowColor: cardColor.withOpacity(0.3),
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
       ),
-      child: Padding(
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white,
+              cardColor.withOpacity(0.05),
+            ],
+          ),
+        ),
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              title,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.green,
-              ),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: cardColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(cardIcon, color: cardColor, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: cardColor,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            const Divider(),
+            const SizedBox(height: 12),
+            Divider(color: cardColor.withOpacity(0.2)),
+            const SizedBox(height: 4),
             ...children,
           ],
         ),

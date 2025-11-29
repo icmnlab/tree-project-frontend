@@ -36,42 +36,76 @@ class _MapPageState extends State<MapPage> {
   void initState() {
     super.initState();
     ApiService.triggerCleanup();
-    _requestLocationPermission();
     _loadMapData();
+    // 延遲請求權限，確保 widget 已完全建立
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkLocationPermission();
+    });
+  }
+
+  Future<void> _checkLocationPermission() async {
+    try {
+      final status = await Permission.location.status;
+      
+      if (status.isGranted) {
+        _safeSetState(() {
+          _hasLocationPermission = true;
+        });
+        _getCurrentLocation();
+      } else if (status.isDenied) {
+        // 尚未請求過，不主動請求，讓使用者點擊按鈕
+        _safeSetState(() {
+          _hasLocationPermission = false;
+        });
+      } else if (status.isPermanentlyDenied) {
+        _safeSetState(() {
+          _hasLocationPermission = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('檢查權限錯誤: $e');
+      _safeSetState(() {
+        _hasLocationPermission = false;
+      });
+    }
   }
 
   Future<void> _requestLocationPermission() async {
-    final status = await Permission.location.request();
-    
-    if (status.isGranted) {
-      _safeSetState(() {
-        _hasLocationPermission = true;
-      });
-      _getCurrentLocation();
-    } else if (status.isPermanentlyDenied) {
-      // 使用者永久拒絕，引導到設定頁面
-      if (mounted) {
-        showDialog(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: const Text('需要位置權限'),
-            content: const Text('請在設定中開啟位置權限，以便在地圖上顯示您的位置並進行樹木定位。'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('稍後再說'),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                  openAppSettings();
-                },
-                child: const Text('前往設定'),
-              ),
-            ],
-          ),
-        );
+    try {
+      final status = await Permission.location.request();
+      
+      if (status.isGranted) {
+        _safeSetState(() {
+          _hasLocationPermission = true;
+        });
+        _getCurrentLocation();
+      } else if (status.isPermanentlyDenied) {
+        // 使用者永久拒絕，引導到設定頁面
+        if (mounted) {
+          showDialog(
+            context: context,
+            builder: (ctx) => AlertDialog(
+              title: const Text('需要位置權限'),
+              content: const Text('請在設定中開啟位置權限，以便在地圖上顯示您的位置並進行樹木定位。'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('稍後再說'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    openAppSettings();
+                  },
+                  child: const Text('前往設定'),
+                ),
+              ],
+            ),
+          );
+        }
       }
+    } catch (e) {
+      debugPrint('請求權限錯誤: $e');
     }
   }
 
@@ -430,8 +464,8 @@ class _MapPageState extends State<MapPage> {
             compassEnabled: true,
             padding: EdgeInsets.only(
               top: _hasLocationPermission ? 140 : 220,
-              bottom: 80,
-              right: 10,
+              bottom: 100,
+              right: 60,
             ),
             mapType: _currentMapType,
           ),
@@ -493,15 +527,47 @@ class _MapPageState extends State<MapPage> {
                 ),
               ),
             ),
-          if (_hasLocationPermission)
-            Positioned(
-              left: 10,
-              bottom: 100,
+          // 定位按鈕 - 放在右下角 FAB 上方
+          Positioned(
+            right: 16,
+            bottom: 90,
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: _hasLocationPermission 
+                      ? const Color(0xFF0D47A1).withOpacity(0.3)
+                      : Colors.grey.withOpacity(0.3),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
               child: FloatingActionButton(
                 heroTag: 'locationButton',
                 mini: true,
-                backgroundColor: Colors.white,
+                backgroundColor: _hasLocationPermission 
+                  ? Colors.white 
+                  : Colors.grey.shade100,
+                elevation: 0,
                 onPressed: () async {
+                if (!_hasLocationPermission) {
+                  await _requestLocationPermission();
+                  return;
+                }
+                if (_currentPosition != null && _controller != null) {
+                  await _controller!.animateCamera(
+                    CameraUpdate.newLatLng(
+                      LatLng(
+                        _currentPosition!.latitude,
+                        _currentPosition!.longitude,
+                      ),
+                    ),
+                  );
+                } else {
+                  await _getCurrentLocation();
                   if (_currentPosition != null && _controller != null) {
                     await _controller!.animateCamera(
                       CameraUpdate.newLatLng(
@@ -511,13 +577,16 @@ class _MapPageState extends State<MapPage> {
                         ),
                       ),
                     );
-                  } else {
-                    await _getCurrentLocation();
                   }
-                },
-                child: Icon(Icons.my_location, color: Colors.grey[600]),
+                }
+              },
+                child: Icon(
+                  _hasLocationPermission ? Icons.my_location : Icons.location_disabled,
+                  color: _hasLocationPermission ? const Color(0xFF0D47A1) : Colors.grey,
+                ),
               ),
             ),
+          ),
           Positioned(
             top: _hasLocationPermission ? 0 : 85,
             left: 0,
@@ -626,21 +695,40 @@ class _MapPageState extends State<MapPage> {
                   ),
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0D47A1),
-                      borderRadius: BorderRadius.circular(16),
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF1565C0), Color(0xFF0D47A1)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF0D47A1).withOpacity(0.3),
+                          blurRadius: 6,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Icon(Icons.park, size: 16, color: Colors.white),
-                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.park, size: 14, color: Colors.white),
+                        ),
+                        const SizedBox(width: 8),
                         Text(
                           '共有 ${_markers.length} 棵樹',
                           style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
+                            fontSize: 13,
                           ),
                         ),
                       ],
@@ -653,39 +741,75 @@ class _MapPageState extends State<MapPage> {
         ),
           if (_isLoading)
             Container(
-              color: Colors.black.withOpacity(0.4),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.black.withOpacity(0.5),
+                    Colors.black.withOpacity(0.3),
+                  ],
+                ),
+              ),
               child: Center(
                 child: Card(
-                  elevation: 8,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
+                  elevation: 12,
+                  shadowColor: const Color(0xFF0D47A1).withOpacity(0.4),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  child: Container(
+                    padding: const EdgeInsets.all(28),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(20),
+                      gradient: const LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [Colors.white, Color(0xFFF5F9FF)],
+                      ),
+                    ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const SizedBox(
-                          width: 48,
-                          height: 48,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 3,
-                            valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0D47A1)),
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0D47A1).withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Center(
+                            child: SizedBox(
+                              width: 36,
+                              height: 36,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 3,
+                                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF0D47A1)),
+                              ),
+                            ),
                           ),
                         ),
                         const SizedBox(height: 20),
                         const Text(
                           '載入地圖資料中...',
                           style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w500,
+                            fontSize: 17,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFF1A237E),
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Text(
-                          '請稍候',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                          ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.park_outlined, size: 16, color: Colors.green.shade400),
+                            const SizedBox(width: 6),
+                            Text(
+                              '正在取得樹木位置',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -695,10 +819,25 @@ class _MapPageState extends State<MapPage> {
             ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _zoomToMarkers,
-        tooltip: '顯示所有標記',
-        child: const Icon(Icons.zoom_out_map),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF0D47A1).withOpacity(0.4),
+              blurRadius: 12,
+              spreadRadius: 2,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: FloatingActionButton(
+          onPressed: _zoomToMarkers,
+          tooltip: '顯示所有標記',
+          backgroundColor: const Color(0xFF0D47A1),
+          elevation: 0,
+          child: const Icon(Icons.zoom_out_map, color: Colors.white),
+        ),
       ),
     );
   }
