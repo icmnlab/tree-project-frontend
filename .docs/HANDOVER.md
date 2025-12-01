@@ -1,8 +1,9 @@
 # 🌳 TreeAI Frontend 交接文件
 
-> **最後更新**: 2024-12-02  
+> **最後更新**: 2025-12-02  
 > **版本**: v14.0.0  
-> **框架**: Flutter 3.x
+> **框架**: Flutter 3.x  
+> **聯絡方式**: 411135055@gms.ndhu.edu.tw
 
 ---
 
@@ -19,6 +20,7 @@
 - **狀態管理**: Riverpod
 - **地圖**: Google Maps Flutter
 - **HTTP**: Dio
+- **藍牙**: flutter_blue_plus (VLGEO2 整合)
 - **UI 風格**: TIPC 深藍色系
 
 ---
@@ -52,9 +54,12 @@ frontend/
 │   │   ├── home_page.dart           # 首頁
 │   │   ├── login_page.dart          # 登入頁
 │   │   ├── cities_page.dart         # 城市選擇
-│   │   └── project_areas_page.dart  # 專案區域
+│   │   ├── project_areas_page.dart  # 專案區域
+│   │   └── ble_import_page.dart     # ⭐ VLGEO2 藍牙匯入（914 行）
 │   ├── services/
-│   │   └── carbon_sink_service.dart # 碳匯計算服務
+│   │   ├── carbon_sink_service.dart # 碳匯計算服務
+│   │   ├── ble_data_processor.dart  # ⭐ CSV 解析（220 行）
+│   │   └── ble_field_validator.dart # ⭐ 欄位驗證（298 行）
 │   ├── models/
 │   │   └── tree_species.dart        # 樹種資料模型
 │   ├── ai_assistant_page.dart       # AI 聊天頁面 ⭐
@@ -71,7 +76,35 @@ frontend/
 
 ---
 
-## 🔧 開發環境設定
+## � VLGEO2 儀器整合 ⭐ 重要功能
+
+### 技術概覽
+| 項目 | 說明 |
+|------|------|
+| **連接方式** | BLE (Nordic UART Service) |
+| **Service UUID** | 6E400001-B5A3-F393-E0A9-E50E24DCCA9E |
+| **數據格式** | CSV (33 欄位) |
+| **精度** | 與官方 APP 誤差 **0.9%** |
+
+### 核心檔案
+```
+lib/
+├── screens/
+│   └── ble_import_page.dart        # BLE 連接與數據接收
+└── services/
+    ├── ble_data_processor.dart     # CSV 解析器
+    └── ble_field_validator.dart    # 雜訊過濾 (Layer 4+5)
+```
+
+### 雜訊處理技術
+1. **Stage 1**: 封包頭偵測 (0x44 0xCD 0x00)
+2. **Stage 2**: 全域配對雜訊清理
+3. **Layer 4**: Context-Aware Letter Filtering
+4. **Layer 5**: Field-Specific Validation
+
+---
+
+## �🔧 開發環境設定
 
 ### 前置需求
 - Flutter SDK 3.x
@@ -92,6 +125,12 @@ flutter run
 ---
 
 ## 🚀 近期更新
+
+### VLGEO2 藍牙傳輸 📡
+- ✅ Nordic UART Service 連接
+- ✅ CSV 33 欄位完整解析
+- ✅ PacketLogger 雜訊過濾
+- ✅ 精度驗證：誤差 0.9%
 
 ### UI/UX 改進
 - ✅ TIPC 深藍色系配色
