@@ -9,6 +9,7 @@ import '../services/api_service.dart'; // 引入 ApiService
 import '../services/project_service.dart'; // 引入 ProjectService
 import '../services/tree_service.dart'; // 引入 TreeService
 import 'widgets/add_tree_dialog.dart'; // 引入 AddTreeSelectionDialog
+import 'constants/colors.dart';
 
 class ProjectTreesPage extends StatefulWidget {
   final String projectName;
@@ -400,7 +401,7 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
-                                  colors: [Colors.green.shade50, Colors.green.shade100],
+                                  colors: [AppColors.surfaceLight, AppColors.surfaceLight],
                                   begin: Alignment.centerLeft,
                                   end: Alignment.centerRight,
                                 ),
@@ -408,7 +409,7 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
                               ),
                               child: Row(
                                 children: [
-                                  Icon(Icons.forest, color: Colors.green.shade700),
+                                  Icon(Icons.forest, color: AppColors.forestGreen),
                                   const SizedBox(width: 8),
                                   Text(
                                     '最近添加的樹木',
@@ -416,7 +417,7 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
                                         .textTheme
                                         .titleLarge!
                                         .copyWith(
-                                          color: Colors.green.shade700,
+                                          color: AppColors.forestGreen,
                                           fontWeight: FontWeight.bold,
                                         ),
                                   ),
@@ -435,7 +436,7 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(12),
                                       gradient: LinearGradient(
-                                        colors: [Colors.white, Colors.green.shade50],
+                                        colors: [Colors.white, AppColors.surfaceLight],
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
                                       ),
@@ -447,7 +448,7 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
                                         height: 48,
                                         decoration: BoxDecoration(
                                           gradient: LinearGradient(
-                                            colors: [Colors.green.shade400, Colors.green.shade600],
+                                            colors: [AppColors.leafGreen, AppColors.forestGreen],
                                             begin: Alignment.topLeft,
                                             end: Alignment.bottomRight,
                                           ),
@@ -459,7 +460,7 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
                                         tree['樹種名稱'] ?? '未知樹種',
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
-                                          color: Colors.green.shade800,
+                                          color: AppColors.darkGreen,
                                         ),
                                       ),
                                       subtitle: Column(
@@ -484,14 +485,14 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
       floatingActionButton: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.green.shade400, Colors.green.shade700],
+            colors: [AppColors.leafGreen, AppColors.forestGreen],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: Colors.green.withOpacity(0.4),
+              color: AppColors.forestGreen.withOpacity(0.4),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),

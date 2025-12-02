@@ -4,6 +4,7 @@ import '../project_trees_page.dart';
 import '../tree_survey_page.dart';
 import 'cities_page.dart';
 import '../services/api_service.dart';
+import '../constants/colors.dart';
 
 class ProjectAreasPage extends StatefulWidget {
   final String? cityName;
@@ -650,14 +651,14 @@ class _ProjectsByAreaPage extends StatelessWidget {
       floatingActionButton: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.green.shade400, Colors.green.shade700],
+            colors: [AppColors.leafGreen, AppColors.forestGreen],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: Colors.green.withOpacity(0.4),
+              color: AppColors.forestGreen.withOpacity(0.4),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),

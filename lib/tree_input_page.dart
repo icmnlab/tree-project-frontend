@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'constants/colors.dart';
 // import 'package:http/http.dart' as http; // Refactored to use services
 import 'dart:convert';
 import 'package:geolocator/geolocator.dart';
@@ -774,18 +775,18 @@ class _TreeInputPageState extends State<TreeInputPage> {
           labelText: label,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.green),
+            borderSide: BorderSide(color: AppColors.forestGreen),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.green.shade200),
+            borderSide: BorderSide(color: AppColors.forestGreen.withOpacity(0.3)),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: Colors.green.shade600, width: 2),
+            borderSide: BorderSide(color: AppColors.forestGreen, width: 2),
           ),
           filled: true,
-          fillColor: Colors.green.shade50,
+          fillColor: AppColors.surfaceLight,
         ),
         keyboardType: keyboardType,
         validator: validator,
@@ -894,7 +895,7 @@ class _TreeInputPageState extends State<TreeInputPage> {
           const SizedBox(height: 8),
           Container(
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.green.shade200),
+              border: Border.all(color: AppColors.forestGreen.withOpacity(0.3)),
               borderRadius: BorderRadius.circular(12),
             ),
             child: ListView.builder(
@@ -930,9 +931,9 @@ class _TreeInputPageState extends State<TreeInputPage> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.green.shade200),
+                  border: Border.all(color: AppColors.forestGreen.withOpacity(0.3)),
                   borderRadius: BorderRadius.circular(12),
-                  color: Colors.green.shade50,
+                  color: AppColors.surfaceLight,
                 ),
                 child: Row(
                   children: [
@@ -948,7 +949,7 @@ class _TreeInputPageState extends State<TreeInputPage> {
                         ),
                       ),
                     ),
-                    const Icon(Icons.search, color: Colors.green),
+                    Icon(Icons.search, color: AppColors.forestGreen),
                   ],
                 ),
               ),
@@ -976,12 +977,12 @@ class _TreeInputPageState extends State<TreeInputPage> {
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.green.shade200),
+                  borderSide: BorderSide(color: AppColors.forestGreen.withOpacity(0.3)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
                   borderSide:
-                      BorderSide(color: Colors.green.shade600, width: 2),
+                      BorderSide(color: AppColors.forestGreen, width: 2),
                 ),
                 filled: true,
                 fillColor: Colors.grey.shade100,
@@ -1742,14 +1743,14 @@ class _TreeInputPageState extends State<TreeInputPage> {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.green.shade200),
+              borderSide: BorderSide(color: AppColors.forestGreen.withOpacity(0.3)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.green.shade600, width: 2),
+              borderSide: BorderSide(color: AppColors.forestGreen, width: 2),
             ),
             filled: true,
-            fillColor: Colors.green.shade50,
+            fillColor: AppColors.surfaceLight,
           ),
           validator: (value) => value?.isEmpty ?? true ? '請選擇專案區位' : null,
         ),
@@ -1782,14 +1783,14 @@ class _TreeInputPageState extends State<TreeInputPage> {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.green.shade200),
+              borderSide: BorderSide(color: AppColors.forestGreen.withOpacity(0.3)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.green.shade600, width: 2),
+              borderSide: BorderSide(color: AppColors.forestGreen, width: 2),
             ),
             filled: true,
-            fillColor: Colors.green.shade50,
+            fillColor: AppColors.surfaceLight,
           ),
           validator: (value) => value?.isEmpty ?? true ? '請選擇專案名稱' : null,
         ),
@@ -1818,11 +1819,11 @@ class _TreeInputPageState extends State<TreeInputPage> {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.green.shade200),
+              borderSide: BorderSide(color: AppColors.forestGreen.withOpacity(0.3)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.green.shade600, width: 2),
+              borderSide: BorderSide(color: AppColors.forestGreen, width: 2),
             ),
             filled: true,
             fillColor: Colors.grey.shade100,
@@ -2262,12 +2263,12 @@ class _TreeInputPageState extends State<TreeInputPage> {
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.green.shade200),
+                          borderSide: BorderSide(color: AppColors.forestGreen.withOpacity(0.3)),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(
-                              color: Colors.green.shade600, width: 2),
+                              color: AppColors.forestGreen, width: 2),
                         ),
                         filled: true,
                         fillColor: Colors.grey.shade100,
@@ -2299,12 +2300,12 @@ class _TreeInputPageState extends State<TreeInputPage> {
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.green.shade200),
+                          borderSide: BorderSide(color: AppColors.forestGreen.withOpacity(0.3)),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
                           borderSide: BorderSide(
-                              color: Colors.green.shade600, width: 2),
+                              color: AppColors.forestGreen, width: 2),
                         ),
                         filled: true,
                         fillColor: Colors.grey.shade100,
@@ -2478,16 +2479,41 @@ class _TreeInputPageState extends State<TreeInputPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(_isEditing ? '編輯樹木資料' : '新增樹木資料'),
-          backgroundColor: Colors.green.shade100,
           elevation: 0,
+          backgroundColor: Colors.transparent,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [AppColors.portBlue, AppColors.portBlue.withOpacity(0.8)],
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.portBlue.withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+          ),
+          title: Text(
+            _isEditing ? '編輯樹木資料' : '新增樹木資料',
+            style: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w600,
+              fontSize: 20,
+              letterSpacing: 0.5,
+            ),
+          ),
+          iconTheme: const IconThemeData(color: Colors.white),
         ),
         body: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Colors.green.shade50, Colors.white],
+              colors: [AppColors.surfaceLight, Colors.white],
             ),
           ),
           child: Scrollbar(
@@ -2526,30 +2552,53 @@ class _TreeInputPageState extends State<TreeInputPage> {
                         steps: getSteps(),
                         controlsBuilder: (context, details) {
                           return Padding(
-                            padding: const EdgeInsets.only(top: 16.0),
+                            padding: const EdgeInsets.only(top: 20.0),
                             child: Row(
                               children: [
-                                ElevatedButton(
-                                  onPressed: details.onStepContinue,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green.shade400,
-                                    foregroundColor: Colors.white,
-                                    elevation: 2,
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 24, vertical: 12),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      colors: [AppColors.portBlue, AppColors.portBlue.withOpacity(0.85)],
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                    ),
+                                    borderRadius: BorderRadius.circular(14),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: AppColors.portBlue.withOpacity(0.3),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
                                   ),
-                                  child: Text(
-                                      _currentStep == getSteps().length - 1
-                                          ? '提交'
-                                          : '下一步'),
+                                  child: ElevatedButton(
+                                    onPressed: details.onStepContinue,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.transparent,
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 28, vertical: 14),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(14),
+                                      ),
+                                    ),
+                                    child: Text(
+                                        _currentStep == getSteps().length - 1
+                                            ? '提交'
+                                            : '下一步',
+                                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                                  ),
                                 ),
                                 if (_currentStep > 0) ...[
                                   const SizedBox(width: 12),
                                   TextButton(
                                     onPressed: details.onStepCancel,
                                     style: TextButton.styleFrom(
-                                        foregroundColor: Colors.green.shade700),
-                                    child: const Text('上一步'),
+                                      foregroundColor: AppColors.neutral600,
+                                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                                    ),
+                                    child: const Text('上一步', style: TextStyle(fontWeight: FontWeight.w500)),
                                   ),
                                 ],
                               ],
@@ -2717,56 +2766,109 @@ class _TreeBatchUploadWidgetState extends State<TreeBatchUploadWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+    return Container(
+      margin: const EdgeInsets.only(top: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(20.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              '批量上傳樹木資料',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '您可以使用Excel或CSV檔案批量導入樹木資料。請確保您的檔案格式正確。',
-              style: TextStyle(
-                color: Colors.grey[700],
-              ),
-            ),
-            const SizedBox(height: 16),
             Row(
               children: [
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.download),
-                  label: const Text('下載模板'),
-                  onPressed: _downloadTemplate,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.green[700],
-                    side: BorderSide(color: Colors.green[700]!),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.portBlue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.upload_file_rounded, color: AppColors.portBlue, size: 22),
+                ),
+                const SizedBox(width: 14),
+                const Expanded(
+                  child: Text(
+                    '批量上傳樹木資料',
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
-                const SizedBox(width: 16),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.upload_file),
-                  label: const Text('選擇並上傳檔案'),
-                  onPressed: _isUploading ? null : _pickAndUploadFile,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green[700],
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              '使用 Excel 或 CSV 檔案批量導入樹木資料，請確保格式正確。',
+              style: TextStyle(
+                color: AppColors.neutral600,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.download_rounded),
+                    label: const Text('下載模板'),
+                    onPressed: _downloadTemplate,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.portBlue,
+                      side: BorderSide(color: AppColors.portBlue.withOpacity(0.5)),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [AppColors.portBlue, AppColors.portBlue.withOpacity(0.85)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.portBlue.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.upload_rounded),
+                      label: const Text('選擇並上傳'),
+                      onPressed: _isUploading ? null : _pickAndUploadFile,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -2777,26 +2879,52 @@ class _TreeBatchUploadWidgetState extends State<TreeBatchUploadWidget> {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  LinearProgressIndicator(
-                    value: _uploadProgress,
-                    backgroundColor: Colors.grey[300],
-                    valueColor:
-                        const AlwaysStoppedAnimation<Color>(Colors.green),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: _uploadProgress,
+                      backgroundColor: AppColors.neutral200,
+                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.portBlue),
+                      minHeight: 6,
+                    ),
                   ),
                   const SizedBox(height: 8),
                 ],
               ),
             if (_statusMessage.isNotEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 8.0),
-                child: Text(
-                  _statusMessage,
-                  style: TextStyle(
-                    color: _statusMessage.contains('錯誤') ||
-                            _statusMessage.contains('失敗')
-                        ? Colors.red
-                        : Colors.green[700],
-                  ),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: _statusMessage.contains('錯誤') || _statusMessage.contains('失敗')
+                      ? AppColors.error.withOpacity(0.1)
+                      : AppColors.forestGreen.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _statusMessage.contains('錯誤') || _statusMessage.contains('失敗')
+                          ? Icons.error_outline_rounded
+                          : Icons.check_circle_outline_rounded,
+                      color: _statusMessage.contains('錯誤') || _statusMessage.contains('失敗')
+                          ? AppColors.error
+                          : AppColors.forestGreen,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        _statusMessage,
+                        style: TextStyle(
+                          color: _statusMessage.contains('錯誤') || _statusMessage.contains('失敗')
+                              ? AppColors.error
+                              : AppColors.forestGreen,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
           ],

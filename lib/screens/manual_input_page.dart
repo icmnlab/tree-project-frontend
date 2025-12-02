@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import '../constants/colors.dart';
 import '../services/project_area_service.dart';
 import '../services/project_service.dart';
 import '../services/species_service.dart';
@@ -171,7 +172,7 @@ class _ManualInputPageState extends State<ManualInputPage> {
             preferredSize: const Size.fromHeight(4.0),
             child: LinearProgressIndicator(
               value: (_currentStep + 1) / 3,
-              backgroundColor: Colors.green.shade100,
+              backgroundColor: AppColors.surfaceLight,
               valueColor: const AlwaysStoppedAnimation<Color>(Colors.green),
             ),
           ),
@@ -403,7 +404,7 @@ class _ManualInputPageState extends State<ManualInputPage> {
 
                 return Container(
                   key: _itemKeys[index],
-                  color: isSelected ? Colors.green.shade50 : null,
+                  color: isSelected ? AppColors.surfaceLight : null,
                   child: ListTile(
                     leading: GestureDetector(
                       behavior: HitTestBehavior.opaque,

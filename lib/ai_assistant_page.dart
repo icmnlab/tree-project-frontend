@@ -7,6 +7,7 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:logger/logger.dart';
 
+import 'constants/colors.dart';
 import 'widgets/loading_indicator.dart';
 import 'widgets/error_dialog.dart';
 import 'services/ai_service.dart';
@@ -35,7 +36,7 @@ class ChatMessage {
   });
 }
 
-// 消息氣泡組件
+// 現代化消息氣泡組件 v2.0
 class _MessageBubble extends StatelessWidget {
   final ChatMessage message;
 
@@ -43,41 +44,147 @@ class _MessageBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: message.isUser ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: message.isUser ? Colors.green.shade100 : Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.green.shade200),
-        ),
-        child: Column(
-          crossAxisAlignment: message.isUser
-              ? CrossAxisAlignment.end
-              : CrossAxisAlignment.start,
-          children: [
-            MarkdownBody(
-              data: message.content,
-              selectable: true,
-              styleSheet: MarkdownStyleSheet(
-                p: TextStyle(
-                  color: message.isUser ? Colors.black87 : Colors.green.shade900,
-                ),
+    final isUser = message.isUser;
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+      child: Row(
+        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // AI 頭像（左側）
+          if (!isUser) _buildAvatar(isUser),
+          if (!isUser) const SizedBox(width: 12),
+          
+          // 訊息氣泡
+          Flexible(
+            child: Container(
+              constraints: BoxConstraints(
+                maxWidth: MediaQuery.of(context).size.width * 0.75,
               ),
-              onTapLink: (text, href, title) {
-                if (href != null) {
-                  launchUrl(Uri.parse(href), mode: LaunchMode.externalApplication);
-                }
-              },
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                gradient: isUser
+                    ? LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          AppColors.portBlue.withOpacity(0.15),
+                          AppColors.portBlue.withOpacity(0.08),
+                        ],
+                      )
+                    : null,
+                color: isUser ? null : AppColors.surfaceLight,
+                borderRadius: BorderRadius.only(
+                  topLeft: const Radius.circular(20),
+                  topRight: const Radius.circular(20),
+                  bottomLeft: Radius.circular(isUser ? 20 : 4),
+                  bottomRight: Radius.circular(isUser ? 4 : 20),
+                ),
+                border: Border.all(
+                  color: isUser 
+                      ? AppColors.portBlue.withOpacity(0.2)
+                      : AppColors.neutral200,
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: isUser
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
+                children: [
+                  MarkdownBody(
+                    data: message.content,
+                    selectable: true,
+                    styleSheet: MarkdownStyleSheet(
+                      p: TextStyle(
+                        color: isUser ? AppColors.neutral800 : AppColors.neutral900,
+                        fontSize: 15,
+                        height: 1.5,
+                      ),
+                      h1: TextStyle(
+                        color: AppColors.neutral900,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      h2: TextStyle(
+                        color: AppColors.neutral900,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      code: TextStyle(
+                        backgroundColor: AppColors.neutral100,
+                        color: AppColors.forestGreen,
+                        fontSize: 13,
+                      ),
+                      codeblockDecoration: BoxDecoration(
+                        color: AppColors.neutral100,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      blockquoteDecoration: BoxDecoration(
+                        border: Border(
+                          left: BorderSide(
+                            color: AppColors.forestGreen,
+                            width: 3,
+                          ),
+                        ),
+                      ),
+                    ),
+                    onTapLink: (text, href, title) {
+                      if (href != null) {
+                        launchUrl(Uri.parse(href), mode: LaunchMode.externalApplication);
+                      }
+                    },
+                  ),
+                  if (!isUser &&
+                      message.sources != null &&
+                      message.sources!.isNotEmpty)
+                    _buildSourcesExpansionTile(context, message.sources!),
+                ],
+              ),
             ),
-            if (!message.isUser &&
-                message.sources != null &&
-                message.sources!.isNotEmpty)
-              _buildSourcesExpansionTile(context, message.sources!),
-          ],
+          ),
+          
+          // 用戶頭像（右側）
+          if (isUser) const SizedBox(width: 12),
+          if (isUser) _buildAvatar(isUser),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAvatar(bool isUser) {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: isUser
+              ? [AppColors.portBlue, AppColors.primaryLight]
+              : [AppColors.forestGreen, AppColors.accentLight],
         ),
+        borderRadius: BorderRadius.circular(10),
+        boxShadow: [
+          BoxShadow(
+            color: (isUser ? AppColors.portBlue : AppColors.forestGreen).withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Icon(
+        isUser ? Icons.person_rounded : Icons.eco_rounded,
+        size: 20,
+        color: Colors.white,
       ),
     );
   }
@@ -95,7 +202,7 @@ class _MessageBubble extends StatelessWidget {
           '查看 ${sources.length} 個資料來源', // 更新標題
           style: TextStyle(
             fontSize: 12,
-            color: Colors.green.shade700,
+            color: AppColors.forestGreen,
             fontWeight: FontWeight.normal,
           ),
         ),
@@ -1436,7 +1543,7 @@ ${DateTime.now().year + 5}: 286.20 噸CO₂
     return Scaffold(
       appBar: AppBar(
         title: const Text('AI 永續碳匯助手'),
-        backgroundColor: Colors.green.shade100,
+        backgroundColor: AppColors.surfaceLight,
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
@@ -1457,7 +1564,7 @@ ${DateTime.now().year + 5}: 286.20 噸CO₂
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.green.shade50, Colors.white],
+            colors: [AppColors.surfaceLight, Colors.white],
           ),
         ),
         child: TabBarView(
@@ -1523,61 +1630,146 @@ ${DateTime.now().year + 5}: 286.20 噸CO₂
         ),
         if (_isLoading)
           Padding(
-            padding: const EdgeInsets.all(8.0),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  width: 36,
+                  height: 36,
                   decoration: BoxDecoration(
-                    color: Colors.green.shade100,
-                    borderRadius: BorderRadius.circular(20),
+                    gradient: AppColors.greenGradient,
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.green,
+                  child: const Icon(
+                    Icons.eco_rounded,
+                    size: 20,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceLight,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: AppColors.neutral200,
+                      width: 1,
                     ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: AppColors.forestGreen,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Text(
+                        'AI 正在思考...',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.neutral600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
           ),
-        Padding(
-          padding: const EdgeInsets.all(8.0),
+        // 現代化輸入區域 v2.0
+        Container(
+          padding: const EdgeInsets.all(16.0),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
           child: Column(
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _messageController,
-                      decoration: InputDecoration(
-                        hintText: '輸入訊息...',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(20),
-                          borderSide: BorderSide(color: Colors.green.shade200),
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceLight,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: AppColors.neutral200,
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _messageController,
+                        maxLines: null,
+                        decoration: InputDecoration(
+                          hintText: '輸入訊息，向 AI 助手提問...',
+                          hintStyle: TextStyle(
+                            color: AppColors.neutral500,
+                            fontSize: 15,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 14,
+                          ),
                         ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(20),
-                          borderSide: BorderSide(color: Colors.green.shade400),
+                        style: TextStyle(
+                          color: AppColors.neutral900,
+                          fontSize: 15,
+                          height: 1.4,
                         ),
-                        filled: true,
-                        fillColor: Colors.white,
+                        onSubmitted: (_) => _sendMessage(),
                       ),
-                      onSubmitted: (_) => _sendMessage(),
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  FloatingActionButton(
-                    onPressed: _sendMessage,
-                    backgroundColor: Colors.green.shade400,
-                    child: const Icon(Icons.send),
-                  ),
-                ],
+                    Padding(
+                      padding: const EdgeInsets.only(right: 8, bottom: 8),
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: AppColors.greenGradient,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.forestGreen.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: _sendMessage,
+                            borderRadius: BorderRadius.circular(20),
+                            child: Container(
+                              width: 44,
+                              height: 44,
+                              alignment: Alignment.center,
+                              child: const Icon(
+                                Icons.arrow_upward_rounded,
+                                color: Colors.white,
+                                size: 22,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 16),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
@@ -1589,18 +1781,15 @@ ${DateTime.now().year + 5}: 286.20 噸CO₂
                         _fetchSpeciesRecommendations();
                       },
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     _buildQuickActionButton(
                       icon: Icons.emoji_nature,
                       label: '管理建議',
                       onPressed: () {
-                        // _fetchManagementAdvice(); // Old way, now directly switch tab
-                        _tabController.animateTo(
-                          3,
-                        ); // Navigate to Management Actions tab
+                        _tabController.animateTo(3);
                       },
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     _buildQuickActionButton(
                       icon: Icons.school,
                       label: '碳匯知識',
@@ -1608,18 +1797,15 @@ ${DateTime.now().year + 5}: 286.20 噸CO₂
                         _showEducationTopicsDialog();
                       },
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     _buildQuickActionButton(
                       icon: Icons.compare_arrows,
                       label: '樹種比較',
                       onPressed: () {
-                        // _showSpeciesComparisonDialog(context); // Old way, now directly switch tab
-                        _tabController.animateTo(
-                          1,
-                        ); // Navigate to Species Comparison tab
+                        _tabController.animateTo(1);
                       },
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     _buildQuickActionButton(
                       icon: Icons.tune,
                       label: '選擇區域',
@@ -1627,7 +1813,7 @@ ${DateTime.now().year + 5}: 286.20 噸CO₂
                         _showAreaSelectionDialog();
                       },
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 10),
                     _buildQuickActionButton(
                       icon: Icons.co2,
                       label: '碳足跡計算',
@@ -1650,14 +1836,41 @@ ${DateTime.now().year + 5}: 286.20 噸CO₂
     required String label,
     required VoidCallback onPressed,
   }) {
-    return ElevatedButton.icon(
-      icon: Icon(icon, size: 18),
-      label: Text(label),
-      onPressed: onPressed,
-      style: ElevatedButton.styleFrom(
-        foregroundColor: Colors.white,
-        backgroundColor: Colors.green.shade700,
-        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceLight,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: AppColors.forestGreen.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                icon,
+                size: 18,
+                color: AppColors.forestGreen,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.forestGreen,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -2294,7 +2507,7 @@ ${DateTime.now().year + 5}: 286.20 噸CO₂
                 onPressed:
                     _isCalculatingFootprint ? null : _calculateCarbonFootprint,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green.shade700,
+                  backgroundColor: AppColors.forestGreen,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   textStyle: const TextStyle(fontSize: 16),
@@ -3543,7 +3756,7 @@ ${DateTime.now().year + 5}: 286.20 噸CO₂
                       );
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue.shade700,
+                      backgroundColor: AppColors.portBlue,
                       foregroundColor: Colors.white,
                     ),
                   ),

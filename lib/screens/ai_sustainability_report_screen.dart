@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 import '../services/api_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import '../constants/colors.dart';
 
 class AISustainabilityReportScreen extends StatefulWidget {
   const AISustainabilityReportScreen({Key? key}) : super(key: key);
@@ -448,7 +449,7 @@ class _AISustainabilityReportScreenState
           children: [
             Row(
               children: [
-                Icon(Icons.analytics, color: Colors.green.shade700),
+                Icon(Icons.analytics, color: AppColors.forestGreen),
                 const SizedBox(width: 8),
                 Text('AI 永續發展分析',
                     style: Theme.of(context).textTheme.titleLarge),

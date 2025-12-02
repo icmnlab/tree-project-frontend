@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'tree_input_page.dart';
+import 'constants/colors.dart';
 
 class ScanQRCodePage extends StatefulWidget {
   const ScanQRCodePage({Key? key}) : super(key: key);
@@ -127,7 +128,7 @@ class _ScanQRCodePageState extends State<ScanQRCodePage> {
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.green.shade700, Colors.green.shade500],
+              colors: [AppColors.forestGreen, AppColors.leafGreen],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -187,7 +188,7 @@ class _ScanQRCodePageState extends State<ScanQRCodePage> {
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                colors: [Colors.green.shade400, Colors.green.shade600],
+                                colors: [AppColors.leafGreen, AppColors.forestGreen],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),

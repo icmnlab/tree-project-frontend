@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/species_identification_service.dart';
+import '../constants/colors.dart';
 
 /// 樹種辨識頁面
 /// 支援相機拍攝或從相簿選取圖片進行辨識
@@ -107,7 +108,7 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
           ],
         ),
         centerTitle: true,
-        backgroundColor: Colors.green.shade600,
+        backgroundColor: AppColors.forestGreen,
         foregroundColor: Colors.white,
         actions: [
           IconButton(
@@ -247,7 +248,7 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
                       });
                     }
                   },
-                  selectedColor: Colors.green.shade200,
+                  selectedColor: AppColors.forestGreen.withOpacity(0.3),
                 );
               }).toList(),
             ),
@@ -265,7 +266,7 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
         borderRadius: BorderRadius.circular(16),
         gradient: canIdentify 
             ? LinearGradient(
-                colors: [Colors.green.shade600, Colors.teal.shade600],
+                colors: [AppColors.forestGreen, Colors.teal.shade600],
               )
             : null,
         color: canIdentify ? null : Colors.grey.shade300,
@@ -380,7 +381,7 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
             decoration: BoxDecoration(
               color: remainingRequests < 50 
                   ? Colors.orange.shade50 
-                  : Colors.green.shade50,
+                  : AppColors.surfaceLight,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Row(
@@ -396,7 +397,7 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
                 Text(
                   '今日剩餘 $remainingRequests 次辨識',
                   style: TextStyle(
-                    color: remainingRequests < 50 ? Colors.orange.shade700 : Colors.green.shade700,
+                    color: remainingRequests < 50 ? Colors.orange.shade700 : AppColors.forestGreen,
                     fontSize: 13,
                     fontWeight: FontWeight.w500,
                   ),
@@ -457,10 +458,10 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Colors.green.shade50, Colors.teal.shade50],
+          colors: [AppColors.surfaceLight, Colors.teal.shade50],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.green.shade200),
+        border: Border.all(color: AppColors.forestGreen.withOpacity(0.3)),
       ),
       child: Column(
         children: [
@@ -468,7 +469,7 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.green.shade600,
+              color: AppColors.forestGreen,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(19)),
             ),
             child: Row(
@@ -535,7 +536,7 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                     fontStyle: FontStyle.italic,
-                    color: Colors.green.shade800,
+                    color: AppColors.darkGreen,
                   ),
                 ),
                 
@@ -557,18 +558,18 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.green.shade100,
+                      color: AppColors.surfaceLight,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.category_outlined, size: 14, color: Colors.green.shade700),
+                        Icon(Icons.category_outlined, size: 14, color: AppColors.forestGreen),
                         const SizedBox(width: 6),
                         Text(
                           family,
                           style: TextStyle(
-                            color: Colors.green.shade700,
+                            color: AppColors.forestGreen,
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                           ),
@@ -632,10 +633,10 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.blue.shade200),
+        border: Border.all(color: AppColors.portBlueLight.withOpacity(0.3)),
         boxShadow: [
           BoxShadow(
-            color: Colors.blue.withOpacity(0.1),
+            color: AppColors.portBlue.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -647,7 +648,7 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.blue.shade50,
+              color: AppColors.portBlueLight.withOpacity(0.1),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
             ),
             child: Row(
@@ -655,17 +656,17 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.blue.shade100,
+                    color: AppColors.portBlueLight.withOpacity(0.2),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.eco, color: Colors.blue.shade700, size: 18),
+                  child: Icon(Icons.eco, color: AppColors.portBlue, size: 18),
                 ),
                 const SizedBox(width: 10),
                 Text(
                   '本地資料庫匹配',
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
-                    color: Colors.blue.shade800,
+                    color: AppColors.portBlueDark,
                     fontSize: 15,
                   ),
                 ),
@@ -702,10 +703,10 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.green.shade200),
+        border: Border.all(color: AppColors.forestGreen.withOpacity(0.3)),
         boxShadow: [
           BoxShadow(
-            color: Colors.green.withOpacity(0.1),
+            color: AppColors.forestGreen.withOpacity(0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -717,7 +718,7 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: Colors.green.shade50,
+              color: AppColors.surfaceLight,
               borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
             ),
             child: Row(
@@ -725,10 +726,10 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: Colors.green.shade100,
+                    color: AppColors.surfaceLight,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.verified_outlined, color: Colors.green.shade700, size: 18),
+                  child: Icon(Icons.verified_outlined, color: AppColors.forestGreen, size: 18),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -736,7 +737,7 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
                     'GBIF 學術驗證',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
-                      color: Colors.green.shade800,
+                      color: AppColors.darkGreen,
                       fontSize: 15,
                     ),
                   ),
@@ -745,7 +746,7 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Colors.green.shade600,
+                      color: AppColors.forestGreen,
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
@@ -777,10 +778,10 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
                       onPressed: () {
                         // TODO: 開啟 GBIF 連結
                       },
-                      icon: Icon(Icons.open_in_new, size: 16, color: Colors.green.shade600),
+                      icon: Icon(Icons.open_in_new, size: 16, color: AppColors.forestGreen),
                       label: Text(
                         '在 GBIF 查看更多',
-                        style: TextStyle(color: Colors.green.shade600),
+                        style: TextStyle(color: AppColors.forestGreen),
                       ),
                     ),
                   ),
@@ -883,7 +884,7 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
   }
 
   Color _getScoreColor(double score) {
-    if (score >= 0.8) return Colors.green.shade600;
+    if (score >= 0.8) return AppColors.forestGreen;
     if (score >= 0.5) return Colors.orange.shade600;
     return Colors.red.shade600;
   }
@@ -917,10 +918,10 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
                     leading: Container(
                       padding: const EdgeInsets.all(10),
                       decoration: BoxDecoration(
-                        color: Colors.green.shade50,
+                        color: AppColors.surfaceLight,
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(Icons.camera_alt, color: Colors.green.shade600),
+                      child: Icon(Icons.camera_alt, color: AppColors.forestGreen),
                     ),
                     title: const Text('拍攝新照片'),
                     subtitle: const Text('使用相機即時拍攝', style: TextStyle(fontSize: 12)),
@@ -951,7 +952,7 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
           ),
         );
       },
-      backgroundColor: Colors.green.shade600,
+      backgroundColor: AppColors.forestGreen,
       icon: const Icon(Icons.add_a_photo, color: Colors.white),
       label: const Text('更換圖片', style: TextStyle(color: Colors.white)),
     );
@@ -973,10 +974,10 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
                   Container(
                     padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.green.shade50,
+                      color: AppColors.surfaceLight,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.eco, color: Colors.green.shade600, size: 24),
+                    child: Icon(Icons.eco, color: AppColors.forestGreen, size: 24),
                   ),
                   const SizedBox(width: 12),
                   const Expanded(
@@ -1020,12 +1021,12 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.green.shade50,
+                  color: AppColors.surfaceLight,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.card_giftcard, color: Colors.green.shade600),
+                    Icon(Icons.card_giftcard, color: AppColors.forestGreen),
                     const SizedBox(width: 10),
                     const Expanded(
                       child: Text(

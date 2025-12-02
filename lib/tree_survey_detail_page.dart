@@ -6,6 +6,7 @@ import 'services/carbon_calculation_service.dart';
 import '../services/api_service.dart'; // 引入 ApiService
 import 'tree_edit_page_v2.dart'; // [V2] 引入新的編輯頁面
 import '../services/tree_service.dart'; // [V2] 引入 TreeService
+import 'constants/colors.dart';
 
 class TreeSurveyDetailPage extends StatefulWidget {
   final dynamic treeData;
@@ -176,19 +177,48 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
             species, height, dbh, estimatedAge);
 
     return Scaffold(
+      backgroundColor: AppColors.surfaceLight,
       appBar: AppBar(
-        title:
-            Text('${_treeData['樹種名稱']?.toString() ?? '未知樹種'} ($projectTreeId)'),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.portBlue, AppColors.portBlue.withOpacity(0.8)],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.portBlue.withOpacity(0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+        ),
+        title: Text(
+          '${_treeData['樹種名稱']?.toString() ?? '未知樹種'} ($projectTreeId)',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 18,
+            letterSpacing: 0.3,
+          ),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
-            icon: const Icon(Icons.edit),
+            icon: const Icon(Icons.edit_rounded),
+            tooltip: '編輯',
             onPressed: _editTree,
           ),
           IconButton(
-            icon: const Icon(Icons.delete),
+            icon: const Icon(Icons.delete_outline_rounded),
             tooltip: '刪除資料',
             onPressed: _confirmAndDeleteTree,
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: Container(
@@ -196,11 +226,11 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.green.shade50, Colors.white],
+            colors: [AppColors.surfaceLight, Colors.white],
           ),
         ),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -270,89 +300,110 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
     Color cardColor;
     switch (title) {
       case '基本資訊':
-        cardIcon = Icons.info_outline;
-        cardColor = Colors.blue;
+        cardIcon = Icons.info_outline_rounded;
+        cardColor = AppColors.portBlue;
         break;
       case '樹木編號':
-        cardIcon = Icons.tag;
-        cardColor = Colors.orange;
+        cardIcon = Icons.tag_rounded;
+        cardColor = AppColors.warmOrange;
         break;
       case '樹種資訊':
-        cardIcon = Icons.park;
-        cardColor = Colors.green;
+        cardIcon = Icons.park_rounded;
+        cardColor = AppColors.forestGreen;
         break;
       case '位置資訊':
-        cardIcon = Icons.location_on;
-        cardColor = Colors.red;
+        cardIcon = Icons.location_on_rounded;
+        cardColor = AppColors.tipcRed;
         break;
       case '狀況資訊':
-        cardIcon = Icons.health_and_safety;
-        cardColor = Colors.teal;
+        cardIcon = Icons.health_and_safety_rounded;
+        cardColor = AppColors.tipcTeal;
         break;
       case '測量數據':
-        cardIcon = Icons.straighten;
-        cardColor = Colors.purple;
+        cardIcon = Icons.straighten_rounded;
+        cardColor = AppColors.tipcPurple;
         break;
       case '碳數據':
-        cardIcon = Icons.eco;
-        cardColor = Colors.green.shade700;
+        cardIcon = Icons.eco_rounded;
+        cardColor = AppColors.forestGreen;
         break;
       case '調查資訊':
-        cardIcon = Icons.assignment;
-        cardColor = Colors.indigo;
+        cardIcon = Icons.assignment_rounded;
+        cardColor = AppColors.info;
+        break;
+      case '生長資訊':
+        cardIcon = Icons.trending_up_rounded;
+        cardColor = AppColors.forestGreen;
+        break;
+      case '碳存量資訊':
+        cardIcon = Icons.eco_rounded;
+        cardColor = AppColors.forestGreen;
+        break;
+      case '碳吸收資訊':
+        cardIcon = Icons.co2_rounded;
+        cardColor = AppColors.leafGreen;
+        break;
+      case '備註資訊':
+        cardIcon = Icons.notes_rounded;
+        cardColor = AppColors.neutral600;
         break;
       default:
-        cardIcon = Icons.article;
-        cardColor = Colors.grey;
+        cardIcon = Icons.article_rounded;
+        cardColor = AppColors.neutral600;
     }
 
-    return Card(
-      elevation: 4,
-      shadowColor: cardColor.withOpacity(0.3),
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Colors.white,
-              cardColor.withOpacity(0.05),
-            ],
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: cardColor.withOpacity(0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
           ),
-        ),
-        padding: const EdgeInsets.all(16),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(8),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: cardColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(cardIcon, color: cardColor, size: 22),
                 ),
-                const SizedBox(width: 12),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: cardColor,
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.neutral900,
+                      letterSpacing: 0.3,
+                    ),
                   ),
                 ),
               ],
             ),
+            const SizedBox(height: 16),
+            Container(
+              height: 1,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [cardColor.withOpacity(0.3), cardColor.withOpacity(0.05)],
+                ),
+              ),
+            ),
             const SizedBox(height: 12),
-            Divider(color: cardColor.withOpacity(0.2)),
-            const SizedBox(height: 4),
             ...children,
           ],
         ),
@@ -363,17 +414,18 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
   Widget _buildInfoRow(String label, String? value,
       {bool isHighlighted = false}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 120,
+            width: 110,
             child: Text(
-              '$label：',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.grey,
+              label,
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                color: AppColors.neutral500,
+                fontSize: 14,
               ),
             ),
           ),
@@ -381,9 +433,9 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
             child: Text(
               value ?? '無',
               style: TextStyle(
-                fontWeight: isHighlighted ? FontWeight.bold : FontWeight.normal,
-                color: isHighlighted ? Colors.green.shade700 : Colors.black,
-                fontSize: isHighlighted ? 16 : null,
+                fontWeight: isHighlighted ? FontWeight.w600 : FontWeight.w500,
+                color: isHighlighted ? AppColors.portBlue : AppColors.neutral900,
+                fontSize: isHighlighted ? 15 : 14,
               ),
             ),
           ),

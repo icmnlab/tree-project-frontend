@@ -6,6 +6,7 @@ import 'dart:io';
 import 'services/tree_service.dart';
 import 'services/admin_service.dart';
 import 'services/api_service.dart';
+import 'constants/colors.dart';
 
 class TreeListPage extends StatefulWidget {
   const TreeListPage({Key? key}) : super(key: key);
@@ -808,40 +809,67 @@ class _TreeListPageState extends State<TreeListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.surfaceLight,
       appBar: AppBar(
-        title: const Text('樹木列表'),
-        backgroundColor: Colors.green.shade100,
         elevation: 0,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.portBlue, AppColors.portBlue.withOpacity(0.8)],
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.portBlue.withOpacity(0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+        ),
+        title: const Text(
+          '樹木列表',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 20,
+            letterSpacing: 0.5,
+          ),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           if (_isSelectionMode) ...[
             IconButton(
-              icon: const Icon(Icons.edit),
+              icon: const Icon(Icons.edit_rounded),
               tooltip: '批次更新',
               onPressed: _batchUpdate,
             ),
             IconButton(
-              icon: const Icon(Icons.delete),
+              icon: const Icon(Icons.delete_outline_rounded),
               tooltip: '批次刪除',
               onPressed: _batchDelete,
             ),
             IconButton(
-              icon: const Icon(Icons.close),
+              icon: const Icon(Icons.close_rounded),
               tooltip: '取消選擇',
               onPressed: _toggleSelectionMode,
             ),
           ] else ...[
             IconButton(
-              icon: const Icon(Icons.sort),
+              icon: const Icon(Icons.sort_rounded),
               tooltip: '排序',
               onPressed: _showSortDialog,
             ),
             IconButton(
-              icon: const Icon(Icons.select_all),
+              icon: const Icon(Icons.checklist_rounded),
               tooltip: '批次選擇',
               onPressed: _toggleSelectionMode,
             ),
             PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert),
+              icon: const Icon(Icons.more_vert_rounded),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               onSelected: (value) {
                 switch (value) {
                   case 'excel':
@@ -856,39 +884,40 @@ class _TreeListPageState extends State<TreeListPage> {
                 }
               },
               itemBuilder: (context) => [
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'excel',
                   child: Row(
                     children: [
-                      Icon(Icons.table_chart),
-                      SizedBox(width: 8),
-                      Text('匯出 Excel'),
+                      Icon(Icons.table_chart_rounded, color: AppColors.forestGreen),
+                      const SizedBox(width: 12),
+                      const Text('匯出 Excel'),
                     ],
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'pdf',
                   child: Row(
                     children: [
-                      Icon(Icons.picture_as_pdf),
-                      SizedBox(width: 8),
-                      Text('匯出 PDF'),
+                      Icon(Icons.picture_as_pdf_rounded, color: AppColors.tipcRed),
+                      const SizedBox(width: 12),
+                      const Text('匯出 PDF'),
                     ],
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'import',
                   child: Row(
                     children: [
-                      Icon(Icons.upload_file),
-                      SizedBox(width: 8),
-                      Text('匯入 Excel'),
+                      Icon(Icons.upload_file_rounded, color: AppColors.portBlue),
+                      const SizedBox(width: 12),
+                      const Text('匯入 Excel'),
                     ],
                   ),
                 ),
               ],
             ),
           ],
+          const SizedBox(width: 8),
         ],
       ),
       body: Stack(
@@ -898,224 +927,420 @@ class _TreeListPageState extends State<TreeListPage> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Colors.green.shade50, Colors.white],
+                colors: [AppColors.surfaceLight, Colors.white],
               ),
             ),
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
                   child: Row(
                     children: [
                       Expanded(
-                        child: TextField(
-                          controller: _searchController,
-                          decoration: InputDecoration(
-                            hintText: '搜尋樹種、專案或區位',
-                            prefixIcon: const Icon(Icons.search),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            filled: true,
-                            fillColor: Colors.white,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.04),
+                                blurRadius: 10,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                           ),
-                          onChanged: (value) => _filterAndSortTrees(),
+                          child: TextField(
+                            controller: _searchController,
+                            decoration: InputDecoration(
+                              hintText: '搜尋樹種、專案或區位',
+                              hintStyle: TextStyle(color: AppColors.neutral400, fontSize: 14),
+                              prefixIcon: Icon(Icons.search_rounded, color: AppColors.portBlue),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(16),
+                                borderSide: BorderSide.none,
+                              ),
+                              filled: true,
+                              fillColor: Colors.white,
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            ),
+                            onChanged: (value) => _filterAndSortTrees(),
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      DropdownButton<String>(
-                        value: _selectedProject,
-                        items: _projects.map((String project) {
-                          return DropdownMenuItem<String>(
-                            value: project,
-                            child: Text(project),
-                          );
-                        }).toList(),
-                        onChanged: (String? newValue) {
-                          if (newValue != null) {
-                            setState(() {
-                              _selectedProject = newValue;
-                              _filterAndSortTrees();
-                            });
-                          }
-                        },
+                      const SizedBox(width: 12),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 10,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _selectedProject,
+                            icon: Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.portBlue),
+                            items: _projects.map((String project) {
+                              return DropdownMenuItem<String>(
+                                value: project,
+                                child: Text(
+                                  project.length > 8 ? '${project.substring(0, 8)}...' : project,
+                                  style: TextStyle(fontSize: 14, color: AppColors.neutral900),
+                                ),
+                              );
+                            }).toList(),
+                            onChanged: (String? newValue) {
+                              if (newValue != null) {
+                                setState(() {
+                                  _selectedProject = newValue;
+                                  _filterAndSortTrees();
+                                });
+                              }
+                            },
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  padding: const EdgeInsets.symmetric(horizontal: 20.0),
                   child: Row(
                     children: [
-                      Text(
-                        '排序方式: $_sortBy (${_isAscending ? '升序' : '降序'})',
-                        style: TextStyle(
-                          color: Colors.green.shade700,
-                          fontWeight: FontWeight.bold,
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.portBlue.withOpacity(0.08),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.sort_rounded, size: 16, color: AppColors.portBlue),
+                            const SizedBox(width: 8),
+                            Text(
+                              '$_sortBy (${_isAscending ? '↑' : '↓'})',
+                              style: TextStyle(
+                                color: AppColors.portBlue,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.forestGreen.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '共 ${_filteredTrees.length} 棵',
+                          style: TextStyle(
+                            color: AppColors.forestGreen,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ),
                     ],
                   ),
                 ),
+                const SizedBox(height: 8),
                 Expanded(
                   child: _isLoading
-                      ? const Center(child: CircularProgressIndicator())
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.portBlue.withOpacity(0.1),
+                                      blurRadius: 20,
+                                      spreadRadius: 5,
+                                    ),
+                                  ],
+                                ),
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(AppColors.portBlue),
+                                  strokeWidth: 3,
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              Text(
+                                '載入樹木資料中...',
+                                style: TextStyle(color: AppColors.neutral600, fontSize: 15),
+                              ),
+                            ],
+                          ),
+                        )
                       : _errorMessage.isNotEmpty
                           ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Icon(
-                                    Icons.error_outline,
-                                    color: Colors.red,
-                                    size: 60,
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    _errorMessage,
-                                    textAlign: TextAlign.center,
-                                    style: const TextStyle(color: Colors.red),
-                                  ),
-                                  const SizedBox(height: 16),
-                                  ElevatedButton(
-                                    onPressed: _fetchTrees,
-                                    child: const Text('重試'),
-                                  ),
-                                ],
+                              child: Container(
+                                margin: const EdgeInsets.all(24),
+                                padding: const EdgeInsets.all(32),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.05),
+                                      blurRadius: 20,
+                                      spreadRadius: 5,
+                                    ),
+                                  ],
+                                ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.error.withOpacity(0.1),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: Icon(
+                                        Icons.error_outline_rounded,
+                                        color: AppColors.error,
+                                        size: 48,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 20),
+                                    Text(
+                                      _errorMessage,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(color: AppColors.neutral600, fontSize: 14),
+                                    ),
+                                    const SizedBox(height: 20),
+                                    ElevatedButton(
+                                      onPressed: _fetchTrees,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: AppColors.portBlue,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(14),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                                        elevation: 0,
+                                      ),
+                                      child: const Text('重試', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
+                                    ),
+                                  ],
+                                ),
                               ),
                             )
                           : _filteredTrees.isEmpty
-                              ? const Center(
-                                  child: Text(
-                                    '沒有符合條件的樹木資料',
-                                    style: TextStyle(fontSize: 16),
+                              ? Center(
+                                  child: Container(
+                                    margin: const EdgeInsets.all(24),
+                                    padding: const EdgeInsets.all(40),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      borderRadius: BorderRadius.circular(20),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: Colors.black.withOpacity(0.05),
+                                          blurRadius: 20,
+                                          spreadRadius: 5,
+                                        ),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(20),
+                                          decoration: BoxDecoration(
+                                            color: AppColors.forestGreen.withOpacity(0.1),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(Icons.park_outlined, size: 48, color: AppColors.forestGreen),
+                                        ),
+                                        const SizedBox(height: 20),
+                                        Text(
+                                          '沒有符合條件的樹木資料',
+                                          style: TextStyle(fontSize: 16, color: AppColors.neutral700, fontWeight: FontWeight.w500),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 )
                               : RefreshIndicator(
                                   onRefresh: _fetchTrees,
+                                  color: AppColors.portBlue,
                                   child: ListView.builder(
+                                    padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
                                     itemCount: _filteredTrees.length,
                                     itemBuilder: (context, index) {
                                       final tree = _filteredTrees[index];
-                                      return Card(
-                                        margin: const EdgeInsets.symmetric(
-                                          horizontal: 12.0,
-                                          vertical: 6.0,
-                                        ),
-                                        elevation: 2,
-                                        shadowColor: Colors.green.withOpacity(0.2),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                        child: ListTile(
-                                          contentPadding: const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 8,
-                                          ),
-                                          leading: _isSelectionMode
-                                              ? Checkbox(
-                                                  value: _selectedIndices
-                                                      .contains(index),
-                                                  onChanged: (value) =>
-                                                      _toggleSelection(index),
-                                                  activeColor: Colors.green.shade600,
-                                                )
-                                              : Container(
-                                                  width: 48,
-                                                  height: 48,
-                                                  decoration: BoxDecoration(
-                                                    gradient: LinearGradient(
-                                                      colors: [Colors.green.shade400, Colors.green.shade600],
-                                                      begin: Alignment.topLeft,
-                                                      end: Alignment.bottomRight,
-                                                    ),
-                                                    borderRadius: BorderRadius.circular(12),
-                                                  ),
-                                                  child: const Icon(
-                                                    Icons.park,
-                                                    color: Colors.white,
-                                                    size: 28,
-                                                  ),
-                                                ),
-                                          title: Text(
-                                            tree['樹種名稱'] ?? '未知樹種',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 16,
-                                              color: Colors.green.shade800,
+                                      return Container(
+                                        margin: const EdgeInsets.only(bottom: 12),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(20),
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Colors.black.withOpacity(0.04),
+                                              blurRadius: 12,
+                                              offset: const Offset(0, 4),
                                             ),
-                                          ),
-                                          subtitle: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              const SizedBox(height: 4),
-                                              Row(
+                                          ],
+                                        ),
+                                        child: Material(
+                                          color: Colors.transparent,
+                                          borderRadius: BorderRadius.circular(20),
+                                          child: InkWell(
+                                            borderRadius: BorderRadius.circular(20),
+                                            onTap: _isSelectionMode
+                                                ? () => _toggleSelection(index)
+                                                : () {
+                                                    Navigator.push(
+                                                      context,
+                                                      MaterialPageRoute(
+                                                        builder: (context) =>
+                                                            TreeSurveyDetailPage(
+                                                          treeData: tree,
+                                                        ),
+                                                      ),
+                                                    ).then((_) => _fetchTrees());
+                                                  },
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(16),
+                                              child: Row(
                                                 children: [
-                                                  Icon(Icons.folder_outlined, size: 14, color: Colors.grey.shade600),
-                                                  const SizedBox(width: 4),
-                                                  Expanded(
-                                                    child: Text(
-                                                      tree['專案名稱'] ?? '未知專案',
-                                                      style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
-                                                      overflow: TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Row(
-                                                children: [
-                                                  Icon(Icons.location_on_outlined, size: 14, color: Colors.grey.shade600),
-                                                  const SizedBox(width: 4),
-                                                  Expanded(
-                                                    child: Text(
-                                                      tree['專案區位'] ?? '未知區位',
-                                                      style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
-                                                      overflow: TextOverflow.ellipsis,
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              if (_sortBy == '樹高（公尺）')
-                                                Text(
-                                                    '樹高: ${tree['樹高（公尺）']} 公尺'),
-                                              if (_sortBy == '胸徑（公分）')
-                                                Text(
-                                                    '胸徑: ${tree['胸徑（公分）']} 公分'),
-                                              if (_sortBy == '碳儲存量')
-                                                Text('碳儲存量: ${tree['碳儲存量']}'),
-                                              if (_sortBy == '推估年碳吸存量')
-                                                Text(
-                                                    '年碳吸存量: ${tree['推估年碳吸存量']}'),
-                                            ],
-                                          ),
-                                          trailing: _isSelectionMode
-                                              ? null
-                                              : Container(
-                                                  padding: const EdgeInsets.all(8),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.green.shade50,
-                                                    shape: BoxShape.circle,
-                                                  ),
-                                                  child: Icon(
-                                                    Icons.chevron_right,
-                                                    color: Colors.green.shade600,
-                                                  ),
-                                                ),
-                                          onTap: _isSelectionMode
-                                              ? () => _toggleSelection(index)
-                                              : () {
-                                                  Navigator.push(
-                                                    context,
-                                                    MaterialPageRoute(
-                                                      builder: (context) =>
-                                                          TreeSurveyDetailPage(
-                                                        treeData: tree,
+                                                  // Leading
+                                                  if (_isSelectionMode)
+                                                    Checkbox(
+                                                      value: _selectedIndices.contains(index),
+                                                      onChanged: (value) => _toggleSelection(index),
+                                                      activeColor: AppColors.portBlue,
+                                                      shape: RoundedRectangleBorder(
+                                                        borderRadius: BorderRadius.circular(4),
+                                                      ),
+                                                    )
+                                                  else
+                                                    Container(
+                                                      width: 52,
+                                                      height: 52,
+                                                      decoration: BoxDecoration(
+                                                        gradient: LinearGradient(
+                                                          colors: [AppColors.leafGreen, AppColors.forestGreen],
+                                                          begin: Alignment.topLeft,
+                                                          end: Alignment.bottomRight,
+                                                        ),
+                                                        borderRadius: BorderRadius.circular(14),
+                                                        boxShadow: [
+                                                          BoxShadow(
+                                                            color: AppColors.forestGreen.withOpacity(0.3),
+                                                            blurRadius: 8,
+                                                            offset: const Offset(0, 3),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      child: const Icon(
+                                                        Icons.park_rounded,
+                                                        color: Colors.white,
+                                                        size: 26,
                                                       ),
                                                     ),
-                                                  ).then((_) => _fetchTrees());
-                                                },
+                                                  const SizedBox(width: 16),
+                                                  // Content
+                                                  Expanded(
+                                                    child: Column(
+                                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                                      children: [
+                                                        Text(
+                                                          tree['樹種名稱'] ?? '未知樹種',
+                                                          style: TextStyle(
+                                                            fontWeight: FontWeight.w600,
+                                                            fontSize: 16,
+                                                            color: AppColors.neutral900,
+                                                          ),
+                                                        ),
+                                                        const SizedBox(height: 6),
+                                                        Row(
+                                                          children: [
+                                                            Icon(Icons.folder_outlined, size: 14, color: AppColors.neutral500),
+                                                            const SizedBox(width: 4),
+                                                            Expanded(
+                                                              child: Text(
+                                                                tree['專案名稱'] ?? '未知專案',
+                                                                style: TextStyle(color: AppColors.neutral600, fontSize: 13),
+                                                                overflow: TextOverflow.ellipsis,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                        const SizedBox(height: 4),
+                                                        Row(
+                                                          children: [
+                                                            Icon(Icons.location_on_rounded, size: 14, color: AppColors.neutral500),
+                                                            const SizedBox(width: 4),
+                                                            Expanded(
+                                                              child: Text(
+                                                                tree['專案區位'] ?? '未知區位',
+                                                                style: TextStyle(color: AppColors.neutral600, fontSize: 13),
+                                                                overflow: TextOverflow.ellipsis,
+                                                              ),
+                                                            ),
+                                                          ],
+                                                        ),
+                                                        if (_sortBy == '樹高（公尺）' || _sortBy == '胸徑（公分）' || _sortBy == '碳儲存量' || _sortBy == '推估年碳吸存量') ...[
+                                                          const SizedBox(height: 6),
+                                                          Container(
+                                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                                            decoration: BoxDecoration(
+                                                              color: AppColors.portBlue.withOpacity(0.1),
+                                                              borderRadius: BorderRadius.circular(8),
+                                                            ),
+                                                            child: Text(
+                                                              _sortBy == '樹高（公尺）' ? '樹高: ${tree['樹高（公尺）']}m' :
+                                                              _sortBy == '胸徑（公分）' ? '胸徑: ${tree['胸徑（公分）']}cm' :
+                                                              _sortBy == '碳儲存量' ? '碳儲存量: ${tree['碳儲存量']}' :
+                                                              '年碳吸存量: ${tree['推估年碳吸存量']}',
+                                                              style: TextStyle(color: AppColors.portBlue, fontSize: 12, fontWeight: FontWeight.w500),
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      ],
+                                                    ),
+                                                  ),
+                                                  // Trailing
+                                                  if (!_isSelectionMode)
+                                                    Container(
+                                                      padding: const EdgeInsets.all(8),
+                                                      decoration: BoxDecoration(
+                                                        color: AppColors.surfaceLight,
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                      child: Icon(
+                                                        Icons.chevron_right_rounded,
+                                                        color: AppColors.neutral500,
+                                                        size: 20,
+                                                      ),
+                                                    ),
+                                                ],
+                                              ),
+                                            ),
+                                          ),
                                         ),
                                       );
                                     },

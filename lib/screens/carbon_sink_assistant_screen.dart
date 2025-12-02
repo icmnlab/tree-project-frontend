@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/tree_species.dart';
 import '../services/tree_service.dart';
 import '../services/carbon_sink_service.dart';
+import '../constants/colors.dart';
 
 class CarbonSinkAssistantScreen extends StatefulWidget {
   const CarbonSinkAssistantScreen({Key? key}) : super(key: key);
@@ -381,7 +382,7 @@ class _CarbonSinkAssistantScreenState extends State<CarbonSinkAssistantScreen>
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.green.shade100,
+                        color: AppColors.surfaceLight,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Column(

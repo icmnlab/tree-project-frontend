@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/api_service.dart';
+import '../constants/colors.dart';
 
 class ApiKeyManagementScreen extends StatefulWidget {
   const ApiKeyManagementScreen({Key? key}) : super(key: key);
@@ -207,7 +208,7 @@ class _ApiKeyManagementScreenState extends State<ApiKeyManagementScreen> {
 
   Widget _buildNewApiKeyCard() {
     return Card(
-      color: Colors.green.shade50,
+      color: AppColors.surfaceLight,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -215,14 +216,14 @@ class _ApiKeyManagementScreenState extends State<ApiKeyManagementScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.key, color: Colors.green.shade700),
+                Icon(Icons.key, color: AppColors.forestGreen),
                 const SizedBox(width: 8),
                 Text(
                   '新建的 API 密鑰',
                   style: Theme.of(context)
                       .textTheme
                       .titleMedium
-                      ?.copyWith(color: Colors.green.shade700),
+                      ?.copyWith(color: AppColors.forestGreen),
                 ),
               ],
             ),

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'constants/colors.dart';
 // import 'package:provider/provider.dart'; // Unused
 import 'screens/api_key_management_screen.dart';
 import 'screens/user_form_screen.dart';
@@ -880,7 +881,7 @@ class _AdminPageState extends State<AdminPage> {
                 child: Text(
                   isActive ? '狀態：啟用' : '狀態：禁用',
                   style: TextStyle(
-                    color: isActive ? Colors.green.shade700 : Colors.red.shade700,
+                    color: isActive ? AppColors.forestGreen : Colors.red.shade700,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

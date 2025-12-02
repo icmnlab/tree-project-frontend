@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../constants/colors.dart';
 import 'project_areas_page.dart';
 
 class CitiesPage extends StatelessWidget {
@@ -38,7 +39,7 @@ class CitiesPage extends StatelessWidget {
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.green.shade700, Colors.green.shade500],
+              colors: [AppColors.forestGreen, AppColors.leafGreen],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -49,7 +50,7 @@ class CitiesPage extends StatelessWidget {
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [Colors.green.shade50, Colors.white],
+            colors: [AppColors.surfaceLight, Colors.white],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -61,7 +62,7 @@ class CitiesPage extends StatelessWidget {
               margin: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Colors.blue.shade400, Colors.blue.shade600],
+                  colors: [AppColors.portBlueLight, AppColors.portBlue],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),

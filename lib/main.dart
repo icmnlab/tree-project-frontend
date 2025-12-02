@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-//import 'package:flutter_dotenv/flutter_dotenv.dart';
-//import 'tree_input_page.dart'; // 引入你的輸入頁面
+import 'package:flutter/services.dart';
 import 'tree_survey_page.dart'; // 查詢頁面
 import 'admin_page.dart';
 import 'statistics_page.dart';
@@ -13,104 +12,19 @@ import 'services/carbon_sink_service.dart';
 import 'screens/login_page.dart';
 import 'screens/home_page.dart';
 import 'routes/auth_guard.dart';
-import 'config/app_config.dart'; // Import AppConfig
-
-ThemeData createAppTheme() {
-  return ThemeData(
-    primarySwatch: const MaterialColor(
-      0xFF0D47A1, // 深藍色 - TIPC 風格
-      <int, Color>{
-        50: Color(0xFFE3F2FD),
-        100: Color(0xFFBBDEFB),
-        200: Color(0xFF90CAF9),
-        300: Color(0xFF64B5F6),
-        400: Color(0xFF42A5F5),
-        500: Color(0xFF2196F3),
-        600: Color(0xFF1E88E5),
-        700: Color(0xFF1976D2),
-        800: Color(0xFF1565C0),
-        900: Color(0xFF0D47A1),
-      },
-    ),
-    colorScheme: ColorScheme.light(
-      primary: const Color(0xFF0D47A1), // 主要顏色（深藍色）
-      primaryContainer: const Color(0xFFBBDEFB), // 主要顏色容器（淺藍色）
-      secondary: const Color(0xFF00BCD4), // 次要顏色（青色）
-      secondaryContainer: const Color(0xFFB2EBF2), // 次要顏色容器（淺青色）
-      surface: Colors.white,
-      error: Colors.red[700]!,
-    ),
-    appBarTheme: const AppBarTheme(
-      elevation: 0,
-      backgroundColor: Color(0xFF0D47A1),
-      iconTheme: IconThemeData(color: Colors.white),
-      titleTextStyle: TextStyle(
-        color: Colors.white,
-        fontSize: 20,
-        fontWeight: FontWeight.w500,
-      ),
-    ),
-    cardTheme: CardThemeData(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 2,
-    ),
-    elevatedButtonTheme: ElevatedButtonThemeData(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xFF0D47A1),
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    ),
-    outlinedButtonTheme: OutlinedButtonThemeData(
-      style: OutlinedButton.styleFrom(
-        foregroundColor: const Color(0xFF0D47A1),
-        side: const BorderSide(color: Color(0xFF0D47A1)),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      ),
-    ),
-    inputDecorationTheme: InputDecorationTheme(
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: BorderSide(color: Colors.grey[400]!),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(8),
-        borderSide: const BorderSide(color: Color(0xFF0D47A1), width: 2),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-    ),
-    textTheme: const TextTheme(
-      headlineLarge: TextStyle(
-        fontSize: 28,
-        fontWeight: FontWeight.bold,
-        color: Color(0xFF0D47A1),
-      ),
-      headlineMedium: TextStyle(
-        fontSize: 24,
-        fontWeight: FontWeight.bold,
-        color: Color(0xFF0D47A1),
-      ),
-      headlineSmall: TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.bold,
-        color: Color(0xFF0D47A1),
-      ),
-      bodyLarge: TextStyle(fontSize: 16, color: Colors.black87),
-      bodyMedium: TextStyle(fontSize: 14, color: Colors.black87),
-    ),
-    dividerTheme: DividerThemeData(thickness: 1, color: Colors.grey[300]),
-    iconTheme: const IconThemeData(color: Color(0xFF0D47A1)),
-    snackBarTheme: const SnackBarThemeData(
-      backgroundColor: Color(0xFF0D47A1),
-      contentTextStyle: TextStyle(color: Colors.white),
-    ),
-  );
-}
+import 'config/app_config.dart';
+import 'themes/app_theme.dart'; // 新設計系統
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 設置系統 UI 樣式
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+    systemNavigationBarColor: Colors.white,
+    systemNavigationBarIconBrightness: Brightness.dark,
+  ));
 
   // Initialize AppConfig asynchronously
   await AppConfig().initialize();
@@ -133,8 +47,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '智慧樹木管理系統',
-      theme: createAppTheme(),
+      title: '永續碳匯管理系統',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme, // 使用新設計系統
       initialRoute: '/login',
       routes: {
         '/': (context) =>

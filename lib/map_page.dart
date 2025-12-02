@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart';
 import 'services/api_service.dart';
+import 'constants/colors.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -444,8 +445,24 @@ class _MapPageState extends State<MapPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('樹木位置地圖'),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        flexibleSpace: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.portBlue, Color(0xFF1565C0)],
+            ),
+          ),
+        ),
+        title: const Text(
+          '樹木位置地圖',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
             icon: Icon(_showMenu ? Icons.filter_list_off : Icons.filter_list),
@@ -770,7 +787,7 @@ class _MapPageState extends State<MapPage> {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.park_outlined, size: 16, color: Colors.green.shade400),
+                            Icon(Icons.park_outlined, size: 16, color: AppColors.leafGreen),
                             const SizedBox(width: 6),
                             Text(
                               '正在取得樹木位置',
