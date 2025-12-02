@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/species_identification_service.dart';
 import '../constants/colors.dart';
 
@@ -775,8 +776,11 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
                   Padding(
                     padding: const EdgeInsets.only(top: 10),
                     child: TextButton.icon(
-                      onPressed: () {
-                        // TODO: 開啟 GBIF 連結
+                      onPressed: () async {
+                        final url = Uri.parse(data['gbifUrl']);
+                        if (await canLaunchUrl(url)) {
+                          await launchUrl(url, mode: LaunchMode.externalApplication);
+                        }
                       },
                       icon: Icon(Icons.open_in_new, size: 16, color: AppColors.forestGreen),
                       label: Text(
