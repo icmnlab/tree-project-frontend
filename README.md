@@ -3,13 +3,33 @@
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-blue.svg)](https://flutter.dev/)
 [![Dart](https://img.shields.io/badge/Dart-3.x-blue.svg)](https://dart.dev/)
 [![License](https://img.shields.io/badge/License-ISC-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-16.0.0-green.svg)](https://github.com/KyleliuNDHU/tree-project-frontend)
+[![Version](https://img.shields.io/badge/Version-16.0.1-green.svg)](https://github.com/KyleliuNDHU/tree-project-frontend)
 
 > 基於大語言模型的永續發展分析平台 - Flutter 行動應用程式
 
 ---
 
 ## 📦 版本紀錄
+
+### v16.0.1 (2025-12-02) - 錯誤修復 🔧
+
+#### 🔧 修復
+- **FAB 遮擋問題** - 修復 FloatingActionButton 被底部導航遮擋的問題
+- **後端 OpenAI 兼容性** - 新增 `getTokenLimitParams()` helper 函數
+  - 支援 o1/o3 系列模型使用 `max_completion_tokens` 參數
+  - 舊版模型 (gpt-4, gpt-4-turbo 等) 仍使用 `max_tokens`（向後兼容）
+- **圖片上傳錯誤處理** - 改進 multer fileFilter 錯誤回應格式
+
+#### 📋 變更清單
+| 類型 | 說明 |
+|------|------|
+| fix | `tree_survey_page.dart` FAB 底部邊距調整 |
+| fix | `ai.js` OpenAI API 參數兼容性 |
+| fix | `speciesIdentification.js` multer 錯誤處理 |
+| fix | `openaiController.js` 新增 helper 函數 |
+| fix | `aiReportController.js` 新增 helper 函數 |
+
+---
 
 ### v16.0.0 (2025-12-02) - 極簡現代化介面重構 🎨
 

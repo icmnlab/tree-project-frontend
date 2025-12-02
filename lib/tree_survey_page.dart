@@ -680,41 +680,44 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
               ],
             ),
       ),
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.portBlue, AppColors.portBlue.withOpacity(0.85)],
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.portBlue.withOpacity(0.4),
-              blurRadius: 16,
-              spreadRadius: 0,
-              offset: const Offset(0, 6),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 80), // 為底部導航預留空間
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.portBlue, AppColors.portBlue.withOpacity(0.85)],
             ),
-          ],
-        ),
-        child: FloatingActionButton(
-          onPressed: () {
-            AddTreeSelectionDialog.show(
-              context,
-              initialData: widget.projectName != null
-                  ? {'project_name': widget.projectName}
-                  : widget.areaName != null
-                      ? {'project_location': widget.areaName}
-                      : {},
-              onDataChanged: () {
-                _cleanupUnusedData().then((_) => _fetchTrees());
-              },
-            );
-          },
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          tooltip: '新增樹木資料',
-          child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.portBlue.withOpacity(0.4),
+                blurRadius: 16,
+                spreadRadius: 0,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: FloatingActionButton(
+            onPressed: () {
+              AddTreeSelectionDialog.show(
+                context,
+                initialData: widget.projectName != null
+                    ? {'project_name': widget.projectName}
+                    : widget.areaName != null
+                        ? {'project_location': widget.areaName}
+                        : {},
+                onDataChanged: () {
+                  _cleanupUnusedData().then((_) => _fetchTrees());
+                },
+              );
+            },
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            tooltip: '新增樹木資料',
+            child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
+          ),
         ),
       ),
     );
