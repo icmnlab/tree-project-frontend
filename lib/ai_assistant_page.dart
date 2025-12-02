@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:logger/logger.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // [NEW] 查詢歷史記錄
 
 import 'constants/colors.dart';
 import 'widgets/loading_indicator.dart';
@@ -19,6 +20,47 @@ import 'services/species_service.dart';
 import 'services/carbon_data_service.dart';
 import 'config/app_config.dart';
 
+// 圖表資料模型 (用於查詢結果視覺化)
+class ChartData {
+  final String type; // 'bar' or 'pie'
+  final String labelKey;
+  final String valueKey;
+  final List<ChartDataItem> data;
+
+  ChartData({
+    required this.type,
+    required this.labelKey,
+    required this.valueKey,
+    required this.data,
+  });
+
+  factory ChartData.fromJson(Map<String, dynamic> json) {
+    return ChartData(
+      type: json['type'] ?? 'bar',
+      labelKey: json['labelKey'] ?? '',
+      valueKey: json['valueKey'] ?? '',
+      data: (json['data'] as List<dynamic>?)
+              ?.map((e) => ChartDataItem.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+    );
+  }
+}
+
+class ChartDataItem {
+  final String label;
+  final double value;
+
+  ChartDataItem({required this.label, required this.value});
+
+  factory ChartDataItem.fromJson(Map<String, dynamic> json) {
+    return ChartDataItem(
+      label: json['label']?.toString() ?? '未知',
+      value: (json['value'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+}
+
 // 聊天消息模型
 class ChatMessage {
   final String role;
@@ -26,6 +68,7 @@ class ChatMessage {
   final bool isUser;
   final bool showCarbonChart;
   final List<Map<String, dynamic>>? sources;
+  final ChartData? chartData; // [NEW] 可選的圖表資料
 
   ChatMessage({
     required this.role,
@@ -33,6 +76,7 @@ class ChatMessage {
     required this.isUser,
     this.showCarbonChart = false,
     this.sources,
+    this.chartData,
   });
 }
 
@@ -143,6 +187,9 @@ class _MessageBubble extends StatelessWidget {
                       }
                     },
                   ),
+                  // [NEW] 統計查詢結果圖表
+                  if (!isUser && message.chartData != null)
+                    _buildQueryChart(context, message.chartData!),
                   if (!isUser &&
                       message.sources != null &&
                       message.sources!.isNotEmpty)
@@ -185,6 +232,209 @@ class _MessageBubble extends StatelessWidget {
         isUser ? Icons.person_rounded : Icons.eco_rounded,
         size: 20,
         color: Colors.white,
+      ),
+    );
+  }
+
+  /// [NEW] 建立查詢結果圖表 - 支援長條圖和圓餅圖
+  Widget _buildQueryChart(BuildContext context, ChartData chartData) {
+    if (chartData.data.isEmpty) return const SizedBox.shrink();
+    
+    final bool isPie = chartData.type == 'pie';
+    final List<Color> chartColors = [
+      AppColors.forestGreen,
+      AppColors.portBlue,
+      AppColors.chartOrange,  // Fixed: warningOrange -> chartOrange
+      AppColors.accentLight,
+      Colors.purple,
+      Colors.teal,
+      Colors.pink,
+      Colors.indigo,
+    ];
+    
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.forestGreen.withOpacity(0.2)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isPie ? Icons.pie_chart_rounded : Icons.bar_chart_rounded,
+                size: 16,
+                color: AppColors.forestGreen,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                '查詢結果視覺化',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.forestGreen,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: isPie ? 200 : 180,
+            child: isPie
+                ? _buildPieChart(chartData, chartColors)
+                : _buildBarChart(chartData, chartColors),
+          ),
+          // 圖例
+          if (isPie) ...[
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              runSpacing: 4,
+              children: List.generate(chartData.data.length, (index) {
+                final item = chartData.data[index];
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 10,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: chartColors[index % chartColors.length],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${item.label}: ${item.value.toStringAsFixed(1)}',
+                      style: const TextStyle(fontSize: 10),
+                    ),
+                  ],
+                );
+              }),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPieChart(ChartData chartData, List<Color> colors) {
+    final total = chartData.data.fold<double>(0, (sum, item) => sum + item.value);
+    
+    return PieChart(
+      PieChartData(
+        sectionsSpace: 2,
+        centerSpaceRadius: 40,
+        sections: List.generate(chartData.data.length, (index) {
+          final item = chartData.data[index];
+          final percentage = total > 0 ? (item.value / total * 100) : 0;
+          return PieChartSectionData(
+            color: colors[index % colors.length],
+            value: item.value,
+            title: percentage >= 5 ? '${percentage.toStringAsFixed(0)}%' : '',
+            radius: 50,
+            titleStyle: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildBarChart(ChartData chartData, List<Color> colors) {
+    final maxValue = chartData.data.fold<double>(0, (max, item) => item.value > max ? item.value : max);
+    
+    return BarChart(
+      BarChartData(
+        alignment: BarChartAlignment.spaceAround,
+        maxY: maxValue * 1.2,
+        barTouchData: BarTouchData(
+          touchTooltipData: BarTouchTooltipData(
+            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+              final item = chartData.data[groupIndex];
+              return BarTooltipItem(
+                '${item.label}\n${item.value.toStringAsFixed(1)}',
+                const TextStyle(color: Colors.white, fontSize: 10),
+              );
+            },
+          ),
+        ),
+        titlesData: FlTitlesData(
+          show: true,
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (value, meta) {
+                if (value.toInt() >= 0 && value.toInt() < chartData.data.length) {
+                  final label = chartData.data[value.toInt()].label;
+                  // 截斷過長的標籤
+                  final displayLabel = label.length > 6 ? '${label.substring(0, 5)}…' : label;
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 4),
+                    child: Text(
+                      displayLabel,
+                      style: const TextStyle(fontSize: 9),
+                    ),
+                  );
+                }
+                return const Text('');
+              },
+              reservedSize: 28,
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 40,
+              getTitlesWidget: (value, meta) {
+                return Text(
+                  value >= 1000 ? '${(value / 1000).toStringAsFixed(0)}k' : value.toStringAsFixed(0),
+                  style: const TextStyle(fontSize: 9),
+                );
+              },
+            ),
+          ),
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        ),
+        borderData: FlBorderData(show: false),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          horizontalInterval: maxValue / 4,
+          getDrawingHorizontalLine: (value) => FlLine(
+            color: Colors.grey.withOpacity(0.2),
+            strokeWidth: 1,
+          ),
+        ),
+        barGroups: List.generate(chartData.data.length, (index) {
+          final item = chartData.data[index];
+          return BarChartGroupData(
+            x: index,
+            barRods: [
+              BarChartRodData(
+                toY: item.value,
+                color: colors[index % colors.length],
+                width: chartData.data.length > 8 ? 12 : 20,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+              ),
+            ],
+          );
+        }),
       ),
     );
   }
@@ -804,6 +1054,17 @@ class _AIAssistantPageState extends State<AIAssistantPage>
         final List<Map<String, dynamic>>? sources =
             sourcesData?.map((s) => s as Map<String, dynamic>).toList();
         final String modelUsed = response['modelUsed'] ?? _selectedModel;
+        
+        // [NEW] 解析圖表資料（兼容性 - 可選欄位）
+        ChartData? chartData;
+        if (response['chartData'] != null) {
+          try {
+            chartData = ChartData.fromJson(response['chartData'] as Map<String, dynamic>);
+          } catch (e) {
+            print('[AI Chat] 解析 chartData 失敗: $e');
+          }
+        }
+        
         setState(() {
           _messages.add(
             ChatMessage(
@@ -811,6 +1072,7 @@ class _AIAssistantPageState extends State<AIAssistantPage>
               content: '$aiResponse\n\n*(由 ${modelUsed.split('/').last} 回答)*',
               isUser: false,
               sources: sources,
+              chartData: chartData, // [NEW] 加入圖表資料
             ),
           );
         });

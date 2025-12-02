@@ -5,8 +5,11 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../services/ble_data_processor.dart'; // 引入解析器
 import '../services/ble_packet_decoder.dart'; // 引入封包解碼器
+import '../services/pending_measurement_service.dart'; // 待測量服務
+import '../services/v3/data_filter_service.dart'; // V3 數據過濾服務
 import 'manual_input_page.dart'; // 引入手動補全頁面
 import 'manual_input_page_v2.dart'; // 引入 V2 頁面
+import 'pending_measurement_task_page.dart'; // 引入待測量任務頁面
 
 class BleImportPage extends StatefulWidget {
   const BleImportPage({super.key});
@@ -124,6 +127,126 @@ class _BleImportPageState extends State<BleImportPage> {
         _estimatedRecordCount = 0; // [v14.0] 重置記錄數統計
       });
     }
+  }
+
+  /// V3: 顯示資料過濾結果對話框
+  void _showFilterResultDialog(DataFilterResult result) {
+    final stats = result.stats;
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(Icons.filter_list, color: Colors.orange[700]),
+            const SizedBox(width: 8),
+            const Text('資料過濾報告'),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              _buildStatRow('總輸入', stats.totalInput, Colors.blue),
+              _buildStatRow('有效記錄', stats.validCount, Colors.green),
+              if (stats.incompleteCount > 0)
+                _buildStatRow('不完整', stats.incompleteCount, Colors.orange),
+              if (stats.duplicateCount > 0)
+                _buildStatRow('重複', stats.duplicateCount, Colors.red),
+              if (stats.conflictCount > 0)
+                _buildStatRow('衝突(已解決)', stats.conflictCount, Colors.purple),
+              
+              if (stats.missingFieldCounts.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                const Text('缺失欄位:', style: TextStyle(fontWeight: FontWeight.bold)),
+                ...stats.missingFieldCounts.entries.map((e) => 
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16, top: 4),
+                    child: Text('• ${e.key}: ${e.value} 筆'),
+                  ),
+                ),
+              ],
+              
+              // 顯示衝突詳情
+              if (result.conflicts.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text('衝突詳情 (${result.conflicts.length}):', 
+                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.purple)),
+                ...result.conflicts.take(3).map((c) => 
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16, top: 4),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('• 座標: ${c.lat.toStringAsFixed(6)}, ${c.lon.toStringAsFixed(6)}', 
+                          style: const TextStyle(fontSize: 12)),
+                        Text('  衝突欄位: ${c.conflictingFields.keys.join(", ")}',
+                          style: TextStyle(fontSize: 11, color: Colors.grey[600])),
+                        Text('  保留記錄: ${c.keptRecord['id']}',
+                          style: TextStyle(fontSize: 11, color: Colors.green[700])),
+                      ],
+                    ),
+                  ),
+                ),
+                if (result.conflicts.length > 3)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16, top: 4),
+                    child: Text('... 還有 ${result.conflicts.length - 3} 組衝突',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                  ),
+              ],
+              
+              if (stats.duplicateGroups.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text('重複群組 (${stats.duplicateGroups.length}):', 
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+                ...stats.duplicateGroups.take(5).map((g) => 
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16, top: 4),
+                    child: Text('• $g', style: const TextStyle(fontSize: 12)),
+                  ),
+                ),
+                if (stats.duplicateGroups.length > 5)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 16, top: 4),
+                    child: Text('... 還有 ${stats.duplicateGroups.length - 5} 組',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                  ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('了解'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatRow(String label, int value, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '$value',
+              style: TextStyle(fontWeight: FontWeight.bold, color: color),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   // 2. 掃描設備
@@ -771,79 +894,295 @@ class _BleImportPageState extends State<BleImportPage> {
         ],
         Padding(
           padding: const EdgeInsets.all(16.0),
-          child: Row(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _receivedCsvLines.isNotEmpty
-                      ? () {
-                          // 解析當前緩衝區的數據 (再次確保是最新的)
-                          String fullData = _dataBuffer.toString();
-                          List<Map<String, dynamic>> parsedData =
-                              BleDataProcessor.parseCsvData(fullData);
+              // 主要操作按鈕區
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _receivedCsvLines.isNotEmpty
+                          ? () {
+                              // 解析當前緩衝區的數據 (再次確保是最新的)
+                              String fullData = _dataBuffer.toString();
+                              List<Map<String, dynamic>> parsedData =
+                                  BleDataProcessor.parseCsvData(fullData);
 
-                          if (parsedData.isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('尚未接收到有效數據')),
-                            );
-                            return;
-                          }
+                              if (parsedData.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('尚未接收到有效數據')),
+                                );
+                                return;
+                              }
 
-                          // 根據開關決定導航到 V1 或 V2
-                          if (_useV2Import) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    ManualInputPageV2(importedData: parsedData),
-                              ),
-                            ).then((_) {
-                              // [FIX] 從手動頁面返回時，重置所有狀態，防止殘留數據導致的崩潰
-                              _resetState();
-                            });
-                          } else {
-                            // 舊版邏輯
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    ManualInputPage(importedData: parsedData),
-                              ),
-                            ).then((_) {
-                              // [FIX] 從手動頁面返回時，重置所有狀態，防止殘留數據導致的崩潰
-                              _resetState();
-                            });
-                          }
-                        }
-                      : null,
-                  child: Text(
-                      _useV2Import
-                          ? '解析並匯入數據 (V2 Batch)'
-                          : '解析並匯入數據 (${_receivedCsvLines.length}筆)',
-                      style: TextStyle(
-                          color: _useV2Import ? Colors.teal : null,
-                          fontWeight: _useV2Import ? FontWeight.bold : null)),
-                ),
+                              // V3: 應用數據過濾（不完整資料 + 重複資料）
+                              final filterResult = DataFilterService.filterBleData(
+                                parsedData,
+                                options: FilterOptions(keepIncomplete: false),
+                              );
+
+                              // 顯示過濾結果
+                              if (filterResult.stats.incompleteCount > 0 || 
+                                  filterResult.stats.duplicateCount > 0) {
+                                _showFilterResultDialog(filterResult);
+                              }
+
+                              // 使用過濾後的資料
+                              final filteredData = filterResult.validRecords;
+                              if (filteredData.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('過濾後無有效數據')),
+                                );
+                                return;
+                              }
+
+                              // 根據開關決定導航到 V1 或 V2
+                              if (_useV2Import) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        ManualInputPageV2(importedData: filteredData),
+                                  ),
+                                ).then((_) {
+                                  // [FIX] 從手動頁面返回時，重置所有狀態，防止殘留數據導致的崩潰
+                                  _resetState();
+                                });
+                              } else {
+                                // 舊版邏輯
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        ManualInputPage(importedData: filteredData),
+                                  ),
+                                ).then((_) {
+                                  // [FIX] 從手動頁面返回時，重置所有狀態，防止殘留數據導致的崩潰
+                                  _resetState();
+                                });
+                              }
+                            }
+                          : null,
+                      child: Text(
+                          _useV2Import
+                              ? '解析並匯入數據 (V2 Batch)'
+                              : '解析並匯入數據 (${_receivedCsvLines.length}筆)',
+                          style: TextStyle(
+                              color: _useV2Import ? Colors.teal : null,
+                              fontWeight: _useV2Import ? FontWeight.bold : null)),
+                    ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 8),
+              // 兩階段測量選項
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.camera_alt, size: 18),
+                      label: const Text('儲存到待測量 (AR DBH)'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.purple,
+                        side: const BorderSide(color: Colors.purple),
+                      ),
+                      onPressed: _receivedCsvLines.isNotEmpty
+                          ? () => _showSaveToPendingDialog()
+                          : null,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
               // [UX] 新增返回按鈕，允許手動清除數據並返回掃描頁
-              if (_connectedDevice == null) ...[
-                const SizedBox(width: 8),
-                OutlinedButton(
-                  onPressed: () {
-                    setState(() {
-                      _dataBuffer.clear();
-                      _receivedCsvLines.clear();
-                      _hexLog.clear();
-                      _isTransmissionSuccess = false;
-                    });
-                  },
-                  child: const Text('清除並返回'),
+              if (_connectedDevice == null)
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () {
+                          setState(() {
+                            _dataBuffer.clear();
+                            _receivedCsvLines.clear();
+                            _hexLog.clear();
+                            _isTransmissionSuccess = false;
+                          });
+                        },
+                        child: const Text('清除並返回'),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
             ],
           ),
         ),
       ],
     );
+  }
+
+  // 顯示儲存到待測量的對話框
+  void _showSaveToPendingDialog() {
+    final batchNameController = TextEditingController(
+      text: '測量批次 ${DateTime.now().toString().substring(0, 16)}',
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('儲存到待測量任務'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '此功能將資料儲存為待測量任務，稍後使用 AR 功能測量 DBH。',
+              style: TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: batchNameController,
+              decoration: const InputDecoration(
+                labelText: '批次名稱',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '共 ${_receivedCsvLines.length} 棵樹',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+          ElevatedButton.icon(
+            icon: const Icon(Icons.save),
+            label: const Text('儲存'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.purple,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () async {
+              Navigator.pop(context);
+              await _saveToPendingMeasurements(batchNameController.text);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 儲存到待測量任務
+  Future<void> _saveToPendingMeasurements(String batchName) async {
+    try {
+      // 解析數據
+      String fullData = _dataBuffer.toString();
+      List<Map<String, dynamic>> parsedData =
+          BleDataProcessor.parseCsvData(fullData);
+
+      if (parsedData.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('尚未接收到有效數據')),
+        );
+        return;
+      }
+
+      // V3: 應用數據過濾（不完整資料 + 重複資料）
+      final filterResult = DataFilterService.filterBleData(
+        parsedData,
+        options: FilterOptions(keepIncomplete: false),
+      );
+
+      // 使用過濾後的資料
+      final filteredData = filterResult.validRecords;
+      
+      // 如果有過濾，顯示摘要
+      if (filterResult.stats.incompleteCount > 0 || 
+          filterResult.stats.duplicateCount > 0) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '過濾: ${filterResult.stats.incompleteCount} 筆不完整, '
+              '${filterResult.stats.duplicateCount} 筆重複'
+            ),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+
+      if (filteredData.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('過濾後無有效數據')),
+        );
+        return;
+      }
+
+      // 顯示載入中
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+
+      // 呼叫服務儲存（使用過濾後的資料）
+      final service = PendingMeasurementService();
+      final result = await service.createAndUploadFromBle(
+        bleData: filteredData,
+        batchName: batchName,
+      );
+
+      // 關閉載入中
+      if (mounted) Navigator.pop(context);
+
+      if (result['success'] == true) {
+        final count = result['count'] ?? filteredData.length;
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('成功儲存 $count 棵樹到待測量任務'),
+            backgroundColor: Colors.green,
+            action: SnackBarAction(
+              label: '前往任務',
+              textColor: Colors.white,
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const PendingMeasurementTaskPage(),
+                  ),
+                );
+              },
+            ),
+          ),
+        );
+
+        // 重置狀態
+        _resetState();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('儲存失敗: ${result['message'] ?? '未知錯誤'}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      // 確保載入中對話框已關閉
+      if (mounted) Navigator.of(context).pop();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('發生錯誤: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }

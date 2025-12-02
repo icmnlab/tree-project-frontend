@@ -5,10 +5,13 @@ import 'dart:convert';
 
 // Import services
 import 'services/tree_service.dart';
+import 'services/ar_measurement_service.dart';
+import 'screens/ar_dbh_measurement_page.dart';
 import 'services/project_service.dart';
 import 'services/project_area_service.dart';
 import 'services/location_service.dart';
 import 'services/species_service.dart';
+import 'services/v3/ml_data_collector.dart'; // V3 ML 數據收集
 
 // A new, dedicated page for editing tree data in V2 style.
 // This avoids mixing create/edit logic and resolves state issues.
@@ -48,6 +51,12 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
   bool _isLoading = false;
   String _locationError = '';
   bool _autoCalculateEnabled = true;
+  
+  // V3 ML 數據追蹤：記錄原始載入的碳計算值
+  double? _originalCarbonStorage;
+  double? _originalAnnualCarbon;
+  double? _originalDbh;
+  bool _carbonWasAutoCalculated = true; // 追蹤用戶是否有關閉自動計算
 
   // Services
   final TreeService _treeService = TreeService();
@@ -159,6 +168,11 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
         getValue('carbon_storage')?.toString() ?? '0';
     annualcarbonController.text =
         getValue('carbon_sequestration_per_year')?.toString() ?? '0';
+    
+    // V3 ML 數據追蹤：記錄原始載入值
+    _originalDbh = double.tryParse(dbhController.text);
+    _originalCarbonStorage = double.tryParse(carbonstorageController.text);
+    _originalAnnualCarbon = double.tryParse(annualcarbonController.text);
 
     final surveyTimeString = getValue('survey_time');
     if (surveyTimeString != null) {
@@ -264,6 +278,44 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
     setState(() => _isLoading = true);
 
     try {
+      final double currentDbh = double.tryParse(dbhController.text) ?? 0;
+      final double currentCarbonStorage = double.tryParse(carbonstorageController.text) ?? 0;
+      final double currentAnnualCarbon = double.tryParse(annualcarbonController.text) ?? 0;
+      
+      // V3 ML 數據收集：記錄碳計算修改
+      // 條件：用戶曾經關閉自動計算，且數值與自動計算結果不同
+      if (!_carbonWasAutoCalculated && _originalDbh != null) {
+        // 計算如果用自動計算會得到的值
+        final double autoCalculatedStorage = calculateCarbonStorage(currentDbh);
+        final double autoCalculatedAnnual = calculateCarbonSequestration(autoCalculatedStorage, null);
+        
+        // 如果用戶修改的值與自動計算值有差異，記錄 ML 數據
+        final double storageDiff = (currentCarbonStorage - autoCalculatedStorage).abs();
+        final double annualDiff = (currentAnnualCarbon - autoCalculatedAnnual).abs();
+        
+        if (storageDiff > 0.01 || annualDiff > 0.001) {
+          logDebug('V3 ML: 記錄碳計算修改 - 自動: $autoCalculatedStorage/$autoCalculatedAnnual, 用戶: $currentCarbonStorage/$currentAnnualCarbon');
+          
+          await MLDataCollector.recordCarbonModification(
+            treeId: _treeId,
+            speciesName: treeNameController.text,
+            dbhCm: currentDbh,
+            treeHeightM: double.tryParse(treeHeightController.text),
+            autoCalculatedStorage: autoCalculatedStorage,
+            userModifiedStorage: currentCarbonStorage,
+            autoCalculatedSequestration: autoCalculatedAnnual,
+            userModifiedSequestration: currentAnnualCarbon,
+            metadata: {
+              'original_dbh': _originalDbh,
+              'original_storage': _originalCarbonStorage,
+              'original_annual': _originalAnnualCarbon,
+              'species_id': treeIdController.text,
+              'project_code': projectCodeController.text,
+            },
+          );
+        }
+      }
+
       final treeData = {
         "project_area": projectAreaController.text,
         "project_code": projectCodeController.text,
@@ -279,12 +331,11 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
             ? null
             : treeRemarkController.text,
         "tree_height_m": double.tryParse(treeHeightController.text) ?? 0,
-        "dbh_cm": double.tryParse(dbhController.text) ?? 0,
+        "dbh_cm": currentDbh,
         "survey_notes": surveyRemarkController.text,
         "survey_time": surveyTime.toIso8601String(),
-        "carbon_storage": double.tryParse(carbonstorageController.text) ?? 0,
-        "carbon_sequestration_per_year":
-            double.tryParse(annualcarbonController.text) ?? 0,
+        "carbon_storage": currentCarbonStorage,
+        "carbon_sequestration_per_year": currentAnnualCarbon,
       };
 
       logDebug(
@@ -437,8 +488,7 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
                   _buildSectionHeader('測量與備註', Icons.straighten, Colors.purple),
                   _buildTextField(treeHeightController, '樹高 (m)', null,
                       keyboardType: const TextInputType.numberWithOptions(decimal: true)),
-                  _buildTextField(dbhController, '胸徑 (cm)', null,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true)),
+                  _buildDbhFieldWithArButton(),
                   _buildTextField(noteController, '註記', null),
                   _buildTextField(treeRemarkController, '樹木備註', null),
                   _buildTextField(surveyRemarkController, '調查備註', null),
@@ -480,6 +530,84 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
             ),
       ),
     );
+  }
+
+  // AR DBH 測量按鈕欄位
+  Widget _buildDbhFieldWithArButton() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: TextFormField(
+              controller: dbhController,
+              decoration: InputDecoration(
+                labelText: '胸徑 (cm)',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: Colors.teal),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.teal.shade200),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.teal.shade600, width: 2),
+                ),
+                filled: true,
+                fillColor: Colors.teal.shade50,
+              ),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Tooltip(
+            message: 'AR 測量胸徑',
+            child: Material(
+              color: Colors.purple.shade100,
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: _openARMeasurement,
+                child: Container(
+                  width: 56,
+                  height: 56,
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.camera_alt,
+                    color: Colors.purple.shade700,
+                    size: 28,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // 開啟 AR 測量頁面
+  Future<void> _openARMeasurement() async {
+    final result = await Navigator.of(context).push<double>(
+      MaterialPageRoute(
+        builder: (_) => const ARDBHMeasurementPage(),
+      ),
+    );
+
+    if (result != null && mounted) {
+      setState(() {
+        dbhController.text = result.toStringAsFixed(1);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('AR 測量完成：胸徑 ${result.toStringAsFixed(1)} cm'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
   }
 
   // Helper for read-only fields
@@ -1051,6 +1179,10 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
               onChanged: (value) {
                 setState(() {
                   _autoCalculateEnabled = value;
+                  // V3 ML 數據追蹤：記錄用戶是否關閉過自動計算
+                  if (!value) {
+                    _carbonWasAutoCalculated = false;
+                  }
                   if (value) _updateCarbonCalculations();
                 });
               },

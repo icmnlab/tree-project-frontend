@@ -9,6 +9,7 @@ import 'services/project_service.dart';
 import 'services/project_area_service.dart';
 import 'services/location_service.dart';
 import 'services/species_service.dart';
+import 'services/v3/project_boundary_service.dart'; // V3: 專案邊界驗證
 
 // 定義日誌函數
 void logDebug(String message) {
@@ -239,6 +240,59 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
         );
       }
       return;
+    }
+
+    // V3: 驗證座標是否在專案邊界內
+    final projectName = projectNameController.text;
+    final lat = double.tryParse(yCoordController.text);
+    final lng = double.tryParse(xCoordController.text);
+    
+    if (projectName.isNotEmpty && lat != null && lng != null && lat != 0 && lng != 0) {
+      final boundaryService = ProjectBoundaryService();
+      // 確保已載入邊界資料
+      await boundaryService.getAllBoundaries();
+      
+      final validation = boundaryService.validateCoordinateForProject(
+        projectName: projectName,
+        lat: lat,
+        lng: lng,
+      );
+      
+      if (!validation.isValid) {
+        if (mounted) {
+          final shouldContinue = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.warning_amber_rounded, color: Colors.orange),
+                  SizedBox(width: 8),
+                  Text('座標驗證警告'),
+                ],
+              ),
+              content: Text(
+                '${validation.message}\n\n'
+                '您仍然可以選擇繼續提交，但這棵樹的位置可能需要重新確認。',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('返回修改'),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                  child: const Text('仍然提交'),
+                ),
+              ],
+            ),
+          );
+          
+          if (shouldContinue != true) {
+            return;
+          }
+        }
+      }
     }
 
     setState(() {

@@ -4,6 +4,8 @@ import '../services/project_area_service.dart';
 import '../services/project_service.dart';
 import '../services/species_service.dart';
 import '../services/tree_service.dart';
+import '../services/v3/project_boundary_service.dart'; // V3: 專案邊界自動匹配
+import 'ar_dbh_measurement_page.dart';
 
 /// ManualInputPageV2
 ///
@@ -59,6 +61,50 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
     super.initState();
     _deduplicateAndInitData();
     _loadInitialData();
+    _autoMatchProjects(); // V3: 自動匹配專案
+  }
+
+  // V3: 根據座標自動匹配專案
+  Future<void> _autoMatchProjects() async {
+    final boundaryService = ProjectBoundaryService();
+    
+    // 載入所有專案邊界
+    await boundaryService.getAllBoundaries(forceRefresh: true);
+    
+    if (!boundaryService.hasCache) return;
+    
+    int matchedCount = 0;
+    
+    for (int i = 0; i < _editableData.length; i++) {
+      final item = _editableData[i];
+      final lat = item['lat'] as double?;
+      final lon = item['lon'] as double?;
+      
+      if (lat == null || lon == null || lat == 0 || lon == 0) continue;
+      
+      final matchResult = boundaryService.findProjectByCoordinate(
+        lat: lat,
+        lng: lon,
+      );
+      
+      if (matchResult.matched && matchResult.projectName != null) {
+        _editableData[i]['project_name'] = matchResult.projectName;
+        _editableData[i]['project_code'] = matchResult.projectCode;
+        _editableData[i]['_auto_matched'] = true; // 標記為自動匹配
+        matchedCount++;
+      }
+    }
+    
+    if (mounted && matchedCount > 0) {
+      setState(() {});
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('V3: 已根據座標自動匹配 $matchedCount 筆專案名稱'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
   }
 
   void _deduplicateAndInitData() {
@@ -970,10 +1016,50 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('設定胸徑 (DBH)'),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          decoration: const InputDecoration(labelText: '胸徑 (cm)'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // AR 測量按鈕
+            Container(
+              width: double.infinity,
+              margin: const EdgeInsets.only(bottom: 16),
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.camera_alt),
+                label: const Text('AR 測量胸徑'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.purple.shade100,
+                  foregroundColor: Colors.purple.shade700,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                ),
+                onPressed: () async {
+                  Navigator.pop(context);
+                  final result = await Navigator.of(context).push<double>(
+                    MaterialPageRoute(
+                      builder: (_) => const ARDBHMeasurementPage(),
+                    ),
+                  );
+                  if (result != null) {
+                    _batchUpdateField('dbh', result);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('AR 測量完成：胸徑 ${result.toStringAsFixed(1)} cm'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  }
+                },
+              ),
+            ),
+            const Divider(),
+            const SizedBox(height: 8),
+            const Text('或手動輸入：', style: TextStyle(fontSize: 12, color: Colors.grey)),
+            const SizedBox(height: 8),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: '胸徑 (cm)'),
+            ),
+          ],
         ),
         actions: [
           TextButton(

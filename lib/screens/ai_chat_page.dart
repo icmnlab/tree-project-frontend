@@ -4,11 +4,13 @@ import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fl_chart/fl_chart.dart'; // [NEW] 查詢結果視覺化
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 
 import '../services/ai_service.dart';
+import '../constants/colors.dart'; // [NEW] 統一色彩
 
 /// 現代化 AI 聊天頁面 v2.0
 /// 設計參考: ChatGPT, Claude, Gemini
@@ -25,6 +27,47 @@ import '../services/ai_service.dart';
 // 資料模型
 // ============================================
 
+/// [NEW] 圖表資料模型 (用於查詢結果視覺化)
+class ChartData {
+  final String type; // 'bar' or 'pie'
+  final String labelKey;
+  final String valueKey;
+  final List<ChartDataItem> data;
+
+  ChartData({
+    required this.type,
+    required this.labelKey,
+    required this.valueKey,
+    required this.data,
+  });
+
+  factory ChartData.fromJson(Map<String, dynamic> json) {
+    return ChartData(
+      type: json['type'] as String? ?? 'bar',
+      labelKey: json['labelKey'] as String? ?? '',
+      valueKey: json['valueKey'] as String? ?? '',
+      data: (json['data'] as List<dynamic>?)
+              ?.map((e) => ChartDataItem.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
+    );
+  }
+}
+
+class ChartDataItem {
+  final String label;
+  final double value;
+
+  ChartDataItem({required this.label, required this.value});
+
+  factory ChartDataItem.fromJson(Map<String, dynamic> json) {
+    return ChartDataItem(
+      label: json['label']?.toString() ?? '',
+      value: (json['value'] as num?)?.toDouble() ?? 0.0,
+    );
+  }
+}
+
 /// 單一對話訊息
 class ChatMessage {
   final String id;
@@ -35,6 +78,9 @@ class ChatMessage {
   final bool isError;
   final List<Map<String, dynamic>>? sources;
   final String? executedSQL;
+  final ChartData? chartData; // [NEW] 可選的圖表資料
+  final List<Map<String, dynamic>>? suggestions; // [NEW] 智慧建議
+  final List<Map<String, dynamic>>? anomalies; // [NEW] 異常警示
 
   ChatMessage({
     String? id,
@@ -45,6 +91,9 @@ class ChatMessage {
     this.isError = false,
     this.sources,
     this.executedSQL,
+    this.chartData,
+    this.suggestions,
+    this.anomalies,
   })  : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         timestamp = timestamp ?? DateTime.now();
 
@@ -54,6 +103,9 @@ class ChatMessage {
     bool? isError,
     List<Map<String, dynamic>>? sources,
     String? executedSQL,
+    ChartData? chartData,
+    List<Map<String, dynamic>>? suggestions,
+    List<Map<String, dynamic>>? anomalies,
   }) {
     return ChatMessage(
       id: id,
@@ -64,6 +116,9 @@ class ChatMessage {
       isError: isError ?? this.isError,
       sources: sources ?? this.sources,
       executedSQL: executedSQL ?? this.executedSQL,
+      chartData: chartData ?? this.chartData,
+      suggestions: suggestions ?? this.suggestions,
+      anomalies: anomalies ?? this.anomalies,
     );
   }
 }
@@ -372,6 +427,36 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
       );
 
       // 更新 AI 回覆
+      // [NEW] 解析圖表資料（兼容性 - 可選欄位）
+      ChartData? chartData;
+      if (response['chartData'] != null) {
+        try {
+          chartData = ChartData.fromJson(response['chartData'] as Map<String, dynamic>);
+        } catch (e) {
+          debugPrint('[AI Chat] 解析 chartData 失敗: $e');
+        }
+      }
+      
+      // [NEW] 解析智慧建議（兼容性 - 可選欄位）
+      List<Map<String, dynamic>>? suggestions;
+      if (response['suggestions'] != null) {
+        try {
+          suggestions = List<Map<String, dynamic>>.from(response['suggestions']);
+        } catch (e) {
+          debugPrint('[AI Chat] 解析 suggestions 失敗: $e');
+        }
+      }
+      
+      // [NEW] 解析異常警示（兼容性 - 可選欄位）
+      List<Map<String, dynamic>>? anomalies;
+      if (response['anomalies'] != null) {
+        try {
+          anomalies = List<Map<String, dynamic>>.from(response['anomalies']);
+        } catch (e) {
+          debugPrint('[AI Chat] 解析 anomalies 失敗: $e');
+        }
+      }
+      
       setState(() {
         final index = _currentSession!.messages.indexOf(aiPlaceholder);
         if (index != -1) {
@@ -382,6 +467,9 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
                 ? List<Map<String, dynamic>>.from(response['sources'])
                 : null,
             executedSQL: response['executedSQL'],
+            chartData: chartData,
+            suggestions: suggestions, // [NEW] 加入智慧建議
+            anomalies: anomalies, // [NEW] 加入異常警示
           );
         }
         _isLoading = false;
@@ -1522,6 +1610,18 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
             ),
           ),
 
+        // [NEW] 異常數據警示
+        if (message.anomalies != null && message.anomalies!.isNotEmpty)
+          _buildAnomaliesSection(message.anomalies!, colorScheme),
+
+        // [NEW] 查詢結果圖表視覺化
+        if (message.chartData != null && message.chartData!.data.isNotEmpty)
+          _buildQueryChart(message.chartData!, colorScheme),
+
+        // [NEW] 智慧建議
+        if (message.suggestions != null && message.suggestions!.isNotEmpty)
+          _buildSuggestionsSection(message.suggestions!, colorScheme),
+
         // SQL 查詢（可展開）
         if (message.executedSQL != null && message.executedSQL!.isNotEmpty)
           _buildExpandableSQL(message.executedSQL!, colorScheme),
@@ -1801,6 +1901,353 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  // ============================================
+  // [NEW] 查詢結果圖表視覺化
+  // ============================================
+
+  /// 建立查詢結果圖表 - 支援長條圖和圓餅圖
+  Widget _buildQueryChart(ChartData chartData, ColorScheme colorScheme) {
+    final bool isPie = chartData.type == 'pie';
+    final List<Color> chartColors = [
+      AppColors.forestGreen,
+      AppColors.portBlue,
+      AppColors.chartOrange,  // Fixed: warningOrange -> chartOrange
+      Colors.purple,
+      Colors.teal,
+      Colors.pink,
+      Colors.indigo,
+      Colors.amber,
+    ];
+
+    return Container(
+      margin: const EdgeInsets.only(top: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: colorScheme.outline.withOpacity(0.1),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                isPie ? Icons.pie_chart_rounded : Icons.bar_chart_rounded,
+                size: 18,
+                color: colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '查詢結果視覺化',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: isPie ? 220 : 200,
+            child: isPie
+                ? _buildPieChart(chartData, chartColors, colorScheme)
+                : _buildBarChart(chartData, chartColors, colorScheme),
+          ),
+          // 圓餅圖圖例
+          if (isPie) ...[
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 12,
+              runSpacing: 8,
+              children: List.generate(chartData.data.length, (index) {
+                final item = chartData.data[index];
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 12,
+                      height: 12,
+                      decoration: BoxDecoration(
+                        color: chartColors[index % chartColors.length],
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '${item.label}: ${item.value.toStringAsFixed(1)}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                );
+              }),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPieChart(ChartData chartData, List<Color> colors, ColorScheme colorScheme) {
+    final total = chartData.data.fold<double>(0, (sum, item) => sum + item.value);
+
+    return PieChart(
+      PieChartData(
+        sectionsSpace: 2,
+        centerSpaceRadius: 45,
+        sections: List.generate(chartData.data.length, (index) {
+          final item = chartData.data[index];
+          final percentage = total > 0 ? (item.value / total * 100) : 0;
+          return PieChartSectionData(
+            color: colors[index % colors.length],
+            value: item.value,
+            title: percentage >= 5 ? '${percentage.toStringAsFixed(0)}%' : '',
+            radius: 55,
+            titleStyle: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildBarChart(ChartData chartData, List<Color> colors, ColorScheme colorScheme) {
+    final maxValue = chartData.data.fold<double>(
+      0,
+      (max, item) => item.value > max ? item.value : max,
+    );
+
+    return BarChart(
+      BarChartData(
+        alignment: BarChartAlignment.spaceAround,
+        maxY: maxValue * 1.2,
+        barTouchData: BarTouchData(
+          touchTooltipData: BarTouchTooltipData(
+            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+              final item = chartData.data[groupIndex];
+              return BarTooltipItem(
+                '${item.label}\n${item.value.toStringAsFixed(1)}',
+                TextStyle(color: colorScheme.onSurface, fontSize: 12),
+              );
+            },
+          ),
+        ),
+        titlesData: FlTitlesData(
+          show: true,
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (value, meta) {
+                if (value.toInt() >= 0 && value.toInt() < chartData.data.length) {
+                  final label = chartData.data[value.toInt()].label;
+                  final displayLabel = label.length > 6 ? '${label.substring(0, 5)}…' : label;
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      displayLabel,
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  );
+                }
+                return const Text('');
+              },
+              reservedSize: 30,
+            ),
+          ),
+          leftTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              reservedSize: 45,
+              getTitlesWidget: (value, meta) {
+                return Text(
+                  value >= 1000
+                      ? '${(value / 1000).toStringAsFixed(0)}k'
+                      : value.toStringAsFixed(0),
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                );
+              },
+            ),
+          ),
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        ),
+        borderData: FlBorderData(show: false),
+        gridData: FlGridData(
+          show: true,
+          drawVerticalLine: false,
+          horizontalInterval: maxValue > 0 ? maxValue / 4 : 1,
+          getDrawingHorizontalLine: (value) => FlLine(
+            color: colorScheme.outline.withOpacity(0.1),
+            strokeWidth: 1,
+          ),
+        ),
+        barGroups: List.generate(chartData.data.length, (index) {
+          final item = chartData.data[index];
+          return BarChartGroupData(
+            x: index,
+            barRods: [
+              BarChartRodData(
+                toY: item.value,
+                color: colors[index % colors.length],
+                width: chartData.data.length > 8 ? 14 : 22,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(6)),
+              ),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+
+  // ============================================
+  // [NEW] 異常數據警示區塊
+  // ============================================
+  Widget _buildAnomaliesSection(List<Map<String, dynamic>> anomalies, ColorScheme colorScheme) {
+    return Container(
+      margin: const EdgeInsets.only(top: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.orange.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.warning_amber_rounded, size: 18, color: Colors.orange),
+              const SizedBox(width: 8),
+              Text(
+                '數據品質提醒',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...anomalies.map((anomaly) => Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  anomaly['icon'] ?? '⚠️',
+                  style: const TextStyle(fontSize: 12),
+                ),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    anomaly['message'] ?? '',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+
+  // ============================================
+  // [NEW] 智慧建議區塊
+  // ============================================
+  Widget _buildSuggestionsSection(List<Map<String, dynamic>> suggestions, ColorScheme colorScheme) {
+    return Container(
+      margin: const EdgeInsets.only(top: 16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.lightbulb_outline_rounded, size: 16, color: colorScheme.primary),
+              const SizedBox(width: 6),
+              Text(
+                '您可能還想問',
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: suggestions.map((suggestion) {
+              return Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () {
+                    final query = suggestion['query'] as String?;
+                    if (query != null && query.isNotEmpty) {
+                      _messageController.text = query;
+                      _sendMessage();
+                    }
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primaryContainer.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: colorScheme.primary.withOpacity(0.2),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          suggestion['icon'] ?? '💡',
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Text(
+                            suggestion['text'] ?? '',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: colorScheme.onSurface,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+        ],
       ),
     );
   }

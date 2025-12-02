@@ -3,13 +3,45 @@
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-blue.svg)](https://flutter.dev/)
 [![Dart](https://img.shields.io/badge/Dart-3.x-blue.svg)](https://dart.dev/)
 [![License](https://img.shields.io/badge/License-ISC-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-16.0.1-green.svg)](https://github.com/KyleliuNDHU/tree-project-frontend)
+[![Version](https://img.shields.io/badge/Version-17.0.0-green.svg)](https://github.com/KyleliuNDHU/tree-project-frontend)
 
 > 基於大語言模型的永續發展分析平台 - Flutter 行動應用程式
 
 ---
 
 ## 📦 版本紀錄
+
+### v17.0.0 (2025-12-03) - V3 專案邊界與智慧匹配 🗺️
+
+#### 🆕 新增功能
+- **專案邊界管理** - 使用者可在地圖上手動繪製專案邊界多邊形
+  - `ProjectBoundaryDrawPage` - 地圖繪製介面，支援拖曳調整頂點
+  - `ProjectBoundaryService` - 本地 Ray Casting 演算法快速檢測
+  - 5 分鐘快取機制，減少 API 請求
+- **座標驗證機制** - 新增樹木時自動檢查座標是否在專案邊界內
+  - 有邊界的專案：座標必須在邊界內（可選擇強制提交）
+  - 無邊界的專案：不受座標限制
+- **批次匯入自動匹配** - BLE 批次匯入時根據座標自動匹配專案名稱
+  - 自動填入 `project_name` 和 `project_code`
+  - 顯示匹配結果統計 SnackBar
+
+#### 🔧 V3 服務層
+- `lib/services/v3/project_boundary_service.dart` - 專案邊界服務
+- `lib/services/v3/ml_data_collector.dart` - ML 數據收集服務
+- `lib/services/v3/data_filter_service.dart` - 數據過濾服務
+
+#### 📋 變更清單
+| 類型 | 說明 |
+|------|------|
+| feat | 新增 `project_boundary_service.dart` 專案邊界服務 |
+| feat | 新增 `project_boundary_draw_page.dart` 地圖繪製頁面 |
+| feat | `map_page.dart` 整合專案邊界多邊形顯示 |
+| feat | `tree_input_page_v2.dart` 新增座標邊界驗證 |
+| feat | `manual_input_page_v2.dart` 新增自動專案匹配 |
+| fix | 修復 `ai_chat_page.dart` warningOrange 顏色錯誤 |
+| fix | 修復 `ai_assistant_page.dart` warningOrange 顏色錯誤 |
+
+---
 
 ### v16.0.1 (2025-12-02) - 錯誤修復 🔧
 

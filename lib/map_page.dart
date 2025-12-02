@@ -4,6 +4,8 @@ import 'dart:math';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart';
 import 'services/api_service.dart';
+import 'services/v3/project_boundary_service.dart';
+import 'screens/v3/project_boundary_draw_page.dart';
 import 'constants/colors.dart';
 
 class MapPage extends StatefulWidget {
@@ -16,6 +18,7 @@ class MapPage extends StatefulWidget {
 class _MapPageState extends State<MapPage> {
   GoogleMapController? _controller;
   final Set<Marker> _markers = {};
+  final Set<Polygon> _polygons = {}; // V3: 專案邊界多邊形
   bool _isLoading = false;
   String _selectedProject = '全部';
   String _selectedCity = '全部';
@@ -27,9 +30,14 @@ class _MapPageState extends State<MapPage> {
   Position? _currentPosition;
   MapType _currentMapType = MapType.normal;
   bool _showMenu = true;
+  bool _showBoundaries = true; // V3: 是否顯示邊界
 
   // [優化] 快取樹木資料，避免重複呼叫 API
   List<dynamic> _cachedTreeData = [];
+  
+  // V3: 專案邊界服務
+  final ProjectBoundaryService _boundaryService = ProjectBoundaryService();
+  List<ProjectBoundary> _projectBoundaries = [];
 
   // 台灣中心點作為預設位置
   static const LatLng _defaultLocation = LatLng(23.7, 121.0);
@@ -39,10 +47,209 @@ class _MapPageState extends State<MapPage> {
     super.initState();
     ApiService.triggerCleanup();
     _loadMapData();
+    _loadProjectBoundaries(); // V3: 載入專案邊界
     // 延遲請求權限，確保 widget 已完全建立
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkLocationPermission();
     });
+  }
+
+  // V3: 載入專案邊界
+  Future<void> _loadProjectBoundaries() async {
+    try {
+      _projectBoundaries = await _boundaryService.getAllBoundaries(forceRefresh: true);
+      _updateBoundaryPolygons();
+    } catch (e) {
+      debugPrint('載入專案邊界錯誤: $e');
+    }
+  }
+
+  // V3: 更新邊界多邊形
+  void _updateBoundaryPolygons() {
+    _polygons.clear();
+    
+    if (!_showBoundaries) {
+      _safeSetState(() {});
+      return;
+    }
+
+    // 生成顏色
+    final colors = [
+      Colors.blue,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.teal,
+      Colors.pink,
+      Colors.indigo,
+      Colors.amber,
+    ];
+
+    for (int i = 0; i < _projectBoundaries.length; i++) {
+      final boundary = _projectBoundaries[i];
+      final color = colors[i % colors.length];
+      
+      // 如果選擇了特定專案，只顯示該專案的邊界
+      if (_selectedProject != '全部' && boundary.projectName != _selectedProject) {
+        continue;
+      }
+
+      final points = boundary.coordinates
+          .map((c) => LatLng(c[0], c[1]))
+          .toList();
+
+      if (points.length >= 3) {
+        _polygons.add(Polygon(
+          polygonId: PolygonId('boundary_${boundary.projectName}'),
+          points: points,
+          strokeColor: color,
+          strokeWidth: 2,
+          fillColor: color.withOpacity(0.15),
+          consumeTapEvents: true,
+          onTap: () => _showBoundaryInfo(boundary),
+        ));
+      }
+    }
+
+    _safeSetState(() {});
+  }
+
+  // V3: 顯示邊界資訊
+  void _showBoundaryInfo(ProjectBoundary boundary) {
+    final area = _boundaryService.calculatePolygonArea(boundary.coordinates);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.crop_square, color: AppColors.primary),
+            const SizedBox(width: 8),
+            Expanded(child: Text(boundary.projectName, overflow: TextOverflow.ellipsis)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (boundary.projectCode != null)
+              Text('專案代碼：${boundary.projectCode}'),
+            Text('頂點數量：${boundary.coordinates.length}'),
+            Text('面積：${area.toStringAsFixed(2)} 公頃'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _navigateToBoundaryDrawPage(boundary.projectName);
+            },
+            child: const Text('編輯邊界'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('關閉'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // V3: 導航到邊界繪製頁面
+  void _navigateToBoundaryDrawPage([String? projectName]) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProjectBoundaryDrawPage(
+          projectName: projectName,
+        ),
+      ),
+    );
+    // 返回後重新載入邊界
+    _loadProjectBoundaries();
+  }
+
+  // V3: 顯示邊界列表對話框
+  void _showBoundaryListDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.crop_square, color: AppColors.primary),
+            SizedBox(width: 8),
+            Text('專案邊界列表'),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: _projectBoundaries.length,
+            itemBuilder: (context, index) {
+              final boundary = _projectBoundaries[index];
+              final area = _boundaryService.calculatePolygonArea(boundary.coordinates);
+              
+              return ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: [
+                    Colors.blue,
+                    Colors.green,
+                    Colors.orange,
+                    Colors.purple,
+                    Colors.teal,
+                    Colors.pink,
+                  ][index % 6].withOpacity(0.2),
+                  child: Icon(
+                    Icons.crop_square,
+                    color: [
+                      Colors.blue,
+                      Colors.green,
+                      Colors.orange,
+                      Colors.purple,
+                      Colors.teal,
+                      Colors.pink,
+                    ][index % 6],
+                  ),
+                ),
+                title: Text(
+                  boundary.projectName,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                subtitle: Text('${boundary.coordinates.length} 頂點 · ${area.toStringAsFixed(1)} 公頃'),
+                trailing: IconButton(
+                  icon: const Icon(Icons.center_focus_strong),
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _focusOnBoundary(boundary);
+                  },
+                  tooltip: '移動至此區域',
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showBoundaryInfo(boundary);
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('關閉'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // V3: 聚焦到特定邊界
+  void _focusOnBoundary(ProjectBoundary boundary) {
+    final center = _boundaryService.calculatePolygonCenter(boundary.coordinates);
+    _controller?.animateCamera(CameraUpdate.newLatLngZoom(
+      LatLng(center['lat']!, center['lng']!),
+      15,
+    ));
   }
 
   Future<void> _checkLocationPermission() async {
@@ -248,6 +455,9 @@ class _MapPageState extends State<MapPage> {
       _markers.clear();
       _markers.addAll(markers);
     });
+
+    // V3: 同時更新邊界多邊形
+    _updateBoundaryPolygons();
 
     if (_markers.isNotEmpty && _controller != null && mounted) {
       _zoomToMarkers();
@@ -464,6 +674,63 @@ class _MapPageState extends State<MapPage> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
+          // V3: 專案邊界控制
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.crop_square),
+            tooltip: '專案邊界',
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'toggle',
+                child: Row(
+                  children: [
+                    Icon(
+                      _showBoundaries ? Icons.visibility : Icons.visibility_off,
+                      color: _showBoundaries ? Colors.green : Colors.grey,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(_showBoundaries ? '隱藏邊界' : '顯示邊界'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'draw',
+                child: Row(
+                  children: [
+                    Icon(Icons.edit, color: Colors.blue),
+                    SizedBox(width: 8),
+                    Text('繪製邊界'),
+                  ],
+                ),
+              ),
+              if (_projectBoundaries.isNotEmpty)
+                PopupMenuItem(
+                  value: 'list',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.list, color: Colors.orange),
+                      const SizedBox(width: 8),
+                      Text('邊界列表 (${_projectBoundaries.length})'),
+                    ],
+                  ),
+                ),
+            ],
+            onSelected: (value) {
+              switch (value) {
+                case 'toggle':
+                  setState(() {
+                    _showBoundaries = !_showBoundaries;
+                  });
+                  _updateBoundaryPolygons();
+                  break;
+                case 'draw':
+                  _navigateToBoundaryDrawPage();
+                  break;
+                case 'list':
+                  _showBoundaryListDialog();
+                  break;
+              }
+            },
+          ),
           IconButton(
             icon: Icon(_showMenu ? Icons.filter_list_off : Icons.filter_list),
             onPressed: () {
@@ -486,7 +753,10 @@ class _MapPageState extends State<MapPage> {
           ),
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadMapData,
+            onPressed: () {
+              _loadMapData();
+              _loadProjectBoundaries();
+            },
             tooltip: '重新載入資料',
           ),
         ],
@@ -502,6 +772,7 @@ class _MapPageState extends State<MapPage> {
               zoom: _currentPosition != null ? 15 : 7,
             ),
             markers: _markers,
+            polygons: _polygons, // V3: 專案邊界多邊形
             myLocationEnabled: _hasLocationPermission,
             myLocationButtonEnabled: false,
             zoomControlsEnabled: false, // 移除 Android 預設縮放按鈕
