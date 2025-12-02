@@ -1,0 +1,2192 @@
+nRF Connect, 2025-11-18
+VLGEO2_ 3190 (C4:D3:6A:BA:63:7E)
+V	20:48:23.851	Connecting to C4:D3:6A:BA:63:7E...
+D	20:48:23.851	gatt = device.connectGatt(autoConnect = false, TRANSPORT_LE, preferred PHY = LE 1M)
+D	20:48:24.221	[Callback] Connection state changed with status: 0 and new state: CONNECTED (2)
+I	20:48:24.221	Connected to C4:D3:6A:BA:63:7E
+D	20:48:24.221	wait(1600ms)
+D	20:48:24.603	[Broadcast] Action received: android.bluetooth.device.action.ACL_CONNECTED
+V	20:48:25.822	Discovering services...
+D	20:48:25.822	gatt.discoverServices()
+D	20:48:25.840	[Callback] Services discovered with status: 0
+I	20:48:25.840	Services discovered
+V	20:48:25.846	Generic Access (0x1800)
+- Device Name [R W] (0x2A00)
+- Appearance [R] (0x2A01)
+Device Information (0x180A)
+- Manufacturer Name String [R] (0x2A29)
+- Model Number String [R] (0x2A24)
+Unknown Service (9e000000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e010000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+Nordic UART Service (6e400001-b5a3-f393-e0a9-e50e24dcca9e)
+- RX Characteristic [W WNR] (6e400002-b5a3-f393-e0a9-e50e24dcca9e)
+- TX Characteristic [N R] (6e400003-b5a3-f393-e0a9-e50e24dcca9e)
+   Client Characteristic Configuration (0x2902)
+Unknown Service (69465a7c-6ce7-43bf-9549-8ebfde563e0e)
+- Unknown Characteristic [W WNR] (650c6a10-6867-464a-a876-4e545ee17830)
+Unknown Service (9e020000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e030000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+D	20:48:25.846	gatt.setCharacteristicNotification(9e010000-f685-4ea5-b58a-85287cb04965, true)
+D	20:48:25.849	gatt.setCharacteristicNotification(6e400003-b5a3-f393-e0a9-e50e24dcca9e, true)
+D	20:48:25.851	gatt.setCharacteristicNotification(9e030000-f685-4ea5-b58a-85287cb04965, true)
+V	20:49:38.564	Reading characteristic 00002a01-0000-1000-8000-00805f9b34fb
+D	20:49:38.564	gatt.readCharacteristic(00002a01-0000-1000-8000-00805f9b34fb)
+I	20:49:38.631	Read Response received from 00002a01-0000-1000-8000-00805f9b34fb, value: (0x) 00-00
+A	20:49:38.631	"[0] Unknown" received
+V	20:49:41.538	Reading characteristic 00002a00-0000-1000-8000-00805f9b34fb
+D	20:49:41.538	gatt.readCharacteristic(00002a00-0000-1000-8000-00805f9b34fb)
+I	20:49:41.596	Read Response received from 00002a00-0000-1000-8000-00805f9b34fb, value: (0x) 56-4C-47-45-4F-32-5F-20-33-31-39-30, "VLGEO2_ 3190"
+A	20:49:41.596	"VLGEO2_ 3190" received
+V	20:50:24.080	Reading characteristic 00002a29-0000-1000-8000-00805f9b34fb
+D	20:50:24.080	gatt.readCharacteristic(00002a29-0000-1000-8000-00805f9b34fb)
+I	20:50:24.134	Read Response received from 00002a29-0000-1000-8000-00805f9b34fb, value: (0x) 48-61-67-6C-C3-B6-66-20-53-77-65-64-65-6E
+A	20:50:24.134	"Haglöf Sweden" received
+V	20:50:26.047	Reading characteristic 00002a24-0000-1000-8000-00805f9b34fb
+D	20:50:26.047	gatt.readCharacteristic(00002a24-0000-1000-8000-00805f9b34fb)
+I	20:50:26.116	Read Response received from 00002a24-0000-1000-8000-00805f9b34fb, value: (0x) 47-45-4F-32, "GEO2"
+A	20:50:26.116	"GEO2" received
+V	20:50:30.124	Enabling notifications for 9e010000-f685-4ea5-b58a-85287cb04965
+D	20:50:30.124	gatt.setCharacteristicNotification(9e010000-f685-4ea5-b58a-85287cb04965, true)
+D	20:50:30.128	gatt.writeDescriptor(00002902-0000-1000-8000-00805f9b34fb, value=0x0100)
+I	20:50:30.196	Data written to descr. 00002902-0000-1000-8000-00805f9b34fb, value: (0x) 01-00
+A	20:50:30.196	"Notifications enabled" sent
+V	20:50:30.201	Notifications enabled for 9e010000-f685-4ea5-b58a-85287cb04965
+V	20:50:31.779	Disabling notifications for 9e010000-f685-4ea5-b58a-85287cb04965
+D	20:50:31.779	gatt.setCharacteristicNotification(9e010000-f685-4ea5-b58a-85287cb04965, false)
+D	20:50:31.783	gatt.writeDescriptor(00002902-0000-1000-8000-00805f9b34fb, value=0x0000)
+I	20:50:31.845	Data written to descr. 00002902-0000-1000-8000-00805f9b34fb, value: (0x) 00-00
+A	20:50:31.845	"Notifications and indications disabled" sent
+V	20:50:31.850	Notifications and indications disabled for 9e010000-f685-4ea5-b58a-85287cb04965
+V	20:50:32.814	Enabling notifications for 9e010000-f685-4ea5-b58a-85287cb04965
+D	20:50:32.815	gatt.setCharacteristicNotification(9e010000-f685-4ea5-b58a-85287cb04965, true)
+D	20:50:32.819	gatt.writeDescriptor(00002902-0000-1000-8000-00805f9b34fb, value=0x0100)
+I	20:50:32.866	Data written to descr. 00002902-0000-1000-8000-00805f9b34fb, value: (0x) 01-00
+A	20:50:32.866	"Notifications enabled" sent
+V	20:50:32.870	Notifications enabled for 9e010000-f685-4ea5-b58a-85287cb04965
+V	20:50:33.560	Disabling notifications for 9e010000-f685-4ea5-b58a-85287cb04965
+D	20:50:33.560	gatt.setCharacteristicNotification(9e010000-f685-4ea5-b58a-85287cb04965, false)
+D	20:50:33.563	gatt.writeDescriptor(00002902-0000-1000-8000-00805f9b34fb, value=0x0000)
+I	20:50:33.614	Data written to descr. 00002902-0000-1000-8000-00805f9b34fb, value: (0x) 00-00
+A	20:50:33.614	"Notifications and indications disabled" sent
+V	20:50:33.619	Notifications and indications disabled for 9e010000-f685-4ea5-b58a-85287cb04965
+V	20:50:49.636	Reading characteristic 9e010000-f685-4ea5-b58a-85287cb04965
+D	20:50:49.636	gatt.readCharacteristic(9e010000-f685-4ea5-b58a-85287cb04965)
+I	20:50:49.696	Read Response received from 9e010000-f685-4ea5-b58a-85287cb04965, value: (0x) 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00
+A	20:50:49.697	"(0x) 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00" received
+V	20:50:52.561	Reading descriptor 00002902-0000-1000-8000-00805f9b34fb
+D	20:50:52.561	gatt.readDescriptor(00002902-0000-1000-8000-00805f9b34fb)
+I	20:50:52.635	Read Response received from descr. 00002902-0000-1000-8000-00805f9b34fb, value: (0x) 00-00
+A	20:50:52.635	"Notifications and indications disabled" received
+V	20:50:53.401	Reading descriptor 00002902-0000-1000-8000-00805f9b34fb
+D	20:50:53.401	gatt.readDescriptor(00002902-0000-1000-8000-00805f9b34fb)
+I	20:50:53.454	Read Response received from descr. 00002902-0000-1000-8000-00805f9b34fb, value: (0x) 00-00
+A	20:50:53.454	"Notifications and indications disabled" received
+V	20:50:53.996	Reading descriptor 00002902-0000-1000-8000-00805f9b34fb
+D	20:50:53.996	gatt.readDescriptor(00002902-0000-1000-8000-00805f9b34fb)
+I	20:50:54.045	Read Response received from descr. 00002902-0000-1000-8000-00805f9b34fb, value: (0x) 00-00
+A	20:50:54.045	"Notifications and indications disabled" received
+V	20:50:54.800	Reading descriptor 00002902-0000-1000-8000-00805f9b34fb
+D	20:50:54.800	gatt.readDescriptor(00002902-0000-1000-8000-00805f9b34fb)
+I	20:50:54.855	Read Response received from descr. 00002902-0000-1000-8000-00805f9b34fb, value: (0x) 00-00
+A	20:50:54.855	"Notifications and indications disabled" received
+V	20:50:55.184	Reading descriptor 00002902-0000-1000-8000-00805f9b34fb
+D	20:50:55.185	gatt.readDescriptor(00002902-0000-1000-8000-00805f9b34fb)
+I	20:50:55.245	Read Response received from descr. 00002902-0000-1000-8000-00805f9b34fb, value: (0x) 00-00
+A	20:50:55.245	"Notifications and indications disabled" received
+V	20:50:55.950	Reading descriptor 00002902-0000-1000-8000-00805f9b34fb
+D	20:50:55.950	gatt.readDescriptor(00002902-0000-1000-8000-00805f9b34fb)
+I	20:50:55.994	Read Response received from descr. 00002902-0000-1000-8000-00805f9b34fb, value: (0x) 00-00
+A	20:50:55.995	"Notifications and indications disabled" received
+V	20:50:56.422	Enabling notifications for 9e010000-f685-4ea5-b58a-85287cb04965
+D	20:50:56.422	gatt.setCharacteristicNotification(9e010000-f685-4ea5-b58a-85287cb04965, true)
+D	20:50:56.430	gatt.writeDescriptor(00002902-0000-1000-8000-00805f9b34fb, value=0x0100)
+I	20:50:56.505	Data written to descr. 00002902-0000-1000-8000-00805f9b34fb, value: (0x) 01-00
+A	20:50:56.505	"Notifications enabled" sent
+V	20:50:56.509	Notifications enabled for 9e010000-f685-4ea5-b58a-85287cb04965
+V	20:51:01.048	Reading descriptor 00002902-0000-1000-8000-00805f9b34fb
+D	20:51:01.048	gatt.readDescriptor(00002902-0000-1000-8000-00805f9b34fb)
+I	20:51:01.094	Read Response received from descr. 00002902-0000-1000-8000-00805f9b34fb, value: (0x) 01-00
+A	20:51:01.094	"Notifications enabled" received
+V	20:51:05.157	Reading characteristic 6e400003-b5a3-f393-e0a9-e50e24dcca9e
+D	20:51:05.157	gatt.readCharacteristic(6e400003-b5a3-f393-e0a9-e50e24dcca9e)
+I	20:51:05.205	Read Response received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00
+A	20:51:05.205	"                    " received
+V	20:51:06.659	Enabling notifications for 6e400003-b5a3-f393-e0a9-e50e24dcca9e
+D	20:51:06.660	gatt.setCharacteristicNotification(6e400003-b5a3-f393-e0a9-e50e24dcca9e, true)
+D	20:51:06.664	gatt.writeDescriptor(00002902-0000-1000-8000-00805f9b34fb, value=0x0100)
+I	20:51:06.736	Data written to descr. 00002902-0000-1000-8000-00805f9b34fb, value: (0x) 01-00
+A	20:51:06.736	"Notifications enabled" sent
+V	20:51:06.740	Notifications enabled for 6e400003-b5a3-f393-e0a9-e50e24dcca9e
+V	20:51:09.317	Reading descriptor 00002902-0000-1000-8000-00805f9b34fb
+D	20:51:09.317	gatt.readDescriptor(00002902-0000-1000-8000-00805f9b34fb)
+I	20:51:09.374	Read Response received from descr. 00002902-0000-1000-8000-00805f9b34fb, value: (0x) 01-00
+A	20:51:09.374	"Notifications enabled" received
+V	20:51:11.154	Reading descriptor 00002902-0000-1000-8000-00805f9b34fb
+D	20:51:11.154	gatt.readDescriptor(00002902-0000-1000-8000-00805f9b34fb)
+I	20:51:11.204	Read Response received from descr. 00002902-0000-1000-8000-00805f9b34fb, value: (0x) 01-00
+A	20:51:11.204	"Notifications enabled" received
+V	20:51:15.549	Reading characteristic 9e030000-f685-4ea5-b58a-85287cb04965
+D	20:51:15.549	gatt.readCharacteristic(9e030000-f685-4ea5-b58a-85287cb04965)
+I	20:51:15.616	Read Response received from 9e030000-f685-4ea5-b58a-85287cb04965, value: (0x) 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00
+A	20:51:15.617	"(0x) 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00" received
+V	20:51:16.702	Enabling notifications for 9e030000-f685-4ea5-b58a-85287cb04965
+D	20:51:16.702	gatt.setCharacteristicNotification(9e030000-f685-4ea5-b58a-85287cb04965, true)
+D	20:51:16.706	gatt.writeDescriptor(00002902-0000-1000-8000-00805f9b34fb, value=0x0100)
+I	20:51:16.756	Data written to descr. 00002902-0000-1000-8000-00805f9b34fb, value: (0x) 01-00
+A	20:51:16.756	"Notifications enabled" sent
+V	20:51:16.760	Notifications enabled for 9e030000-f685-4ea5-b58a-85287cb04965
+V	20:51:19.106	Reading descriptor 00002902-0000-1000-8000-00805f9b34fb
+D	20:51:19.107	gatt.readDescriptor(00002902-0000-1000-8000-00805f9b34fb)
+I	20:51:19.155	Read Response received from descr. 00002902-0000-1000-8000-00805f9b34fb, value: (0x) 01-00
+A	20:51:19.156	"Notifications enabled" received
+V	20:51:19.524	Reading descriptor 00002902-0000-1000-8000-00805f9b34fb
+D	20:51:19.524	gatt.readDescriptor(00002902-0000-1000-8000-00805f9b34fb)
+I	20:51:19.578	Read Response received from descr. 00002902-0000-1000-8000-00805f9b34fb, value: (0x) 01-00
+A	20:51:19.578	"Notifications enabled" received
+V	20:51:51.515	Reading characteristic 9e030000-f685-4ea5-b58a-85287cb04965
+D	20:51:51.515	gatt.readCharacteristic(9e030000-f685-4ea5-b58a-85287cb04965)
+I	20:51:51.588	Read Response received from 9e030000-f685-4ea5-b58a-85287cb04965, value: (0x) 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00
+A	20:51:51.588	"(0x) 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00" received
+V	20:51:52.000	Reading characteristic 9e030000-f685-4ea5-b58a-85287cb04965
+D	20:51:52.000	gatt.readCharacteristic(9e030000-f685-4ea5-b58a-85287cb04965)
+I	20:51:52.095	Read Response received from 9e030000-f685-4ea5-b58a-85287cb04965, value: (0x) 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00
+A	20:51:52.095	"(0x) 00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00-00" received
+I	20:56:21.356	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 46-11-00-E1-09-00-00-44-41-54-41-2E-43-53-56-0D-C0
+A	20:56:21.356	"F �	  DATA.CSV�" received
+I	20:56:21.357	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-4D-41-52-4B-3B-53-54-41-54-55-53-3B-54-59-50-45-3B
+A	20:56:21.357	"D� MARK;STATUS;TYPE;" received
+I	20:56:21.360	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 50-52-4F-44-3B-56-45-52-3B-53-4E-52-3B-49-44-3B-55-4E-49-54, "PROD;VER;SNR;ID;UNIT"
+A	20:56:21.360	"PROD;VER;SNR;ID;UNIT" received
+I	20:56:21.361	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-54-52-50-48-3B-52-45-46-48-3B-50-2E-4F-46-46-3B-44-45-43, ";TRPH;REFH;P.OFF;DEC"
+A	20:56:21.361	";TRPH;REFH;P.OFF;DEC" received
+I	20:56:21.361	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 4C-3B-4C-41-54-3B-4E-2F-53-3B-4C-4F-4E-3B-45-2F-57-3B-41-4C, "L;LAT;N/S;LON;E/W;AL"
+A	20:56:21.361	"L;LAT;N/S;LON;E/W;AL" received
+I	20:56:21.362	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 54-49-54-55-44-45-3B-48-44-4F-50-3B-44-41-54-45-3B-55-54-43, "TITUDE;HDOP;DATE;UTC"
+A	20:56:21.362	"TITUDE;HDOP;DATE;UTC" received
+I	20:56:21.362	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-53-45-51-3B-41-52-45-41-3B-56-4F-4C-3B-53-44-3B-48-44-3B, ";SEQ;AREA;VOL;SD;HD;"
+A	20:56:21.362	";SEQ;AREA;VOL;SD;HD;" received
+I	20:56:21.363	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 48-3B-44-49-41-3B-50-49-54-43-48-3B-41-5A-3B-58-28-6D-29-3B, "H;DIA;PITCH;AZ;X(m);"
+A	20:56:21.363	"H;DIA;PITCH;AZ;X(m);" received
+I	20:56:21.377	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 59-28-6D-29-3B-5A-28-6D-29-3B-55-54-4D-20-5A-4F-4E-45-3B-0D
+A	20:56:21.377	"Y(m);Z(m);UTM ZONE;" received
+I	20:56:21.377	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 0A-23-3B-3B-53-45-54-3B-31-30-30-30-3B-33-37-3B-33-31-39-30
+A	20:56:21.377	"
+#;;SET;1000;37;3190" received
+I	20:56:21.377	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-4D-3B-31-2E-33-3B-31-2E-37-3B-30-2E-33-3B-30-2E-30-3B, ";;M;1.3;1.7;0.3;0.0;"
+A	20:56:21.377	";;M;1.3;1.7;0.3;0.0;" received
+I	20:56:21.379	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-04-7C
+A	20:56:21.379	";;;|" received
+I	20:56:21.379	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-0D-0A-24
+A	20:56:21.380	"D� ;;;;;;;;;;;;;;
+$" received
+I	20:56:21.380	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-31-3B-33-50-3B-3B-3B-3B-31-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B, ";1;3P;;;;1;;;;;;;;;;"
+A	20:56:21.380	";1;3P;;;;1;;;;;;;;;;" received
+I	20:56:21.380	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-31-3B-3B-3B-31-2E-38-3B-31-2E-38-3B-31-2E-39-3B, ";;;;1;;;1.8;1.8;1.9;"
+A	20:56:21.380	";;;;1;;;1.8;1.8;1.9;" received
+I	20:56:21.381	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-30-2E-33-3B-31-36-31-2E-37-3B-2D-31-2E-37-3B-30-2E-36-3B, ";0.3;161.7;-1.7;0.6;"
+A	20:56:21.381	";0.3;161.7;-1.7;0.6;" received
+I	20:56:21.381	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-30-3B-3B-0D-0A-24-3B-31-3B-44-4D-45-3B-3B-3B-3B-32-3B
+A	20:56:21.381	"2.0;;
+$;1;DME;;;;2;" received
+I	20:56:21.439	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-31-3B-3B-3B-33-2E-36, ";;;;;;;;;;;;;1;;;3.6"
+A	20:56:21.439	";;;;;;;;;;;;;1;;;3.6" received
+I	20:56:21.440	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-33-2E-36-3B-32-2E-35-3B-3B-2D-36-2E-34-3B-32-36-39-2E-30, ";3.6;2.5;;-6.4;269.0"
+A	20:56:21.440	";3.6;2.5;;-6.4;269.0" received
+I	20:56:21.440	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-2D-30-2E-31-3B-2D-33-2E-36-3B-33-2E-34-3B-3B-0D-0A-24-3B
+A	20:56:21.440	";-0.1;-3.6;3.4;;
+$;" received
+I	20:56:21.440	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-3B-33-44-3B-3B-3B-3B-33-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B, "1;3D;;;;3;;;;;;;;;;;"
+A	20:56:21.440	"1;3D;;;;3;;;;;;;;;;;" received
+I	20:56:21.440	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-33-3B-3B-3B-30-2E-31-3B-30-2E-31-3B-30-2E-30-3B-3B, ";;;3;;;0.1;0.1;0.0;;"
+A	20:56:21.440	";;;3;;;0.1;0.1;0.0;;" received
+I	20:56:21.441	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 38-2E-32-ED-79
+A	20:56:21.441	"8.2�y" received
+I	20:56:21.441	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-3B-33-35-36-2E-30-3B-30-2E-31-3B-2D-30-2E-30-3B-31
+A	20:56:21.441	"D� ;356.0;0.1;-0.0;1" received
+I	20:56:21.441	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-37-3B-3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B-3B-34-3B-3B-3B
+A	20:56:21.441	".7;;
+$;1;1P;;;;4;;;" received
+I	20:56:21.441	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-32-33-2E-38-39-36-30-37-32-39-3B-4E-3B-31-32-31-2E, ";;;23.8960729;N;121."
+A	20:56:21.441	";;;23.8960729;N;121." received
+I	20:56:21.467	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-34-39-30-32-30-34-3B-45-3B-2D-36-38-2E-30-3B-33-2E-35-3B, "5490204;E;-68.0;3.5;"
+A	20:56:21.467	"5490204;E;-68.0;3.5;" received
+I	20:56:21.471	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-30-31-30-32-35-3B-32-34-35-31-38-3B-31-3B-3B-3B-32-38-2E, "201025;24518;1;;;28."
+A	20:56:21.471	"201025;24518;1;;;28." received
+I	20:56:21.471	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-3B-32-38-2E-35-3B-2D-31-2E-31-3B-3B-2D-35-2E-35-3B-32-35, "6;28.5;-1.1;;-5.5;25"
+A	20:56:21.471	"6;28.5;-1.1;;-5.5;25" received
+I	20:56:21.472	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 30-2E-33-3B-32-36-34-33-34-37-38-2E-32-3B-33-35-32-32-39-30, "0.3;2643478.2;352290"
+A	20:56:21.472	"0.3;2643478.2;352290" received
+I	20:56:21.472	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-34-3B-2D-31-2E-31-3B-35-31-51-3B-0D-0A-24-3B-31-3B-31-50
+A	20:56:21.472	".4;-1.1;51Q;
+$;1;1P" received
+I	20:56:21.472	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-34-3B-3B-3B-3B-3B-3B-32-33-2E-38-39-36-32-39-30, ";;;;4;;;;;;23.896290"
+A	20:56:21.472	";;;;4;;;;;;23.896290" received
+I	20:56:21.472	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-3B-4E-3B-31-32-31-2E-35-34-39-32-34-35-32-3B-45-3B-2D-36, "3;N;121.5492452;E;-6"
+A	20:56:21.472	"3;N;121.5492452;E;-6" received
+I	20:56:21.472	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-38-EE-27
+A	20:56:21.472	"2.8�'" received
+I	20:56:21.473	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-3B-33-2E-35-3B-32-30-31-30-32-35-3B-32-34-35-33-33
+A	20:56:21.473	"D� ;3.5;201025;24533" received
+I	20:56:21.499	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-32-3B-3B-3B-31-34-2E-39-3B-31-34-2E-37-3B-34-2E-31-3B-3B, ";2;;;14.9;14.7;4.1;;"
+A	20:56:21.499	";2;;;14.9;14.7;4.1;;" received
+I	20:56:21.500	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-2E-32-3B-33-34-35-2E-36-3B-32-36-34-33-35-30-32-2E-30-3B, "9.2;345.6;2643502.0;"
+A	20:56:21.500	"9.2;345.6;2643502.0;" received
+I	20:56:21.501	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-35-32-33-31-33-2E-35-3B-34-2E-31-3B-35-31-51-3B-0D-0A-24
+A	20:56:21.501	"352313.5;4.1;51Q;
+$" received
+I	20:56:21.502	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-31-3B-31-50-3B-3B-3B-3B-34-3B-3B-3B-3B-3B-3B-32-33-2E-38, ";1;1P;;;;4;;;;;;23.8"
+A	20:56:21.502	";1;1P;;;;4;;;;;;23.8" received
+I	20:56:21.502	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-36-31-33-30-39-3B-4E-3B-31-32-31-2E-35-34-39-32-36-30-35, "961309;N;121.5492605"
+A	20:56:21.502	"961309;N;121.5492605" received
+I	20:56:21.502	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-45-3B-2D-36-31-2E-35-3B-33-2E-35-3B-32-30-31-30-32-35-3B, ";E;-61.5;3.5;201025;"
+A	20:56:21.502	";E;-61.5;3.5;201025;" received
+I	20:56:21.503	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-34-35-34-39-3B-33-3B-3B-3B-35-2E-34-3B-34-2E-31-3B-35-2E, "24549;3;;;5.4;4.1;5."
+A	20:56:21.503	"24549;3;;;5.4;4.1;5." received
+I	20:56:21.503	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-3B-3B-34-30-2E-33-3B-32-31-33-2E-38-3B-32-36-34-33-34-38, "4;;40.3;213.8;264348"
+A	20:56:21.503	"4;;40.3;213.8;264348" received
+I	20:56:21.503	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-2E-33-3B-33-35-32-33-31-34-2E-39-3B-35-2E-34-3B-35-31-51, "4.3;352314.9;5.4;51Q"
+A	20:56:21.503	"4.3;352314.9;5.4;51Q" received
+I	20:56:21.529	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-0D-0A-34-41
+A	20:56:21.529	";
+4A" received
+I	20:56:21.530	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-24-3B-31-3B-33-50-3B-3B-3B-3B-35-3B-3B-3B-3B-3B-3B
+A	20:56:21.530	"D� $;1;3P;;;;5;;;;;;" received
+I	20:56:21.530	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-33-2E-38-39-36-32-32-39-39-3B-4E-3B-31-32-31-2E-35-34-38, "23.8962299;N;121.548"
+A	20:56:21.530	"23.8962299;N;121.548" received
+I	20:56:21.531	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-35-37-38-3B-45-3B-31-30-30-2E-35-3B-31-2E-38-3B-32-30-31, "1578;E;100.5;1.8;201"
+A	20:56:21.531	"1578;E;100.5;1.8;201" received
+I	20:56:21.532	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 30-32-35-3B-33-31-32-30-31-3B-31-3B-3B-3B-31-34-2E-38-3B-31, "025;31201;1;;;14.8;1"
+A	20:56:21.532	"025;31201;1;;;14.8;1" received
+I	20:56:21.532	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-2E-38-3B-37-2E-37-3B-3B-30-2E-33-3B-33-34-38-2E-33-3B-32, "4.8;7.7;;0.3;348.3;2"
+A	20:56:21.532	"4.8;7.7;;0.3;348.3;2" received
+I	20:56:21.533	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-34-33-34-39-36-2E-35-3B-33-35-32-32-30-32-2E-37-3B-35-2E, "643496.5;352202.7;5."
+A	20:56:21.533	"643496.5;352202.7;5." received
+I	20:56:21.533	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-3B-35-31-51-3B-0D-0A-24-3B-31-3B-33-50-3B-3B-3B-3B-35-3B
+A	20:56:21.533	"6;51Q;
+$;1;3P;;;;5;" received
+I	20:56:21.533	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-3B-32-33-2E-38-39-36-32-32-39-39-3B-4E-3B-31-32, ";;;;;23.8962299;N;12"
+A	20:56:21.533	";;;;;23.8962299;N;12" received
+I	20:56:21.556	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-2E-35-34-38-31-35-37-38-3B-45-3B-31-30-33-2E-32-3B-31-2E, "1.5481578;E;103.2;1."
+A	20:56:21.556	"1.5481578;E;103.2;1." received
+I	20:56:21.557	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 38-3B-32-30-31-30-32-35-3B-33-31-32-32-33-3B-32-3B-3B-3B-31, "8;201025;31223;2;;;1"
+A	20:56:21.557	"8;201025;31223;2;;;1" received
+I	20:56:21.557	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-2E-38-6D-D8
+A	20:56:21.557	"4.8m�" received
+I	20:56:21.557	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-3B-31-34-2E-38-3B-31-30-2E-34-3B-3B-30-2E-33-3B-33
+A	20:56:21.557	"D� ;14.8;10.4;;0.3;3" received
+I	20:56:21.557	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-38-2E-33-3B-32-36-34-33-34-39-36-2E-35-3B-33-35-32-32-30, "48.3;2643496.5;35220"
+A	20:56:21.557	"48.3;2643496.5;35220" received
+I	20:56:21.558	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-37-3B-38-2E-33-3B-35-31-51-3B-0D-0A-24-3B-31-3B-31-50
+A	20:56:21.558	"2.7;8.3;51Q;
+$;1;1P" received
+I	20:56:21.563	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-31-30-30-30-37-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B, ";;;;10007;;;;;;;;;;;"
+A	20:56:21.563	";;;;10007;;;;;;;;;;;" received
+I	20:56:21.563	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-31-3B-3B-3B-33-2E-32-3B-32-2E-39-3B-33-2E-31-3B-3B, ";;;1;;;3.2;2.9;3.1;;"
+A	20:56:21.563	";;;1;;;3.2;2.9;3.1;;" received
+I	20:56:21.563	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-34-2E-30-3B-32-39-33-2E-31-3B-31-2E-31-3B-2D-32-2E-37-3B, "24.0;293.1;1.1;-2.7;"
+A	20:56:21.563	"24.0;293.1;1.1;-2.7;" received
+I	20:56:21.589	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-2E-31-3B-3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B-3B-31-30-30
+A	20:56:21.589	"3.1;;
+$;1;1P;;;;100" received
+I	20:56:21.589	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 30-38-3B-3B-3B-3B-3B-3B-32-33-2E-38-39-36-32-32-32-32-3B-4E, "08;;;;;;23.8962222;N"
+A	20:56:21.589	"08;;;;;;23.8962222;N" received
+I	20:56:21.590	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-31-32-31-2E-35-34-38-31-35-36-33-3B-45-3B-38-37-2E-32-3B, ";121.5481563;E;87.2;"
+A	20:56:21.590	";121.5481563;E;87.2;" received
+I	20:56:21.590	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-30-3B-33-30-31-30-32-35-3B-36-35-33-35-33-3B-31-3B-3B, "2.0;301025;65353;1;;"
+A	20:56:21.590	"2.0;301025;65353;1;;" received
+I	20:56:21.591	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-35-2E-17-F8
+A	20:56:21.591	";5.�" received
+I	20:56:21.591	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-39-3B-35-2E-37-3B-33-2E-32-3B-3B-31-34-2E-30-3B-32
+A	20:56:21.591	"D� 9;5.7;3.2;;14.0;2" received
+I	20:56:21.592	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-36-2E-33-3B-32-36-34-33-34-39-35-2E-36-3B-33-35-32-32-30, "26.3;2643495.6;35220"
+A	20:56:21.592	"26.3;2643495.6;35220" received
+I	20:56:21.593	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-35-3B-33-2E-32-3B-35-31-51-3B-0D-0A-24-3B-31-3B-31-50
+A	20:56:21.593	"2.5;3.2;51Q;
+$;1;1P" received
+I	20:56:21.593	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-31-30-30-31-30-3B-3B-3B-3B-3B-3B-32-33-2E-38-39, ";;;;10010;;;;;;23.89"
+A	20:56:21.593	";;;;10010;;;;;;23.89" received
+I	20:56:21.619	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-32-32-34-33-3B-4E-3B-31-32-31-2E-35-34-38-31-34-36-30-3B, "62243;N;121.5481460;"
+A	20:56:21.619	"62243;N;121.5481460;" received
+I	20:56:21.620	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 45-3B-37-37-2E-34-3B-33-2E-34-3B-33-30-31-30-32-35-3B-36-35, "E;77.4;3.4;301025;65"
+A	20:56:21.620	"E;77.4;3.4;301025;65" received
+I	20:56:21.620	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-32-39-3B-31-3B-3B-3B-31-33-2E-30-3B-31-32-2E-39-3B-30-2E, "629;1;;;13.0;12.9;0."
+A	20:56:21.620	"629;1;;;13.0;12.9;0." received
+I	20:56:21.620	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-3B-3B-2D-35-2E-36-3B-32-33-39-2E-37-3B-32-36-34-33-34-39, "4;;-5.6;239.7;264349"
+A	20:56:21.620	"4;;-5.6;239.7;264349" received
+I	20:56:21.621	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-2E-39-3B-33-35-32-32-30-31-2E-35-3B-30-2E-34-3B-35-31-51, "5.9;352201.5;0.4;51Q"
+A	20:56:21.621	"5.9;352201.5;0.4;51Q" received
+I	20:56:21.622	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B-3B-31-30-30-31-31-3B-3B
+A	20:56:21.622	";
+$;1;1P;;;;10011;;" received
+I	20:56:21.622	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-8B-3D
+A	20:56:21.622	";;;�=" received
+I	20:56:21.622	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-3B-32-33-2E-38-39-35-36-36-37-36-3B-4E-3B-31-32-31
+A	20:56:21.622	"D� ;23.8956676;N;121" received
+I	20:56:21.623	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-35-34-37-38-34-34-33-3B-45-3B-38-30-2E-34-3B-34-2E-39-3B, ".5478443;E;80.4;4.9;"
+A	20:56:21.623	".5478443;E;80.4;4.9;" received
+I	20:56:21.647	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-30-31-30-32-35-3B-37-30-33-35-30-3B-31-3B-3B-3B-33-2E-32, "301025;70350;1;;;3.2"
+A	20:56:21.647	"301025;70350;1;;;3.2" received
+I	20:56:21.647	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-33-2E-31-3B-30-2E-37-3B-3B-2D-31-37-2E-34-3B-32-34-34-2E, ";3.1;0.7;;-17.4;244."
+A	20:56:21.647	";3.1;0.7;;-17.4;244." received
+I	20:56:21.648	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 30-3B-32-36-34-33-34-33-34-2E-35-3B-33-35-32-31-37-30-2E-31, "0;2643434.5;352170.1"
+A	20:56:21.648	"0;2643434.5;352170.1" received
+I	20:56:21.650	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-30-2E-37-3B-35-31-51-3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B
+A	20:56:21.650	";0.7;51Q;
+$;1;1P;;;" received
+I	20:56:21.651	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-31-30-30-31-31-3B-3B-3B-3B-3B-3B-32-33-2E-38-39-35-36-34, ";10011;;;;;;23.89564"
+A	20:56:21.651	";10011;;;;;;23.89564" received
+I	20:56:21.652	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 30-32-3B-4E-3B-31-32-31-2E-35-34-37-38-34-39-39-3B-45-3B-38, "02;N;121.5478499;E;8"
+A	20:56:21.652	"02;N;121.5478499;E;8" received
+I	20:56:21.652	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-34-3B-34-2E-39-3B-33-30-31-30-32-35-3B-37-30-33-35-39, "2.4;4.9;301025;70359"
+A	20:56:21.652	"2.4;4.9;301025;70359" received
+I	20:56:21.652	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-32-3B-3B-3B-35-2E-30-3B-34-2E-39-3B-32-2E-37-3B-3B-31-31, ";2;;;5.0;4.9;2.7;;11"
+A	20:56:21.652	";2;;;5.0;4.9;2.7;;11" received
+I	20:56:21.652	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-34-3B-8A-5E
+A	20:56:21.653	".4;�^" received
+I	20:56:21.677	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-32-30-36-2E-37-3B-32-36-34-33-34-33-31-2E-35-3B-33
+A	20:56:21.677	"D� 206.7;2643431.5;3" received
+I	20:56:21.678	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-32-31-37-30-2E-37-3B-32-2E-37-3B-35-31-51-3B-0D-0A-24-3B
+A	20:56:21.678	"52170.7;2.7;51Q;
+$;" received
+I	20:56:21.678	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-3B-31-50-3B-3B-3B-3B-31-30-30-31-31-3B-3B-3B-3B-3B-3B-32, "1;1P;;;;10011;;;;;;2"
+A	20:56:21.678	"1;1P;;;;10011;;;;;;2" received
+I	20:56:21.678	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-2E-38-39-35-36-35-33-36-3B-4E-3B-31-32-31-2E-35-34-37-38, "3.8956536;N;121.5478"
+A	20:56:21.678	"3.8956536;N;121.5478" received
+I	20:56:21.678	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-38-38-3B-45-3B-38-31-2E-36-3B-34-2E-39-3B-33-30-31-30-32, "288;E;81.6;4.9;30102"
+A	20:56:21.678	"288;E;81.6;4.9;30102" received
+I	20:56:21.678	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-3B-37-30-34-30-35-3B-33-3B-3B-3B-35-2E-32-3B-35-2E-32-3B, "5;70405;3;;;5.2;5.2;"
+A	20:56:21.678	"5;70405;3;;;5.2;5.2;" received
+I	20:56:21.679	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-2E-39-3B-3B-31-2E-39-3B-32-33-36-2E-34-3B-32-36-34-33-34, "1.9;;1.9;236.4;26434"
+A	20:56:21.679	"1.9;;1.9;236.4;26434" received
+I	20:56:21.680	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-33-2E-30-3B-33-35-32-31-36-38-2E-36-3B-31-2E-39-3B-35-31, "33.0;352168.6;1.9;51"
+A	20:56:21.680	"33.0;352168.6;1.9;51" received
+I	20:56:21.680	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 51-3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B-3B-31-30-30-31-31-3B
+A	20:56:21.680	"Q;
+$;1;1P;;;;10011;" received
+I	20:56:21.707	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-3B-32-33-2E-38-39-35-36-34-36-38-3B-4E-3B-31-32, ";;;;;23.8956468;N;12"
+A	20:56:21.707	";;;;;23.8956468;N;12" received
+I	20:56:21.707	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-2E-35-DF-58
+A	20:56:21.707	"1.5�X" received
+I	20:56:21.707	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-34-37-38-36-38-34-3B-45-3B-38-32-2E-38-3B-34-2E-39
+A	20:56:21.707	"D� 478684;E;82.8;4.9" received
+I	20:56:21.707	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-33-30-31-30-32-35-3B-37-30-34-31-32-3B-34-3B-3B-3B-33-2E, ";301025;70412;4;;;3."
+A	20:56:21.707	";301025;70412;4;;;3." received
+I	20:56:21.714	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-3B-33-2E-37-3B-33-2E-31-3B-3B-31-39-2E-31-3B-31-38-34-2E, "9;3.7;3.1;;19.1;184."
+A	20:56:21.714	"9;3.7;3.1;;19.1;184." received
+I	20:56:21.715	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-3B-32-36-34-33-34-33-32-2E-32-3B-33-35-32-31-37-32-2E-36, "9;2643432.2;352172.6"
+A	20:56:21.715	"9;2643432.2;352172.6" received
+I	20:56:21.716	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-33-2E-31-3B-35-31-51-3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B
+A	20:56:21.716	";3.1;51Q;
+$;1;1P;;;" received
+I	20:56:21.716	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-31-30-30-31-31-3B-3B-3B-3B-3B-3B-32-33-2E-38-39-35-36-33, ";10011;;;;;;23.89563"
+A	20:56:21.716	";10011;;;;;;23.89563" received
+I	20:56:21.717	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-30-3B-4E-3B-31-32-31-2E-35-34-37-38-33-32-32-3B-45-3B-38, "60;N;121.5478322;E;8"
+A	20:56:21.717	"60;N;121.5478322;E;8" received
+I	20:56:21.736	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-37-3B-34-2E-39-3B-33-30-31-30-32-35-3B-37-30-34-32-32, "2.7;4.9;301025;70422"
+A	20:56:21.736	"2.7;4.9;301025;70422" received
+I	20:56:21.736	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-35-3B-3B-3B-36-2E-34-3B-36-2E-33-3B-33-2E-30-3B-3B-31-31, ";5;;;6.4;6.3;3.0;;11"
+A	20:56:21.736	";5;;;6.4;6.3;3.0;;11" received
+I	20:56:21.736	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-33-3B-32-31-39-2E-36-3B-32-36-34-33-34-33-31-2E-30-3B-33, ".3;219.6;2643431.0;3"
+A	20:56:21.736	".3;219.6;2643431.0;3" received
+I	20:56:21.737	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-32-31-78-FF
+A	20:56:21.737	"521x�" received
+I	20:56:21.738	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-36-38-2E-39-3B-33-2E-30-3B-35-31-51-3B-0D-0A-24-3B
+A	20:56:21.738	"D� 68.9;3.0;51Q;
+$;" received
+I	20:56:21.738	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-3B-31-50-3B-3B-3B-3B-31-30-30-31-32-3B-3B-3B-3B-3B-3B-32, "1;1P;;;;10012;;;;;;2"
+A	20:56:21.738	"1;1P;;;;10012;;;;;;2" received
+I	20:56:21.739	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-2E-38-39-35-36-37-30-38-3B-4E-3B-31-32-31-2E-35-34-37-38, "3.8956708;N;121.5478"
+A	20:56:21.739	"3.8956708;N;121.5478" received
+I	20:56:21.740	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-39-36-3B-45-3B-38-33-2E-33-3B-30-2E-39-3B-33-30-31-30-32, "696;E;83.3;0.9;30102"
+A	20:56:21.740	"696;E;83.3;0.9;30102" received
+I	20:56:21.740	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-3B-37-31-33-30-34-3B-31-3B-3B-3B-33-34-2E-36-3B-33-34-2E, "5;71304;1;;;34.6;34."
+A	20:56:21.740	"5;71304;1;;;34.6;34." received
+I	20:56:21.770	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-3B-35-2E-38-3B-3B-36-2E-38-3B-32-35-33-2E-34-3B-32-36-34, "4;5.8;;6.8;253.4;264"
+A	20:56:21.770	"4;5.8;;6.8;253.4;264" received
+I	20:56:21.770	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-34-33-34-2E-39-3B-33-35-32-31-37-32-2E-37-3B-35-2E-38-3B, "3434.9;352172.7;5.8;"
+A	20:56:21.770	"3434.9;352172.7;5.8;" received
+I	20:56:21.770	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-31-51-3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B-3B-31-30-30-31
+A	20:56:21.770	"51Q;
+$;1;1P;;;;1001" received
+I	20:56:21.770	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-3B-3B-3B-3B-3B-3B-32-33-2E-38-39-35-38-30-38-39-3B-4E-3B, "2;;;;;;23.8958089;N;"
+A	20:56:21.770	"2;;;;;;23.8958089;N;" received
+I	20:56:21.770	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-32-31-2E-35-34-38-30-34-31-33-3B-45-3B-38-35-2E-31-3B-30, "121.5480413;E;85.1;0"
+A	20:56:21.770	"121.5480413;E;85.1;0" received
+I	20:56:21.771	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-39-3B-C7-63
+A	20:56:21.771	".9;�c" received
+I	20:56:21.771	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-33-30-31-30-32-35-3B-37-31-33-33-38-3B-32-3B-3B-3B
+A	20:56:21.771	"D� 301025;71338;2;;;" received
+I	20:56:21.771	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-37-2E-32-3B-31-36-2E-32-3B-37-2E-36-3B-3B-31-39-2E-38-3B, "17.2;16.2;7.6;;19.8;"
+A	20:56:21.771	"17.2;16.2;7.6;;19.8;" received
+I	20:56:21.772	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-38-39-2E-32-3B-32-36-34-33-34-35-30-2E-30-3B-33-35-32-31, "289.2;2643450.0;3521"
+A	20:56:21.772	"289.2;2643450.0;3521" received
+I	20:56:21.796	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-30-2E-34-3B-37-2E-36-3B-35-31-51-3B-0D-0A-24-3B-31-3B-33
+A	20:56:21.796	"90.4;7.6;51Q;
+$;1;3" received
+I	20:56:21.796	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 50-3B-3B-3B-3B-31-30-30-31-33-3B-3B-3B-3B-3B-3B-32-33-2E-38, "P;;;;10013;;;;;;23.8"
+A	20:56:21.796	"P;;;;10013;;;;;;23.8" received
+I	20:56:21.797	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-35-38-35-35-31-3B-4E-3B-31-32-31-2E-35-34-38-34-31-39-38, "958551;N;121.5484198"
+A	20:56:21.797	"958551;N;121.5484198" received
+I	20:56:21.797	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-45-3B-37-38-2E-34-3B-30-2E-36-3B-33-30-31-30-32-35-3B-37, ";E;78.4;0.6;301025;7"
+A	20:56:21.797	";E;78.4;0.6;301025;7" received
+I	20:56:21.798	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-32-33-31-3B-31-3B-3B-3B-31-39-2E-35-3B-31-39-2E-35-3B-39, "2231;1;;;19.5;19.5;9"
+A	20:56:21.798	"2231;1;;;19.5;19.5;9" received
+I	20:56:21.799	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-35-3B-3B-2D-31-2E-31-3B-39-35-2E-30-3B-32-36-34-33-34-35, ".5;;-1.1;95.0;264345"
+A	20:56:21.799	".5;;-1.1;95.0;264345" received
+I	20:56:21.800	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-2E-37-3B-33-35-32-32-32-38-2E-39-3B-31-30-2E-38-3B-35-31, "4.7;352228.9;10.8;51"
+A	20:56:21.800	"4.7;352228.9;10.8;51" received
+I	20:56:21.801	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 51-3B-0D-AA-33
+A	20:56:21.801	"Q;�3" received
+I	20:56:21.801	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-86-00-0A-24-3B-31-3B-33-50-3B-3B-3B-3B-31-30-30-31-33-3B
+A	20:56:21.801	"D� 
+$;1;3P;;;;10013;" received
+I	20:56:21.827	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-3B-32-33-2E-38-39-35-38-35-35-31-3B-4E-3B-31-32, ";;;;;23.8958551;N;12"
+A	20:56:21.827	";;;;;23.8958551;N;12" received
+I	20:56:21.827	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-2E-35-34-38-34-31-39-38-3B-45-3B-37-35-2E-30-3B-30-2E-36, "1.5484198;E;75.0;0.6"
+A	20:56:21.827	"1.5484198;E;75.0;0.6" received
+I	20:56:21.828	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-33-30-31-30-32-35-3B-37-32-32-35-32-3B-32-3B-3B-3B-31-39, ";301025;72252;2;;;19"
+A	20:56:21.828	";301025;72252;2;;;19" received
+I	20:56:21.829	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-35-3B-31-39-2E-35-3B-36-2E-31-3B-3B-2D-31-2E-31-3B-39-35, ".5;19.5;6.1;;-1.1;95"
+A	20:56:21.829	".5;19.5;6.1;;-1.1;95" received
+I	20:56:21.830	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-30-3B-32-36-34-33-34-35-34-2E-37-3B-33-35-32-32-32-38-2E, ".0;2643454.7;352228."
+A	20:56:21.830	".0;2643454.7;352228." received
+I	20:56:21.830	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-3B-37-2E-34-3B-35-31-51-3B-0D-0A-60-D3
+A	20:56:21.830	"9;7.4;51Q;
+`�" received
+I	20:56:21.830	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 5A-BF-FB
+A	20:56:21.830	"Z��" received
+D	20:56:27.923	[Callback] Connection state changed with status: 19 and new state: DISCONNECTED (0)
+W	20:56:27.923	Connection terminated by peer (status 19)
+I	20:56:27.924	Disconnected
+D	20:56:27.984	[Broadcast] Action received: android.bluetooth.device.action.ACL_DISCONNECTED
+D	20:58:39.807	gatt.close()
+D	20:58:39.816	wait(200)
+V	20:58:40.017	Connecting to C4:D3:6A:BA:63:7E...
+D	20:58:40.017	gatt = device.connectGatt(autoConnect = false, TRANSPORT_LE, preferred PHY = LE 1M)
+D	20:58:40.553	[Callback] Connection state changed with status: 0 and new state: CONNECTED (2)
+I	20:58:40.553	Connected to C4:D3:6A:BA:63:7E
+D	20:58:40.553	wait(1600ms)
+D	20:58:40.586	[Broadcast] Action received: android.bluetooth.device.action.ACL_CONNECTED
+V	20:58:42.156	Discovering services...
+D	20:58:42.156	gatt.discoverServices()
+D	20:58:42.164	[Callback] Services discovered with status: 0
+I	20:58:42.165	Services discovered
+V	20:58:42.177	Generic Access (0x1800)
+- Device Name [R W] (0x2A00)
+- Appearance [R] (0x2A01)
+Device Information (0x180A)
+- Manufacturer Name String [R] (0x2A29)
+- Model Number String [R] (0x2A24)
+Unknown Service (9e000000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e010000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+Nordic UART Service (6e400001-b5a3-f393-e0a9-e50e24dcca9e)
+- RX Characteristic [W WNR] (6e400002-b5a3-f393-e0a9-e50e24dcca9e)
+- TX Characteristic [N R] (6e400003-b5a3-f393-e0a9-e50e24dcca9e)
+   Client Characteristic Configuration (0x2902)
+Unknown Service (69465a7c-6ce7-43bf-9549-8ebfde563e0e)
+- Unknown Characteristic [W WNR] (650c6a10-6867-464a-a876-4e545ee17830)
+Unknown Service (9e020000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e030000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+D	20:58:42.178	gatt.setCharacteristicNotification(9e010000-f685-4ea5-b58a-85287cb04965, true)
+D	20:58:42.181	gatt.setCharacteristicNotification(6e400003-b5a3-f393-e0a9-e50e24dcca9e, true)
+D	20:58:42.185	gatt.setCharacteristicNotification(9e030000-f685-4ea5-b58a-85287cb04965, true)
+D	20:59:12.598	[Callback] Connection state changed with status: 19 and new state: DISCONNECTED (0)
+W	20:59:12.598	Connection terminated by peer (status 19)
+I	20:59:12.598	Disconnected
+D	20:59:12.679	[Broadcast] Action received: android.bluetooth.device.action.ACL_DISCONNECTED
+D	20:59:15.261	gatt.close()
+D	20:59:15.273	wait(200)
+V	20:59:15.474	Connecting to C4:D3:6A:BA:63:7E...
+D	20:59:15.474	gatt = device.connectGatt(autoConnect = false, TRANSPORT_LE, preferred PHY = LE 1M)
+D	20:59:15.772	[Callback] Connection state changed with status: 0 and new state: CONNECTED (2)
+I	20:59:15.772	Connected to C4:D3:6A:BA:63:7E
+D	20:59:15.772	wait(1600ms)
+D	20:59:15.801	[Broadcast] Action received: android.bluetooth.device.action.ACL_CONNECTED
+V	20:59:17.373	Discovering services...
+D	20:59:17.373	gatt.discoverServices()
+D	20:59:17.379	[Callback] Services discovered with status: 0
+I	20:59:17.379	Services discovered
+V	20:59:17.391	Generic Access (0x1800)
+- Device Name [R W] (0x2A00)
+- Appearance [R] (0x2A01)
+Device Information (0x180A)
+- Manufacturer Name String [R] (0x2A29)
+- Model Number String [R] (0x2A24)
+Unknown Service (9e000000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e010000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+Nordic UART Service (6e400001-b5a3-f393-e0a9-e50e24dcca9e)
+- RX Characteristic [W WNR] (6e400002-b5a3-f393-e0a9-e50e24dcca9e)
+- TX Characteristic [N R] (6e400003-b5a3-f393-e0a9-e50e24dcca9e)
+   Client Characteristic Configuration (0x2902)
+Unknown Service (69465a7c-6ce7-43bf-9549-8ebfde563e0e)
+- Unknown Characteristic [W WNR] (650c6a10-6867-464a-a876-4e545ee17830)
+Unknown Service (9e020000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e030000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+D	20:59:17.391	gatt.setCharacteristicNotification(9e010000-f685-4ea5-b58a-85287cb04965, true)
+D	20:59:17.394	gatt.setCharacteristicNotification(6e400003-b5a3-f393-e0a9-e50e24dcca9e, true)
+D	20:59:17.403	gatt.setCharacteristicNotification(9e030000-f685-4ea5-b58a-85287cb04965, true)
+V	20:59:52.842	Reading characteristic 00002a29-0000-1000-8000-00805f9b34fb
+D	20:59:52.842	gatt.readCharacteristic(00002a29-0000-1000-8000-00805f9b34fb)
+I	20:59:52.909	Read Response received from 00002a29-0000-1000-8000-00805f9b34fb, value: (0x) 48-61-67-6C-C3-B6-66-20-53-77-65-64-65-6E
+A	20:59:52.909	"Haglöf Sweden" received
+V	20:59:53.579	Reading characteristic 00002a24-0000-1000-8000-00805f9b34fb
+D	20:59:53.579	gatt.readCharacteristic(00002a24-0000-1000-8000-00805f9b34fb)
+I	20:59:53.632	Read Response received from 00002a24-0000-1000-8000-00805f9b34fb, value: (0x) 47-45-4F-32, "GEO2"
+A	20:59:53.632	"GEO2" received
+V	20:59:56.052	Reading characteristic 00002a00-0000-1000-8000-00805f9b34fb
+D	20:59:56.052	gatt.readCharacteristic(00002a00-0000-1000-8000-00805f9b34fb)
+I	20:59:56.121	Read Response received from 00002a00-0000-1000-8000-00805f9b34fb, value: (0x) 56-4C-47-45-4F-32-5F-20-33-31-39-30, "VLGEO2_ 3190"
+A	20:59:56.121	"VLGEO2_ 3190" received
+D	21:00:17.099	[Callback] Connection state changed with status: 19 and new state: DISCONNECTED (0)
+W	21:00:17.099	Connection terminated by peer (status 19)
+I	21:00:17.099	Disconnected
+D	21:00:17.174	[Broadcast] Action received: android.bluetooth.device.action.ACL_DISCONNECTED
+D	21:01:23.553	gatt.close()
+D	21:01:23.564	wait(200)
+V	21:01:23.765	Connecting to C4:D3:6A:BA:63:7E...
+D	21:01:23.766	gatt = device.connectGatt(autoConnect = false, TRANSPORT_LE, preferred PHY = LE 1M)
+D	21:01:24.061	[Callback] Connection state changed with status: 0 and new state: CONNECTED (2)
+I	21:01:24.061	Connected to C4:D3:6A:BA:63:7E
+D	21:01:24.061	wait(1600ms)
+D	21:01:24.094	[Broadcast] Action received: android.bluetooth.device.action.ACL_CONNECTED
+V	21:01:25.663	Discovering services...
+D	21:01:25.663	gatt.discoverServices()
+D	21:01:25.669	[Callback] Services discovered with status: 0
+I	21:01:25.669	Services discovered
+V	21:01:25.684	Generic Access (0x1800)
+- Device Name [R W] (0x2A00)
+- Appearance [R] (0x2A01)
+Device Information (0x180A)
+- Manufacturer Name String [R] (0x2A29)
+- Model Number String [R] (0x2A24)
+Unknown Service (9e000000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e010000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+Nordic UART Service (6e400001-b5a3-f393-e0a9-e50e24dcca9e)
+- RX Characteristic [W WNR] (6e400002-b5a3-f393-e0a9-e50e24dcca9e)
+- TX Characteristic [N R] (6e400003-b5a3-f393-e0a9-e50e24dcca9e)
+   Client Characteristic Configuration (0x2902)
+Unknown Service (69465a7c-6ce7-43bf-9549-8ebfde563e0e)
+- Unknown Characteristic [W WNR] (650c6a10-6867-464a-a876-4e545ee17830)
+Unknown Service (9e020000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e030000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+D	21:01:25.684	gatt.setCharacteristicNotification(9e010000-f685-4ea5-b58a-85287cb04965, true)
+D	21:01:25.687	gatt.setCharacteristicNotification(6e400003-b5a3-f393-e0a9-e50e24dcca9e, true)
+D	21:01:25.693	gatt.setCharacteristicNotification(9e030000-f685-4ea5-b58a-85287cb04965, true)
+V	21:04:35.924	Writing request to characteristic 6e400002-b5a3-f393-e0a9-e50e24dcca9e
+D	21:04:35.924	gatt.writeCharacteristic(6e400002-b5a3-f393-e0a9-e50e24dcca9e, value=0x31)
+I	21:04:35.991	Data written to 6e400002-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31, "1"
+A	21:04:35.991	"1" sent
+V	21:04:48.737	Writing request to characteristic 6e400002-b5a3-f393-e0a9-e50e24dcca9e
+D	21:04:48.737	gatt.writeCharacteristic(6e400002-b5a3-f393-e0a9-e50e24dcca9e, value=0x3031)
+I	21:04:48.808	Data written to 6e400002-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 30-31, "01"
+A	21:04:48.808	"01" sent
+V	21:04:54.228	Writing request to characteristic 6e400002-b5a3-f393-e0a9-e50e24dcca9e
+D	21:04:54.228	gatt.writeCharacteristic(6e400002-b5a3-f393-e0a9-e50e24dcca9e, value=0x3044)
+I	21:04:54.291	Data written to 6e400002-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 30-44, "0D"
+A	21:04:54.291	"0D" sent
+V	21:05:06.872	Writing request to characteristic 6e400002-b5a3-f393-e0a9-e50e24dcca9e
+D	21:05:06.872	gatt.writeCharacteristic(6e400002-b5a3-f393-e0a9-e50e24dcca9e, value=0x3331)
+I	21:05:06.926	Data written to 6e400002-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-31, "31"
+A	21:05:06.926	"31" sent
+V	21:05:21.486	Writing request to characteristic 6e400002-b5a3-f393-e0a9-e50e24dcca9e
+D	21:05:21.486	gatt.writeCharacteristic(6e400002-b5a3-f393-e0a9-e50e24dcca9e, value=0x53)
+I	21:05:21.562	Data written to 6e400002-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 53, "S"
+A	21:05:21.563	"S" sent
+V	21:05:25.021	Writing request to characteristic 6e400002-b5a3-f393-e0a9-e50e24dcca9e
+D	21:05:25.021	gatt.writeCharacteristic(6e400002-b5a3-f393-e0a9-e50e24dcca9e, value=0x41)
+I	21:05:25.073	Data written to 6e400002-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 41, "A"
+A	21:05:25.073	"A" sent
+V	21:05:50.844	Writing request to characteristic 6e400002-b5a3-f393-e0a9-e50e24dcca9e
+D	21:05:50.844	gatt.writeCharacteristic(6e400002-b5a3-f393-e0a9-e50e24dcca9e, value=0x31)
+I	21:05:50.902	Data written to 6e400002-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31, "1"
+A	21:05:50.902	"1" sent
+W	21:06:53.372	Connection parameters update failed with status 30 (interval: 30.0ms, latency: 0, timeout: 5000ms)
+E	21:06:53.373	Error 30 (0x1e): HCI ERROR INVALID LMP PARAM
+D	21:07:00.126	[Callback] Connection state changed with status: 19 and new state: DISCONNECTED (0)
+W	21:07:00.126	Connection terminated by peer (status 19)
+I	21:07:00.126	Disconnected
+D	21:07:00.193	[Broadcast] Action received: android.bluetooth.device.action.ACL_DISCONNECTED
+D	21:07:25.319	gatt.close()
+D	21:07:25.328	wait(200)
+V	21:07:25.529	Connecting to C4:D3:6A:BA:63:7E...
+D	21:07:25.529	gatt = device.connectGatt(autoConnect = false, TRANSPORT_LE, preferred PHY = LE 1M)
+D	21:07:26.023	[Callback] Connection state changed with status: 0 and new state: CONNECTED (2)
+I	21:07:26.023	Connected to C4:D3:6A:BA:63:7E
+D	21:07:26.023	wait(1600ms)
+D	21:07:26.073	[Broadcast] Action received: android.bluetooth.device.action.ACL_CONNECTED
+V	21:07:27.624	Discovering services...
+D	21:07:27.624	gatt.discoverServices()
+D	21:07:27.634	[Callback] Services discovered with status: 0
+I	21:07:27.634	Services discovered
+V	21:07:27.647	Generic Access (0x1800)
+- Device Name [R W] (0x2A00)
+- Appearance [R] (0x2A01)
+Device Information (0x180A)
+- Manufacturer Name String [R] (0x2A29)
+- Model Number String [R] (0x2A24)
+Unknown Service (9e000000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e010000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+Nordic UART Service (6e400001-b5a3-f393-e0a9-e50e24dcca9e)
+- RX Characteristic [W WNR] (6e400002-b5a3-f393-e0a9-e50e24dcca9e)
+- TX Characteristic [N R] (6e400003-b5a3-f393-e0a9-e50e24dcca9e)
+   Client Characteristic Configuration (0x2902)
+Unknown Service (69465a7c-6ce7-43bf-9549-8ebfde563e0e)
+- Unknown Characteristic [W WNR] (650c6a10-6867-464a-a876-4e545ee17830)
+Unknown Service (9e020000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e030000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+D	21:07:27.648	gatt.setCharacteristicNotification(9e010000-f685-4ea5-b58a-85287cb04965, true)
+D	21:07:27.651	gatt.setCharacteristicNotification(6e400003-b5a3-f393-e0a9-e50e24dcca9e, true)
+D	21:07:27.657	gatt.setCharacteristicNotification(9e030000-f685-4ea5-b58a-85287cb04965, true)
+V	21:08:22.841	Reading descriptor 00002902-0000-1000-8000-00805f9b34fb
+D	21:08:22.841	gatt.readDescriptor(00002902-0000-1000-8000-00805f9b34fb)
+I	21:08:22.913	Read Response received from descr. 00002902-0000-1000-8000-00805f9b34fb, value: (0x) 00-00
+A	21:08:22.913	"Notifications and indications disabled" received
+D	21:08:22.919	gatt.setCharacteristicNotification(6e400003-b5a3-f393-e0a9-e50e24dcca9e, false)
+V	21:08:22.923	Notifications and indications disabled for 6e400003-b5a3-f393-e0a9-e50e24dcca9e
+V	21:08:23.726	Reading descriptor 00002902-0000-1000-8000-00805f9b34fb
+D	21:08:23.726	gatt.readDescriptor(00002902-0000-1000-8000-00805f9b34fb)
+I	21:08:23.784	Read Response received from descr. 00002902-0000-1000-8000-00805f9b34fb, value: (0x) 00-00
+A	21:08:23.784	"Notifications and indications disabled" received
+V	21:08:24.965	Enabling notifications for 6e400003-b5a3-f393-e0a9-e50e24dcca9e
+D	21:08:24.965	gatt.setCharacteristicNotification(6e400003-b5a3-f393-e0a9-e50e24dcca9e, true)
+D	21:08:24.969	gatt.writeDescriptor(00002902-0000-1000-8000-00805f9b34fb, value=0x0100)
+I	21:08:25.042	Data written to descr. 00002902-0000-1000-8000-00805f9b34fb, value: (0x) 01-00
+A	21:08:25.042	"Notifications enabled" sent
+V	21:08:25.047	Notifications enabled for 6e400003-b5a3-f393-e0a9-e50e24dcca9e
+V	21:08:53.445	Writing request to characteristic 6e400002-b5a3-f393-e0a9-e50e24dcca9e
+D	21:08:53.445	gatt.writeCharacteristic(6e400002-b5a3-f393-e0a9-e50e24dcca9e, value=0x30583044)
+I	21:08:53.523	Data written to 6e400002-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 30-58-30-44, "0X0D"
+A	21:08:53.523	"0X0D" sent
+D	21:08:58.294	[Callback] Connection state changed with status: 19 and new state: DISCONNECTED (0)
+W	21:08:58.294	Connection terminated by peer (status 19)
+I	21:08:58.294	Disconnected
+D	21:08:58.355	[Broadcast] Action received: android.bluetooth.device.action.ACL_DISCONNECTED
+D	21:09:01.438	gatt.close()
+D	21:09:01.445	wait(200)
+V	21:09:01.648	Connecting to C4:D3:6A:BA:63:7E...
+D	21:09:01.648	gatt = device.connectGatt(autoConnect = false, TRANSPORT_LE, preferred PHY = LE 1M)
+D	21:09:01.989	[Callback] Connection state changed with status: 0 and new state: CONNECTED (2)
+I	21:09:01.989	Connected to C4:D3:6A:BA:63:7E
+D	21:09:01.991	wait(1600ms)
+D	21:09:01.991	[Broadcast] Action received: android.bluetooth.device.action.ACL_CONNECTED
+V	21:09:03.591	Discovering services...
+D	21:09:03.591	gatt.discoverServices()
+D	21:09:03.604	[Callback] Services discovered with status: 0
+I	21:09:03.604	Services discovered
+V	21:09:03.615	Generic Access (0x1800)
+- Device Name [R W] (0x2A00)
+- Appearance [R] (0x2A01)
+Device Information (0x180A)
+- Manufacturer Name String [R] (0x2A29)
+- Model Number String [R] (0x2A24)
+Unknown Service (9e000000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e010000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+Nordic UART Service (6e400001-b5a3-f393-e0a9-e50e24dcca9e)
+- RX Characteristic [W WNR] (6e400002-b5a3-f393-e0a9-e50e24dcca9e)
+- TX Characteristic [N R] (6e400003-b5a3-f393-e0a9-e50e24dcca9e)
+   Client Characteristic Configuration (0x2902)
+Unknown Service (69465a7c-6ce7-43bf-9549-8ebfde563e0e)
+- Unknown Characteristic [W WNR] (650c6a10-6867-464a-a876-4e545ee17830)
+Unknown Service (9e020000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e030000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+D	21:09:03.615	gatt.setCharacteristicNotification(9e010000-f685-4ea5-b58a-85287cb04965, true)
+D	21:09:03.618	gatt.setCharacteristicNotification(6e400003-b5a3-f393-e0a9-e50e24dcca9e, true)
+D	21:09:03.621	gatt.setCharacteristicNotification(9e030000-f685-4ea5-b58a-85287cb04965, true)
+V	21:09:24.077	Writing request to characteristic 6e400002-b5a3-f393-e0a9-e50e24dcca9e
+D	21:09:24.077	gatt.writeCharacteristic(6e400002-b5a3-f393-e0a9-e50e24dcca9e, value=0x3036)
+I	21:09:24.145	Data written to 6e400002-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 30-36, "06"
+A	21:09:24.145	"06" sent
+V	21:09:37.683	Changing write type for 6e400002-b5a3-f393-e0a9-e50e24dcca9e to WRITE COMMAND
+D	21:09:37.683	characteristic.setWriteType(WRITE COMMAND)
+V	21:09:37.683	Writing command to characteristic 6e400002-b5a3-f393-e0a9-e50e24dcca9e
+D	21:09:37.683	gatt.writeCharacteristic(6e400002-b5a3-f393-e0a9-e50e24dcca9e, value=0x3031)
+I	21:09:37.692	Data written to 6e400002-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 30-31, "01"
+A	21:09:37.692	"01" sent
+V	21:09:45.097	Changing write type for 6e400002-b5a3-f393-e0a9-e50e24dcca9e to WRITE REQUEST
+D	21:09:45.097	characteristic.setWriteType(WRITE REQUEST)
+V	21:09:45.097	Writing request to characteristic 6e400002-b5a3-f393-e0a9-e50e24dcca9e
+D	21:09:45.097	gatt.writeCharacteristic(6e400002-b5a3-f393-e0a9-e50e24dcca9e, value=0x3031)
+I	21:09:45.178	Data written to 6e400002-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 30-31, "01"
+A	21:09:45.178	"01" sent
+V	21:09:54.796	Writing request to characteristic 6e400002-b5a3-f393-e0a9-e50e24dcca9e
+D	21:09:54.796	gatt.writeCharacteristic(6e400002-b5a3-f393-e0a9-e50e24dcca9e, value=0x3044)
+I	21:09:54.865	Data written to 6e400002-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 30-44, "0D"
+A	21:09:54.865	"0D" sent
+W	21:10:49.886	Connection parameters update failed with status 30 (interval: 30.0ms, latency: 0, timeout: 5000ms)
+E	21:10:49.886	Error 30 (0x1e): HCI ERROR INVALID LMP PARAM
+D	21:10:57.509	[Callback] Connection state changed with status: 19 and new state: DISCONNECTED (0)
+W	21:10:57.509	Connection terminated by peer (status 19)
+I	21:10:57.509	Disconnected
+D	21:10:57.552	[Broadcast] Action received: android.bluetooth.device.action.ACL_DISCONNECTED
+D	21:11:06.837	[Broadcast] Action received: android.bluetooth.device.action.ACL_CONNECTED
+D	21:11:06.837	gatt.close()
+D	21:11:06.844	wait(200)
+V	21:11:07.044	Connecting to C4:D3:6A:BA:63:7E...
+D	21:11:07.045	gatt = device.connectGatt(autoConnect = false, TRANSPORT_LE, preferred PHY = LE 1M)
+D	21:11:07.061	[Callback] Connection state changed with status: 0 and new state: CONNECTED (2)
+I	21:11:07.061	Connected to C4:D3:6A:BA:63:7E
+D	21:11:07.062	wait(1600ms)
+V	21:11:08.664	Discovering services...
+D	21:11:08.664	gatt.discoverServices()
+D	21:11:08.678	[Callback] Services discovered with status: 0
+I	21:11:08.678	Services discovered
+V	21:11:08.689	Generic Access (0x1800)
+- Device Name [R W] (0x2A00)
+- Appearance [R] (0x2A01)
+Device Information (0x180A)
+- Manufacturer Name String [R] (0x2A29)
+- Model Number String [R] (0x2A24)
+Unknown Service (9e000000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e010000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+Nordic UART Service (6e400001-b5a3-f393-e0a9-e50e24dcca9e)
+- RX Characteristic [W WNR] (6e400002-b5a3-f393-e0a9-e50e24dcca9e)
+- TX Characteristic [N R] (6e400003-b5a3-f393-e0a9-e50e24dcca9e)
+   Client Characteristic Configuration (0x2902)
+Unknown Service (69465a7c-6ce7-43bf-9549-8ebfde563e0e)
+- Unknown Characteristic [W WNR] (650c6a10-6867-464a-a876-4e545ee17830)
+Unknown Service (9e020000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e030000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+D	21:11:08.689	gatt.setCharacteristicNotification(9e010000-f685-4ea5-b58a-85287cb04965, true)
+D	21:11:08.694	gatt.setCharacteristicNotification(6e400003-b5a3-f393-e0a9-e50e24dcca9e, true)
+D	21:11:08.697	gatt.setCharacteristicNotification(9e030000-f685-4ea5-b58a-85287cb04965, true)
+V	21:11:17.273	Disconnecting...
+D	21:11:17.274	gatt.disconnect()
+D	21:11:17.282	[Callback] Connection state changed with status: 0 and new state: DISCONNECTED (0)
+I	21:11:17.282	Disconnected
+D	21:11:17.874	gatt.close()
+D	21:11:17.879	wait(200)
+V	21:11:18.079	Connecting to C4:D3:6A:BA:63:7E...
+D	21:11:18.080	gatt = device.connectGatt(autoConnect = false, TRANSPORT_LE, preferred PHY = LE 1M)
+D	21:11:18.112	[Callback] Connection state changed with status: 0 and new state: CONNECTED (2)
+I	21:11:18.112	Connected to C4:D3:6A:BA:63:7E
+D	21:11:18.112	wait(1600ms)
+V	21:11:19.714	Discovering services...
+D	21:11:19.714	gatt.discoverServices()
+D	21:11:19.723	[Callback] Services discovered with status: 0
+I	21:11:19.723	Services discovered
+V	21:11:19.732	Generic Access (0x1800)
+- Device Name [R W] (0x2A00)
+- Appearance [R] (0x2A01)
+Device Information (0x180A)
+- Manufacturer Name String [R] (0x2A29)
+- Model Number String [R] (0x2A24)
+Unknown Service (9e000000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e010000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+Nordic UART Service (6e400001-b5a3-f393-e0a9-e50e24dcca9e)
+- RX Characteristic [W WNR] (6e400002-b5a3-f393-e0a9-e50e24dcca9e)
+- TX Characteristic [N R] (6e400003-b5a3-f393-e0a9-e50e24dcca9e)
+   Client Characteristic Configuration (0x2902)
+Unknown Service (69465a7c-6ce7-43bf-9549-8ebfde563e0e)
+- Unknown Characteristic [W WNR] (650c6a10-6867-464a-a876-4e545ee17830)
+Unknown Service (9e020000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e030000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+D	21:11:19.732	gatt.setCharacteristicNotification(9e010000-f685-4ea5-b58a-85287cb04965, true)
+D	21:11:19.739	gatt.setCharacteristicNotification(6e400003-b5a3-f393-e0a9-e50e24dcca9e, true)
+D	21:11:19.741	gatt.setCharacteristicNotification(9e030000-f685-4ea5-b58a-85287cb04965, true)
+D	21:12:01.800	[Callback] Connection state changed with status: 19 and new state: DISCONNECTED (0)
+W	21:12:01.800	Connection terminated by peer (status 19)
+I	21:12:01.800	Disconnected
+D	21:12:01.892	[Broadcast] Action received: android.bluetooth.device.action.ACL_DISCONNECTED
+D	21:12:16.626	[Broadcast] Action received: android.bluetooth.device.action.ACL_CONNECTED
+D	21:12:16.627	gatt.close()
+D	21:12:16.647	wait(200)
+V	21:12:16.849	Connecting to C4:D3:6A:BA:63:7E...
+D	21:12:16.849	gatt = device.connectGatt(autoConnect = false, TRANSPORT_LE, preferred PHY = LE 1M)
+D	21:12:16.863	[Callback] Connection state changed with status: 0 and new state: CONNECTED (2)
+I	21:12:16.863	Connected to C4:D3:6A:BA:63:7E
+D	21:12:16.864	wait(1600ms)
+D	21:12:18.417	[Callback] Connection state changed with status: 19 and new state: DISCONNECTED (0)
+W	21:12:18.417	Connection terminated by peer (status 19)
+I	21:12:18.417	Disconnected
+D	21:12:18.449	[Broadcast] Action received: android.bluetooth.device.action.ACL_DISCONNECTED
+D	21:12:24.073	gatt.close()
+D	21:12:24.082	wait(200)
+V	21:12:24.283	Connecting to C4:D3:6A:BA:63:7E...
+D	21:12:24.283	gatt = device.connectGatt(autoConnect = false, TRANSPORT_LE, preferred PHY = LE 1M)
+D	21:12:24.741	[Callback] Connection state changed with status: 0 and new state: CONNECTED (2)
+I	21:12:24.741	Connected to C4:D3:6A:BA:63:7E
+D	21:12:24.742	wait(1600ms)
+D	21:12:24.773	[Broadcast] Action received: android.bluetooth.device.action.ACL_CONNECTED
+V	21:12:26.342	Discovering services...
+D	21:12:26.342	gatt.discoverServices()
+D	21:12:26.349	[Callback] Services discovered with status: 0
+I	21:12:26.349	Services discovered
+V	21:12:26.354	Generic Access (0x1800)
+- Device Name [R W] (0x2A00)
+- Appearance [R] (0x2A01)
+Device Information (0x180A)
+- Manufacturer Name String [R] (0x2A29)
+- Model Number String [R] (0x2A24)
+Unknown Service (9e000000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e010000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+Nordic UART Service (6e400001-b5a3-f393-e0a9-e50e24dcca9e)
+- RX Characteristic [W WNR] (6e400002-b5a3-f393-e0a9-e50e24dcca9e)
+- TX Characteristic [N R] (6e400003-b5a3-f393-e0a9-e50e24dcca9e)
+   Client Characteristic Configuration (0x2902)
+Unknown Service (69465a7c-6ce7-43bf-9549-8ebfde563e0e)
+- Unknown Characteristic [W WNR] (650c6a10-6867-464a-a876-4e545ee17830)
+Unknown Service (9e020000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e030000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+D	21:12:26.355	gatt.setCharacteristicNotification(9e010000-f685-4ea5-b58a-85287cb04965, true)
+D	21:12:26.358	gatt.setCharacteristicNotification(6e400003-b5a3-f393-e0a9-e50e24dcca9e, true)
+D	21:12:26.364	gatt.setCharacteristicNotification(9e030000-f685-4ea5-b58a-85287cb04965, true)
+V	21:13:14.766	Writing request to characteristic 650c6a10-6867-464a-a876-4e545ee17830
+D	21:13:14.766	gatt.writeCharacteristic(650c6a10-6867-464a-a876-4e545ee17830, value=0x0D)
+I	21:13:14.822	Data written to 650c6a10-6867-464a-a876-4e545ee17830, value: (0x) 0D
+A	21:13:14.822	"(0x) 0D" sent
+D	21:13:24.552	[Callback] Connection state changed with status: 19 and new state: DISCONNECTED (0)
+W	21:13:24.552	Connection terminated by peer (status 19)
+I	21:13:24.552	Disconnected
+D	21:13:24.631	[Broadcast] Action received: android.bluetooth.device.action.ACL_DISCONNECTED
+D	21:13:31.409	gatt.close()
+D	21:13:31.414	wait(200)
+V	21:13:31.614	Connecting to C4:D3:6A:BA:63:7E...
+D	21:13:31.615	gatt = device.connectGatt(autoConnect = false, TRANSPORT_LE, preferred PHY = LE 1M)
+D	21:13:32.009	[Callback] Connection state changed with status: 0 and new state: CONNECTED (2)
+I	21:13:32.009	Connected to C4:D3:6A:BA:63:7E
+D	21:13:32.009	wait(1600ms)
+D	21:13:32.034	[Broadcast] Action received: android.bluetooth.device.action.ACL_CONNECTED
+V	21:13:33.610	Discovering services...
+D	21:13:33.610	gatt.discoverServices()
+D	21:13:33.622	[Callback] Services discovered with status: 0
+I	21:13:33.622	Services discovered
+V	21:13:33.630	Generic Access (0x1800)
+- Device Name [R W] (0x2A00)
+- Appearance [R] (0x2A01)
+Device Information (0x180A)
+- Manufacturer Name String [R] (0x2A29)
+- Model Number String [R] (0x2A24)
+Unknown Service (9e000000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e010000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+Nordic UART Service (6e400001-b5a3-f393-e0a9-e50e24dcca9e)
+- RX Characteristic [W WNR] (6e400002-b5a3-f393-e0a9-e50e24dcca9e)
+- TX Characteristic [N R] (6e400003-b5a3-f393-e0a9-e50e24dcca9e)
+   Client Characteristic Configuration (0x2902)
+Unknown Service (69465a7c-6ce7-43bf-9549-8ebfde563e0e)
+- Unknown Characteristic [W WNR] (650c6a10-6867-464a-a876-4e545ee17830)
+Unknown Service (9e020000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e030000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+D	21:13:33.630	gatt.setCharacteristicNotification(9e010000-f685-4ea5-b58a-85287cb04965, true)
+D	21:13:33.637	gatt.setCharacteristicNotification(6e400003-b5a3-f393-e0a9-e50e24dcca9e, true)
+D	21:13:33.638	gatt.setCharacteristicNotification(9e030000-f685-4ea5-b58a-85287cb04965, true)
+V	21:13:42.297	Writing request to characteristic 650c6a10-6867-464a-a876-4e545ee17830
+D	21:13:42.297	gatt.writeCharacteristic(650c6a10-6867-464a-a876-4e545ee17830, value=0x01)
+I	21:13:42.356	Data written to 650c6a10-6867-464a-a876-4e545ee17830, value: (0x) 01
+A	21:13:42.356	"(0x) 01" sent
+V	21:13:54.731	Writing request to characteristic 650c6a10-6867-464a-a876-4e545ee17830
+D	21:13:54.731	gatt.writeCharacteristic(650c6a10-6867-464a-a876-4e545ee17830, value=0x06)
+I	21:13:54.835	Data written to 650c6a10-6867-464a-a876-4e545ee17830, value: (0x) 06
+A	21:13:54.835	"(0x) 06" sent
+V	21:14:38.855	Writing request to characteristic 650c6a10-6867-464a-a876-4e545ee17830
+D	21:14:38.855	gatt.writeCharacteristic(650c6a10-6867-464a-a876-4e545ee17830, value=0x01)
+I	21:14:38.907	Data written to 650c6a10-6867-464a-a876-4e545ee17830, value: (0x) 01
+A	21:14:38.907	"(0x) 01" sent
+D	21:14:39.001	[Callback] Connection state changed with status: 19 and new state: DISCONNECTED (0)
+W	21:14:39.001	Connection terminated by peer (status 19)
+I	21:14:39.001	Disconnected
+D	21:14:39.037	[Broadcast] Action received: android.bluetooth.device.action.ACL_DISCONNECTED
+D	21:14:50.973	gatt.close()
+D	21:14:50.983	wait(200)
+V	21:14:51.183	Connecting to C4:D3:6A:BA:63:7E...
+D	21:14:51.184	gatt = device.connectGatt(autoConnect = false, TRANSPORT_LE, preferred PHY = LE 1M)
+D	21:14:51.449	[Callback] Connection state changed with status: 0 and new state: CONNECTED (2)
+I	21:14:51.449	Connected to C4:D3:6A:BA:63:7E
+D	21:14:51.450	wait(1600ms)
+D	21:14:51.471	[Broadcast] Action received: android.bluetooth.device.action.ACL_CONNECTED
+V	21:14:53.050	Discovering services...
+D	21:14:53.050	gatt.discoverServices()
+D	21:14:53.057	[Callback] Services discovered with status: 0
+I	21:14:53.058	Services discovered
+V	21:14:53.077	Generic Access (0x1800)
+- Device Name [R W] (0x2A00)
+- Appearance [R] (0x2A01)
+Device Information (0x180A)
+- Manufacturer Name String [R] (0x2A29)
+- Model Number String [R] (0x2A24)
+Unknown Service (9e000000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e010000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+Nordic UART Service (6e400001-b5a3-f393-e0a9-e50e24dcca9e)
+- RX Characteristic [W WNR] (6e400002-b5a3-f393-e0a9-e50e24dcca9e)
+- TX Characteristic [N R] (6e400003-b5a3-f393-e0a9-e50e24dcca9e)
+   Client Characteristic Configuration (0x2902)
+Unknown Service (69465a7c-6ce7-43bf-9549-8ebfde563e0e)
+- Unknown Characteristic [W WNR] (650c6a10-6867-464a-a876-4e545ee17830)
+Unknown Service (9e020000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e030000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+D	21:14:53.077	gatt.setCharacteristicNotification(9e010000-f685-4ea5-b58a-85287cb04965, true)
+D	21:14:53.083	gatt.setCharacteristicNotification(6e400003-b5a3-f393-e0a9-e50e24dcca9e, true)
+D	21:14:53.086	gatt.setCharacteristicNotification(9e030000-f685-4ea5-b58a-85287cb04965, true)
+V	21:14:57.695	Writing request to characteristic 650c6a10-6867-464a-a876-4e545ee17830
+D	21:14:57.695	gatt.writeCharacteristic(650c6a10-6867-464a-a876-4e545ee17830, value=0x01)
+I	21:14:57.746	Data written to 650c6a10-6867-464a-a876-4e545ee17830, value: (0x) 01
+A	21:14:57.746	"(0x) 01" sent
+V	21:15:11.663	Writing request to characteristic 650c6a10-6867-464a-a876-4e545ee17830
+D	21:15:11.663	gatt.writeCharacteristic(650c6a10-6867-464a-a876-4e545ee17830, value=0x01)
+I	21:15:11.727	Data written to 650c6a10-6867-464a-a876-4e545ee17830, value: (0x) 01
+A	21:15:11.727	"(0x) 01" sent
+V	21:16:25.381	Writing request to characteristic 650c6a10-6867-464a-a876-4e545ee17830
+D	21:16:25.381	gatt.writeCharacteristic(650c6a10-6867-464a-a876-4e545ee17830, value=0x01)
+I	21:16:25.435	Data written to 650c6a10-6867-464a-a876-4e545ee17830, value: (0x) 01
+A	21:16:25.435	"(0x) 01" sent
+V	21:16:30.537	Writing request to characteristic 650c6a10-6867-464a-a876-4e545ee17830
+D	21:16:30.537	gatt.writeCharacteristic(650c6a10-6867-464a-a876-4e545ee17830, value=0x0D)
+I	21:16:30.600	Data written to 650c6a10-6867-464a-a876-4e545ee17830, value: (0x) 0D
+A	21:16:30.600	"(0x) 0D" sent
+V	21:16:41.648	Writing request to characteristic 650c6a10-6867-464a-a876-4e545ee17830
+D	21:16:41.648	gatt.writeCharacteristic(650c6a10-6867-464a-a876-4e545ee17830, value=0x06)
+I	21:16:41.733	Data written to 650c6a10-6867-464a-a876-4e545ee17830, value: (0x) 06
+A	21:16:41.733	"(0x) 06" sent
+D	21:16:41.823	[Callback] Connection state changed with status: 19 and new state: DISCONNECTED (0)
+W	21:16:41.823	Connection terminated by peer (status 19)
+I	21:16:41.823	Disconnected
+D	21:16:41.883	[Broadcast] Action received: android.bluetooth.device.action.ACL_DISCONNECTED
+D	21:16:53.092	gatt.close()
+D	21:16:53.101	wait(200)
+V	21:16:53.302	Connecting to C4:D3:6A:BA:63:7E...
+D	21:16:53.303	gatt = device.connectGatt(autoConnect = false, TRANSPORT_LE, preferred PHY = LE 1M)
+D	21:16:53.587	[Callback] Connection state changed with status: 0 and new state: CONNECTED (2)
+I	21:16:53.587	Connected to C4:D3:6A:BA:63:7E
+D	21:16:53.587	wait(1600ms)
+D	21:16:53.613	[Broadcast] Action received: android.bluetooth.device.action.ACL_CONNECTED
+V	21:16:55.187	Discovering services...
+D	21:16:55.187	gatt.discoverServices()
+D	21:16:55.194	[Callback] Services discovered with status: 0
+I	21:16:55.194	Services discovered
+V	21:16:55.207	Generic Access (0x1800)
+- Device Name [R W] (0x2A00)
+- Appearance [R] (0x2A01)
+Device Information (0x180A)
+- Manufacturer Name String [R] (0x2A29)
+- Model Number String [R] (0x2A24)
+Unknown Service (9e000000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e010000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+Nordic UART Service (6e400001-b5a3-f393-e0a9-e50e24dcca9e)
+- RX Characteristic [W WNR] (6e400002-b5a3-f393-e0a9-e50e24dcca9e)
+- TX Characteristic [N R] (6e400003-b5a3-f393-e0a9-e50e24dcca9e)
+   Client Characteristic Configuration (0x2902)
+Unknown Service (69465a7c-6ce7-43bf-9549-8ebfde563e0e)
+- Unknown Characteristic [W WNR] (650c6a10-6867-464a-a876-4e545ee17830)
+Unknown Service (9e020000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e030000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+D	21:16:55.208	gatt.setCharacteristicNotification(9e010000-f685-4ea5-b58a-85287cb04965, true)
+D	21:16:55.215	gatt.setCharacteristicNotification(6e400003-b5a3-f393-e0a9-e50e24dcca9e, true)
+D	21:16:55.219	gatt.setCharacteristicNotification(9e030000-f685-4ea5-b58a-85287cb04965, true)
+V	21:17:05.409	Writing request to characteristic 650c6a10-6867-464a-a876-4e545ee17830
+D	21:17:05.409	gatt.writeCharacteristic(650c6a10-6867-464a-a876-4e545ee17830, value=0x06)
+I	21:17:05.486	Data written to 650c6a10-6867-464a-a876-4e545ee17830, value: (0x) 06
+A	21:17:05.486	"(0x) 06" sent
+V	21:17:08.717	Disconnecting...
+D	21:17:08.717	gatt.disconnect()
+D	21:17:08.728	[Callback] Connection state changed with status: 0 and new state: DISCONNECTED (0)
+I	21:17:08.728	Disconnected
+D	21:17:09.351	gatt.close()
+D	21:17:09.357	wait(200)
+V	21:17:09.558	Connecting to C4:D3:6A:BA:63:7E...
+D	21:17:09.558	gatt = device.connectGatt(autoConnect = false, TRANSPORT_LE, preferred PHY = LE 1M)
+D	21:17:09.580	[Callback] Connection state changed with status: 0 and new state: CONNECTED (2)
+I	21:17:09.580	Connected to C4:D3:6A:BA:63:7E
+D	21:17:09.580	wait(1600ms)
+V	21:17:11.181	Discovering services...
+D	21:17:11.181	gatt.discoverServices()
+D	21:17:11.196	[Callback] Services discovered with status: 0
+I	21:17:11.197	Services discovered
+V	21:17:11.208	Generic Access (0x1800)
+- Device Name [R W] (0x2A00)
+- Appearance [R] (0x2A01)
+Device Information (0x180A)
+- Manufacturer Name String [R] (0x2A29)
+- Model Number String [R] (0x2A24)
+Unknown Service (9e000000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e010000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+Nordic UART Service (6e400001-b5a3-f393-e0a9-e50e24dcca9e)
+- RX Characteristic [W WNR] (6e400002-b5a3-f393-e0a9-e50e24dcca9e)
+- TX Characteristic [N R] (6e400003-b5a3-f393-e0a9-e50e24dcca9e)
+   Client Characteristic Configuration (0x2902)
+Unknown Service (69465a7c-6ce7-43bf-9549-8ebfde563e0e)
+- Unknown Characteristic [W WNR] (650c6a10-6867-464a-a876-4e545ee17830)
+Unknown Service (9e020000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e030000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+D	21:17:11.208	gatt.setCharacteristicNotification(9e010000-f685-4ea5-b58a-85287cb04965, true)
+D	21:17:11.212	gatt.setCharacteristicNotification(6e400003-b5a3-f393-e0a9-e50e24dcca9e, true)
+D	21:17:11.215	gatt.setCharacteristicNotification(9e030000-f685-4ea5-b58a-85287cb04965, true)
+D	21:17:14.429	[Callback] Connection state changed with status: 19 and new state: DISCONNECTED (0)
+W	21:17:14.429	Connection terminated by peer (status 19)
+I	21:17:14.429	Disconnected
+D	21:17:14.480	[Broadcast] Action received: android.bluetooth.device.action.ACL_DISCONNECTED
+D	21:17:18.742	gatt.close()
+D	21:17:18.748	wait(200)
+V	21:17:18.949	Connecting to C4:D3:6A:BA:63:7E...
+D	21:17:18.949	gatt = device.connectGatt(autoConnect = false, TRANSPORT_LE, preferred PHY = LE 1M)
+D	21:17:19.194	[Callback] Connection state changed with status: 0 and new state: CONNECTED (2)
+I	21:17:19.194	Connected to C4:D3:6A:BA:63:7E
+D	21:17:19.194	wait(1600ms)
+D	21:17:19.223	[Broadcast] Action received: android.bluetooth.device.action.ACL_CONNECTED
+V	21:17:20.795	Discovering services...
+D	21:17:20.795	gatt.discoverServices()
+D	21:17:20.808	[Callback] Services discovered with status: 0
+I	21:17:20.808	Services discovered
+V	21:17:20.819	Generic Access (0x1800)
+- Device Name [R W] (0x2A00)
+- Appearance [R] (0x2A01)
+Device Information (0x180A)
+- Manufacturer Name String [R] (0x2A29)
+- Model Number String [R] (0x2A24)
+Unknown Service (9e000000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e010000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+Nordic UART Service (6e400001-b5a3-f393-e0a9-e50e24dcca9e)
+- RX Characteristic [W WNR] (6e400002-b5a3-f393-e0a9-e50e24dcca9e)
+- TX Characteristic [N R] (6e400003-b5a3-f393-e0a9-e50e24dcca9e)
+   Client Characteristic Configuration (0x2902)
+Unknown Service (69465a7c-6ce7-43bf-9549-8ebfde563e0e)
+- Unknown Characteristic [W WNR] (650c6a10-6867-464a-a876-4e545ee17830)
+Unknown Service (9e020000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e030000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+D	21:17:20.819	gatt.setCharacteristicNotification(9e010000-f685-4ea5-b58a-85287cb04965, true)
+D	21:17:20.824	gatt.setCharacteristicNotification(6e400003-b5a3-f393-e0a9-e50e24dcca9e, true)
+D	21:17:20.825	gatt.setCharacteristicNotification(9e030000-f685-4ea5-b58a-85287cb04965, true)
+V	21:17:31.316	Writing request to characteristic 650c6a10-6867-464a-a876-4e545ee17830
+D	21:17:31.317	gatt.writeCharacteristic(650c6a10-6867-464a-a876-4e545ee17830, value=0x01)
+I	21:17:31.377	Data written to 650c6a10-6867-464a-a876-4e545ee17830, value: (0x) 01
+A	21:17:31.377	"(0x) 01" sent
+V	21:17:47.539	Writing request to characteristic 650c6a10-6867-464a-a876-4e545ee17830
+D	21:17:47.539	gatt.writeCharacteristic(650c6a10-6867-464a-a876-4e545ee17830, value=0x0D)
+I	21:17:47.612	Data written to 650c6a10-6867-464a-a876-4e545ee17830, value: (0x) 0D
+A	21:17:47.613	"(0x) 0D" sent
+D	21:18:15.898	[Callback] Connection state changed with status: 19 and new state: DISCONNECTED (0)
+W	21:18:15.899	Connection terminated by peer (status 19)
+I	21:18:15.899	Disconnected
+D	21:18:15.951	[Broadcast] Action received: android.bluetooth.device.action.ACL_DISCONNECTED
+D	21:18:23.310	gatt.close()
+D	21:18:23.317	wait(200)
+V	21:18:23.517	Connecting to C4:D3:6A:BA:63:7E...
+D	21:18:23.518	gatt = device.connectGatt(autoConnect = false, TRANSPORT_LE, preferred PHY = LE 1M)
+D	21:18:23.801	[Callback] Connection state changed with status: 0 and new state: CONNECTED (2)
+I	21:18:23.801	Connected to C4:D3:6A:BA:63:7E
+D	21:18:23.802	wait(1600ms)
+D	21:18:23.822	[Broadcast] Action received: android.bluetooth.device.action.ACL_CONNECTED
+V	21:18:25.403	Discovering services...
+D	21:18:25.403	gatt.discoverServices()
+D	21:18:25.411	[Callback] Services discovered with status: 0
+I	21:18:25.412	Services discovered
+V	21:18:25.422	Generic Access (0x1800)
+- Device Name [R W] (0x2A00)
+- Appearance [R] (0x2A01)
+Device Information (0x180A)
+- Manufacturer Name String [R] (0x2A29)
+- Model Number String [R] (0x2A24)
+Unknown Service (9e000000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e010000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+Nordic UART Service (6e400001-b5a3-f393-e0a9-e50e24dcca9e)
+- RX Characteristic [W WNR] (6e400002-b5a3-f393-e0a9-e50e24dcca9e)
+- TX Characteristic [N R] (6e400003-b5a3-f393-e0a9-e50e24dcca9e)
+   Client Characteristic Configuration (0x2902)
+Unknown Service (69465a7c-6ce7-43bf-9549-8ebfde563e0e)
+- Unknown Characteristic [W WNR] (650c6a10-6867-464a-a876-4e545ee17830)
+Unknown Service (9e020000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e030000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+D	21:18:25.422	gatt.setCharacteristicNotification(9e010000-f685-4ea5-b58a-85287cb04965, true)
+D	21:18:25.425	gatt.setCharacteristicNotification(6e400003-b5a3-f393-e0a9-e50e24dcca9e, true)
+D	21:18:25.427	gatt.setCharacteristicNotification(9e030000-f685-4ea5-b58a-85287cb04965, true)
+V	21:18:37.925	Writing request to characteristic 650c6a10-6867-464a-a876-4e545ee17830
+D	21:18:37.925	gatt.writeCharacteristic(650c6a10-6867-464a-a876-4e545ee17830, value=0x47)
+I	21:18:38.006	Data written to 650c6a10-6867-464a-a876-4e545ee17830, value: (0x) 47, "G"
+A	21:18:38.006	"(0x) 47, "G"" sent
+D	21:20:38.802	[Callback] Connection state changed with status: 19 and new state: DISCONNECTED (0)
+W	21:20:38.802	Connection terminated by peer (status 19)
+I	21:20:38.802	Disconnected
+D	21:20:38.884	[Broadcast] Action received: android.bluetooth.device.action.ACL_DISCONNECTED
+D	21:21:51.518	gatt.close()
+D	21:21:51.527	wait(200)
+V	21:21:51.728	Connecting to C4:D3:6A:BA:63:7E...
+D	21:21:51.729	gatt = device.connectGatt(autoConnect = false, TRANSPORT_LE, preferred PHY = LE 1M)
+D	21:21:52.005	[Callback] Connection state changed with status: 0 and new state: CONNECTED (2)
+I	21:21:52.005	Connected to C4:D3:6A:BA:63:7E
+D	21:21:52.006	wait(1600ms)
+D	21:21:52.038	[Broadcast] Action received: android.bluetooth.device.action.ACL_CONNECTED
+V	21:21:53.606	Discovering services...
+D	21:21:53.606	gatt.discoverServices()
+D	21:21:53.617	[Callback] Services discovered with status: 0
+I	21:21:53.617	Services discovered
+V	21:21:53.628	Generic Access (0x1800)
+- Device Name [R W] (0x2A00)
+- Appearance [R] (0x2A01)
+Device Information (0x180A)
+- Manufacturer Name String [R] (0x2A29)
+- Model Number String [R] (0x2A24)
+Unknown Service (9e000000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e010000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+Nordic UART Service (6e400001-b5a3-f393-e0a9-e50e24dcca9e)
+- RX Characteristic [W WNR] (6e400002-b5a3-f393-e0a9-e50e24dcca9e)
+- TX Characteristic [N R] (6e400003-b5a3-f393-e0a9-e50e24dcca9e)
+   Client Characteristic Configuration (0x2902)
+Unknown Service (69465a7c-6ce7-43bf-9549-8ebfde563e0e)
+- Unknown Characteristic [W WNR] (650c6a10-6867-464a-a876-4e545ee17830)
+Unknown Service (9e020000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e030000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+D	21:21:53.628	gatt.setCharacteristicNotification(9e010000-f685-4ea5-b58a-85287cb04965, true)
+D	21:21:53.630	gatt.setCharacteristicNotification(6e400003-b5a3-f393-e0a9-e50e24dcca9e, true)
+D	21:21:53.631	gatt.setCharacteristicNotification(9e030000-f685-4ea5-b58a-85287cb04965, true)
+D	21:25:59.928	[Callback] Connection state changed with status: 19 and new state: DISCONNECTED (0)
+W	21:25:59.928	Connection terminated by peer (status 19)
+I	21:25:59.928	Disconnected
+D	21:25:59.981	[Broadcast] Action received: android.bluetooth.device.action.ACL_DISCONNECTED
+D	21:26:02.221	[Broadcast] Action received: android.bluetooth.device.action.ACL_CONNECTED
+D	21:26:02.221	gatt.close()
+D	21:26:02.240	wait(200)
+V	21:26:02.440	Connecting to C4:D3:6A:BA:63:7E...
+D	21:26:02.441	gatt = device.connectGatt(autoConnect = false, TRANSPORT_LE, preferred PHY = LE 1M)
+D	21:26:02.460	[Callback] Connection state changed with status: 0 and new state: CONNECTED (2)
+I	21:26:02.460	Connected to C4:D3:6A:BA:63:7E
+D	21:26:02.460	wait(1600ms)
+V	21:26:04.063	Discovering services...
+D	21:26:04.063	gatt.discoverServices()
+D	21:26:04.078	[Callback] Services discovered with status: 0
+I	21:26:04.078	Services discovered
+V	21:26:04.090	Generic Access (0x1800)
+- Device Name [R W] (0x2A00)
+- Appearance [R] (0x2A01)
+Device Information (0x180A)
+- Manufacturer Name String [R] (0x2A29)
+- Model Number String [R] (0x2A24)
+Unknown Service (9e000000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e010000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+Nordic UART Service (6e400001-b5a3-f393-e0a9-e50e24dcca9e)
+- RX Characteristic [W WNR] (6e400002-b5a3-f393-e0a9-e50e24dcca9e)
+- TX Characteristic [N R] (6e400003-b5a3-f393-e0a9-e50e24dcca9e)
+   Client Characteristic Configuration (0x2902)
+Unknown Service (69465a7c-6ce7-43bf-9549-8ebfde563e0e)
+- Unknown Characteristic [W WNR] (650c6a10-6867-464a-a876-4e545ee17830)
+Unknown Service (9e020000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e030000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+D	21:26:04.090	gatt.setCharacteristicNotification(9e010000-f685-4ea5-b58a-85287cb04965, true)
+D	21:26:04.095	gatt.setCharacteristicNotification(6e400003-b5a3-f393-e0a9-e50e24dcca9e, true)
+D	21:26:04.097	gatt.setCharacteristicNotification(9e030000-f685-4ea5-b58a-85287cb04965, true)
+I	21:26:04.955	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 46-11-00-E1-09-00-00-44-41-54-41-2E-43-53-56-0D-C0
+A	21:26:04.955	"F �	  DATA.CSV�" received
+I	21:26:04.956	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-4D-41-52-4B-3B-53-54-41-54-55-53-3B-54-59-50-45-3B
+A	21:26:04.956	"D� MARK;STATUS;TYPE;" received
+I	21:26:04.956	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 50-52-4F-44-3B-56-45-52-3B-53-4E-52-3B-49-44-3B-55-4E-49-54, "PROD;VER;SNR;ID;UNIT"
+A	21:26:04.956	"PROD;VER;SNR;ID;UNIT" received
+I	21:26:04.956	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-54-52-50-48-3B-52-45-46-48-3B-50-2E-4F-46-46-3B-44-45-43, ";TRPH;REFH;P.OFF;DEC"
+A	21:26:04.956	";TRPH;REFH;P.OFF;DEC" received
+I	21:26:04.956	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 4C-3B-4C-41-54-3B-4E-2F-53-3B-4C-4F-4E-3B-45-2F-57-3B-41-4C, "L;LAT;N/S;LON;E/W;AL"
+A	21:26:04.956	"L;LAT;N/S;LON;E/W;AL" received
+I	21:26:04.957	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 54-49-54-55-44-45-3B-48-44-4F-50-3B-44-41-54-45-3B-55-54-43, "TITUDE;HDOP;DATE;UTC"
+A	21:26:04.957	"TITUDE;HDOP;DATE;UTC" received
+I	21:26:04.957	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-53-45-51-3B-41-52-45-41-3B-56-4F-4C-3B-53-44-3B-48-44-3B, ";SEQ;AREA;VOL;SD;HD;"
+A	21:26:04.957	";SEQ;AREA;VOL;SD;HD;" received
+I	21:26:04.960	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 48-3B-44-49-41-3B-50-49-54-43-48-3B-41-5A-3B-58-28-6D-29-3B, "H;DIA;PITCH;AZ;X(m);"
+A	21:26:04.961	"H;DIA;PITCH;AZ;X(m);" received
+I	21:26:04.961	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 59-28-6D-29-3B-5A-28-6D-29-3B-55-54-4D-20-5A-4F-4E-45-3B-0D
+A	21:26:04.961	"Y(m);Z(m);UTM ZONE;" received
+I	21:26:04.962	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 0A-23-3B-3B-53-45-54-3B-31-30-30-30-3B-33-37-3B-33-31-39-30
+A	21:26:04.962	"
+#;;SET;1000;37;3190" received
+I	21:26:04.964	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-4D-3B-31-2E-33-3B-31-2E-37-3B-30-2E-33-3B-30-2E-30-3B, ";;M;1.3;1.7;0.3;0.0;"
+A	21:26:04.964	";;M;1.3;1.7;0.3;0.0;" received
+I	21:26:04.964	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-04-7C
+A	21:26:04.964	";;;|" received
+I	21:26:04.964	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-0D-0A-24
+A	21:26:04.964	"D� ;;;;;;;;;;;;;;
+$" received
+I	21:26:04.965	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-31-3B-33-50-3B-3B-3B-3B-31-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B, ";1;3P;;;;1;;;;;;;;;;"
+A	21:26:04.965	";1;3P;;;;1;;;;;;;;;;" received
+I	21:26:04.973	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-31-3B-3B-3B-31-2E-38-3B-31-2E-38-3B-31-2E-39-3B, ";;;;1;;;1.8;1.8;1.9;"
+A	21:26:04.973	";;;;1;;;1.8;1.8;1.9;" received
+I	21:26:04.973	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-30-2E-33-3B-31-36-31-2E-37-3B-2D-31-2E-37-3B-30-2E-36-3B, ";0.3;161.7;-1.7;0.6;"
+A	21:26:04.973	";0.3;161.7;-1.7;0.6;" received
+I	21:26:04.982	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-30-3B-3B-0D-0A-24-3B-31-3B-44-4D-45-3B-3B-3B-3B-32-3B
+A	21:26:04.982	"2.0;;
+$;1;DME;;;;2;" received
+I	21:26:04.983	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-31-3B-3B-3B-33-2E-36, ";;;;;;;;;;;;;1;;;3.6"
+A	21:26:04.983	";;;;;;;;;;;;;1;;;3.6" received
+I	21:26:04.983	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-33-2E-36-3B-32-2E-35-3B-3B-2D-36-2E-34-3B-32-36-39-2E-30, ";3.6;2.5;;-6.4;269.0"
+A	21:26:04.983	";3.6;2.5;;-6.4;269.0" received
+I	21:26:04.984	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-2D-30-2E-31-3B-2D-33-2E-36-3B-33-2E-34-3B-3B-0D-0A-24-3B
+A	21:26:04.984	";-0.1;-3.6;3.4;;
+$;" received
+I	21:26:04.985	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-3B-33-44-3B-3B-3B-3B-33-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B, "1;3D;;;;3;;;;;;;;;;;"
+A	21:26:04.985	"1;3D;;;;3;;;;;;;;;;;" received
+I	21:26:04.985	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-33-3B-3B-3B-30-2E-31-3B-30-2E-31-3B-30-2E-30-3B-3B, ";;;3;;;0.1;0.1;0.0;;"
+A	21:26:04.985	";;;3;;;0.1;0.1;0.0;;" received
+I	21:26:04.985	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 38-2E-32-ED-79
+A	21:26:04.985	"8.2�y" received
+I	21:26:04.985	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-3B-33-35-36-2E-30-3B-30-2E-31-3B-2D-30-2E-30-3B-31
+A	21:26:04.985	"D� ;356.0;0.1;-0.0;1" received
+I	21:26:04.986	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-37-3B-3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B-3B-34-3B-3B-3B
+A	21:26:04.986	".7;;
+$;1;1P;;;;4;;;" received
+I	21:26:05.017	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-32-33-2E-38-39-36-30-37-32-39-3B-4E-3B-31-32-31-2E, ";;;23.8960729;N;121."
+A	21:26:05.017	";;;23.8960729;N;121." received
+I	21:26:05.017	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-34-39-30-32-30-34-3B-45-3B-2D-36-38-2E-30-3B-33-2E-35-3B, "5490204;E;-68.0;3.5;"
+A	21:26:05.017	"5490204;E;-68.0;3.5;" received
+I	21:26:05.018	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-30-31-30-32-35-3B-32-34-35-31-38-3B-31-3B-3B-3B-32-38-2E, "201025;24518;1;;;28."
+A	21:26:05.018	"201025;24518;1;;;28." received
+I	21:26:05.018	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-3B-32-38-2E-35-3B-2D-31-2E-31-3B-3B-2D-35-2E-35-3B-32-35, "6;28.5;-1.1;;-5.5;25"
+A	21:26:05.018	"6;28.5;-1.1;;-5.5;25" received
+I	21:26:05.018	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 30-2E-33-3B-32-36-34-33-34-37-38-2E-32-3B-33-35-32-32-39-30, "0.3;2643478.2;352290"
+A	21:26:05.018	"0.3;2643478.2;352290" received
+I	21:26:05.018	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-34-3B-2D-31-2E-31-3B-35-31-51-3B-0D-0A-24-3B-31-3B-31-50
+A	21:26:05.018	".4;-1.1;51Q;
+$;1;1P" received
+I	21:26:05.019	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-34-3B-3B-3B-3B-3B-3B-32-33-2E-38-39-36-32-39-30, ";;;;4;;;;;;23.896290"
+A	21:26:05.019	";;;;4;;;;;;23.896290" received
+I	21:26:05.020	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-3B-4E-3B-31-32-31-2E-35-34-39-32-34-35-32-3B-45-3B-2D-36, "3;N;121.5492452;E;-6"
+A	21:26:05.020	"3;N;121.5492452;E;-6" received
+I	21:26:05.020	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-38-EE-27
+A	21:26:05.020	"2.8�'" received
+I	21:26:05.044	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-3B-33-2E-35-3B-32-30-31-30-32-35-3B-32-34-35-33-33
+A	21:26:05.044	"D� ;3.5;201025;24533" received
+I	21:26:05.046	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-32-3B-3B-3B-31-34-2E-39-3B-31-34-2E-37-3B-34-2E-31-3B-3B, ";2;;;14.9;14.7;4.1;;"
+A	21:26:05.046	";2;;;14.9;14.7;4.1;;" received
+I	21:26:05.048	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-2E-32-3B-33-34-35-2E-36-3B-32-36-34-33-35-30-32-2E-30-3B, "9.2;345.6;2643502.0;"
+A	21:26:05.048	"9.2;345.6;2643502.0;" received
+I	21:26:05.048	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-35-32-33-31-33-2E-35-3B-34-2E-31-3B-35-31-51-3B-0D-0A-24
+A	21:26:05.048	"352313.5;4.1;51Q;
+$" received
+I	21:26:05.048	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-31-3B-31-50-3B-3B-3B-3B-34-3B-3B-3B-3B-3B-3B-32-33-2E-38, ";1;1P;;;;4;;;;;;23.8"
+A	21:26:05.048	";1;1P;;;;4;;;;;;23.8" received
+I	21:26:05.049	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-36-31-33-30-39-3B-4E-3B-31-32-31-2E-35-34-39-32-36-30-35, "961309;N;121.5492605"
+A	21:26:05.049	"961309;N;121.5492605" received
+I	21:26:05.049	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-45-3B-2D-36-31-2E-35-3B-33-2E-35-3B-32-30-31-30-32-35-3B, ";E;-61.5;3.5;201025;"
+A	21:26:05.049	";E;-61.5;3.5;201025;" received
+I	21:26:05.049	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-34-35-34-39-3B-33-3B-3B-3B-35-2E-34-3B-34-2E-31-3B-35-2E, "24549;3;;;5.4;4.1;5."
+A	21:26:05.049	"24549;3;;;5.4;4.1;5." received
+I	21:26:05.050	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-3B-3B-34-30-2E-33-3B-32-31-33-2E-38-3B-32-36-34-33-34-38, "4;;40.3;213.8;264348"
+A	21:26:05.050	"4;;40.3;213.8;264348" received
+I	21:26:05.071	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-2E-33-3B-33-35-32-33-31-34-2E-39-3B-35-2E-34-3B-35-31-51, "4.3;352314.9;5.4;51Q"
+A	21:26:05.071	"4.3;352314.9;5.4;51Q" received
+I	21:26:05.071	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-0D-0A-34-41
+A	21:26:05.071	";
+4A" received
+I	21:26:05.072	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-24-3B-31-3B-33-50-3B-3B-3B-3B-35-3B-3B-3B-3B-3B-3B
+A	21:26:05.072	"D� $;1;3P;;;;5;;;;;;" received
+I	21:26:05.072	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-33-2E-38-39-36-32-32-39-39-3B-4E-3B-31-32-31-2E-35-34-38, "23.8962299;N;121.548"
+A	21:26:05.072	"23.8962299;N;121.548" received
+I	21:26:05.073	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-35-37-38-3B-45-3B-31-30-30-2E-35-3B-31-2E-38-3B-32-30-31, "1578;E;100.5;1.8;201"
+A	21:26:05.073	"1578;E;100.5;1.8;201" received
+I	21:26:05.073	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 30-32-35-3B-33-31-32-30-31-3B-31-3B-3B-3B-31-34-2E-38-3B-31, "025;31201;1;;;14.8;1"
+A	21:26:05.073	"025;31201;1;;;14.8;1" received
+I	21:26:05.074	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-2E-38-3B-37-2E-37-3B-3B-30-2E-33-3B-33-34-38-2E-33-3B-32, "4.8;7.7;;0.3;348.3;2"
+A	21:26:05.074	"4.8;7.7;;0.3;348.3;2" received
+I	21:26:05.075	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-34-33-34-39-36-2E-35-3B-33-35-32-32-30-32-2E-37-3B-35-2E, "643496.5;352202.7;5."
+A	21:26:05.075	"643496.5;352202.7;5." received
+I	21:26:05.076	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-3B-35-31-51-3B-0D-0A-24-3B-31-3B-33-50-3B-3B-3B-3B-35-3B
+A	21:26:05.076	"6;51Q;
+$;1;3P;;;;5;" received
+I	21:26:05.133	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-3B-32-33-2E-38-39-36-32-32-39-39-3B-4E-3B-31-32, ";;;;;23.8962299;N;12"
+A	21:26:05.133	";;;;;23.8962299;N;12" received
+I	21:26:05.134	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-2E-35-34-38-31-35-37-38-3B-45-3B-31-30-33-2E-32-3B-31-2E, "1.5481578;E;103.2;1."
+A	21:26:05.134	"1.5481578;E;103.2;1." received
+I	21:26:05.134	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 38-3B-32-30-31-30-32-35-3B-33-31-32-32-33-3B-32-3B-3B-3B-31, "8;201025;31223;2;;;1"
+A	21:26:05.134	"8;201025;31223;2;;;1" received
+I	21:26:05.135	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-2E-38-6D-D8
+A	21:26:05.135	"4.8m�" received
+I	21:26:05.135	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-3B-31-34-2E-38-3B-31-30-2E-34-3B-3B-30-2E-33-3B-33
+A	21:26:05.135	"D� ;14.8;10.4;;0.3;3" received
+I	21:26:05.135	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-38-2E-33-3B-32-36-34-33-34-39-36-2E-35-3B-33-35-32-32-30, "48.3;2643496.5;35220"
+A	21:26:05.135	"48.3;2643496.5;35220" received
+I	21:26:05.136	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-37-3B-38-2E-33-3B-35-31-51-3B-0D-0A-24-3B-31-3B-31-50
+A	21:26:05.136	"2.7;8.3;51Q;
+$;1;1P" received
+I	21:26:05.136	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-31-30-30-30-37-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B, ";;;;10007;;;;;;;;;;;"
+A	21:26:05.136	";;;;10007;;;;;;;;;;;" received
+I	21:26:05.137	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-31-3B-3B-3B-33-2E-32-3B-32-2E-39-3B-33-2E-31-3B-3B, ";;;1;;;3.2;2.9;3.1;;"
+A	21:26:05.137	";;;1;;;3.2;2.9;3.1;;" received
+I	21:26:05.160	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-34-2E-30-3B-32-39-33-2E-31-3B-31-2E-31-3B-2D-32-2E-37-3B, "24.0;293.1;1.1;-2.7;"
+A	21:26:05.160	"24.0;293.1;1.1;-2.7;" received
+I	21:26:05.161	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-2E-31-3B-3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B-3B-31-30-30
+A	21:26:05.161	"3.1;;
+$;1;1P;;;;100" received
+I	21:26:05.161	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 30-38-3B-3B-3B-3B-3B-3B-32-33-2E-38-39-36-32-32-32-32-3B-4E, "08;;;;;;23.8962222;N"
+A	21:26:05.161	"08;;;;;;23.8962222;N" received
+I	21:26:05.162	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-31-32-31-2E-35-34-38-31-35-36-33-3B-45-3B-38-37-2E-32-3B, ";121.5481563;E;87.2;"
+A	21:26:05.162	";121.5481563;E;87.2;" received
+I	21:26:05.163	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-30-3B-33-30-31-30-32-35-3B-36-35-33-35-33-3B-31-3B-3B, "2.0;301025;65353;1;;"
+A	21:26:05.163	"2.0;301025;65353;1;;" received
+I	21:26:05.164	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-35-2E-17-F8
+A	21:26:05.164	";5.�" received
+I	21:26:05.165	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-39-3B-35-2E-37-3B-33-2E-32-3B-3B-31-34-2E-30-3B-32
+A	21:26:05.165	"D� 9;5.7;3.2;;14.0;2" received
+I	21:26:05.166	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-36-2E-33-3B-32-36-34-33-34-39-35-2E-36-3B-33-35-32-32-30, "26.3;2643495.6;35220"
+A	21:26:05.166	"26.3;2643495.6;35220" received
+I	21:26:05.168	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-35-3B-33-2E-32-3B-35-31-51-3B-0D-0A-24-3B-31-3B-31-50
+A	21:26:05.168	"2.5;3.2;51Q;
+$;1;1P" received
+I	21:26:05.193	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-31-30-30-31-30-3B-3B-3B-3B-3B-3B-32-33-2E-38-39, ";;;;10010;;;;;;23.89"
+A	21:26:05.193	";;;;10010;;;;;;23.89" received
+I	21:26:05.195	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-32-32-34-33-3B-4E-3B-31-32-31-2E-35-34-38-31-34-36-30-3B, "62243;N;121.5481460;"
+A	21:26:05.195	"62243;N;121.5481460;" received
+I	21:26:05.197	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 45-3B-37-37-2E-34-3B-33-2E-34-3B-33-30-31-30-32-35-3B-36-35, "E;77.4;3.4;301025;65"
+A	21:26:05.197	"E;77.4;3.4;301025;65" received
+I	21:26:05.198	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-32-39-3B-31-3B-3B-3B-31-33-2E-30-3B-31-32-2E-39-3B-30-2E, "629;1;;;13.0;12.9;0."
+A	21:26:05.198	"629;1;;;13.0;12.9;0." received
+I	21:26:05.200	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-3B-3B-2D-35-2E-36-3B-32-33-39-2E-37-3B-32-36-34-33-34-39, "4;;-5.6;239.7;264349"
+A	21:26:05.200	"4;;-5.6;239.7;264349" received
+I	21:26:05.201	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-2E-39-3B-33-35-32-32-30-31-2E-35-3B-30-2E-34-3B-35-31-51, "5.9;352201.5;0.4;51Q"
+A	21:26:05.201	"5.9;352201.5;0.4;51Q" received
+I	21:26:05.201	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B-3B-31-30-30-31-31-3B-3B
+A	21:26:05.201	";
+$;1;1P;;;;10011;;" received
+I	21:26:05.201	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-8B-3D
+A	21:26:05.201	";;;�=" received
+I	21:26:05.202	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-3B-32-33-2E-38-39-35-36-36-37-36-3B-4E-3B-31-32-31
+A	21:26:05.202	"D� ;23.8956676;N;121" received
+I	21:26:05.220	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-35-34-37-38-34-34-33-3B-45-3B-38-30-2E-34-3B-34-2E-39-3B, ".5478443;E;80.4;4.9;"
+A	21:26:05.220	".5478443;E;80.4;4.9;" received
+I	21:26:05.222	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-30-31-30-32-35-3B-37-30-33-35-30-3B-31-3B-3B-3B-33-2E-32, "301025;70350;1;;;3.2"
+A	21:26:05.222	"301025;70350;1;;;3.2" received
+I	21:26:05.223	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-33-2E-31-3B-30-2E-37-3B-3B-2D-31-37-2E-34-3B-32-34-34-2E, ";3.1;0.7;;-17.4;244."
+A	21:26:05.223	";3.1;0.7;;-17.4;244." received
+I	21:26:05.223	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 30-3B-32-36-34-33-34-33-34-2E-35-3B-33-35-32-31-37-30-2E-31, "0;2643434.5;352170.1"
+A	21:26:05.223	"0;2643434.5;352170.1" received
+I	21:26:05.223	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-30-2E-37-3B-35-31-51-3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B
+A	21:26:05.224	";0.7;51Q;
+$;1;1P;;;" received
+I	21:26:05.224	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-31-30-30-31-31-3B-3B-3B-3B-3B-3B-32-33-2E-38-39-35-36-34, ";10011;;;;;;23.89564"
+A	21:26:05.224	";10011;;;;;;23.89564" received
+I	21:26:05.225	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 30-32-3B-4E-3B-31-32-31-2E-35-34-37-38-34-39-39-3B-45-3B-38, "02;N;121.5478499;E;8"
+A	21:26:05.225	"02;N;121.5478499;E;8" received
+I	21:26:05.226	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-34-3B-34-2E-39-3B-33-30-31-30-32-35-3B-37-30-33-35-39, "2.4;4.9;301025;70359"
+A	21:26:05.226	"2.4;4.9;301025;70359" received
+I	21:26:05.227	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-32-3B-3B-3B-35-2E-30-3B-34-2E-39-3B-32-2E-37-3B-3B-31-31, ";2;;;5.0;4.9;2.7;;11"
+A	21:26:05.227	";2;;;5.0;4.9;2.7;;11" received
+I	21:26:05.252	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-34-3B-8A-5E
+A	21:26:05.252	".4;�^" received
+I	21:26:05.252	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-32-30-36-2E-37-3B-32-36-34-33-34-33-31-2E-35-3B-33
+A	21:26:05.252	"D� 206.7;2643431.5;3" received
+I	21:26:05.253	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-32-31-37-30-2E-37-3B-32-2E-37-3B-35-31-51-3B-0D-0A-24-3B
+A	21:26:05.253	"52170.7;2.7;51Q;
+$;" received
+I	21:26:05.253	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-3B-31-50-3B-3B-3B-3B-31-30-30-31-31-3B-3B-3B-3B-3B-3B-32, "1;1P;;;;10011;;;;;;2"
+A	21:26:05.253	"1;1P;;;;10011;;;;;;2" received
+I	21:26:05.254	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-2E-38-39-35-36-35-33-36-3B-4E-3B-31-32-31-2E-35-34-37-38, "3.8956536;N;121.5478"
+A	21:26:05.254	"3.8956536;N;121.5478" received
+I	21:26:05.255	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-38-38-3B-45-3B-38-31-2E-36-3B-34-2E-39-3B-33-30-31-30-32, "288;E;81.6;4.9;30102"
+A	21:26:05.255	"288;E;81.6;4.9;30102" received
+I	21:26:05.256	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-3B-37-30-34-30-35-3B-33-3B-3B-3B-35-2E-32-3B-35-2E-32-3B, "5;70405;3;;;5.2;5.2;"
+A	21:26:05.256	"5;70405;3;;;5.2;5.2;" received
+I	21:26:05.256	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-2E-39-3B-3B-31-2E-39-3B-32-33-36-2E-34-3B-32-36-34-33-34, "1.9;;1.9;236.4;26434"
+A	21:26:05.256	"1.9;;1.9;236.4;26434" received
+I	21:26:05.257	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-33-2E-30-3B-33-35-32-31-36-38-2E-36-3B-31-2E-39-3B-35-31, "33.0;352168.6;1.9;51"
+A	21:26:05.257	"33.0;352168.6;1.9;51" received
+I	21:26:05.284	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 51-3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B-3B-31-30-30-31-31-3B
+A	21:26:05.284	"Q;
+$;1;1P;;;;10011;" received
+I	21:26:05.284	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-3B-32-33-2E-38-39-35-36-34-36-38-3B-4E-3B-31-32, ";;;;;23.8956468;N;12"
+A	21:26:05.284	";;;;;23.8956468;N;12" received
+I	21:26:05.285	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-2E-35-DF-58
+A	21:26:05.285	"1.5�X" received
+I	21:26:05.285	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-34-37-38-36-38-34-3B-45-3B-38-32-2E-38-3B-34-2E-39
+A	21:26:05.285	"D� 478684;E;82.8;4.9" received
+I	21:26:05.286	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-33-30-31-30-32-35-3B-37-30-34-31-32-3B-34-3B-3B-3B-33-2E, ";301025;70412;4;;;3."
+A	21:26:05.286	";301025;70412;4;;;3." received
+I	21:26:05.286	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-3B-33-2E-37-3B-33-2E-31-3B-3B-31-39-2E-31-3B-31-38-34-2E, "9;3.7;3.1;;19.1;184."
+A	21:26:05.286	"9;3.7;3.1;;19.1;184." received
+I	21:26:05.287	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-3B-32-36-34-33-34-33-32-2E-32-3B-33-35-32-31-37-32-2E-36, "9;2643432.2;352172.6"
+A	21:26:05.287	"9;2643432.2;352172.6" received
+I	21:26:05.287	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-33-2E-31-3B-35-31-51-3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B
+A	21:26:05.287	";3.1;51Q;
+$;1;1P;;;" received
+I	21:26:05.288	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-31-30-30-31-31-3B-3B-3B-3B-3B-3B-32-33-2E-38-39-35-36-33, ";10011;;;;;;23.89563"
+A	21:26:05.288	";10011;;;;;;23.89563" received
+I	21:26:05.311	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-30-3B-4E-3B-31-32-31-2E-35-34-37-38-33-32-32-3B-45-3B-38, "60;N;121.5478322;E;8"
+A	21:26:05.311	"60;N;121.5478322;E;8" received
+I	21:26:05.311	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-37-3B-34-2E-39-3B-33-30-31-30-32-35-3B-37-30-34-32-32, "2.7;4.9;301025;70422"
+A	21:26:05.311	"2.7;4.9;301025;70422" received
+I	21:26:05.312	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-35-3B-3B-3B-36-2E-34-3B-36-2E-33-3B-33-2E-30-3B-3B-31-31, ";5;;;6.4;6.3;3.0;;11"
+A	21:26:05.312	";5;;;6.4;6.3;3.0;;11" received
+I	21:26:05.313	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-33-3B-32-31-39-2E-36-3B-32-36-34-33-34-33-31-2E-30-3B-33, ".3;219.6;2643431.0;3"
+A	21:26:05.313	".3;219.6;2643431.0;3" received
+I	21:26:05.314	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-32-31-78-FF
+A	21:26:05.315	"521x�" received
+I	21:26:05.315	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-36-38-2E-39-3B-33-2E-30-3B-35-31-51-3B-0D-0A-24-3B
+A	21:26:05.316	"D� 68.9;3.0;51Q;
+$;" received
+I	21:26:05.316	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-3B-31-50-3B-3B-3B-3B-31-30-30-31-32-3B-3B-3B-3B-3B-3B-32, "1;1P;;;;10012;;;;;;2"
+A	21:26:05.316	"1;1P;;;;10012;;;;;;2" received
+I	21:26:05.316	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-2E-38-39-35-36-37-30-38-3B-4E-3B-31-32-31-2E-35-34-37-38, "3.8956708;N;121.5478"
+A	21:26:05.316	"3.8956708;N;121.5478" received
+I	21:26:05.317	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-39-36-3B-45-3B-38-33-2E-33-3B-30-2E-39-3B-33-30-31-30-32, "696;E;83.3;0.9;30102"
+A	21:26:05.317	"696;E;83.3;0.9;30102" received
+I	21:26:05.340	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-3B-37-31-33-30-34-3B-31-3B-3B-3B-33-34-2E-36-3B-33-34-2E, "5;71304;1;;;34.6;34."
+A	21:26:05.340	"5;71304;1;;;34.6;34." received
+I	21:26:05.341	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-3B-35-2E-38-3B-3B-36-2E-38-3B-32-35-33-2E-34-3B-32-36-34, "4;5.8;;6.8;253.4;264"
+A	21:26:05.341	"4;5.8;;6.8;253.4;264" received
+I	21:26:05.341	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-34-33-34-2E-39-3B-33-35-32-31-37-32-2E-37-3B-35-2E-38-3B, "3434.9;352172.7;5.8;"
+A	21:26:05.341	"3434.9;352172.7;5.8;" received
+I	21:26:05.341	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-31-51-3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B-3B-31-30-30-31
+A	21:26:05.341	"51Q;
+$;1;1P;;;;1001" received
+I	21:26:05.370	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-3B-3B-3B-3B-3B-3B-32-33-2E-38-39-35-38-30-38-39-3B-4E-3B, "2;;;;;;23.8958089;N;"
+A	21:26:05.370	"2;;;;;;23.8958089;N;" received
+I	21:26:05.371	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-32-31-2E-35-34-38-30-34-31-33-3B-45-3B-38-35-2E-31-3B-30, "121.5480413;E;85.1;0"
+A	21:26:05.371	"121.5480413;E;85.1;0" received
+I	21:26:05.372	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-39-3B-C7-63
+A	21:26:05.372	".9;�c" received
+I	21:26:05.372	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-33-30-31-30-32-35-3B-37-31-33-33-38-3B-32-3B-3B-3B
+A	21:26:05.372	"D� 301025;71338;2;;;" received
+I	21:26:05.373	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-37-2E-32-3B-31-36-2E-32-3B-37-2E-36-3B-3B-31-39-2E-38-3B, "17.2;16.2;7.6;;19.8;"
+A	21:26:05.373	"17.2;16.2;7.6;;19.8;" received
+I	21:26:05.374	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-38-39-2E-32-3B-32-36-34-33-34-35-30-2E-30-3B-33-35-32-31, "289.2;2643450.0;3521"
+A	21:26:05.375	"289.2;2643450.0;3521" received
+I	21:26:05.375	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-30-2E-34-3B-37-2E-36-3B-35-31-51-3B-0D-0A-24-3B-31-3B-33
+A	21:26:05.375	"90.4;7.6;51Q;
+$;1;3" received
+I	21:26:05.376	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 50-3B-3B-3B-3B-31-30-30-31-33-3B-3B-3B-3B-3B-3B-32-33-2E-38, "P;;;;10013;;;;;;23.8"
+A	21:26:05.376	"P;;;;10013;;;;;;23.8" received
+I	21:26:05.377	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-35-38-35-35-31-3B-4E-3B-31-32-31-2E-35-34-38-34-31-39-38, "958551;N;121.5484198"
+A	21:26:05.377	"958551;N;121.5484198" received
+I	21:26:05.405	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-45-3B-37-38-2E-34-3B-30-2E-36-3B-33-30-31-30-32-35-3B-37, ";E;78.4;0.6;301025;7"
+A	21:26:05.405	";E;78.4;0.6;301025;7" received
+I	21:26:05.406	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-32-33-31-3B-31-3B-3B-3B-31-39-2E-35-3B-31-39-2E-35-3B-39, "2231;1;;;19.5;19.5;9"
+A	21:26:05.406	"2231;1;;;19.5;19.5;9" received
+I	21:26:05.406	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-35-3B-3B-2D-31-2E-31-3B-39-35-2E-30-3B-32-36-34-33-34-35, ".5;;-1.1;95.0;264345"
+A	21:26:05.406	".5;;-1.1;95.0;264345" received
+I	21:26:05.407	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-2E-37-3B-33-35-32-32-32-38-2E-39-3B-31-30-2E-38-3B-35-31, "4.7;352228.9;10.8;51"
+A	21:26:05.407	"4.7;352228.9;10.8;51" received
+I	21:26:05.407	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 51-3B-0D-AA-33
+A	21:26:05.407	"Q;�3" received
+I	21:26:05.408	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-86-00-0A-24-3B-31-3B-33-50-3B-3B-3B-3B-31-30-30-31-33-3B
+A	21:26:05.408	"D� 
+$;1;3P;;;;10013;" received
+I	21:26:05.408	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-3B-32-33-2E-38-39-35-38-35-35-31-3B-4E-3B-31-32, ";;;;;23.8958551;N;12"
+A	21:26:05.408	";;;;;23.8958551;N;12" received
+I	21:26:05.408	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-2E-35-34-38-34-31-39-38-3B-45-3B-37-35-2E-30-3B-30-2E-36, "1.5484198;E;75.0;0.6"
+A	21:26:05.408	"1.5484198;E;75.0;0.6" received
+I	21:26:05.409	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-33-30-31-30-32-35-3B-37-32-32-35-32-3B-32-3B-3B-3B-31-39, ";301025;72252;2;;;19"
+A	21:26:05.409	";301025;72252;2;;;19" received
+I	21:26:05.433	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-35-3B-31-39-2E-35-3B-36-2E-31-3B-3B-2D-31-2E-31-3B-39-35, ".5;19.5;6.1;;-1.1;95"
+A	21:26:05.433	".5;19.5;6.1;;-1.1;95" received
+I	21:26:05.433	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-30-3B-32-36-34-33-34-35-34-2E-37-3B-33-35-32-32-32-38-2E, ".0;2643454.7;352228."
+A	21:26:05.433	".0;2643454.7;352228." received
+I	21:26:05.434	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-3B-37-2E-34-3B-35-31-51-3B-0D-0A-60-D3
+A	21:26:05.434	"9;7.4;51Q;
+`�" received
+I	21:26:05.434	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 5A-BF-FB
+A	21:26:05.434	"Z��" received
+D	21:26:06.518	[Callback] Connection state changed with status: 19 and new state: DISCONNECTED (0)
+W	21:26:06.518	Connection terminated by peer (status 19)
+I	21:26:06.518	Disconnected
+D	21:26:06.544	[Broadcast] Action received: android.bluetooth.device.action.ACL_DISCONNECTED
+D	21:30:24.358	[Broadcast] Action received: android.bluetooth.device.action.ACL_CONNECTED
+D	21:30:24.364	gatt.close()
+D	21:30:24.377	wait(200)
+V	21:30:24.578	Connecting to C4:D3:6A:BA:63:7E...
+D	21:30:24.580	gatt = device.connectGatt(autoConnect = false, TRANSPORT_LE, preferred PHY = LE 1M)
+D	21:30:24.610	[Callback] Connection state changed with status: 0 and new state: CONNECTED (2)
+I	21:30:24.610	Connected to C4:D3:6A:BA:63:7E
+D	21:30:24.611	wait(1600ms)
+V	21:30:26.212	Discovering services...
+D	21:30:26.212	gatt.discoverServices()
+D	21:30:26.219	[Callback] Services discovered with status: 0
+I	21:30:26.219	Services discovered
+V	21:30:26.230	Generic Access (0x1800)
+- Device Name [R W] (0x2A00)
+- Appearance [R] (0x2A01)
+Device Information (0x180A)
+- Manufacturer Name String [R] (0x2A29)
+- Model Number String [R] (0x2A24)
+Unknown Service (9e000000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e010000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+Nordic UART Service (6e400001-b5a3-f393-e0a9-e50e24dcca9e)
+- RX Characteristic [W WNR] (6e400002-b5a3-f393-e0a9-e50e24dcca9e)
+- TX Characteristic [N R] (6e400003-b5a3-f393-e0a9-e50e24dcca9e)
+   Client Characteristic Configuration (0x2902)
+Unknown Service (69465a7c-6ce7-43bf-9549-8ebfde563e0e)
+- Unknown Characteristic [W WNR] (650c6a10-6867-464a-a876-4e545ee17830)
+Unknown Service (9e020000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e030000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+D	21:30:26.231	gatt.setCharacteristicNotification(9e010000-f685-4ea5-b58a-85287cb04965, true)
+D	21:30:26.234	gatt.setCharacteristicNotification(6e400003-b5a3-f393-e0a9-e50e24dcca9e, true)
+D	21:30:26.236	gatt.setCharacteristicNotification(9e030000-f685-4ea5-b58a-85287cb04965, true)
+D	21:30:26.735	[Callback] Connection state changed with status: 19 and new state: DISCONNECTED (0)
+W	21:30:26.735	Connection terminated by peer (status 19)
+I	21:30:26.735	Disconnected
+D	21:30:26.759	[Broadcast] Action received: android.bluetooth.device.action.ACL_DISCONNECTED
+D	21:31:14.874	[Broadcast] Action received: android.bluetooth.adapter.action.STATE_CHANGED, state changed to TURNING OFF
+D	21:31:14.875	gatt.close()
+D	21:31:14.888	wait(200)
+D	21:31:15.094	[Broadcast] Action received: android.bluetooth.adapter.action.STATE_CHANGED, state changed to OFF
+D	21:31:20.777	[Broadcast] Action received: android.bluetooth.adapter.action.STATE_CHANGED, state changed to TURNING ON
+D	21:31:21.232	[Broadcast] Action received: android.bluetooth.adapter.action.STATE_CHANGED, state changed to ON
+D	21:31:36.050	[Broadcast] Action received: android.bluetooth.device.action.ACL_CONNECTED
+V	21:31:36.050	Connecting to C4:D3:6A:BA:63:7E...
+D	21:31:36.051	gatt = device.connectGatt(autoConnect = false, TRANSPORT_LE, preferred PHY = LE 1M)
+D	21:31:36.088	[Callback] Connection state changed with status: 0 and new state: CONNECTED (2)
+I	21:31:36.088	Connected to C4:D3:6A:BA:63:7E
+D	21:31:36.089	wait(1600ms)
+V	21:31:37.691	Discovering services...
+D	21:31:37.691	gatt.discoverServices()
+D	21:31:37.701	[Callback] Services discovered with status: 0
+I	21:31:37.701	Services discovered
+V	21:31:37.710	Generic Access (0x1800)
+- Device Name [R W] (0x2A00)
+- Appearance [R] (0x2A01)
+Device Information (0x180A)
+- Manufacturer Name String [R] (0x2A29)
+- Model Number String [R] (0x2A24)
+Unknown Service (9e000000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e010000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+Nordic UART Service (6e400001-b5a3-f393-e0a9-e50e24dcca9e)
+- RX Characteristic [W WNR] (6e400002-b5a3-f393-e0a9-e50e24dcca9e)
+- TX Characteristic [N R] (6e400003-b5a3-f393-e0a9-e50e24dcca9e)
+   Client Characteristic Configuration (0x2902)
+Unknown Service (69465a7c-6ce7-43bf-9549-8ebfde563e0e)
+- Unknown Characteristic [W WNR] (650c6a10-6867-464a-a876-4e545ee17830)
+Unknown Service (9e020000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e030000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+D	21:31:37.710	gatt.setCharacteristicNotification(9e010000-f685-4ea5-b58a-85287cb04965, true)
+D	21:31:37.713	gatt.setCharacteristicNotification(6e400003-b5a3-f393-e0a9-e50e24dcca9e, true)
+D	21:31:37.716	gatt.setCharacteristicNotification(9e030000-f685-4ea5-b58a-85287cb04965, true)
+D	21:32:13.941	[Broadcast] Action received: android.bluetooth.adapter.action.STATE_CHANGED, state changed to TURNING OFF
+I	21:32:13.941	Disconnected
+D	21:32:13.941	gatt.close()
+D	21:32:13.957	wait(200)
+D	21:32:14.165	[Broadcast] Action received: android.bluetooth.adapter.action.STATE_CHANGED, state changed to OFF
+D	21:32:20.815	[Broadcast] Action received: android.bluetooth.adapter.action.STATE_CHANGED, state changed to TURNING ON
+D	21:32:21.241	[Broadcast] Action received: android.bluetooth.adapter.action.STATE_CHANGED, state changed to ON
+D	21:32:28.235	[Broadcast] Action received: android.bluetooth.device.action.ACL_CONNECTED
+V	21:32:28.238	Connecting to C4:D3:6A:BA:63:7E...
+D	21:32:28.238	gatt = device.connectGatt(autoConnect = false, TRANSPORT_LE, preferred PHY = LE 1M)
+D	21:32:28.263	[Callback] Connection state changed with status: 0 and new state: CONNECTED (2)
+I	21:32:28.263	Connected to C4:D3:6A:BA:63:7E
+D	21:32:28.263	wait(1600ms)
+V	21:32:29.866	Discovering services...
+D	21:32:29.866	gatt.discoverServices()
+D	21:32:29.881	[Callback] Services discovered with status: 0
+I	21:32:29.882	Services discovered
+V	21:32:29.890	Generic Access (0x1800)
+- Device Name [R W] (0x2A00)
+- Appearance [R] (0x2A01)
+Device Information (0x180A)
+- Manufacturer Name String [R] (0x2A29)
+- Model Number String [R] (0x2A24)
+Unknown Service (9e000000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e010000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+Nordic UART Service (6e400001-b5a3-f393-e0a9-e50e24dcca9e)
+- RX Characteristic [W WNR] (6e400002-b5a3-f393-e0a9-e50e24dcca9e)
+- TX Characteristic [N R] (6e400003-b5a3-f393-e0a9-e50e24dcca9e)
+   Client Characteristic Configuration (0x2902)
+Unknown Service (69465a7c-6ce7-43bf-9549-8ebfde563e0e)
+- Unknown Characteristic [W WNR] (650c6a10-6867-464a-a876-4e545ee17830)
+Unknown Service (9e020000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e030000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+D	21:32:29.891	gatt.setCharacteristicNotification(9e010000-f685-4ea5-b58a-85287cb04965, true)
+D	21:32:29.894	gatt.setCharacteristicNotification(6e400003-b5a3-f393-e0a9-e50e24dcca9e, true)
+D	21:32:29.897	gatt.setCharacteristicNotification(9e030000-f685-4ea5-b58a-85287cb04965, true)
+I	21:32:29.904	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-3B-4E-3B-31-32-31-2E-35-34-39-32-34-35-32-3B-45-3B-2D-36, "3;N;121.5492452;E;-6"
+A	21:32:29.904	"3;N;121.5492452;E;-6" received
+I	21:32:29.905	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-38-EE-27
+A	21:32:29.905	"2.8�'" received
+I	21:32:29.905	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-3B-33-2E-35-3B-32-30-31-30-32-35-3B-32-34-35-33-33
+A	21:32:29.905	"D� ;3.5;201025;24533" received
+I	21:32:29.905	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-32-3B-3B-3B-31-34-2E-39-3B-31-34-2E-37-3B-34-2E-31-3B-3B, ";2;;;14.9;14.7;4.1;;"
+A	21:32:29.905	";2;;;14.9;14.7;4.1;;" received
+I	21:32:29.909	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-2E-32-3B-33-34-35-2E-36-3B-32-36-34-33-35-30-32-2E-30-3B, "9.2;345.6;2643502.0;"
+A	21:32:29.909	"9.2;345.6;2643502.0;" received
+I	21:32:29.909	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-35-32-33-31-33-2E-35-3B-34-2E-31-3B-35-31-51-3B-0D-0A-24
+A	21:32:29.909	"352313.5;4.1;51Q;
+$" received
+I	21:32:29.909	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-31-3B-31-50-3B-3B-3B-3B-34-3B-3B-3B-3B-3B-3B-32-33-2E-38, ";1;1P;;;;4;;;;;;23.8"
+A	21:32:29.909	";1;1P;;;;4;;;;;;23.8" received
+I	21:32:29.916	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-36-31-33-30-39-3B-4E-3B-31-32-31-2E-35-34-39-32-36-30-35, "961309;N;121.5492605"
+A	21:32:29.916	"961309;N;121.5492605" received
+I	21:32:29.916	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-45-3B-2D-36-31-2E-35-3B-33-2E-35-3B-32-30-31-30-32-35-3B, ";E;-61.5;3.5;201025;"
+A	21:32:29.916	";E;-61.5;3.5;201025;" received
+I	21:32:29.932	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-34-35-34-39-3B-33-3B-3B-3B-35-2E-34-3B-34-2E-31-3B-35-2E, "24549;3;;;5.4;4.1;5."
+A	21:32:29.932	"24549;3;;;5.4;4.1;5." received
+I	21:32:29.933	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-3B-3B-34-30-2E-33-3B-32-31-33-2E-38-3B-32-36-34-33-34-38, "4;;40.3;213.8;264348"
+A	21:32:29.933	"4;;40.3;213.8;264348" received
+I	21:32:29.933	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-2E-33-3B-33-35-32-33-31-34-2E-39-3B-35-2E-34-3B-35-31-51, "4.3;352314.9;5.4;51Q"
+A	21:32:29.933	"4.3;352314.9;5.4;51Q" received
+I	21:32:29.934	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-0D-0A-34-41
+A	21:32:29.934	";
+4A" received
+I	21:32:29.935	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-24-3B-31-3B-33-50-3B-3B-3B-3B-35-3B-3B-3B-3B-3B-3B
+A	21:32:29.935	"D� $;1;3P;;;;5;;;;;;" received
+I	21:32:29.935	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-33-2E-38-39-36-32-32-39-39-3B-4E-3B-31-32-31-2E-35-34-38, "23.8962299;N;121.548"
+A	21:32:29.935	"23.8962299;N;121.548" received
+I	21:32:29.936	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-35-37-38-3B-45-3B-31-30-30-2E-35-3B-31-2E-38-3B-32-30-31, "1578;E;100.5;1.8;201"
+A	21:32:29.936	"1578;E;100.5;1.8;201" received
+I	21:32:29.938	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 30-32-35-3B-33-31-32-30-31-3B-31-3B-3B-3B-31-34-2E-38-3B-31, "025;31201;1;;;14.8;1"
+A	21:32:29.938	"025;31201;1;;;14.8;1" received
+I	21:32:29.938	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-2E-38-3B-37-2E-37-3B-3B-30-2E-33-3B-33-34-38-2E-33-3B-32, "4.8;7.7;;0.3;348.3;2"
+A	21:32:29.938	"4.8;7.7;;0.3;348.3;2" received
+I	21:32:29.961	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-34-33-34-39-36-2E-35-3B-33-35-32-32-30-32-2E-37-3B-35-2E, "643496.5;352202.7;5."
+A	21:32:29.961	"643496.5;352202.7;5." received
+I	21:32:29.961	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-3B-35-31-51-3B-0D-0A-24-3B-31-3B-33-50-3B-3B-3B-3B-35-3B
+A	21:32:29.961	"6;51Q;
+$;1;3P;;;;5;" received
+I	21:32:29.961	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-3B-32-33-2E-38-39-36-32-32-39-39-3B-4E-3B-31-32, ";;;;;23.8962299;N;12"
+A	21:32:29.961	";;;;;23.8962299;N;12" received
+I	21:32:29.961	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-2E-35-34-38-31-35-37-38-3B-45-3B-31-30-33-2E-32-3B-31-2E, "1.5481578;E;103.2;1."
+A	21:32:29.961	"1.5481578;E;103.2;1." received
+I	21:32:29.962	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 38-3B-32-30-31-30-32-35-3B-33-31-32-32-33-3B-32-3B-3B-3B-31, "8;201025;31223;2;;;1"
+A	21:32:29.962	"8;201025;31223;2;;;1" received
+I	21:32:29.963	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-2E-38-6D-D8
+A	21:32:29.963	"4.8m�" received
+I	21:32:29.964	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-3B-31-34-2E-38-3B-31-30-2E-34-3B-3B-30-2E-33-3B-33
+A	21:32:29.964	"D� ;14.8;10.4;;0.3;3" received
+I	21:32:29.964	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-38-2E-33-3B-32-36-34-33-34-39-36-2E-35-3B-33-35-32-32-30, "48.3;2643496.5;35220"
+A	21:32:29.964	"48.3;2643496.5;35220" received
+I	21:32:29.964	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-37-3B-38-2E-33-3B-35-31-51-3B-0D-0A-24-3B-31-3B-31-50
+A	21:32:29.964	"2.7;8.3;51Q;
+$;1;1P" received
+I	21:32:29.989	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-31-30-30-30-37-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B, ";;;;10007;;;;;;;;;;;"
+A	21:32:29.989	";;;;10007;;;;;;;;;;;" received
+I	21:32:29.990	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-31-3B-3B-3B-33-2E-32-3B-32-2E-39-3B-33-2E-31-3B-3B, ";;;1;;;3.2;2.9;3.1;;"
+A	21:32:29.990	";;;1;;;3.2;2.9;3.1;;" received
+I	21:32:29.990	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-34-2E-30-3B-32-39-33-2E-31-3B-31-2E-31-3B-2D-32-2E-37-3B, "24.0;293.1;1.1;-2.7;"
+A	21:32:29.990	"24.0;293.1;1.1;-2.7;" received
+I	21:32:29.991	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-2E-31-3B-3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B-3B-31-30-30
+A	21:32:29.991	"3.1;;
+$;1;1P;;;;100" received
+I	21:32:29.991	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 30-38-3B-3B-3B-3B-3B-3B-32-33-2E-38-39-36-32-32-32-32-3B-4E, "08;;;;;;23.8962222;N"
+A	21:32:29.991	"08;;;;;;23.8962222;N" received
+I	21:32:29.992	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-31-32-31-2E-35-34-38-31-35-36-33-3B-45-3B-38-37-2E-32-3B, ";121.5481563;E;87.2;"
+A	21:32:29.992	";121.5481563;E;87.2;" received
+I	21:32:29.992	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-30-3B-33-30-31-30-32-35-3B-36-35-33-35-33-3B-31-3B-3B, "2.0;301025;65353;1;;"
+A	21:32:29.992	"2.0;301025;65353;1;;" received
+I	21:32:29.993	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-35-2E-17-F8
+A	21:32:29.993	";5.�" received
+I	21:32:29.993	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-39-3B-35-2E-37-3B-33-2E-32-3B-3B-31-34-2E-30-3B-32
+A	21:32:29.993	"D� 9;5.7;3.2;;14.0;2" received
+I	21:32:30.027	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-36-2E-33-3B-32-36-34-33-34-39-35-2E-36-3B-33-35-32-32-30, "26.3;2643495.6;35220"
+A	21:32:30.027	"26.3;2643495.6;35220" received
+I	21:32:30.028	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-35-3B-33-2E-32-3B-35-31-51-3B-0D-0A-24-3B-31-3B-31-50
+A	21:32:30.028	"2.5;3.2;51Q;
+$;1;1P" received
+I	21:32:30.028	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-31-30-30-31-30-3B-3B-3B-3B-3B-3B-32-33-2E-38-39, ";;;;10010;;;;;;23.89"
+A	21:32:30.028	";;;;10010;;;;;;23.89" received
+I	21:32:30.029	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-32-32-34-33-3B-4E-3B-31-32-31-2E-35-34-38-31-34-36-30-3B, "62243;N;121.5481460;"
+A	21:32:30.029	"62243;N;121.5481460;" received
+I	21:32:30.051	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 45-3B-37-37-2E-34-3B-33-2E-34-3B-33-30-31-30-32-35-3B-36-35, "E;77.4;3.4;301025;65"
+A	21:32:30.051	"E;77.4;3.4;301025;65" received
+I	21:32:30.052	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-32-39-3B-31-3B-3B-3B-31-33-2E-30-3B-31-32-2E-39-3B-30-2E, "629;1;;;13.0;12.9;0."
+A	21:32:30.052	"629;1;;;13.0;12.9;0." received
+I	21:32:30.053	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-3B-3B-2D-35-2E-36-3B-32-33-39-2E-37-3B-32-36-34-33-34-39, "4;;-5.6;239.7;264349"
+A	21:32:30.053	"4;;-5.6;239.7;264349" received
+I	21:32:30.053	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-2E-39-3B-33-35-32-32-30-31-2E-35-3B-30-2E-34-3B-35-31-51, "5.9;352201.5;0.4;51Q"
+A	21:32:30.053	"5.9;352201.5;0.4;51Q" received
+I	21:32:30.058	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B-3B-31-30-30-31-31-3B-3B
+A	21:32:30.058	";
+$;1;1P;;;;10011;;" received
+I	21:32:30.059	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-8B-3D
+A	21:32:30.059	";;;�=" received
+I	21:32:30.059	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-3B-32-33-2E-38-39-35-36-36-37-36-3B-4E-3B-31-32-31
+A	21:32:30.059	"D� ;23.8956676;N;121" received
+I	21:32:30.060	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-35-34-37-38-34-34-33-3B-45-3B-38-30-2E-34-3B-34-2E-39-3B, ".5478443;E;80.4;4.9;"
+A	21:32:30.060	".5478443;E;80.4;4.9;" received
+I	21:32:30.060	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-30-31-30-32-35-3B-37-30-33-35-30-3B-31-3B-3B-3B-33-2E-32, "301025;70350;1;;;3.2"
+A	21:32:30.060	"301025;70350;1;;;3.2" received
+I	21:32:30.084	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-33-2E-31-3B-30-2E-37-3B-3B-2D-31-37-2E-34-3B-32-34-34-2E, ";3.1;0.7;;-17.4;244."
+A	21:32:30.084	";3.1;0.7;;-17.4;244." received
+I	21:32:30.084	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 30-3B-32-36-34-33-34-33-34-2E-35-3B-33-35-32-31-37-30-2E-31, "0;2643434.5;352170.1"
+A	21:32:30.085	"0;2643434.5;352170.1" received
+I	21:32:30.085	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-30-2E-37-3B-35-31-51-3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B
+A	21:32:30.085	";0.7;51Q;
+$;1;1P;;;" received
+I	21:32:30.085	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-31-30-30-31-31-3B-3B-3B-3B-3B-3B-32-33-2E-38-39-35-36-34, ";10011;;;;;;23.89564"
+A	21:32:30.085	";10011;;;;;;23.89564" received
+I	21:32:30.086	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 30-32-3B-4E-3B-31-32-31-2E-35-34-37-38-34-39-39-3B-45-3B-38, "02;N;121.5478499;E;8"
+A	21:32:30.086	"02;N;121.5478499;E;8" received
+I	21:32:30.087	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-34-3B-34-2E-39-3B-33-30-31-30-32-35-3B-37-30-33-35-39, "2.4;4.9;301025;70359"
+A	21:32:30.087	"2.4;4.9;301025;70359" received
+I	21:32:30.087	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-32-3B-3B-3B-35-2E-30-3B-34-2E-39-3B-32-2E-37-3B-3B-31-31, ";2;;;5.0;4.9;2.7;;11"
+A	21:32:30.087	";2;;;5.0;4.9;2.7;;11" received
+I	21:32:30.088	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-34-3B-8A-5E
+A	21:32:30.088	".4;�^" received
+I	21:32:30.088	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-32-30-36-2E-37-3B-32-36-34-33-34-33-31-2E-35-3B-33
+A	21:32:30.088	"D� 206.7;2643431.5;3" received
+I	21:32:30.114	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-32-31-37-30-2E-37-3B-32-2E-37-3B-35-31-51-3B-0D-0A-24-3B
+A	21:32:30.114	"52170.7;2.7;51Q;
+$;" received
+I	21:32:30.115	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-3B-31-50-3B-3B-3B-3B-31-30-30-31-31-3B-3B-3B-3B-3B-3B-32, "1;1P;;;;10011;;;;;;2"
+A	21:32:30.115	"1;1P;;;;10011;;;;;;2" received
+I	21:32:30.115	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-2E-38-39-35-36-35-33-36-3B-4E-3B-31-32-31-2E-35-34-37-38, "3.8956536;N;121.5478"
+A	21:32:30.115	"3.8956536;N;121.5478" received
+I	21:32:30.116	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-38-38-3B-45-3B-38-31-2E-36-3B-34-2E-39-3B-33-30-31-30-32, "288;E;81.6;4.9;30102"
+A	21:32:30.116	"288;E;81.6;4.9;30102" received
+I	21:32:30.117	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-3B-37-30-34-30-35-3B-33-3B-3B-3B-35-2E-32-3B-35-2E-32-3B, "5;70405;3;;;5.2;5.2;"
+A	21:32:30.117	"5;70405;3;;;5.2;5.2;" received
+I	21:32:30.118	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-2E-39-3B-3B-31-2E-39-3B-32-33-36-2E-34-3B-32-36-34-33-34, "1.9;;1.9;236.4;26434"
+A	21:32:30.118	"1.9;;1.9;236.4;26434" received
+I	21:32:30.119	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-33-2E-30-3B-33-35-32-31-36-38-2E-36-3B-31-2E-39-3B-35-31, "33.0;352168.6;1.9;51"
+A	21:32:30.119	"33.0;352168.6;1.9;51" received
+I	21:32:30.119	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 51-3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B-3B-31-30-30-31-31-3B
+A	21:32:30.119	"Q;
+$;1;1P;;;;10011;" received
+I	21:32:30.120	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-3B-32-33-2E-38-39-35-36-34-36-38-3B-4E-3B-31-32, ";;;;;23.8956468;N;12"
+A	21:32:30.120	";;;;;23.8956468;N;12" received
+I	21:32:30.142	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-2E-35-DF-58
+A	21:32:30.142	"1.5�X" received
+I	21:32:30.144	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-34-37-38-36-38-34-3B-45-3B-38-32-2E-38-3B-34-2E-39
+A	21:32:30.144	"D� 478684;E;82.8;4.9" received
+I	21:32:30.144	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-33-30-31-30-32-35-3B-37-30-34-31-32-3B-34-3B-3B-3B-33-2E, ";301025;70412;4;;;3."
+A	21:32:30.144	";301025;70412;4;;;3." received
+I	21:32:30.147	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-3B-33-2E-37-3B-33-2E-31-3B-3B-31-39-2E-31-3B-31-38-34-2E, "9;3.7;3.1;;19.1;184."
+A	21:32:30.147	"9;3.7;3.1;;19.1;184." received
+I	21:32:30.147	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-3B-32-36-34-33-34-33-32-2E-32-3B-33-35-32-31-37-32-2E-36, "9;2643432.2;352172.6"
+A	21:32:30.147	"9;2643432.2;352172.6" received
+I	21:32:30.148	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-33-2E-31-3B-35-31-51-3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B
+A	21:32:30.148	";3.1;51Q;
+$;1;1P;;;" received
+I	21:32:30.149	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-31-30-30-31-31-3B-3B-3B-3B-3B-3B-32-33-2E-38-39-35-36-33, ";10011;;;;;;23.89563"
+A	21:32:30.149	";10011;;;;;;23.89563" received
+I	21:32:30.149	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-30-3B-4E-3B-31-32-31-2E-35-34-37-38-33-32-32-3B-45-3B-38, "60;N;121.5478322;E;8"
+A	21:32:30.149	"60;N;121.5478322;E;8" received
+I	21:32:30.149	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-37-3B-34-2E-39-3B-33-30-31-30-32-35-3B-37-30-34-32-32, "2.7;4.9;301025;70422"
+A	21:32:30.149	"2.7;4.9;301025;70422" received
+I	21:32:30.172	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-35-3B-3B-3B-36-2E-34-3B-36-2E-33-3B-33-2E-30-3B-3B-31-31, ";5;;;6.4;6.3;3.0;;11"
+A	21:32:30.172	";5;;;6.4;6.3;3.0;;11" received
+I	21:32:30.173	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-33-3B-32-31-39-2E-36-3B-32-36-34-33-34-33-31-2E-30-3B-33, ".3;219.6;2643431.0;3"
+A	21:32:30.173	".3;219.6;2643431.0;3" received
+I	21:32:30.173	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-32-31-78-FF
+A	21:32:30.173	"521x�" received
+I	21:32:30.174	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-36-38-2E-39-3B-33-2E-30-3B-35-31-51-3B-0D-0A-24-3B
+A	21:32:30.174	"D� 68.9;3.0;51Q;
+$;" received
+I	21:32:30.174	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-3B-31-50-3B-3B-3B-3B-31-30-30-31-32-3B-3B-3B-3B-3B-3B-32, "1;1P;;;;10012;;;;;;2"
+A	21:32:30.174	"1;1P;;;;10012;;;;;;2" received
+I	21:32:30.201	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-2E-38-39-35-36-37-30-38-3B-4E-3B-31-32-31-2E-35-34-37-38, "3.8956708;N;121.5478"
+A	21:32:30.201	"3.8956708;N;121.5478" received
+I	21:32:30.203	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-39-36-3B-45-3B-38-33-2E-33-3B-30-2E-39-3B-33-30-31-30-32, "696;E;83.3;0.9;30102"
+A	21:32:30.203	"696;E;83.3;0.9;30102" received
+I	21:32:30.204	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-3B-37-31-33-30-34-3B-31-3B-3B-3B-33-34-2E-36-3B-33-34-2E, "5;71304;1;;;34.6;34."
+A	21:32:30.204	"5;71304;1;;;34.6;34." received
+I	21:32:30.204	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-3B-35-2E-38-3B-3B-36-2E-38-3B-32-35-33-2E-34-3B-32-36-34, "4;5.8;;6.8;253.4;264"
+A	21:32:30.204	"4;5.8;;6.8;253.4;264" received
+I	21:32:30.205	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-34-33-34-2E-39-3B-33-35-32-31-37-32-2E-37-3B-35-2E-38-3B, "3434.9;352172.7;5.8;"
+A	21:32:30.205	"3434.9;352172.7;5.8;" received
+I	21:32:30.207	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-31-51-3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B-3B-31-30-30-31
+A	21:32:30.207	"51Q;
+$;1;1P;;;;1001" received
+I	21:32:30.207	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-3B-3B-3B-3B-3B-3B-32-33-2E-38-39-35-38-30-38-39-3B-4E-3B, "2;;;;;;23.8958089;N;"
+A	21:32:30.207	"2;;;;;;23.8958089;N;" received
+I	21:32:30.208	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-32-31-2E-35-34-38-30-34-31-33-3B-45-3B-38-35-2E-31-3B-30, "121.5480413;E;85.1;0"
+A	21:32:30.208	"121.5480413;E;85.1;0" received
+I	21:32:30.208	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-39-3B-C7-63
+A	21:32:30.208	".9;�c" received
+I	21:32:30.230	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-33-30-31-30-32-35-3B-37-31-33-33-38-3B-32-3B-3B-3B
+A	21:32:30.230	"D� 301025;71338;2;;;" received
+I	21:32:30.231	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-37-2E-32-3B-31-36-2E-32-3B-37-2E-36-3B-3B-31-39-2E-38-3B, "17.2;16.2;7.6;;19.8;"
+A	21:32:30.231	"17.2;16.2;7.6;;19.8;" received
+I	21:32:30.264	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-38-39-2E-32-3B-32-36-34-33-34-35-30-2E-30-3B-33-35-32-31, "289.2;2643450.0;3521"
+A	21:32:30.264	"289.2;2643450.0;3521" received
+I	21:32:30.266	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-30-2E-34-3B-37-2E-36-3B-35-31-51-3B-0D-0A-24-3B-31-3B-33
+A	21:32:30.266	"90.4;7.6;51Q;
+$;1;3" received
+I	21:32:30.270	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 50-3B-3B-3B-3B-31-30-30-31-33-3B-3B-3B-3B-3B-3B-32-33-2E-38, "P;;;;10013;;;;;;23.8"
+A	21:32:30.271	"P;;;;10013;;;;;;23.8" received
+I	21:32:30.272	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-35-38-35-35-31-3B-4E-3B-31-32-31-2E-35-34-38-34-31-39-38, "958551;N;121.5484198"
+A	21:32:30.272	"958551;N;121.5484198" received
+I	21:32:30.273	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-45-3B-37-38-2E-34-3B-30-2E-36-3B-33-30-31-30-32-35-3B-37, ";E;78.4;0.6;301025;7"
+A	21:32:30.273	";E;78.4;0.6;301025;7" received
+I	21:32:30.274	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-32-33-31-3B-31-3B-3B-3B-31-39-2E-35-3B-31-39-2E-35-3B-39, "2231;1;;;19.5;19.5;9"
+A	21:32:30.274	"2231;1;;;19.5;19.5;9" received
+I	21:32:30.274	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-35-3B-3B-2D-31-2E-31-3B-39-35-2E-30-3B-32-36-34-33-34-35, ".5;;-1.1;95.0;264345"
+A	21:32:30.274	".5;;-1.1;95.0;264345" received
+I	21:32:30.274	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-2E-37-3B-33-35-32-32-32-38-2E-39-3B-31-30-2E-38-3B-35-31, "4.7;352228.9;10.8;51"
+A	21:32:30.274	"4.7;352228.9;10.8;51" received
+I	21:32:30.275	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 51-3B-0D-AA-33
+A	21:32:30.275	"Q;�3" received
+I	21:32:30.292	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-86-00-0A-24-3B-31-3B-33-50-3B-3B-3B-3B-31-30-30-31-33-3B
+A	21:32:30.292	"D� 
+$;1;3P;;;;10013;" received
+I	21:32:30.296	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-3B-32-33-2E-38-39-35-38-35-35-31-3B-4E-3B-31-32, ";;;;;23.8958551;N;12"
+A	21:32:30.296	";;;;;23.8958551;N;12" received
+I	21:32:30.296	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-2E-35-34-38-34-31-39-38-3B-45-3B-37-35-2E-30-3B-30-2E-36, "1.5484198;E;75.0;0.6"
+A	21:32:30.296	"1.5484198;E;75.0;0.6" received
+I	21:32:30.296	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-33-30-31-30-32-35-3B-37-32-32-35-32-3B-32-3B-3B-3B-31-39, ";301025;72252;2;;;19"
+A	21:32:30.296	";301025;72252;2;;;19" received
+I	21:32:30.297	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-35-3B-31-39-2E-35-3B-36-2E-31-3B-3B-2D-31-2E-31-3B-39-35, ".5;19.5;6.1;;-1.1;95"
+A	21:32:30.297	".5;19.5;6.1;;-1.1;95" received
+I	21:32:30.297	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-30-3B-32-36-34-33-34-35-34-2E-37-3B-33-35-32-32-32-38-2E, ".0;2643454.7;352228."
+A	21:32:30.297	".0;2643454.7;352228." received
+I	21:32:30.299	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-3B-37-2E-34-3B-35-31-51-3B-0D-0A-60-D3
+A	21:32:30.299	"9;7.4;51Q;
+`�" received
+I	21:32:30.300	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 5A-BF-FB
+A	21:32:30.300	"Z��" received
+D	21:33:46.980	[Callback] Connection state changed with status: 19 and new state: DISCONNECTED (0)
+W	21:33:46.980	Connection terminated by peer (status 19)
+I	21:33:46.980	Disconnected
+D	21:33:47.030	[Broadcast] Action received: android.bluetooth.device.action.ACL_DISCONNECTED
+D	21:33:50.734	[Broadcast] Action received: android.bluetooth.device.action.ACL_CONNECTED
+D	21:33:50.734	gatt.close()
+D	21:33:50.752	wait(200)
+V	21:33:50.954	Connecting to C4:D3:6A:BA:63:7E...
+D	21:33:50.954	gatt = device.connectGatt(autoConnect = false, TRANSPORT_LE, preferred PHY = LE 1M)
+D	21:33:50.981	[Callback] Connection state changed with status: 0 and new state: CONNECTED (2)
+I	21:33:50.981	Connected to C4:D3:6A:BA:63:7E
+D	21:33:50.981	wait(1600ms)
+V	21:33:52.584	Discovering services...
+D	21:33:52.584	gatt.discoverServices()
+D	21:33:52.605	[Callback] Services discovered with status: 0
+I	21:33:52.605	Services discovered
+V	21:33:52.615	Generic Access (0x1800)
+- Device Name [R W] (0x2A00)
+- Appearance [R] (0x2A01)
+Device Information (0x180A)
+- Manufacturer Name String [R] (0x2A29)
+- Model Number String [R] (0x2A24)
+Unknown Service (9e000000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e010000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+Nordic UART Service (6e400001-b5a3-f393-e0a9-e50e24dcca9e)
+- RX Characteristic [W WNR] (6e400002-b5a3-f393-e0a9-e50e24dcca9e)
+- TX Characteristic [N R] (6e400003-b5a3-f393-e0a9-e50e24dcca9e)
+   Client Characteristic Configuration (0x2902)
+Unknown Service (69465a7c-6ce7-43bf-9549-8ebfde563e0e)
+- Unknown Characteristic [W WNR] (650c6a10-6867-464a-a876-4e545ee17830)
+Unknown Service (9e020000-f685-4ea5-b58a-85287cb04965)
+- Unknown Characteristic [N R] (9e030000-f685-4ea5-b58a-85287cb04965)
+   Client Characteristic Configuration (0x2902)
+D	21:33:52.615	gatt.setCharacteristicNotification(9e010000-f685-4ea5-b58a-85287cb04965, true)
+D	21:33:52.618	gatt.setCharacteristicNotification(6e400003-b5a3-f393-e0a9-e50e24dcca9e, true)
+D	21:33:52.620	gatt.setCharacteristicNotification(9e030000-f685-4ea5-b58a-85287cb04965, true)
+I	21:33:57.830	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 46-11-00-E1-09-00-00-44-41-54-41-2E-43-53-56-0D-C0
+A	21:33:57.830	"F �	  DATA.CSV�" received
+I	21:33:57.830	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-4D-41-52-4B-3B-53-54-41-54-55-53-3B-54-59-50-45-3B
+A	21:33:57.830	"D� MARK;STATUS;TYPE;" received
+I	21:33:57.830	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 50-52-4F-44-3B-56-45-52-3B-53-4E-52-3B-49-44-3B-55-4E-49-54, "PROD;VER;SNR;ID;UNIT"
+A	21:33:57.830	"PROD;VER;SNR;ID;UNIT" received
+I	21:33:57.834	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-54-52-50-48-3B-52-45-46-48-3B-50-2E-4F-46-46-3B-44-45-43, ";TRPH;REFH;P.OFF;DEC"
+A	21:33:57.834	";TRPH;REFH;P.OFF;DEC" received
+I	21:33:57.835	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 4C-3B-4C-41-54-3B-4E-2F-53-3B-4C-4F-4E-3B-45-2F-57-3B-41-4C, "L;LAT;N/S;LON;E/W;AL"
+A	21:33:57.835	"L;LAT;N/S;LON;E/W;AL" received
+I	21:33:57.836	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 54-49-54-55-44-45-3B-48-44-4F-50-3B-44-41-54-45-3B-55-54-43, "TITUDE;HDOP;DATE;UTC"
+A	21:33:57.836	"TITUDE;HDOP;DATE;UTC" received
+I	21:33:57.837	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-53-45-51-3B-41-52-45-41-3B-56-4F-4C-3B-53-44-3B-48-44-3B, ";SEQ;AREA;VOL;SD;HD;"
+A	21:33:57.838	";SEQ;AREA;VOL;SD;HD;" received
+I	21:33:57.839	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 48-3B-44-49-41-3B-50-49-54-43-48-3B-41-5A-3B-58-28-6D-29-3B, "H;DIA;PITCH;AZ;X(m);"
+A	21:33:57.839	"H;DIA;PITCH;AZ;X(m);" received
+I	21:33:57.839	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 59-28-6D-29-3B-5A-28-6D-29-3B-55-54-4D-20-5A-4F-4E-45-3B-0D
+A	21:33:57.839	"Y(m);Z(m);UTM ZONE;" received
+I	21:33:57.839	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 0A-23-3B-3B-53-45-54-3B-31-30-30-30-3B-33-37-3B-33-31-39-30
+A	21:33:57.839	"
+#;;SET;1000;37;3190" received
+I	21:33:57.841	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-4D-3B-31-2E-33-3B-31-2E-37-3B-30-2E-33-3B-30-2E-30-3B, ";;M;1.3;1.7;0.3;0.0;"
+A	21:33:57.841	";;M;1.3;1.7;0.3;0.0;" received
+I	21:33:57.841	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-04-7C
+A	21:33:57.841	";;;|" received
+I	21:33:57.841	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-0D-0A-24
+A	21:33:57.841	"D� ;;;;;;;;;;;;;;
+$" received
+I	21:33:57.841	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-31-3B-33-50-3B-3B-3B-3B-31-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B, ";1;3P;;;;1;;;;;;;;;;"
+A	21:33:57.841	";1;3P;;;;1;;;;;;;;;;" received
+I	21:33:57.842	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-31-3B-3B-3B-31-2E-38-3B-31-2E-38-3B-31-2E-39-3B, ";;;;1;;;1.8;1.8;1.9;"
+A	21:33:57.842	";;;;1;;;1.8;1.8;1.9;" received
+I	21:33:57.842	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-30-2E-33-3B-31-36-31-2E-37-3B-2D-31-2E-37-3B-30-2E-36-3B, ";0.3;161.7;-1.7;0.6;"
+A	21:33:57.843	";0.3;161.7;-1.7;0.6;" received
+I	21:33:57.860	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-30-3B-3B-0D-0A-24-3B-31-3B-44-4D-45-3B-3B-3B-3B-32-3B
+A	21:33:57.860	"2.0;;
+$;1;DME;;;;2;" received
+I	21:33:57.861	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-31-3B-3B-3B-33-2E-36, ";;;;;;;;;;;;;1;;;3.6"
+A	21:33:57.861	";;;;;;;;;;;;;1;;;3.6" received
+I	21:33:57.861	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-33-2E-36-3B-32-2E-35-3B-3B-2D-36-2E-34-3B-32-36-39-2E-30, ";3.6;2.5;;-6.4;269.0"
+A	21:33:57.861	";3.6;2.5;;-6.4;269.0" received
+I	21:33:57.861	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-2D-30-2E-31-3B-2D-33-2E-36-3B-33-2E-34-3B-3B-0D-0A-24-3B
+A	21:33:57.861	";-0.1;-3.6;3.4;;
+$;" received
+I	21:33:57.861	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-3B-33-44-3B-3B-3B-3B-33-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B, "1;3D;;;;3;;;;;;;;;;;"
+A	21:33:57.861	"1;3D;;;;3;;;;;;;;;;;" received
+I	21:33:57.862	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-33-3B-3B-3B-30-2E-31-3B-30-2E-31-3B-30-2E-30-3B-3B, ";;;3;;;0.1;0.1;0.0;;"
+A	21:33:57.862	";;;3;;;0.1;0.1;0.0;;" received
+I	21:33:57.863	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 38-2E-32-ED-79
+A	21:33:57.863	"8.2�y" received
+I	21:33:57.864	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-3B-33-35-36-2E-30-3B-30-2E-31-3B-2D-30-2E-30-3B-31
+A	21:33:57.864	"D� ;356.0;0.1;-0.0;1" received
+I	21:33:57.864	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-37-3B-3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B-3B-34-3B-3B-3B
+A	21:33:57.864	".7;;
+$;1;1P;;;;4;;;" received
+I	21:33:57.897	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-32-33-2E-38-39-36-30-37-32-39-3B-4E-3B-31-32-31-2E, ";;;23.8960729;N;121."
+A	21:33:57.897	";;;23.8960729;N;121." received
+I	21:33:57.898	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-34-39-30-32-30-34-3B-45-3B-2D-36-38-2E-30-3B-33-2E-35-3B, "5490204;E;-68.0;3.5;"
+A	21:33:57.898	"5490204;E;-68.0;3.5;" received
+I	21:33:57.899	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-30-31-30-32-35-3B-32-34-35-31-38-3B-31-3B-3B-3B-32-38-2E, "201025;24518;1;;;28."
+A	21:33:57.899	"201025;24518;1;;;28." received
+I	21:33:57.899	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-3B-32-38-2E-35-3B-2D-31-2E-31-3B-3B-2D-35-2E-35-3B-32-35, "6;28.5;-1.1;;-5.5;25"
+A	21:33:57.899	"6;28.5;-1.1;;-5.5;25" received
+I	21:33:57.899	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 30-2E-33-3B-32-36-34-33-34-37-38-2E-32-3B-33-35-32-32-39-30, "0.3;2643478.2;352290"
+A	21:33:57.899	"0.3;2643478.2;352290" received
+I	21:33:57.899	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-34-3B-2D-31-2E-31-3B-35-31-51-3B-0D-0A-24-3B-31-3B-31-50
+A	21:33:57.899	".4;-1.1;51Q;
+$;1;1P" received
+I	21:33:57.899	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-34-3B-3B-3B-3B-3B-3B-32-33-2E-38-39-36-32-39-30, ";;;;4;;;;;;23.896290"
+A	21:33:57.899	";;;;4;;;;;;23.896290" received
+I	21:33:57.900	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-3B-4E-3B-31-32-31-2E-35-34-39-32-34-35-32-3B-45-3B-2D-36, "3;N;121.5492452;E;-6"
+A	21:33:57.900	"3;N;121.5492452;E;-6" received
+I	21:33:57.900	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-38-EE-27
+A	21:33:57.900	"2.8�'" received
+I	21:33:57.921	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-3B-33-2E-35-3B-32-30-31-30-32-35-3B-32-34-35-33-33
+A	21:33:57.921	"D� ;3.5;201025;24533" received
+I	21:33:57.921	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-32-3B-3B-3B-31-34-2E-39-3B-31-34-2E-37-3B-34-2E-31-3B-3B, ";2;;;14.9;14.7;4.1;;"
+A	21:33:57.921	";2;;;14.9;14.7;4.1;;" received
+I	21:33:57.923	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-2E-32-3B-33-34-35-2E-36-3B-32-36-34-33-35-30-32-2E-30-3B, "9.2;345.6;2643502.0;"
+A	21:33:57.923	"9.2;345.6;2643502.0;" received
+I	21:33:57.923	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-35-32-33-31-33-2E-35-3B-34-2E-31-3B-35-31-51-3B-0D-0A-24
+A	21:33:57.923	"352313.5;4.1;51Q;
+$" received
+I	21:33:57.924	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-31-3B-31-50-3B-3B-3B-3B-34-3B-3B-3B-3B-3B-3B-32-33-2E-38, ";1;1P;;;;4;;;;;;23.8"
+A	21:33:57.924	";1;1P;;;;4;;;;;;23.8" received
+I	21:33:57.924	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-36-31-33-30-39-3B-4E-3B-31-32-31-2E-35-34-39-32-36-30-35, "961309;N;121.5492605"
+A	21:33:57.924	"961309;N;121.5492605" received
+I	21:33:57.925	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-45-3B-2D-36-31-2E-35-3B-33-2E-35-3B-32-30-31-30-32-35-3B, ";E;-61.5;3.5;201025;"
+A	21:33:57.925	";E;-61.5;3.5;201025;" received
+I	21:33:57.925	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-34-35-34-39-3B-33-3B-3B-3B-35-2E-34-3B-34-2E-31-3B-35-2E, "24549;3;;;5.4;4.1;5."
+A	21:33:57.925	"24549;3;;;5.4;4.1;5." received
+I	21:33:57.926	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-3B-3B-34-30-2E-33-3B-32-31-33-2E-38-3B-32-36-34-33-34-38, "4;;40.3;213.8;264348"
+A	21:33:57.926	"4;;40.3;213.8;264348" received
+I	21:33:57.953	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-2E-33-3B-33-35-32-33-31-34-2E-39-3B-35-2E-34-3B-35-31-51, "4.3;352314.9;5.4;51Q"
+A	21:33:57.953	"4.3;352314.9;5.4;51Q" received
+I	21:33:57.953	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-0D-0A-34-41
+A	21:33:57.953	";
+4A" received
+I	21:33:57.953	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-24-3B-31-3B-33-50-3B-3B-3B-3B-35-3B-3B-3B-3B-3B-3B
+A	21:33:57.953	"D� $;1;3P;;;;5;;;;;;" received
+I	21:33:57.954	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-33-2E-38-39-36-32-32-39-39-3B-4E-3B-31-32-31-2E-35-34-38, "23.8962299;N;121.548"
+A	21:33:57.954	"23.8962299;N;121.548" received
+I	21:33:57.954	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-35-37-38-3B-45-3B-31-30-30-2E-35-3B-31-2E-38-3B-32-30-31, "1578;E;100.5;1.8;201"
+A	21:33:57.954	"1578;E;100.5;1.8;201" received
+I	21:33:57.955	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 30-32-35-3B-33-31-32-30-31-3B-31-3B-3B-3B-31-34-2E-38-3B-31, "025;31201;1;;;14.8;1"
+A	21:33:57.955	"025;31201;1;;;14.8;1" received
+I	21:33:57.955	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-2E-38-3B-37-2E-37-3B-3B-30-2E-33-3B-33-34-38-2E-33-3B-32, "4.8;7.7;;0.3;348.3;2"
+A	21:33:57.955	"4.8;7.7;;0.3;348.3;2" received
+I	21:33:57.956	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-34-33-34-39-36-2E-35-3B-33-35-32-32-30-32-2E-37-3B-35-2E, "643496.5;352202.7;5."
+A	21:33:57.956	"643496.5;352202.7;5." received
+I	21:33:57.958	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-3B-35-31-51-3B-0D-0A-24-3B-31-3B-33-50-3B-3B-3B-3B-35-3B
+A	21:33:57.958	"6;51Q;
+$;1;3P;;;;5;" received
+I	21:33:57.982	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-3B-32-33-2E-38-39-36-32-32-39-39-3B-4E-3B-31-32, ";;;;;23.8962299;N;12"
+A	21:33:57.982	";;;;;23.8962299;N;12" received
+I	21:33:57.982	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-2E-35-34-38-31-35-37-38-3B-45-3B-31-30-33-2E-32-3B-31-2E, "1.5481578;E;103.2;1."
+A	21:33:57.982	"1.5481578;E;103.2;1." received
+I	21:33:57.983	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 38-3B-32-30-31-30-32-35-3B-33-31-32-32-33-3B-32-3B-3B-3B-31, "8;201025;31223;2;;;1"
+A	21:33:57.983	"8;201025;31223;2;;;1" received
+I	21:33:57.983	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-2E-38-6D-D8
+A	21:33:57.983	"4.8m�" received
+I	21:33:57.984	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-3B-31-34-2E-38-3B-31-30-2E-34-3B-3B-30-2E-33-3B-33
+A	21:33:57.984	"D� ;14.8;10.4;;0.3;3" received
+I	21:33:57.987	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-38-2E-33-3B-32-36-34-33-34-39-36-2E-35-3B-33-35-32-32-30, "48.3;2643496.5;35220"
+A	21:33:57.987	"48.3;2643496.5;35220" received
+I	21:33:57.988	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-37-3B-38-2E-33-3B-35-31-51-3B-0D-0A-24-3B-31-3B-31-50
+A	21:33:57.988	"2.7;8.3;51Q;
+$;1;1P" received
+I	21:33:57.989	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-31-30-30-30-37-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B-3B, ";;;;10007;;;;;;;;;;;"
+A	21:33:57.989	";;;;10007;;;;;;;;;;;" received
+I	21:33:57.992	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-31-3B-3B-3B-33-2E-32-3B-32-2E-39-3B-33-2E-31-3B-3B, ";;;1;;;3.2;2.9;3.1;;"
+A	21:33:57.992	";;;1;;;3.2;2.9;3.1;;" received
+I	21:33:58.012	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-34-2E-30-3B-32-39-33-2E-31-3B-31-2E-31-3B-2D-32-2E-37-3B, "24.0;293.1;1.1;-2.7;"
+A	21:33:58.012	"24.0;293.1;1.1;-2.7;" received
+I	21:33:58.013	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-2E-31-3B-3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B-3B-31-30-30
+A	21:33:58.013	"3.1;;
+$;1;1P;;;;100" received
+I	21:33:58.013	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 30-38-3B-3B-3B-3B-3B-3B-32-33-2E-38-39-36-32-32-32-32-3B-4E, "08;;;;;;23.8962222;N"
+A	21:33:58.013	"08;;;;;;23.8962222;N" received
+I	21:33:58.013	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-31-32-31-2E-35-34-38-31-35-36-33-3B-45-3B-38-37-2E-32-3B, ";121.5481563;E;87.2;"
+A	21:33:58.013	";121.5481563;E;87.2;" received
+I	21:33:58.015	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-30-3B-33-30-31-30-32-35-3B-36-35-33-35-33-3B-31-3B-3B, "2.0;301025;65353;1;;"
+A	21:33:58.015	"2.0;301025;65353;1;;" received
+I	21:33:58.016	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-35-2E-17-F8
+A	21:33:58.016	";5.�" received
+I	21:33:58.017	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-39-3B-35-2E-37-3B-33-2E-32-3B-3B-31-34-2E-30-3B-32
+A	21:33:58.017	"D� 9;5.7;3.2;;14.0;2" received
+I	21:33:58.017	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-36-2E-33-3B-32-36-34-33-34-39-35-2E-36-3B-33-35-32-32-30, "26.3;2643495.6;35220"
+A	21:33:58.017	"26.3;2643495.6;35220" received
+I	21:33:58.018	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-35-3B-33-2E-32-3B-35-31-51-3B-0D-0A-24-3B-31-3B-31-50
+A	21:33:58.018	"2.5;3.2;51Q;
+$;1;1P" received
+I	21:33:58.042	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-31-30-30-31-30-3B-3B-3B-3B-3B-3B-32-33-2E-38-39, ";;;;10010;;;;;;23.89"
+A	21:33:58.042	";;;;10010;;;;;;23.89" received
+I	21:33:58.043	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-32-32-34-33-3B-4E-3B-31-32-31-2E-35-34-38-31-34-36-30-3B, "62243;N;121.5481460;"
+A	21:33:58.043	"62243;N;121.5481460;" received
+I	21:33:58.043	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 45-3B-37-37-2E-34-3B-33-2E-34-3B-33-30-31-30-32-35-3B-36-35, "E;77.4;3.4;301025;65"
+A	21:33:58.043	"E;77.4;3.4;301025;65" received
+I	21:33:58.043	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-32-39-3B-31-3B-3B-3B-31-33-2E-30-3B-31-32-2E-39-3B-30-2E, "629;1;;;13.0;12.9;0."
+A	21:33:58.043	"629;1;;;13.0;12.9;0." received
+I	21:33:58.044	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-3B-3B-2D-35-2E-36-3B-32-33-39-2E-37-3B-32-36-34-33-34-39, "4;;-5.6;239.7;264349"
+A	21:33:58.044	"4;;-5.6;239.7;264349" received
+I	21:33:58.044	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-2E-39-3B-33-35-32-32-30-31-2E-35-3B-30-2E-34-3B-35-31-51, "5.9;352201.5;0.4;51Q"
+A	21:33:58.044	"5.9;352201.5;0.4;51Q" received
+I	21:33:58.045	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B-3B-31-30-30-31-31-3B-3B
+A	21:33:58.045	";
+$;1;1P;;;;10011;;" received
+I	21:33:58.046	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-8B-3D
+A	21:33:58.046	";;;�=" received
+I	21:33:58.071	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-3B-32-33-2E-38-39-35-36-36-37-36-3B-4E-3B-31-32-31
+A	21:33:58.071	"D� ;23.8956676;N;121" received
+I	21:33:58.071	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-35-34-37-38-34-34-33-3B-45-3B-38-30-2E-34-3B-34-2E-39-3B, ".5478443;E;80.4;4.9;"
+A	21:33:58.071	".5478443;E;80.4;4.9;" received
+I	21:33:58.073	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-30-31-30-32-35-3B-37-30-33-35-30-3B-31-3B-3B-3B-33-2E-32, "301025;70350;1;;;3.2"
+A	21:33:58.073	"301025;70350;1;;;3.2" received
+I	21:33:58.073	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-33-2E-31-3B-30-2E-37-3B-3B-2D-31-37-2E-34-3B-32-34-34-2E, ";3.1;0.7;;-17.4;244."
+A	21:33:58.073	";3.1;0.7;;-17.4;244." received
+I	21:33:58.073	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 30-3B-32-36-34-33-34-33-34-2E-35-3B-33-35-32-31-37-30-2E-31, "0;2643434.5;352170.1"
+A	21:33:58.073	"0;2643434.5;352170.1" received
+I	21:33:58.074	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-30-2E-37-3B-35-31-51-3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B
+A	21:33:58.074	";0.7;51Q;
+$;1;1P;;;" received
+I	21:33:58.074	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-31-30-30-31-31-3B-3B-3B-3B-3B-3B-32-33-2E-38-39-35-36-34, ";10011;;;;;;23.89564"
+A	21:33:58.074	";10011;;;;;;23.89564" received
+I	21:33:58.075	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 30-32-3B-4E-3B-31-32-31-2E-35-34-37-38-34-39-39-3B-45-3B-38, "02;N;121.5478499;E;8"
+A	21:33:58.075	"02;N;121.5478499;E;8" received
+I	21:33:58.075	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-34-3B-34-2E-39-3B-33-30-31-30-32-35-3B-37-30-33-35-39, "2.4;4.9;301025;70359"
+A	21:33:58.075	"2.4;4.9;301025;70359" received
+I	21:33:58.102	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-32-3B-3B-3B-35-2E-30-3B-34-2E-39-3B-32-2E-37-3B-3B-31-31, ";2;;;5.0;4.9;2.7;;11"
+A	21:33:58.102	";2;;;5.0;4.9;2.7;;11" received
+I	21:33:58.103	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-34-3B-8A-5E
+A	21:33:58.103	".4;�^" received
+I	21:33:58.104	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-32-30-36-2E-37-3B-32-36-34-33-34-33-31-2E-35-3B-33
+A	21:33:58.104	"D� 206.7;2643431.5;3" received
+I	21:33:58.105	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-32-31-37-30-2E-37-3B-32-2E-37-3B-35-31-51-3B-0D-0A-24-3B
+A	21:33:58.105	"52170.7;2.7;51Q;
+$;" received
+I	21:33:58.106	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-3B-31-50-3B-3B-3B-3B-31-30-30-31-31-3B-3B-3B-3B-3B-3B-32, "1;1P;;;;10011;;;;;;2"
+A	21:33:58.106	"1;1P;;;;10011;;;;;;2" received
+I	21:33:58.106	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-2E-38-39-35-36-35-33-36-3B-4E-3B-31-32-31-2E-35-34-37-38, "3.8956536;N;121.5478"
+A	21:33:58.106	"3.8956536;N;121.5478" received
+I	21:33:58.107	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-38-38-3B-45-3B-38-31-2E-36-3B-34-2E-39-3B-33-30-31-30-32, "288;E;81.6;4.9;30102"
+A	21:33:58.107	"288;E;81.6;4.9;30102" received
+I	21:33:58.109	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-3B-37-30-34-30-35-3B-33-3B-3B-3B-35-2E-32-3B-35-2E-32-3B, "5;70405;3;;;5.2;5.2;"
+A	21:33:58.109	"5;70405;3;;;5.2;5.2;" received
+I	21:33:58.109	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-2E-39-3B-3B-31-2E-39-3B-32-33-36-2E-34-3B-32-36-34-33-34, "1.9;;1.9;236.4;26434"
+A	21:33:58.109	"1.9;;1.9;236.4;26434" received
+I	21:33:58.132	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-33-2E-30-3B-33-35-32-31-36-38-2E-36-3B-31-2E-39-3B-35-31, "33.0;352168.6;1.9;51"
+A	21:33:58.132	"33.0;352168.6;1.9;51" received
+I	21:33:58.132	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 51-3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B-3B-31-30-30-31-31-3B
+A	21:33:58.132	"Q;
+$;1;1P;;;;10011;" received
+I	21:33:58.133	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-3B-32-33-2E-38-39-35-36-34-36-38-3B-4E-3B-31-32, ";;;;;23.8956468;N;12"
+A	21:33:58.133	";;;;;23.8956468;N;12" received
+I	21:33:58.133	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-2E-35-DF-58
+A	21:33:58.133	"1.5�X" received
+I	21:33:58.135	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-34-37-38-36-38-34-3B-45-3B-38-32-2E-38-3B-34-2E-39
+A	21:33:58.135	"D� 478684;E;82.8;4.9" received
+I	21:33:58.136	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-33-30-31-30-32-35-3B-37-30-34-31-32-3B-34-3B-3B-3B-33-2E, ";301025;70412;4;;;3."
+A	21:33:58.136	";301025;70412;4;;;3." received
+I	21:33:58.137	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-3B-33-2E-37-3B-33-2E-31-3B-3B-31-39-2E-31-3B-31-38-34-2E, "9;3.7;3.1;;19.1;184."
+A	21:33:58.137	"9;3.7;3.1;;19.1;184." received
+I	21:33:58.138	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-3B-32-36-34-33-34-33-32-2E-32-3B-33-35-32-31-37-32-2E-36, "9;2643432.2;352172.6"
+A	21:33:58.138	"9;2643432.2;352172.6" received
+I	21:33:58.140	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-33-2E-31-3B-35-31-51-3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B
+A	21:33:58.140	";3.1;51Q;
+$;1;1P;;;" received
+I	21:33:58.165	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-31-30-30-31-31-3B-3B-3B-3B-3B-3B-32-33-2E-38-39-35-36-33, ";10011;;;;;;23.89563"
+A	21:33:58.165	";10011;;;;;;23.89563" received
+I	21:33:58.165	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-30-3B-4E-3B-31-32-31-2E-35-34-37-38-33-32-32-3B-45-3B-38, "60;N;121.5478322;E;8"
+A	21:33:58.165	"60;N;121.5478322;E;8" received
+I	21:33:58.166	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-2E-37-3B-34-2E-39-3B-33-30-31-30-32-35-3B-37-30-34-32-32, "2.7;4.9;301025;70422"
+A	21:33:58.166	"2.7;4.9;301025;70422" received
+I	21:33:58.167	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-35-3B-3B-3B-36-2E-34-3B-36-2E-33-3B-33-2E-30-3B-3B-31-31, ";5;;;6.4;6.3;3.0;;11"
+A	21:33:58.167	";5;;;6.4;6.3;3.0;;11" received
+I	21:33:58.167	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-33-3B-32-31-39-2E-36-3B-32-36-34-33-34-33-31-2E-30-3B-33, ".3;219.6;2643431.0;3"
+A	21:33:58.167	".3;219.6;2643431.0;3" received
+I	21:33:58.169	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-32-31-78-FF
+A	21:33:58.169	"521x�" received
+I	21:33:58.169	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-36-38-2E-39-3B-33-2E-30-3B-35-31-51-3B-0D-0A-24-3B
+A	21:33:58.169	"D� 68.9;3.0;51Q;
+$;" received
+I	21:33:58.169	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-3B-31-50-3B-3B-3B-3B-31-30-30-31-32-3B-3B-3B-3B-3B-3B-32, "1;1P;;;;10012;;;;;;2"
+A	21:33:58.169	"1;1P;;;;10012;;;;;;2" received
+I	21:33:58.170	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-2E-38-39-35-36-37-30-38-3B-4E-3B-31-32-31-2E-35-34-37-38, "3.8956708;N;121.5478"
+A	21:33:58.170	"3.8956708;N;121.5478" received
+I	21:33:58.195	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 36-39-36-3B-45-3B-38-33-2E-33-3B-30-2E-39-3B-33-30-31-30-32, "696;E;83.3;0.9;30102"
+A	21:33:58.195	"696;E;83.3;0.9;30102" received
+I	21:33:58.195	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-3B-37-31-33-30-34-3B-31-3B-3B-3B-33-34-2E-36-3B-33-34-2E, "5;71304;1;;;34.6;34."
+A	21:33:58.195	"5;71304;1;;;34.6;34." received
+I	21:33:58.195	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-3B-35-2E-38-3B-3B-36-2E-38-3B-32-35-33-2E-34-3B-32-36-34, "4;5.8;;6.8;253.4;264"
+A	21:33:58.195	"4;5.8;;6.8;253.4;264" received
+I	21:33:58.196	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 33-34-33-34-2E-39-3B-33-35-32-31-37-32-2E-37-3B-35-2E-38-3B, "3434.9;352172.7;5.8;"
+A	21:33:58.196	"3434.9;352172.7;5.8;" received
+I	21:33:58.196	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 35-31-51-3B-0D-0A-24-3B-31-3B-31-50-3B-3B-3B-3B-31-30-30-31
+A	21:33:58.196	"51Q;
+$;1;1P;;;;1001" received
+I	21:33:58.197	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-3B-3B-3B-3B-3B-3B-32-33-2E-38-39-35-38-30-38-39-3B-4E-3B, "2;;;;;;23.8958089;N;"
+A	21:33:58.197	"2;;;;;;23.8958089;N;" received
+I	21:33:58.197	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-32-31-2E-35-34-38-30-34-31-33-3B-45-3B-38-35-2E-31-3B-30, "121.5480413;E;85.1;0"
+A	21:33:58.198	"121.5480413;E;85.1;0" received
+I	21:33:58.198	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-39-3B-C7-63
+A	21:33:58.198	".9;�c" received
+I	21:33:58.221	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-CD-00-33-30-31-30-32-35-3B-37-31-33-33-38-3B-32-3B-3B-3B
+A	21:33:58.221	"D� 301025;71338;2;;;" received
+I	21:33:58.222	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-37-2E-32-3B-31-36-2E-32-3B-37-2E-36-3B-3B-31-39-2E-38-3B, "17.2;16.2;7.6;;19.8;"
+A	21:33:58.222	"17.2;16.2;7.6;;19.8;" received
+I	21:33:58.222	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-38-39-2E-32-3B-32-36-34-33-34-35-30-2E-30-3B-33-35-32-31, "289.2;2643450.0;3521"
+A	21:33:58.222	"289.2;2643450.0;3521" received
+I	21:33:58.226	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-30-2E-34-3B-37-2E-36-3B-35-31-51-3B-0D-0A-24-3B-31-3B-33
+A	21:33:58.226	"90.4;7.6;51Q;
+$;1;3" received
+I	21:33:58.228	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 50-3B-3B-3B-3B-31-30-30-31-33-3B-3B-3B-3B-3B-3B-32-33-2E-38, "P;;;;10013;;;;;;23.8"
+A	21:33:58.228	"P;;;;10013;;;;;;23.8" received
+I	21:33:58.228	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-35-38-35-35-31-3B-4E-3B-31-32-31-2E-35-34-38-34-31-39-38, "958551;N;121.5484198"
+A	21:33:58.228	"958551;N;121.5484198" received
+I	21:33:58.229	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-45-3B-37-38-2E-34-3B-30-2E-36-3B-33-30-31-30-32-35-3B-37, ";E;78.4;0.6;301025;7"
+A	21:33:58.229	";E;78.4;0.6;301025;7" received
+I	21:33:58.229	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 32-32-33-31-3B-31-3B-3B-3B-31-39-2E-35-3B-31-39-2E-35-3B-39, "2231;1;;;19.5;19.5;9"
+A	21:33:58.229	"2231;1;;;19.5;19.5;9" received
+I	21:33:58.230	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-35-3B-3B-2D-31-2E-31-3B-39-35-2E-30-3B-32-36-34-33-34-35, ".5;;-1.1;95.0;264345"
+A	21:33:58.230	".5;;-1.1;95.0;264345" received
+I	21:33:58.252	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 34-2E-37-3B-33-35-32-32-32-38-2E-39-3B-31-30-2E-38-3B-35-31, "4.7;352228.9;10.8;51"
+A	21:33:58.252	"4.7;352228.9;10.8;51" received
+I	21:33:58.252	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 51-3B-0D-AA-33
+A	21:33:58.252	"Q;�3" received
+I	21:33:58.253	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 44-86-00-0A-24-3B-31-3B-33-50-3B-3B-3B-3B-31-30-30-31-33-3B
+A	21:33:58.253	"D� 
+$;1;3P;;;;10013;" received
+I	21:33:58.253	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-3B-3B-3B-3B-32-33-2E-38-39-35-38-35-35-31-3B-4E-3B-31-32, ";;;;;23.8958551;N;12"
+A	21:33:58.253	";;;;;23.8958551;N;12" received
+I	21:33:58.254	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 31-2E-35-34-38-34-31-39-38-3B-45-3B-37-35-2E-30-3B-30-2E-36, "1.5484198;E;75.0;0.6"
+A	21:33:58.254	"1.5484198;E;75.0;0.6" received
+I	21:33:58.254	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 3B-33-30-31-30-32-35-3B-37-32-32-35-32-3B-32-3B-3B-3B-31-39, ";301025;72252;2;;;19"
+A	21:33:58.254	";301025;72252;2;;;19" received
+I	21:33:58.255	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-35-3B-31-39-2E-35-3B-36-2E-31-3B-3B-2D-31-2E-31-3B-39-35, ".5;19.5;6.1;;-1.1;95"
+A	21:33:58.255	".5;19.5;6.1;;-1.1;95" received
+I	21:33:58.257	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 2E-30-3B-32-36-34-33-34-35-34-2E-37-3B-33-35-32-32-32-38-2E, ".0;2643454.7;352228."
+A	21:33:58.257	".0;2643454.7;352228." received
+I	21:33:58.257	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 39-3B-37-2E-34-3B-35-31-51-3B-0D-0A-60-D3
+A	21:33:58.257	"9;7.4;51Q;
+`�" received
+I	21:33:58.281	Notification received from 6e400003-b5a3-f393-e0a9-e50e24dcca9e, value: (0x) 5A-BF-FB
+A	21:33:58.281	"Z��" received

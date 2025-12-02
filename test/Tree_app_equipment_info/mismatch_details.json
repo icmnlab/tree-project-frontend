@@ -1,0 +1,2317 @@
+[
+  {
+    "id": "3",
+    "diffs": [
+      {
+        "field_idx": 27,
+        "gt_value": "8.2",
+        "compare_value": "8.2D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "5",
+    "diffs": [
+      {
+        "field_idx": 23,
+        "gt_value": "14.8",
+        "compare_value": "14.8D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10008",
+    "diffs": [
+      {
+        "field_idx": 23,
+        "gt_value": "5.9",
+        "compare_value": "5.D9",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10011",
+    "diffs": [
+      {
+        "field_idx": 30,
+        "gt_value": "352168.9",
+        "compare_value": "3521D68.9",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10012",
+    "diffs": [
+      {
+        "field_idx": 18,
+        "gt_value": "301025",
+        "compare_value": "D301025",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10019",
+    "diffs": [
+      {
+        "field_idx": 14,
+        "gt_value": "121.5482410",
+        "compare_value": "121.54824D10",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10020",
+    "diffs": [
+      {
+        "field_idx": 30,
+        "gt_value": "352225.9",
+        "compare_value": "3522D25.9",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10022",
+    "diffs": [
+      {
+        "field_idx": 18,
+        "gt_value": "201125",
+        "compare_value": "20D1125",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10024",
+    "diffs": [
+      {
+        "field_idx": 2,
+        "gt_value": "1P",
+        "compare_value": "1RDP",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10025",
+    "diffs": [
+      {
+        "field_idx": 24,
+        "gt_value": "6.0",
+        "compare_value": "D6.0",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10027",
+    "diffs": [
+      {
+        "field_idx": 12,
+        "gt_value": "24.2988231",
+        "compare_value": "24.29D88231",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10028",
+    "diffs": [
+      {
+        "field_idx": 29,
+        "gt_value": "2689456.9",
+        "compare_value": "26D89456.9",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10029",
+    "diffs": [
+      {
+        "field_idx": 32,
+        "gt_value": "51R",
+        "compare_value": "51RD",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10031",
+    "diffs": [
+      {
+        "field_idx": 20,
+        "gt_value": "1",
+        "compare_value": "15D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10033",
+    "diffs": [
+      {
+        "field_idx": 8,
+        "gt_value": "",
+        "compare_value": "D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10034",
+    "diffs": [
+      {
+        "field_idx": 27,
+        "gt_value": "39.9",
+        "compare_value": "39.94D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10036",
+    "diffs": [
+      {
+        "field_idx": 14,
+        "gt_value": "120.5146209",
+        "compare_value": "120D.5146209",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10037",
+    "diffs": [
+      {
+        "field_idx": 30,
+        "gt_value": "247631.1",
+        "compare_value": "24D7631.1",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10039",
+    "diffs": [
+      {
+        "field_idx": 18,
+        "gt_value": "201125",
+        "compare_value": "D201125",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10041",
+    "diffs": [
+      {
+        "field_idx": 2,
+        "gt_value": "1P",
+        "compare_value": "D1P",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10042",
+    "diffs": [
+      {
+        "field_idx": 23,
+        "gt_value": "6.8",
+        "compare_value": "6.85D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10044",
+    "diffs": [
+      {
+        "field_idx": 12,
+        "gt_value": "24.2934629",
+        "compare_value": "24TD.2934629",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10045",
+    "diffs": [
+      {
+        "field_idx": 28,
+        "gt_value": "214.9",
+        "compare_value": "214.D9",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10047",
+    "diffs": [
+      {
+        "field_idx": 14,
+        "gt_value": "120.5181937",
+        "compare_value": "120.5181D937",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10048",
+    "diffs": [
+      {
+        "field_idx": 30,
+        "gt_value": "248084.0",
+        "compare_value": "248084.YD0",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10050",
+    "diffs": [
+      {
+        "field_idx": 18,
+        "gt_value": "201125",
+        "compare_value": "2011D25",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10052",
+    "diffs": [
+      {
+        "field_idx": 3,
+        "gt_value": "",
+        "compare_value": "D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10053",
+    "diffs": [
+      {
+        "field_idx": 24,
+        "gt_value": "3.0",
+        "compare_value": "3.71D0",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10055",
+    "diffs": [
+      {
+        "field_idx": 12,
+        "gt_value": "24.2951847",
+        "compare_value": "24.29D51847",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10056",
+    "diffs": [
+      {
+        "field_idx": 29,
+        "gt_value": "2689183.2",
+        "compare_value": "2D689183.2",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10058",
+    "diffs": [
+      {
+        "field_idx": 15,
+        "gt_value": "E",
+        "compare_value": "ED",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10059",
+    "diffs": [
+      {
+        "field_idx": 31,
+        "gt_value": "10.6",
+        "compare_value": "10.6D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10061",
+    "diffs": [
+      {
+        "field_idx": 19,
+        "gt_value": "72121",
+        "compare_value": "721D21",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10063",
+    "diffs": [
+      {
+        "field_idx": 8,
+        "gt_value": "",
+        "compare_value": "7PD",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10064",
+    "diffs": [
+      {
+        "field_idx": 28,
+        "gt_value": "284.1",
+        "compare_value": "D284.1",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10066",
+    "diffs": [
+      {
+        "field_idx": 14,
+        "gt_value": "120.5155946",
+        "compare_value": "120.D5155946",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10067",
+    "diffs": [
+      {
+        "field_idx": 30,
+        "gt_value": "247795.4",
+        "compare_value": "24779D5.4",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10069",
+    "diffs": [
+      {
+        "field_idx": 18,
+        "gt_value": "201125",
+        "compare_value": "20D1125",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10070",
+    "diffs": [
+      {
+        "field_idx": 2,
+        "gt_value": "1P",
+        "compare_value": "1DP",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10071",
+    "diffs": [
+      {
+        "field_idx": 24,
+        "gt_value": "4.5",
+        "compare_value": "42D.5",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10073",
+    "diffs": [
+      {
+        "field_idx": 12,
+        "gt_value": "24.2937241",
+        "compare_value": "24.293D7241",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10074",
+    "diffs": [
+      {
+        "field_idx": 29,
+        "gt_value": "2688994.5",
+        "compare_value": "268899TD4.5",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10076",
+    "diffs": [
+      {
+        "field_idx": 16,
+        "gt_value": "7.4",
+        "compare_value": "7.0D4",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10079",
+    "diffs": [
+      {
+        "field_idx": 23,
+        "gt_value": "4.8",
+        "compare_value": "HD4.8",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10081",
+    "diffs": [
+      {
+        "field_idx": 12,
+        "gt_value": "24.2938162",
+        "compare_value": "24D.2938162",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10082",
+    "diffs": [
+      {
+        "field_idx": 29,
+        "gt_value": "2688981.2",
+        "compare_value": "D2688981.2",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10084",
+    "diffs": [
+      {
+        "field_idx": 15,
+        "gt_value": "E",
+        "compare_value": "DE",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10085",
+    "diffs": [
+      {
+        "field_idx": 32,
+        "gt_value": "51R",
+        "compare_value": "D51R",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10087",
+    "diffs": [
+      {
+        "field_idx": 19,
+        "gt_value": "85508",
+        "compare_value": "855089D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10089",
+    "diffs": [
+      {
+        "field_idx": 9,
+        "gt_value": "",
+        "compare_value": "D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10090",
+    "diffs": [
+      {
+        "field_idx": 28,
+        "gt_value": "153.6",
+        "compare_value": "153DD.6",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10092",
+    "diffs": [
+      {
+        "field_idx": 14,
+        "gt_value": "120.5366472",
+        "compare_value": "120.536644D72",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10093",
+    "diffs": [
+      {
+        "field_idx": 31,
+        "gt_value": "9.6",
+        "compare_value": "9.D6",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10095",
+    "diffs": [
+      {
+        "field_idx": 19,
+        "gt_value": "13826",
+        "compare_value": "13UD826",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10097",
+    "diffs": [
+      {
+        "field_idx": 7,
+        "gt_value": "",
+        "compare_value": "D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10098",
+    "diffs": [
+      {
+        "field_idx": 27,
+        "gt_value": "5.1",
+        "compare_value": "5.1D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10100",
+    "diffs": [
+      {
+        "field_idx": 14,
+        "gt_value": "120.5390200",
+        "compare_value": "12D0.5390200",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10101",
+    "diffs": [
+      {
+        "field_idx": 30,
+        "gt_value": "250228.0",
+        "compare_value": "25FD0228.0",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10103",
+    "diffs": [
+      {
+        "field_idx": 18,
+        "gt_value": "211125",
+        "compare_value": "D211125",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10105",
+    "diffs": [
+      {
+        "field_idx": 2,
+        "gt_value": "3P",
+        "compare_value": "D3P",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10106",
+    "diffs": [
+      {
+        "field_idx": 24,
+        "gt_value": "2.7",
+        "compare_value": "D2.7",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10108",
+    "diffs": [
+      {
+        "field_idx": 12,
+        "gt_value": "24.3056384",
+        "compare_value": "24.30563D84",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10109",
+    "diffs": [
+      {
+        "field_idx": 29,
+        "gt_value": "2690260.2",
+        "compare_value": "2690260D.2",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10111",
+    "diffs": [
+      {
+        "field_idx": 17,
+        "gt_value": "0.9",
+        "compare_value": "ZD0.9",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10114",
+    "diffs": [
+      {
+        "field_idx": 20,
+        "gt_value": "1",
+        "compare_value": "1D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10116",
+    "diffs": [
+      {
+        "field_idx": 10,
+        "gt_value": "",
+        "compare_value": "D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10117",
+    "diffs": [
+      {
+        "field_idx": 28,
+        "gt_value": "44.9",
+        "compare_value": "D44.9",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10119",
+    "diffs": [
+      {
+        "field_idx": 14,
+        "gt_value": "120.5393078",
+        "compare_value": "120DD.5393078",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10120",
+    "diffs": [
+      {
+        "field_idx": 30,
+        "gt_value": "250216.0",
+        "compare_value": "250ED216.0",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10122",
+    "diffs": [
+      {
+        "field_idx": 18,
+        "gt_value": "211125",
+        "compare_value": "21BD1125",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10124",
+    "diffs": [
+      {
+        "field_idx": 2,
+        "gt_value": "1P",
+        "compare_value": "1DP",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10125",
+    "diffs": [
+      {
+        "field_idx": 24,
+        "gt_value": "0.8",
+        "compare_value": "XD0.8",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10127",
+    "diffs": [
+      {
+        "field_idx": 12,
+        "gt_value": "24.3083434",
+        "compare_value": "2OD4.3083434",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10128",
+    "diffs": [
+      {
+        "field_idx": 28,
+        "gt_value": "324.2",
+        "compare_value": "3KD24.2",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10130",
+    "diffs": [
+      {
+        "field_idx": 14,
+        "gt_value": "120.5244561",
+        "compare_value": "120.D5244561",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10131",
+    "diffs": [
+      {
+        "field_idx": 30,
+        "gt_value": "248752.3",
+        "compare_value": "2D48752.3",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10133",
+    "diffs": [
+      {
+        "field_idx": 17,
+        "gt_value": "0.7",
+        "compare_value": "0D.7",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10136",
+    "diffs": [
+      {
+        "field_idx": 21,
+        "gt_value": "",
+        "compare_value": "TZD",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10138",
+    "diffs": [
+      {
+        "field_idx": 9,
+        "gt_value": "",
+        "compare_value": "D",
+        "label": "iPhone1"
+      },
+      {
+        "field_idx": 12,
+        "gt_value": "24.3077328",
+        "compare_value": "",
+        "label": "iPhone1"
+      },
+      {
+        "field_idx": 13,
+        "gt_value": "N",
+        "compare_value": "24.3077328",
+        "label": "iPhone1"
+      },
+      {
+        "field_idx": 14,
+        "gt_value": "120.5240267",
+        "compare_value": "N",
+        "label": "iPhone1"
+      },
+      {
+        "field_idx": 15,
+        "gt_value": "E",
+        "compare_value": "120.5240267",
+        "label": "iPhone1"
+      },
+      {
+        "field_idx": 16,
+        "gt_value": "21.9",
+        "compare_value": "E",
+        "label": "iPhone1"
+      },
+      {
+        "field_idx": 17,
+        "gt_value": "0.7",
+        "compare_value": "21.9",
+        "label": "iPhone1"
+      },
+      {
+        "field_idx": 18,
+        "gt_value": "211125",
+        "compare_value": "0.7",
+        "label": "iPhone1"
+      },
+      {
+        "field_idx": 19,
+        "gt_value": "70217",
+        "compare_value": "211125",
+        "label": "iPhone1"
+      },
+      {
+        "field_idx": 20,
+        "gt_value": "1",
+        "compare_value": "70217",
+        "label": "iPhone1"
+      },
+      {
+        "field_idx": 21,
+        "gt_value": "",
+        "compare_value": "1",
+        "label": "iPhone1"
+      },
+      {
+        "field_idx": 23,
+        "gt_value": "1.3",
+        "compare_value": "",
+        "label": "iPhone1"
+      },
+      {
+        "field_idx": 24,
+        "gt_value": "0.7",
+        "compare_value": "1.3",
+        "label": "iPhone1"
+      },
+      {
+        "field_idx": 25,
+        "gt_value": "0.2",
+        "compare_value": "0.7",
+        "label": "iPhone1"
+      },
+      {
+        "field_idx": 26,
+        "gt_value": "",
+        "compare_value": "0.2",
+        "label": "iPhone1"
+      },
+      {
+        "field_idx": 27,
+        "gt_value": "-57.3",
+        "compare_value": "",
+        "label": "iPhone1"
+      },
+      {
+        "field_idx": 28,
+        "gt_value": "199.5",
+        "compare_value": "-57.3",
+        "label": "iPhone1"
+      },
+      {
+        "field_idx": 29,
+        "gt_value": "2690533.4",
+        "compare_value": "199.5",
+        "label": "iPhone1"
+      },
+      {
+        "field_idx": 30,
+        "gt_value": "248716.5",
+        "compare_value": "2690533.4",
+        "label": "iPhone1"
+      },
+      {
+        "field_idx": 31,
+        "gt_value": "0.2",
+        "compare_value": "248716.5",
+        "label": "iPhone1"
+      },
+      {
+        "field_idx": 32,
+        "gt_value": "51R",
+        "compare_value": "0.2",
+        "label": "iPhone1"
+      },
+      {
+        "field_idx": 33,
+        "gt_value": "",
+        "compare_value": "51R",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10139",
+    "diffs": [
+      {
+        "field_idx": 27,
+        "gt_value": "-69.5",
+        "compare_value": "-6D9.5",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10141",
+    "diffs": [
+      {
+        "field_idx": 13,
+        "gt_value": "N",
+        "compare_value": "ND",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10142",
+    "diffs": [
+      {
+        "field_idx": 29,
+        "gt_value": "2690529.1",
+        "compare_value": "2690529.D1",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10144",
+    "diffs": [
+      {
+        "field_idx": 16,
+        "gt_value": "2.3",
+        "compare_value": "2.3D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10145",
+    "diffs": [
+      {
+        "field_idx": 32,
+        "gt_value": "51R",
+        "compare_value": "51RD",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10147",
+    "diffs": [
+      {
+        "field_idx": 21,
+        "gt_value": "",
+        "compare_value": "RD",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10149",
+    "diffs": [
+      {
+        "field_idx": 8,
+        "gt_value": "",
+        "compare_value": "D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10150",
+    "diffs": [
+      {
+        "field_idx": 28,
+        "gt_value": "297.6",
+        "compare_value": "2QD97.6",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10152",
+    "diffs": [
+      {
+        "field_idx": 14,
+        "gt_value": "120.5174234",
+        "compare_value": "120.517D4234",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10153",
+    "diffs": [
+      {
+        "field_idx": 30,
+        "gt_value": "248101.8",
+        "compare_value": "248101.8D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10155",
+    "diffs": [
+      {
+        "field_idx": 18,
+        "gt_value": "211125",
+        "compare_value": "211125D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10158",
+    "diffs": [
+      {
+        "field_idx": 27,
+        "gt_value": "0.8",
+        "compare_value": "D0.8",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10160",
+    "diffs": [
+      {
+        "field_idx": 14,
+        "gt_value": "120.5193772",
+        "compare_value": "12D0.5193772",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10161",
+    "diffs": [
+      {
+        "field_idx": 30,
+        "gt_value": "248238.1",
+        "compare_value": "24823D8.1",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10163",
+    "diffs": [
+      {
+        "field_idx": 18,
+        "gt_value": "211125",
+        "compare_value": "211D125",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10165",
+    "diffs": [
+      {
+        "field_idx": 4,
+        "gt_value": "",
+        "compare_value": "D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10166",
+    "diffs": [
+      {
+        "field_idx": 25,
+        "gt_value": "4.5",
+        "compare_value": "D4.5",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10168",
+    "diffs": [
+      {
+        "field_idx": 12,
+        "gt_value": "24.2984989",
+        "compare_value": "24.29849D89",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10169",
+    "diffs": [
+      {
+        "field_idx": 29,
+        "gt_value": "2689502.6",
+        "compare_value": "268950D2.6",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10171",
+    "diffs": [
+      {
+        "field_idx": 16,
+        "gt_value": "24.2",
+        "compare_value": "24KD.2",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10172",
+    "diffs": [
+      {
+        "field_idx": 32,
+        "gt_value": "51R",
+        "compare_value": "51DR",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10174",
+    "diffs": [
+      {
+        "field_idx": 19,
+        "gt_value": "235527",
+        "compare_value": "23552SD7",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10177",
+    "diffs": [
+      {
+        "field_idx": 28,
+        "gt_value": "135.1",
+        "compare_value": "D135.1",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10179",
+    "diffs": [
+      {
+        "field_idx": 14,
+        "gt_value": "120.5150421",
+        "compare_value": "120.51D50421",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10180",
+    "diffs": [
+      {
+        "field_idx": 30,
+        "gt_value": "247764.5",
+        "compare_value": "247764.D5",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10182",
+    "diffs": [
+      {
+        "field_idx": 18,
+        "gt_value": "221125",
+        "compare_value": "22112RD5",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10185",
+    "diffs": [
+      {
+        "field_idx": 25,
+        "gt_value": "6.3",
+        "compare_value": "6D.3",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10187",
+    "diffs": [
+      {
+        "field_idx": 13,
+        "gt_value": "N",
+        "compare_value": "ND",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10188",
+    "diffs": [
+      {
+        "field_idx": 30,
+        "gt_value": "249877.7",
+        "compare_value": "2D49877.7",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10190",
+    "diffs": [
+      {
+        "field_idx": 17,
+        "gt_value": "1.0",
+        "compare_value": "1.0D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10192",
+    "diffs": [
+      {
+        "field_idx": 1,
+        "gt_value": "1",
+        "compare_value": "1D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10193",
+    "diffs": [
+      {
+        "field_idx": 24,
+        "gt_value": "3.2",
+        "compare_value": "D3.2",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10195",
+    "diffs": [
+      {
+        "field_idx": 12,
+        "gt_value": "24.3058496",
+        "compare_value": "24.3D058496",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10196",
+    "diffs": [
+      {
+        "field_idx": 29,
+        "gt_value": "2690253.1",
+        "compare_value": "26D90253.1",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10198",
+    "diffs": [
+      {
+        "field_idx": 15,
+        "gt_value": "E",
+        "compare_value": "EID",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10199",
+    "diffs": [
+      {
+        "field_idx": 32,
+        "gt_value": "51R",
+        "compare_value": "51RD",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10201",
+    "diffs": [
+      {
+        "field_idx": 20,
+        "gt_value": "1",
+        "compare_value": "1PCD",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10203",
+    "diffs": [
+      {
+        "field_idx": 7,
+        "gt_value": "",
+        "compare_value": "D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10204",
+    "diffs": [
+      {
+        "field_idx": 27,
+        "gt_value": "-11.5",
+        "compare_value": "-11D.5",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10206",
+    "diffs": [
+      {
+        "field_idx": 14,
+        "gt_value": "120.5346098",
+        "compare_value": "D120.5346098",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10207",
+    "diffs": [
+      {
+        "field_idx": 30,
+        "gt_value": "249665.0",
+        "compare_value": "D249665.0",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10209",
+    "diffs": [
+      {
+        "field_idx": 16,
+        "gt_value": "39.0",
+        "compare_value": "39.D0",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10210",
+    "diffs": [
+      {
+        "field_idx": 32,
+        "gt_value": "51R",
+        "compare_value": "51DR",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10212",
+    "diffs": [
+      {
+        "field_idx": 20,
+        "gt_value": "1",
+        "compare_value": "1D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10215",
+    "diffs": [
+      {
+        "field_idx": 27,
+        "gt_value": "3.0",
+        "compare_value": "3ND.0",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10217",
+    "diffs": [
+      {
+        "field_idx": 14,
+        "gt_value": "120.5401042",
+        "compare_value": "120D.5401042",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10218",
+    "diffs": [
+      {
+        "field_idx": 30,
+        "gt_value": "250224.1",
+        "compare_value": "D250224.1",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10220",
+    "diffs": [
+      {
+        "field_idx": 17,
+        "gt_value": "1.1",
+        "compare_value": "D1.1",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10221",
+    "diffs": [
+      {
+        "field_idx": 33,
+        "gt_value": "",
+        "compare_value": "D5D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10223",
+    "diffs": [
+      {
+        "field_idx": 20,
+        "gt_value": "1",
+        "compare_value": "8D1",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10226",
+    "diffs": [
+      {
+        "field_idx": 27,
+        "gt_value": "5.9",
+        "compare_value": "0D5.9",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10228",
+    "diffs": [
+      {
+        "field_idx": 13,
+        "gt_value": "N",
+        "compare_value": "ND",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10229",
+    "diffs": [
+      {
+        "field_idx": 29,
+        "gt_value": "2689820.9",
+        "compare_value": "2689820.FD9",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10231",
+    "diffs": [
+      {
+        "field_idx": 16,
+        "gt_value": "35.6",
+        "compare_value": "35D.6",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10232",
+    "diffs": [
+      {
+        "field_idx": 32,
+        "gt_value": "51R",
+        "compare_value": "RD51R",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10234",
+    "diffs": [
+      {
+        "field_idx": 19,
+        "gt_value": "65525",
+        "compare_value": "65D525",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10237",
+    "diffs": [
+      {
+        "field_idx": 27,
+        "gt_value": "1.4",
+        "compare_value": "ID1.4",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10239",
+    "diffs": [
+      {
+        "field_idx": 14,
+        "gt_value": "120.5330542",
+        "compare_value": "12D0.5330542",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10240",
+    "diffs": [
+      {
+        "field_idx": 30,
+        "gt_value": "249621.0",
+        "compare_value": "24D9621.0",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10242",
+    "diffs": [
+      {
+        "field_idx": 17,
+        "gt_value": "0.6",
+        "compare_value": "0.66D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10244",
+    "diffs": [
+      {
+        "field_idx": 1,
+        "gt_value": "1",
+        "compare_value": "1D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10245",
+    "diffs": [
+      {
+        "field_idx": 23,
+        "gt_value": "3.2",
+        "compare_value": "3.2D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10247",
+    "diffs": [
+      {
+        "field_idx": 12,
+        "gt_value": "24.3101715",
+        "compare_value": "24D.3101715",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10248",
+    "diffs": [
+      {
+        "field_idx": 29,
+        "gt_value": "2690817.0",
+        "compare_value": "BD2690817.0",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10250",
+    "diffs": [
+      {
+        "field_idx": 14,
+        "gt_value": "120.5322166",
+        "compare_value": "120.532216D6",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10251",
+    "diffs": [
+      {
+        "field_idx": 31,
+        "gt_value": "5.5",
+        "compare_value": "5.7D5",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10253",
+    "diffs": [
+      {
+        "field_idx": 19,
+        "gt_value": "85832",
+        "compare_value": "858D32",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10256",
+    "diffs": [
+      {
+        "field_idx": 27,
+        "gt_value": "4.3",
+        "compare_value": "D4.3",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10258",
+    "diffs": [
+      {
+        "field_idx": 14,
+        "gt_value": "120.5313100",
+        "compare_value": "12HD0.5313100",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10259",
+    "diffs": [
+      {
+        "field_idx": 30,
+        "gt_value": "249460.9",
+        "compare_value": "2494D60.9",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10261",
+    "diffs": [
+      {
+        "field_idx": 18,
+        "gt_value": "221125",
+        "compare_value": "226D1125",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10263",
+    "diffs": [
+      {
+        "field_idx": 2,
+        "gt_value": "1P",
+        "compare_value": "1DP",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10264",
+    "diffs": [
+      {
+        "field_idx": 24,
+        "gt_value": "2.3",
+        "compare_value": "D2.3",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10266",
+    "diffs": [
+      {
+        "field_idx": 14,
+        "gt_value": "",
+        "compare_value": "D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10268",
+    "diffs": [
+      {
+        "field_idx": 12,
+        "gt_value": "24.3074110",
+        "compare_value": "24D.3074110",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10269",
+    "diffs": [
+      {
+        "field_idx": 29,
+        "gt_value": "2690523.0",
+        "compare_value": "2D690523.0",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10271",
+    "diffs": [
+      {
+        "field_idx": 15,
+        "gt_value": "E",
+        "compare_value": "DE",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10272",
+    "diffs": [
+      {
+        "field_idx": 31,
+        "gt_value": "0.4",
+        "compare_value": "0.4D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10274",
+    "diffs": [
+      {
+        "field_idx": 19,
+        "gt_value": "2305",
+        "compare_value": "230D5",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10277",
+    "diffs": [
+      {
+        "field_idx": 27,
+        "gt_value": "-50.4",
+        "compare_value": "-D50.4",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10279",
+    "diffs": [
+      {
+        "field_idx": 13,
+        "gt_value": "N",
+        "compare_value": "NVD",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10280",
+    "diffs": [
+      {
+        "field_idx": 29,
+        "gt_value": "2690451.4",
+        "compare_value": "2690451.4D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10282",
+    "diffs": [
+      {
+        "field_idx": 17,
+        "gt_value": "0.7",
+        "compare_value": "0D.7",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10284",
+    "diffs": [
+      {
+        "field_idx": 1,
+        "gt_value": "1",
+        "compare_value": "1D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10285",
+    "diffs": [
+      {
+        "field_idx": 23,
+        "gt_value": "1.4",
+        "compare_value": "1.4D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10287",
+    "diffs": [
+      {
+        "field_idx": 12,
+        "gt_value": "24.3066798",
+        "compare_value": "24D.3066798",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10288",
+    "diffs": [
+      {
+        "field_idx": 28,
+        "gt_value": "85.0",
+        "compare_value": "85.XD0",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10290",
+    "diffs": [
+      {
+        "field_idx": 14,
+        "gt_value": "120.5232914",
+        "compare_value": "120.523D2914",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10291",
+    "diffs": [
+      {
+        "field_idx": 30,
+        "gt_value": "248635.8",
+        "compare_value": "248635#D.8",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10293",
+    "diffs": [
+      {
+        "field_idx": 18,
+        "gt_value": "231125",
+        "compare_value": "231D125",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10295",
+    "diffs": [
+      {
+        "field_idx": 2,
+        "gt_value": "1P",
+        "compare_value": "D1P",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10296",
+    "diffs": [
+      {
+        "field_idx": 23,
+        "gt_value": "1.1",
+        "compare_value": "1.D1",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10298",
+    "diffs": [
+      {
+        "field_idx": 12,
+        "gt_value": "24.3056095",
+        "compare_value": "2D4.3056095",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10299",
+    "diffs": [
+      {
+        "field_idx": 28,
+        "gt_value": "229.0",
+        "compare_value": "2D29.0",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10301",
+    "diffs": [
+      {
+        "field_idx": 14,
+        "gt_value": "120.5217585",
+        "compare_value": "120.D5217585",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10302",
+    "diffs": [
+      {
+        "field_idx": 30,
+        "gt_value": "248565.4",
+        "compare_value": "2485D65.4",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10304",
+    "diffs": [
+      {
+        "field_idx": 18,
+        "gt_value": "231125",
+        "compare_value": "2D31125",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10306",
+    "diffs": [
+      {
+        "field_idx": 2,
+        "gt_value": "1P",
+        "compare_value": "D1P",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10307",
+    "diffs": [
+      {
+        "field_idx": 23,
+        "gt_value": "1.1",
+        "compare_value": "1.1D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10309",
+    "diffs": [
+      {
+        "field_idx": 12,
+        "gt_value": "24.3044012",
+        "compare_value": "4D24.3044012",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10310",
+    "diffs": [
+      {
+        "field_idx": 28,
+        "gt_value": "222.4",
+        "compare_value": "22D2.4",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10312",
+    "diffs": [
+      {
+        "field_idx": 14,
+        "gt_value": "120.5212851",
+        "compare_value": "120.5D212851",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10313",
+    "diffs": [
+      {
+        "field_idx": 30,
+        "gt_value": "248462.8",
+        "compare_value": "248D462.8",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10315",
+    "diffs": [
+      {
+        "field_idx": 18,
+        "gt_value": "231125",
+        "compare_value": "2D31125",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10317",
+    "diffs": [
+      {
+        "field_idx": 1,
+        "gt_value": "1",
+        "compare_value": "D1",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10318",
+    "diffs": [
+      {
+        "field_idx": 23,
+        "gt_value": "1.2",
+        "compare_value": "1.D2",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10320",
+    "diffs": [
+      {
+        "field_idx": 12,
+        "gt_value": "24.3041806",
+        "compare_value": "24D.3041806",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10321",
+    "diffs": [
+      {
+        "field_idx": 28,
+        "gt_value": "141.9",
+        "compare_value": "141.D9",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10323",
+    "diffs": [
+      {
+        "field_idx": 14,
+        "gt_value": "120.5208093",
+        "compare_value": "120.5208D093",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10324",
+    "diffs": [
+      {
+        "field_idx": 30,
+        "gt_value": "248401.6",
+        "compare_value": "248401D.6",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10326",
+    "diffs": [
+      {
+        "field_idx": 18,
+        "gt_value": "231125",
+        "compare_value": "23PD1125",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10328",
+    "diffs": [
+      {
+        "field_idx": 2,
+        "gt_value": "1P",
+        "compare_value": "QD1P",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10329",
+    "diffs": [
+      {
+        "field_idx": 24,
+        "gt_value": "0.8",
+        "compare_value": "D0.8",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10331",
+    "diffs": [
+      {
+        "field_idx": 12,
+        "gt_value": "24.3033190",
+        "compare_value": "24D.3033190",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10332",
+    "diffs": [
+      {
+        "field_idx": 28,
+        "gt_value": "250.8",
+        "compare_value": "250.HD8",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10334",
+    "diffs": [
+      {
+        "field_idx": 14,
+        "gt_value": "120.5220611",
+        "compare_value": "120.5220D611",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10335",
+    "diffs": [
+      {
+        "field_idx": 30,
+        "gt_value": "248477.8",
+        "compare_value": "248477.8HD",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10337",
+    "diffs": [
+      {
+        "field_idx": 18,
+        "gt_value": "231125",
+        "compare_value": "231125D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10339",
+    "diffs": [
+      {
+        "field_idx": 3,
+        "gt_value": "",
+        "compare_value": "D",
+        "label": "iPhone1"
+      }
+    ]
+  },
+  {
+    "id": "10340",
+    "diffs": [
+      {
+        "field_idx": 24,
+        "gt_value": "0.9",
+        "compare_value": "0D6.9",
+        "label": "iPhone1"
+      }
+    ]
+  }
+]

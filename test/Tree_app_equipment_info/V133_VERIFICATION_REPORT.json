@@ -1,0 +1,74 @@
+{
+  "accuracy": 96.72619047619048,
+  "total": 336,
+  "matches": 325,
+  "missing_ids": [],
+  "field_differences": [
+    {
+      "id": "10053",
+      "field": 24,
+      "ours": "3.710",
+      "official": "3.0"
+    },
+    {
+      "id": "10063",
+      "field": 8,
+      "ours": "7",
+      "official": ""
+    },
+    {
+      "id": "10071",
+      "field": 24,
+      "ours": "42.5",
+      "official": "4.5"
+    },
+    {
+      "id": "10076",
+      "field": 16,
+      "ours": "7.04",
+      "official": "7.4"
+    },
+    {
+      "id": "10087",
+      "field": 19,
+      "ours": "855089",
+      "official": "85508"
+    },
+    {
+      "id": "10092",
+      "field": 14,
+      "ours": "120.53664472",
+      "official": "120.5366472"
+    },
+    {
+      "id": "10221",
+      "field": 33,
+      "ours": "5",
+      "official": ""
+    },
+    {
+      "id": "10223",
+      "field": 20,
+      "ours": "81",
+      "official": "1"
+    },
+    {
+      "id": "10232",
+      "field": 32,
+      "ours": "R51R",
+      "official": "51R"
+    },
+    {
+      "id": "10242",
+      "field": 17,
+      "ours": "0.66",
+      "official": "0.6"
+    },
+    {
+      "id": "10291",
+      "field": 30,
+      "ours": "248635#.8",
+      "official": "248635.8"
+    }
+  ]
+}
