@@ -163,7 +163,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   List<ChatSession> _sessions = [];
   ChatSession? _currentSession;
   bool _isLoading = false;
-  bool _isSidebarOpen = true;
+  bool _isSidebarOpen = false; // 預設收合，避免遮擋內容
   bool _isDarkMode = false;
 
   // Settings

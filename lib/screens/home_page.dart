@@ -132,7 +132,7 @@ class DashboardPage extends StatelessWidget {
         ),
         _buildDashboardItem(
           context,
-          '數據統計',
+          '統計儀表板',
           Icons.bar_chart,
           Colors.blue,
           () => Navigator.pushNamed(context, '/statistics'),
