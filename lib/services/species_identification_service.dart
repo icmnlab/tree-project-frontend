@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'dart:convert';
 import '../config/app_config.dart';
 
@@ -41,10 +42,12 @@ class SpeciesIdentificationService {
         Uri.parse('$baseUrl/species/identify'),
       );
 
+      // 明確設定 content-type 為 image/jpeg
       request.files.add(http.MultipartFile.fromBytes(
         'image',
         imageBytes,
         filename: 'plant_image.jpg',
+        contentType: MediaType('image', 'jpeg'),
       ));
 
       request.fields['organ'] = organ;
