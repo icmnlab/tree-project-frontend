@@ -6,18 +6,20 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import '../services/ai_service.dart';
 
-/// 現代化 AI 聊天頁面
+/// 現代化 AI 聊天頁面 v2.0
 /// 設計參考: ChatGPT, Claude, Gemini
 /// 
-/// 功能:
-/// - 純對話介面（移除樹種比較、碳足跡計算等 Tab）
-/// - 對話歷史列表（左側可收合）
-/// - 打字動畫效果
-/// - Markdown 渲染
-/// - 深色/淺色主題
+/// 特色:
+/// - 極簡現代化介面設計
+/// - 漸層背景與毛玻璃效果
+/// - 流暢的動畫過渡
+/// - 優雅的打字動畫
+/// - 精緻的對話氣泡設計
+/// - 智慧建議卡片
 
 // ============================================
 // 資料模型
@@ -460,174 +462,158 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
     );
   }
 
-  // 顏色配置
+  // 顏色配置 - 極簡現代風格
   ColorScheme get _lightColorScheme => ColorScheme.fromSeed(
-        seedColor: Colors.green,
+        seedColor: const Color(0xFF10A37F), // 類似 ChatGPT 綠色
         brightness: Brightness.light,
       ).copyWith(
-        surface: const Color(0xFFF7F7F8),
+        surface: const Color(0xFFFAFAFA),
         surfaceContainerHighest: Colors.white,
+        primary: const Color(0xFF10A37F),
+        secondary: const Color(0xFF6B7280),
       );
 
   ColorScheme get _darkColorScheme => ColorScheme.fromSeed(
-        seedColor: Colors.green,
+        seedColor: const Color(0xFF10A37F),
         brightness: Brightness.dark,
       ).copyWith(
-        surface: const Color(0xFF171717),
-        surfaceContainerHighest: const Color(0xFF212121),
+        surface: const Color(0xFF0D0D0D),
+        surfaceContainerHighest: const Color(0xFF1A1A1A),
+        primary: const Color(0xFF10A37F),
+        secondary: const Color(0xFF9CA3AF),
       );
 
   // ============================================
-  // 側邊欄
+  // 側邊欄 - 現代化設計
   // ============================================
 
   Widget _buildSidebar(ColorScheme colorScheme) {
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      width: 260,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOutCubic,
+      width: 280,
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
+        color: _isDarkMode ? const Color(0xFF171717) : Colors.white,
         border: Border(
           right: BorderSide(
-            color: colorScheme.outlineVariant.withOpacity(0.3),
+            color: colorScheme.outline.withOpacity(0.1),
           ),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(2, 0),
+          ),
+        ],
       ),
       child: Column(
         children: [
+          // 頂部區域
+          Container(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        colorScheme.primary,
+                        colorScheme.primary.withOpacity(0.8),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(
+                    Icons.eco_rounded,
+                    size: 20,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  '對話記錄',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
           // 新對話按鈕
           Padding(
-            padding: const EdgeInsets.all(12),
-            child: SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: _createNewSession,
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('新對話'),
-                style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  side: BorderSide(color: colorScheme.outline.withOpacity(0.3)),
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: _createNewSession,
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: colorScheme.outline.withOpacity(0.2),
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.add_rounded,
+                        size: 20,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '新對話',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
-
-          const Divider(height: 1),
+          
+          const SizedBox(height: 16),
 
           // 對話歷史列表
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               itemCount: _sessions.length,
               itemBuilder: (context, index) {
                 final session = _sessions[index];
                 final isSelected = session == _currentSession;
-
                 return _buildSessionTile(session, isSelected, colorScheme);
               },
             ),
           ),
 
-          const Divider(height: 1),
-
           // 底部設定區域
-          Padding(
+          Container(
             padding: const EdgeInsets.all(12),
-            child: Row(
+            decoration: BoxDecoration(
+              border: Border(
+                top: BorderSide(
+                  color: colorScheme.outline.withOpacity(0.1),
+                ),
+              ),
+            ),
+            child: Column(
               children: [
-                // 模型選擇（分類顯示）
-                Expanded(
-                  child: PopupMenuButton<String>(
-                    initialValue: _selectedModel,
-                    onSelected: (value) {
-                      setState(() => _selectedModel = value);
-                    },
-                    itemBuilder: (context) {
-                      final items = <PopupMenuEntry<String>>[];
-                      _modelCategories.forEach((category, data) {
-                        // 分類標題
-                        items.add(PopupMenuItem<String>(
-                          enabled: false,
-                          height: 32,
-                          child: Text(
-                            category,
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: colorScheme.primary,
-                            ),
-                          ),
-                        ));
-                        // 該分類的模型
-                        final models = data['models'] as Map<String, dynamic>;
-                        models.forEach((key, value) {
-                          items.add(PopupMenuItem<String>(
-                            value: key,
-                            height: 36,
-                            child: Padding(
-                              padding: const EdgeInsets.only(left: 12),
-                              child: Row(
-                                children: [
-                                  if (key == _selectedModel)
-                                    Icon(Icons.check, size: 14, color: colorScheme.primary)
-                                  else
-                                    const SizedBox(width: 14),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      value.toString(),
-                                      style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: key == _selectedModel ? FontWeight.bold : FontWeight.normal,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ));
-                        });
-                        items.add(const PopupMenuDivider());
-                      });
-                      if (items.isNotEmpty) items.removeLast(); // 移除最後的分隔線
-                      return items;
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(8),
-                        color: colorScheme.surface,
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.auto_awesome, size: 16, color: colorScheme.primary),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Text(
-                              _availableModels[_selectedModel]?.split(' ').first ?? 'AI',
-                              style: TextStyle(fontSize: 12, color: colorScheme.onSurface),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Icon(Icons.expand_more, size: 16, color: colorScheme.onSurfaceVariant),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // 主題切換
-                IconButton(
-                  onPressed: () {
-                    setState(() => _isDarkMode = !_isDarkMode);
-                  },
-                  icon: Icon(
-                    _isDarkMode ? Icons.light_mode : Icons.dark_mode,
-                    size: 20,
-                  ),
-                  tooltip: _isDarkMode ? '切換淺色模式' : '切換深色模式',
-                ),
+                // 模型選擇
+                _buildModelSelector(colorScheme),
               ],
             ),
           ),
@@ -636,27 +622,137 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
     );
   }
 
+  Widget _buildModelSelector(ColorScheme colorScheme) {
+    return PopupMenuButton<String>(
+      initialValue: _selectedModel,
+      onSelected: (value) => setState(() => _selectedModel = value),
+      offset: const Offset(0, -200),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: colorScheme.outline.withOpacity(0.1),
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.smart_toy_rounded,
+              size: 18,
+              color: colorScheme.primary,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                _availableModels[_selectedModel] ?? _selectedModel.split('/').last,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: colorScheme.onSurface,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Icon(
+              Icons.unfold_more_rounded,
+              size: 18,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ],
+        ),
+      ),
+      itemBuilder: (context) {
+        final items = <PopupMenuEntry<String>>[];
+        _modelCategories.forEach((category, data) {
+          // 分類標題
+          items.add(
+            PopupMenuItem<String>(
+              enabled: false,
+              height: 32,
+              child: Text(
+                category,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.primary,
+                ),
+              ),
+            ),
+          );
+          // 模型選項
+          final models = Map<String, String>.from(data['models'] as Map);
+          models.forEach((key, value) {
+            items.add(
+              PopupMenuItem<String>(
+                value: key,
+                height: 40,
+                child: Row(
+                  children: [
+                    if (_selectedModel == key)
+                      Icon(
+                        Icons.check_rounded,
+                        size: 16,
+                        color: colorScheme.primary,
+                      )
+                    else
+                      const SizedBox(width: 16),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        value,
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          });
+          items.add(const PopupMenuDivider(height: 8));
+        });
+        return items;
+      },
+    );
+  }
+
   Widget _buildSessionTile(ChatSession session, bool isSelected, ColorScheme colorScheme) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 4),
       child: Material(
         color: isSelected 
-            ? colorScheme.primary.withOpacity(0.1) 
+            ? colorScheme.primary.withOpacity(0.12) 
             : Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(10),
         child: InkWell(
           onTap: () => _selectSession(session),
-          borderRadius: BorderRadius.circular(8),
+          onLongPress: () => _showDeleteConfirmation(session),
+          borderRadius: BorderRadius.circular(10),
+          hoverColor: colorScheme.primary.withOpacity(0.05),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             child: Row(
               children: [
-                Icon(
-                  Icons.chat_bubble_outline,
-                  size: 16,
-                  color: isSelected 
-                      ? colorScheme.primary 
-                      : colorScheme.onSurfaceVariant,
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: isSelected 
+                        ? colorScheme.primary.withOpacity(0.15)
+                        : colorScheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(
+                    Icons.chat_bubble_outline_rounded,
+                    size: 16,
+                    color: isSelected 
+                        ? colorScheme.primary 
+                        : colorScheme.onSurfaceVariant,
+                  ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -666,35 +762,40 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
                       Text(
                         session.title,
                         style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                          fontSize: 14,
+                          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
                           color: colorScheme.onSurface,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       Text(
                         _formatSessionDate(session.updatedAt),
                         style: TextStyle(
-                          fontSize: 11,
-                          color: colorScheme.onSurfaceVariant,
+                          fontSize: 12,
+                          color: colorScheme.onSurfaceVariant.withOpacity(0.8),
                         ),
                       ),
                     ],
                   ),
                 ),
-                // 刪除按鈕
+                // 刪除按鈕（僅選中時顯示）
                 if (isSelected)
-                  IconButton(
-                    onPressed: () => _showDeleteConfirmation(session),
-                    icon: Icon(
-                      Icons.delete_outline,
-                      size: 16,
-                      color: colorScheme.error,
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () => _showDeleteConfirmation(session),
+                      borderRadius: BorderRadius.circular(6),
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        child: Icon(
+                          Icons.delete_outline_rounded,
+                          size: 16,
+                          color: colorScheme.error.withOpacity(0.7),
+                        ),
+                      ),
                     ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
                   ),
               ],
             ),
@@ -719,19 +820,43 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('刪除對話'),
-        content: Text('確定要刪除「${session.title}」嗎？'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.delete_outline_rounded, color: Colors.red.shade400, size: 20),
+            ),
+            const SizedBox(width: 12),
+            const Text('刪除對話', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+          ],
+        ),
+        content: Text(
+          '確定要刪除「${session.title}」嗎？\n此操作無法復原。',
+          style: const TextStyle(fontSize: 14, height: 1.5),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
+            child: Text(
+              '取消',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
           ),
-          TextButton(
+          ElevatedButton(
             onPressed: () {
               Navigator.pop(context);
               _deleteSession(session);
             },
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade400,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
             child: const Text('刪除'),
           ),
         ],
@@ -740,53 +865,151 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   }
 
   // ============================================
-  // 頂部工具列
+  // 頂部工具列 - 極簡設計
   // ============================================
 
   Widget _buildTopBar(ColorScheme colorScheme) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
+        color: colorScheme.surface,
         border: Border(
           bottom: BorderSide(
-            color: colorScheme.outlineVariant.withOpacity(0.3),
+            color: colorScheme.outline.withOpacity(0.1),
           ),
         ),
       ),
       child: Row(
         children: [
           // 側邊欄切換
-          IconButton(
-            onPressed: () {
-              setState(() => _isSidebarOpen = !_isSidebarOpen);
-            },
-            icon: Icon(
-              _isSidebarOpen ? Icons.menu_open : Icons.menu,
-              color: colorScheme.onSurfaceVariant,
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => setState(() => _isSidebarOpen = !_isSidebarOpen),
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: _isSidebarOpen 
+                      ? colorScheme.primaryContainer.withOpacity(0.3)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  _isSidebarOpen ? Icons.menu_open_rounded : Icons.menu_rounded,
+                  color: colorScheme.onSurfaceVariant,
+                  size: 22,
+                ),
+              ),
             ),
-            tooltip: _isSidebarOpen ? '收合側邊欄' : '展開側邊欄',
           ),
           
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           
-          // 標題
-          Text(
-            '🌳 永續碳匯 AI 助手',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: colorScheme.onSurface,
+          // 新對話按鈕
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: _createNewSession,
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                child: Icon(
+                  Icons.edit_square,
+                  color: colorScheme.onSurfaceVariant,
+                  size: 20,
+                ),
+              ),
             ),
           ),
           
           const Spacer(),
+          
+          // 標題
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.eco_rounded,
+                  size: 18,
+                  color: colorScheme.primary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '永續碳匯 AI',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
+          
+          const Spacer(),
+
+          // 深色模式切換
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => setState(() => _isDarkMode = !_isDarkMode),
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                child: Icon(
+                  _isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                  color: colorScheme.onSurfaceVariant,
+                  size: 20,
+                ),
+              ),
+            ),
+          ),
+          
+          const SizedBox(width: 8),
 
           // 返回按鈕
-          TextButton.icon(
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.arrow_back, size: 18),
-            label: const Text('返回'),
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => Navigator.of(context).pop(),
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: colorScheme.surfaceContainerHighest,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: colorScheme.outline.withOpacity(0.15),
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.arrow_back_rounded,
+                      size: 16,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      '返回',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ),
         ],
       ),
@@ -814,99 +1037,228 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   }
 
   Widget _buildEmptyState(ColorScheme colorScheme) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.eco,
-            size: 64,
-            color: colorScheme.primary.withOpacity(0.5),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            '永續碳匯 AI 助手',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '我可以幫助你查詢樹木資料、分析碳匯數據',
-            style: TextStyle(
-              fontSize: 14,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 32),
-          // 建議問題 - 分類展示
-          _buildSuggestionGrid(colorScheme),
-        ],
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: _isDarkMode
+              ? [const Color(0xFF0D0D0D), const Color(0xFF1A1A1A)]
+              : [const Color(0xFFFAFAFA), Colors.white],
+        ),
       ),
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Logo 動畫區域
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      colorScheme.primary,
+                      colorScheme.primary.withOpacity(0.7),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: colorScheme.primary.withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.eco_rounded,
+                  size: 42,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(height: 32),
+              
+              // 標題
+              Text(
+                '永續碳匯 AI',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.w700,
+                  color: colorScheme.onSurface,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 12),
+              
+              // 副標題
+              Text(
+                '智慧樹木管理與碳匯分析助手',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+              const SizedBox(height: 48),
+              
+              // 功能說明卡片
+              _buildFeatureCards(colorScheme),
+              const SizedBox(height: 40),
+              
+              // 建議問題網格
+              _buildSuggestionGrid(colorScheme),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFeatureCards(ColorScheme colorScheme) {
+    final features = [
+      {'icon': Icons.search_rounded, 'title': '智慧查詢', 'desc': '自然語言搜尋樹木資料'},
+      {'icon': Icons.analytics_rounded, 'title': '數據分析', 'desc': '碳儲存量統計報表'},
+      {'icon': Icons.lightbulb_rounded, 'title': '專業建議', 'desc': '樹木養護管理諮詢'},
+    ];
+
+    return Wrap(
+      spacing: 16,
+      runSpacing: 16,
+      alignment: WrapAlignment.center,
+      children: features.map((f) => Container(
+        width: 160,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: colorScheme.surfaceContainerHighest,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: colorScheme.outline.withOpacity(0.1),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                f['icon'] as IconData,
+                size: 24,
+                color: colorScheme.primary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              f['title'] as String,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              f['desc'] as String,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 12,
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ],
+        ),
+      )).toList(),
     );
   }
 
   Widget _buildSuggestionGrid(ColorScheme colorScheme) {
     final suggestions = [
-      {
-        'icon': Icons.pin_drop,
-        'title': '區位查詢',
-        'questions': [
-          '高雄港有多少棵樹？',
-          '花蓮港有哪些樹種？',
-          '統計各區位的樹木數量',
-        ],
-      },
-      {
-        'icon': Icons.eco,
-        'title': '樹種分析',
-        'questions': [
-          '榕樹的平均胸徑是多少？',
-          '哪種樹碳儲存量最高？',
-          '列出所有樟樹的資料',
-        ],
-      },
-      {
-        'icon': Icons.analytics,
-        'title': '數據統計',
-        'questions': [
-          '胸徑超過50公分的大樹有哪些？',
-          '碳儲存量前10名的樹木',
-          '所有樹木的總碳儲存量',
-        ],
-      },
-      {
-        'icon': Icons.search,
-        'title': '精確搜尋',
-        'questions': [
-          '查詢編號 7 的樹木',
-          '找出需要關注的樹木',
-          '2022年調查的樹有幾棵？',
-        ],
-      },
+      '高雄港有多少棵樹？',
+      '哪種樹碳儲存量最高？',
+      '胸徑超過50公分的大樹',
+      '統計各區位的樹木數量',
     ];
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 32),
-      child: Wrap(
-        spacing: 16,
-        runSpacing: 16,
-        alignment: WrapAlignment.center,
-        children: suggestions.map((category) {
-          return _buildSuggestionCard(
-            category['icon'] as IconData,
-            category['title'] as String,
-            category['questions'] as List<String>,
-            colorScheme,
-          );
-        }).toList(),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 12),
+          child: Text(
+            '試試這些問題',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          alignment: WrapAlignment.center,
+          children: suggestions.map((q) => _buildSuggestionChip(q, colorScheme)).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSuggestionChip(String question, ColorScheme colorScheme) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          _messageController.text = question;
+          _sendMessage();
+        },
+        borderRadius: BorderRadius.circular(24),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: colorScheme.outline.withOpacity(0.2),
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.arrow_outward_rounded,
+                size: 16,
+                color: colorScheme.primary,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                question,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: colorScheme.onSurface,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
-  Widget _buildSuggestionCard(
+  // 保留舊的建議卡片方法用於可能的未來使用
+  Widget _buildSuggestionCardOld(
     IconData icon,
     String title,
     List<String> questions,
@@ -972,87 +1324,105 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   Widget _buildMessageBubble(ChatMessage message, ColorScheme colorScheme) {
     final isUser = message.isUser;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: EdgeInsets.symmetric(
+        horizontal: MediaQuery.of(context).size.width > 800 
+            ? MediaQuery.of(context).size.width * 0.1 
+            : 0,
+      ),
       child: Row(
-        mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // AI 頭像
-          if (!isUser) ...[
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: colorScheme.primary,
-              child: const Icon(Icons.eco, size: 18, color: Colors.white),
-            ),
-            const SizedBox(width: 12),
-          ],
-
-          // 訊息內容
-          Flexible(
-            child: Container(
-              constraints: BoxConstraints(
-                maxWidth: MediaQuery.of(context).size.width * 0.7,
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              decoration: BoxDecoration(
-                color: isUser
-                    ? colorScheme.primary
-                    : colorScheme.surfaceContainerHighest,
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(18),
-                  topRight: const Radius.circular(18),
-                  bottomLeft: Radius.circular(isUser ? 18 : 4),
-                  bottomRight: Radius.circular(isUser ? 4 : 18),
+          // 頭像
+          Container(
+            width: 36,
+            height: 36,
+            decoration: BoxDecoration(
+              gradient: isUser
+                  ? LinearGradient(
+                      colors: [Colors.purple.shade400, Colors.purple.shade600],
+                    )
+                  : LinearGradient(
+                      colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.8)],
+                    ),
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [
+                BoxShadow(
+                  color: (isUser ? Colors.purple : colorScheme.primary).withOpacity(0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 5,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: message.isLoading
-                  ? _buildTypingIndicator(colorScheme)
-                  : _buildMessageContent(message, isUser, colorScheme),
+              ],
+            ),
+            child: Icon(
+              isUser ? Icons.person_rounded : Icons.eco_rounded,
+              size: 20,
+              color: Colors.white,
             ),
           ),
+          const SizedBox(width: 16),
 
-          // 用戶頭像
-          if (isUser) ...[
-            const SizedBox(width: 12),
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: colorScheme.tertiary,
-              child: const Icon(Icons.person, size: 18, color: Colors.white),
+          // 訊息內容
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 發送者名稱
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    isUser ? '你' : '永續碳匯 AI',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                
+                // 訊息內容
+                if (message.isLoading)
+                  _buildTypingIndicator(colorScheme)
+                else
+                  _buildMessageContent(message, isUser, colorScheme),
+              ],
             ),
-          ],
+          ),
         ],
       ),
     );
   }
 
   Widget _buildTypingIndicator(ColorScheme colorScheme) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: List.generate(3, (index) {
-        return AnimatedBuilder(
-          animation: _typingAnimationController,
-          builder: (context, child) {
-            final value = (_typingAnimationController.value + index * 0.2) % 1.0;
-            return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 2),
-              width: 8,
-              height: 8,
-              decoration: BoxDecoration(
-                color: colorScheme.primary.withOpacity(0.3 + value * 0.7),
-                shape: BoxShape.circle,
-              ),
-            );
-          },
-        );
-      }),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: List.generate(3, (index) {
+          return AnimatedBuilder(
+            animation: _typingAnimationController,
+            builder: (context, child) {
+              final phase = (index / 3) * 2 * math.pi;
+              final value = (math.sin(_typingAnimationController.value * 2 * math.pi + phase) + 1) / 2;
+              return Container(
+                margin: EdgeInsets.only(right: index < 2 ? 4 : 0),
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: colorScheme.primary.withOpacity(0.3 + value * 0.7),
+                  shape: BoxShape.circle,
+                ),
+              );
+            },
+          );
+        }),
+      ),
     );
   }
 
@@ -1066,23 +1436,62 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
           selectable: true,
           styleSheet: MarkdownStyleSheet(
             p: TextStyle(
-              color: isUser ? Colors.white : colorScheme.onSurface,
-              fontSize: 14,
-              height: 1.5,
+              color: colorScheme.onSurface,
+              fontSize: 15,
+              height: 1.7,
+              letterSpacing: 0.1,
+            ),
+            h1: TextStyle(
+              color: colorScheme.onSurface,
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
+              height: 1.4,
+            ),
+            h2: TextStyle(
+              color: colorScheme.onSurface,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              height: 1.4,
+            ),
+            h3: TextStyle(
+              color: colorScheme.onSurface,
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              height: 1.4,
             ),
             code: TextStyle(
-              backgroundColor: isUser
-                  ? Colors.white.withOpacity(0.2)
-                  : colorScheme.surface,
-              color: isUser ? Colors.white : colorScheme.primary,
+              backgroundColor: colorScheme.surfaceContainerHighest,
+              color: colorScheme.primary,
               fontSize: 13,
+              fontFamily: 'monospace',
             ),
             codeblockDecoration: BoxDecoration(
-              color: isUser
-                  ? Colors.white.withOpacity(0.1)
-                  : colorScheme.surface,
+              color: _isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFF5F5F5),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: colorScheme.outline.withOpacity(0.1),
+              ),
+            ),
+            codeblockPadding: const EdgeInsets.all(16),
+            blockquoteDecoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(
+                  color: colorScheme.primary,
+                  width: 4,
+                ),
+              ),
+            ),
+            blockquotePadding: const EdgeInsets.only(left: 16, top: 8, bottom: 8),
+            listBullet: TextStyle(color: colorScheme.onSurface),
+            tableHead: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurface,
+            ),
+            tableBorder: TableBorder.all(
+              color: colorScheme.outline.withOpacity(0.2),
               borderRadius: BorderRadius.circular(8),
             ),
+            tableCellsPadding: const EdgeInsets.all(12),
           ),
           onTapLink: (text, href, title) {
             if (href != null) {
@@ -1093,16 +1502,21 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
 
         // 錯誤標記
         if (message.isError)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
+          Container(
+            margin: const EdgeInsets.only(top: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: colorScheme.errorContainer,
+              borderRadius: BorderRadius.circular(8),
+            ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.error_outline, size: 14, color: colorScheme.error),
-                const SizedBox(width: 4),
+                Icon(Icons.error_outline_rounded, size: 16, color: colorScheme.error),
+                const SizedBox(width: 8),
                 Text(
-                  '回覆失敗',
-                  style: TextStyle(fontSize: 12, color: colorScheme.error),
+                  '回覆失敗，請重試',
+                  style: TextStyle(fontSize: 13, color: colorScheme.error),
                 ),
               ],
             ),
@@ -1118,13 +1532,13 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
 
         // 操作按鈕
         if (!isUser && !message.isLoading)
-          Padding(
-            padding: const EdgeInsets.only(top: 8),
+          Container(
+            margin: const EdgeInsets.only(top: 16),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildActionIcon(
-                  Icons.copy,
+                _buildActionButton(
+                  Icons.content_copy_rounded,
                   '複製',
                   () => _copyToClipboard(message.content),
                   colorScheme,
@@ -1133,6 +1547,35 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
             ),
           ),
       ],
+    );
+  }
+
+  Widget _buildActionButton(
+    IconData icon,
+    String tooltip,
+    VoidCallback onPressed,
+    ColorScheme colorScheme,
+  ) {
+    return Tooltip(
+      message: tooltip,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onPressed,
+          borderRadius: BorderRadius.circular(6),
+          child: Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(6),
+              border: Border.all(
+                color: colorScheme.outline.withOpacity(0.1),
+              ),
+            ),
+            child: Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
+          ),
+        ),
+      ),
     );
   }
 
@@ -1211,125 +1654,152 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildActionIcon(
-    IconData icon,
-    String tooltip,
-    VoidCallback onPressed,
-    ColorScheme colorScheme,
-  ) {
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: BorderRadius.circular(4),
-        child: Padding(
-          padding: const EdgeInsets.all(4),
-          child: Icon(icon, size: 14, color: colorScheme.onSurfaceVariant),
-        ),
-      ),
-    );
-  }
-
   void _copyToClipboard(String text) {
     Clipboard.setData(ClipboardData(text: text));
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('已複製到剪貼簿'),
-        duration: Duration(seconds: 1),
+      SnackBar(
+        content: const Row(
+          children: [
+            Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+            SizedBox(width: 12),
+            Text('已複製到剪貼簿'),
+          ],
+        ),
+        backgroundColor: const Color(0xFF10A37F),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(16),
+        duration: const Duration(seconds: 2),
       ),
     );
   }
 
   // ============================================
-  // 輸入區域
+  // 輸入區域 - 現代化設計
   // ============================================
 
   Widget _buildInputArea(ColorScheme colorScheme) {
     return Container(
-      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest,
+        color: colorScheme.surface,
         border: Border(
           top: BorderSide(
-            color: colorScheme.outlineVariant.withOpacity(0.3),
+            color: colorScheme.outline.withOpacity(0.1),
           ),
         ),
       ),
       child: SafeArea(
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            // 輸入框
-            Expanded(
-              child: Container(
-                constraints: const BoxConstraints(maxHeight: 150),
-                decoration: BoxDecoration(
-                  color: colorScheme.surface,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(
-                    color: colorScheme.outline.withOpacity(0.3),
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: MediaQuery.of(context).size.width > 800 
+                ? MediaQuery.of(context).size.width * 0.1 
+                : 16,
+            vertical: 16,
+          ),
+          child: Container(
+            constraints: const BoxConstraints(maxHeight: 200),
+            decoration: BoxDecoration(
+              color: colorScheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: colorScheme.outline.withOpacity(0.15),
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 12,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                // 輸入框
+                Expanded(
+                  child: TextField(
+                    controller: _messageController,
+                    focusNode: _inputFocusNode,
+                    maxLines: null,
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => _sendMessage(),
+                    decoration: InputDecoration(
+                      hintText: '輸入訊息，向 AI 助手提問...',
+                      hintStyle: TextStyle(
+                        color: colorScheme.onSurfaceVariant.withOpacity(0.6),
+                        fontSize: 15,
+                      ),
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
+                    ),
+                    style: TextStyle(
+                      color: colorScheme.onSurface,
+                      fontSize: 15,
+                      height: 1.4,
+                    ),
                   ),
                 ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _messageController,
-                        focusNode: _inputFocusNode,
-                        maxLines: null,
-                        textInputAction: TextInputAction.send,
-                        onSubmitted: (_) => _sendMessage(),
-                        decoration: InputDecoration(
-                          hintText: '輸入訊息...',
-                          hintStyle: TextStyle(
-                            color: colorScheme.onSurfaceVariant,
-                          ),
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                        ),
-                        style: TextStyle(
-                          color: colorScheme.onSurface,
-                          fontSize: 14,
+
+                // 發送按鈕
+                Padding(
+                  padding: const EdgeInsets.only(right: 8, bottom: 8),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    decoration: BoxDecoration(
+                      gradient: _isLoading
+                          ? null
+                          : LinearGradient(
+                              colors: [
+                                colorScheme.primary,
+                                colorScheme.primary.withOpacity(0.85),
+                              ],
+                            ),
+                      color: _isLoading ? colorScheme.outline.withOpacity(0.3) : null,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: _isLoading
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: colorScheme.primary.withOpacity(0.3),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _isLoading ? null : _sendMessage,
+                        borderRadius: BorderRadius.circular(20),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          alignment: Alignment.center,
+                          child: _isLoading
+                              ? SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: colorScheme.onSurfaceVariant,
+                                  ),
+                                )
+                              : const Icon(
+                                  Icons.arrow_upward_rounded,
+                                  color: Colors.white,
+                                  size: 22,
+                                ),
                         ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
-
-            const SizedBox(width: 8),
-
-            // 發送按鈕
-            Container(
-              decoration: BoxDecoration(
-                color: _isLoading
-                    ? colorScheme.outline
-                    : colorScheme.primary,
-                shape: BoxShape.circle,
-              ),
-              child: IconButton(
-                onPressed: _isLoading ? null : _sendMessage,
-                icon: _isLoading
-                    ? SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: colorScheme.onPrimary,
-                        ),
-                      )
-                    : Icon(
-                        Icons.arrow_upward,
-                        color: colorScheme.onPrimary,
-                      ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
