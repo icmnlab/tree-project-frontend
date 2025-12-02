@@ -467,10 +467,11 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
   }
 
   Widget _buildFooter() {
+    final currentYear = DateTime.now().year;
     return Column(
       children: [
         Text(
-          '© 2012-2025 臺灣港務公司',
+          '© 2012-$currentYear 臺灣港務公司',
           style: TextStyle(
             color: Colors.white.withOpacity(0.7),
             fontSize: 12,
