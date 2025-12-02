@@ -7,6 +7,7 @@ import '../tree_list_page.dart';
 import 'cities_page.dart';
 import '../main.dart'; // 引入 MyApp
 import 'ble_import_page.dart'; // 引入 BleImportPage
+import 'species_identification_page.dart'; // 引入樹種辨識頁面
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -148,7 +149,7 @@ class DashboardPage extends StatelessWidget {
           'AI助手',
           Icons.psychology,
           Colors.purple,
-          () => Navigator.pushNamed(context, '/ai-assistant'),
+          () => Navigator.pushNamed(context, '/ai-chat'), // 使用新版 AI 聊天頁面
         ),
         _buildDashboardItem(
           context,
@@ -172,6 +173,16 @@ class DashboardPage extends StatelessWidget {
           () => Navigator.push(
             context,
             MaterialPageRoute(builder: (context) => const BleImportPage()),
+          ),
+        ),
+        _buildDashboardItem(
+          context,
+          '樹種辨識',
+          Icons.camera_enhance,
+          Colors.green.shade700,
+          () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const SpeciesIdentificationPage()),
           ),
         ),
       ],

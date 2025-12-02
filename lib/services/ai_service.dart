@@ -1,13 +1,21 @@
 import 'api_service.dart';
 
 class AiService {
-  Future<Map<String, dynamic>> getChatResponse(String message,
-      List<String> projectAreas, String modelPreference, String userId) async {
+  /// 發送聊天訊息
+  /// [sessionId] 可選，用於追蹤同一對話會話
+  Future<Map<String, dynamic>> getChatResponse(
+    String message,
+    List<String> projectAreas,
+    String modelPreference,
+    String userId, {
+    String? sessionId,
+  }) async {
     return ApiService.post('chat', {
       'message': message,
       'userId': userId,
       'projectAreas': projectAreas,
       'model_preference': modelPreference,
+      if (sessionId != null) 'sessionId': sessionId,
     });
   }
 

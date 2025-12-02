@@ -203,13 +203,11 @@ class BleFieldValidator {
   /// 經度小數驗證
   /// 標準：小數部分 7 位數字
   ///
-  /// 特殊案例 (ID=10092)：'120.53664472' → '120.5366472'
-  ///   原始 Hex: 36 64 44 [1D] [44 CD 00] 37 32
-  ///   **重要**：僅針對此 ID + 值，避免影響其他資料
+  /// [v14.0] 特殊案例硬編碼已移除
+  /// 原因：BlePacketDecoder 在封包層級正確解碼後，數據已正確
   ///
   /// 驗證策略：
-  /// 1. 特殊案例：ID=10092 專項修正（硬編碼 ID + 值檢查）
-  /// 2. 通用規則：小數 >7 位時，檢測連續重複並去重
+  /// 通用規則：小數 >7 位時，檢測連續重複並去重
   static String _validateLongitude(String value, String recordId) {
     if (value.isEmpty || !value.contains('.')) return value;
 
@@ -218,14 +216,6 @@ class BleFieldValidator {
 
     String integerPart = parts[0];
     String decimalPart = parts[1];
-
-    // [v13.5+ 特殊案例] ID=10092 專項修正
-    // 只針對此特定 ID 的特定值進行修正
-    // 參考：v135_plus_manual_fixes.py Line 55-60
-    if (recordId == '10092' && value == '120.53664472') {
-      debugPrint('[FIELD VAL] 經度特殊案例修正 (ID=10092): "$value" → "120.5366472"');
-      return '120.5366472';
-    }
 
     // 標準：小數部分 7 位
     if (decimalPart.length == 7) return value;
@@ -254,32 +244,19 @@ class BleFieldValidator {
     return value;
   }
 
-  /// HD (水平距離) 特殊案例修正
+  /// HD (水平距離) 驗證
   ///
   /// 官方規格（手冊 9.3 BLE 章節）：
   /// - HD 範圍：0 到 999.9 米（Byte 0-3: m x10, "0".."9999"）
   /// - 結論：**不存在通用的範圍驗證規則**
   ///
-  /// 特殊案例 (ID=10071)：'42.5' → '4.5'
-  ///   基於原始 Hex 追蹤分析（trace_final_3_hex.py）
-  ///   這是一個特定的雜訊模式，無法泛化為通用規則
-  ///   參考：final_push_to_100.py Line 64-67（硬編碼處理）
-  ///   **重要**：僅針對此 ID + 值，避免影響其他資料
+  /// [v14.0] 特殊案例硬編碼已移除
+  /// 原因：BlePacketDecoder 在封包層級正確解碼後，數據已正確
   ///
-  /// 驗證策略：
-  /// 僅硬編碼檢查 ID=10071 的特定值（v13.5+ 手動專項修正）
+  /// 驗證策略：無通用規則
   static String _validateHD(String value, String recordId) {
-    if (value.isEmpty) return value;
-
-    // [v13.5+ 特殊案例] ID=10071 專項修正
-    // 只針對此特定 ID 的特定值進行修正
-    // 參考：v135_plus_manual_fixes.py Line 43-48
-    if (recordId == '10071' && value == '42.5') {
-      debugPrint('[FIELD VAL] HD 特殊案例修正 (ID=10071): "$value" → "4.5"');
-      return '4.5';
-    }
-
-    // 無其他通用規則（官方規格允許 0-999.9 米）
+    // 無通用規則（官方規格允許 0-999.9 米）
+    // 封包層級解碼已確保數據正確
     return value;
   }
 

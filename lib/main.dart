@@ -7,6 +7,7 @@ import 'statistics_page.dart';
 import 'map_page.dart';
 import 'screens/ai_sustainability_report_screen.dart';
 import 'ai_assistant_page.dart';
+import 'screens/ai_chat_page.dart'; // 新版 AI 聊天頁面
 import 'screens/cities_page.dart';
 import 'services/carbon_sink_service.dart';
 import 'screens/login_page.dart';
@@ -146,6 +147,11 @@ class MyApp extends StatelessWidget {
         '/statistics': (context) => const StatisticsPage(),
         '/map': (context) => const MapPage(),
         '/ai-assistant': (context) => AIAssistantPage(
+              userId: 'user-${DateTime.now().millisecondsSinceEpoch}',
+              selectedProjectAreas: const [],
+            ),
+        // 新版 AI 聊天頁面 (ChatGPT 風格)
+        '/ai-chat': (context) => AIChatPage(
               userId: 'user-${DateTime.now().millisecondsSinceEpoch}',
               selectedProjectAreas: const [],
             ),

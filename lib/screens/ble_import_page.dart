@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../services/ble_data_processor.dart'; // 引入解析器
+import '../services/ble_packet_decoder.dart'; // 引入封包解碼器
 import 'manual_input_page.dart'; // 引入手動補全頁面
 import 'manual_input_page_v2.dart'; // 引入 V2 頁面
 
@@ -28,6 +29,7 @@ class _BleImportPageState extends State<BleImportPage> {
   final List<String> _hexLog = []; // [UX] 用於顯示即時 Hex 數據流
   List<String> _receivedCsvLines = [];
   bool _isTransmissionSuccess = false; // [FIX] 追蹤傳輸是否成功
+  int _estimatedRecordCount = 0; // [v14.0] 即時記錄數統計
 
   // 關鍵 UUID (Nordic UART Service)
   final String _serviceUuid = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
@@ -119,6 +121,7 @@ class _BleImportPageState extends State<BleImportPage> {
         _isConnecting = false;
         _scanResults.clear();
         _isScanning = false;
+        _estimatedRecordCount = 0; // [v14.0] 重置記錄數統計
       });
     }
   }
@@ -312,6 +315,9 @@ class _BleImportPageState extends State<BleImportPage> {
         // 設置通知 (這就是觸發儀器發送檔案的關鍵動作！)
         await txCharacteristic.setNotifyValue(true);
 
+        // [v14.0] 重置封包解碼器統計
+        BlePacketDecoder.resetStats();
+
         // [FIX] 檢查 mounted 再調用 setState
         if (mounted) {
           setState(() {
@@ -322,7 +328,7 @@ class _BleImportPageState extends State<BleImportPage> {
           });
         }
 
-        // 監聽數據流
+        // 監聯數據流
         _dataSubscription = txCharacteristic.lastValueStream.listen((value) {
           _processReceivedData(value);
         });
@@ -352,13 +358,13 @@ class _BleImportPageState extends State<BleImportPage> {
     final hexString = data
         .map((b) => b.toRadixString(16).padLeft(2, '0').toUpperCase())
         .join(' ');
-    print('[BLE RAW] $hexString'); // 這樣我們就能看到儀器真正傳了什麼
+    print('[BLE RAW] len=${data.length} $hexString');
 
     // [UX] 更新 Hex Log (只保留最後 50 行以節省資源)
     // [FIX] 檢查 mounted 再調用 setState
     if (mounted) {
       setState(() {
-        _hexLog.add(hexString);
+        _hexLog.add('(${data.length}) $hexString');
         if (_hexLog.length > 50) {
           _hexLog.removeAt(0);
         }
@@ -381,122 +387,26 @@ class _BleImportPageState extends State<BleImportPage> {
       _isTransmissionSuccess = true;
       // 停止超時檢測 (因為已經明確結束)
       _timeoutTimer?.cancel();
+      // 列印封包解碼統計
+      BlePacketDecoder.printStats();
       // 觸發成功處理邏輯
       _handleSuccess();
       return;
     }
 
-    // [v13.5+ ENHANCED] Byte-Level PacketLogger 雜訊過濾器 (兩階段)
-    // 基於 serial_20251125_200547(DATA_2).txt 的完整 Hex 分析
-    // 以及 trace_final_3_hex.py 的原始 Hex 追蹤
-    //
-    // PacketLogger 雜訊特徵 (完整破解)：
-    // 1. 固定封包頭：0x44 0xCD 0x00, 0x44 0x36 0x00, 0x44 0x86 0x00
-    // 2. 配對雜訊：Non-ASCII + ASCII 組合 (例如 0xEE 0x35 → '簾5')
-    //    - 關鍵發現 (ID=10031)：配對雜訊可出現在**任何位置**，不限於封包頭前
-    //    - 決定性案例：31 3B 31 [EE 35] → "1;1簾5" → SEQ 從 '1' 變成 '15'
-    // 3. 字母殘留：封包頭第一個 byte 0x44 ('D') 單獨出現
-    // 4. 數字重複：封包邊界 + 雜訊導致數字切分重複
-    //
-    // 策略：兩階段清理
-    //   Stage 1: 封包頭檢測 + 回溯配對清理 (v13.1 原有)
-    //   Stage 2: 全域配對雜訊清理 (v13.2 新增，關鍵突破)
+    // [v14.0] 使用協議級封包解碼器
+    // 基於 VLGEO2 BLE 協議深度分析：
+    // - 正常封包 (20 bytes): 保留全部
+    // - 殘留封包 (5 bytes): 只保留前 3 bytes (後 2 bytes 是雜訊)
+    // - 標記封包 (20 bytes, 以 44 xx 00 開頭): 跳過前 3 bytes
+    List<int> decodedData = BlePacketDecoder.decodePacket(data);
 
-    // === Stage 1: 封包頭檢測 + 回溯配對清理 ===
-    List<int> stage1Cleaned = [];
-    int i = 0;
-    while (i < data.length) {
-      // 偵測 PacketLogger 封包頭
-      bool isPacketLoggerHeader = false;
-      int headerLength = 0;
-
-      // 檢測三種已知封包頭
-      if (i + 2 < data.length && data[i] == 0x44) {
-        if (data[i + 1] == 0xCD && data[i + 2] == 0x00) {
-          isPacketLoggerHeader = true;
-          headerLength = 3;
-        } else if (data[i + 1] == 0x36 && data[i + 2] == 0x00) {
-          isPacketLoggerHeader = true;
-          headerLength = 3;
-        } else if (data[i + 1] == 0x86 && data[i + 2] == 0x00) {
-          // 在 old_data 中發現的第三種封包頭
-          isPacketLoggerHeader = true;
-          headerLength = 3;
-        }
-      }
-
-      if (isPacketLoggerHeader) {
-        // [CRITICAL] 回溯清理：檢查前 2-3 個 bytes 是否為雜訊對
-        // 移除已經加入 stage1Cleaned 的最後 2 個 bytes (如果它們是 Non-ASCII)
-        if (stage1Cleaned.length >= 2) {
-          // 檢查最後 2 個 bytes
-          if (stage1Cleaned[stage1Cleaned.length - 1] > 0x7E ||
-              stage1Cleaned[stage1Cleaned.length - 2] > 0x7E) {
-            stage1Cleaned.removeLast();
-            stage1Cleaned.removeLast();
-          }
-        } else if (stage1Cleaned.length == 1 && stage1Cleaned.last > 0x7E) {
-          stage1Cleaned.removeLast();
-        }
-
-        i += headerLength; // 跳過封包頭本身
-        continue;
-      }
-
-      // 獨立的 Non-ASCII byte (保留換行符)
-      if (data[i] > 0x7E && data[i] != 0x0D && data[i] != 0x0A) {
-        i++;
-        continue;
-      }
-
-      // 保留正常 byte
-      stage1Cleaned.add(data[i]);
-      i++;
-    }
-
-    // === Stage 2: 全域配對雜訊清理 (v13.2 關鍵突破) ===
-    // 掃描整個數據流，移除所有「Non-ASCII + ASCII」配對
-    // 關鍵：不限位置（這是與 v13.1 的本質差異）
-    //
-    // 決定性案例 (ID=10031)：
-    //   31 3B 31 [EE 35] → "1;1[簾]5"
-    //   配對雜訊 0xEE 0x35 在數據流中間，導致 SEQ '1' → '15'
-    List<int> stage2Cleaned = [];
-    int j = 0;
-
-    while (j < stage1Cleaned.length) {
-      int currentByte = stage1Cleaned[j];
-
-      // 檢測 Non-ASCII（非換行符）
-      if (currentByte > 0x7E && currentByte != 0x0D && currentByte != 0x0A) {
-        // 檢查下一個 byte 是否為 ASCII 可見字元
-        if (j + 1 < stage1Cleaned.length) {
-          int nextByte = stage1Cleaned[j + 1];
-          if (nextByte >= 0x20 && nextByte <= 0x7E) {
-            // 配對雜訊！兩個都移除
-            // 例如：0xEE 0x35 → '簾' '5'
-            j += 2;
-            continue;
-          }
-        }
-        // 獨立的 Non-ASCII，移除
-        j++;
-        continue;
-      }
-
-      // 保留正常 byte
-      stage2Cleaned.add(currentByte);
-      j++;
-    }
-
-    List<int> cleanedData = stage2Cleaned;
-
-    // 1. 解碼 (混合策略) - 使用清洗後的 byte 陣列
+    // 1. 解碼 - 使用解碼後的 byte 陣列
     String rawChunk;
     try {
-      rawChunk = utf8.decode(cleanedData);
+      rawChunk = utf8.decode(decodedData);
     } catch (e) {
-      rawChunk = String.fromCharCodes(cleanedData);
+      rawChunk = String.fromCharCodes(decodedData);
     }
 
     // 2. 字串級白名單過濾 (最後一道防線)
@@ -516,15 +426,20 @@ class _BleImportPageState extends State<BleImportPage> {
     // [DEBUG] 如果清洗後內容有變，印出差異
     if (rawChunk != cleanChunk) {
       print('[BLE CLEANED] "$rawChunk" -> "$cleanChunk"');
-    } else {
-      // print('[BLE OK] "$cleanChunk"');
     }
 
     // 3. 寫入緩衝區
     _dataBuffer.write(cleanChunk);
 
-    // 3. 即時更新 UI 顯示原始數據 (可選，僅用於調試)
-    // 這裡我們不直接更新 _receivedCsvLines，而是等傳輸結束或偵測到換行時才處理
+    // [v14.0] 即時統計記錄數 (以 '$;' 開頭的行數)
+    // 這是一個簡單的估算，實際數量以最終解析為準
+    String bufferContent = _dataBuffer.toString();
+    int recordCount = RegExp(r'\$;').allMatches(bufferContent).length;
+    if (recordCount != _estimatedRecordCount && mounted) {
+      setState(() {
+        _estimatedRecordCount = recordCount;
+      });
+    }
 
     // 4. 超時檢測 (Silence Timeout)
     // 如果 3000 毫秒內沒有收到新數據，假設傳輸結束
@@ -770,10 +685,23 @@ class _BleImportPageState extends State<BleImportPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('正在接收數據...', style: TextStyle(color: Colors.blue)),
-                  const SizedBox(height: 4),
-                  const LinearProgressIndicator(), // 無限循環動畫
+                  // [v14.0] 顯示接收狀態和記錄數
+                  Row(
+                    children: [
+                      const Icon(Icons.sync, color: Colors.blue, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        '正在接收數據... ($_estimatedRecordCount 筆記錄)',
+                        style: const TextStyle(
+                          color: Colors.blue,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 8),
+                  const LinearProgressIndicator(), // 無限循環動畫
+                  const SizedBox(height: 12),
                   const Text('即時數據流:',
                       style: TextStyle(fontSize: 12, color: Colors.grey)),
                   Expanded(
@@ -799,9 +727,17 @@ class _BleImportPageState extends State<BleImportPage> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Text('已接收 ${_dataBuffer.length} bytes',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  const SizedBox(height: 8),
+                  // [v14.0] 改進的狀態顯示
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text('已接收 ${_dataBuffer.length} bytes',
+                          style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                      Text('封包解碼中...',
+                          style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                    ],
+                  ),
                 ],
               ),
             ),

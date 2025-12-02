@@ -152,7 +152,18 @@ class BleDataProcessor {
         if (azStr.isEmpty) continue;
         metadata['azimuth'] = double.tryParse(azStr);
 
-        // 胸徑 (DIA) - 這是唯一允許為空的欄位 (通常手動輸入或另外測量)
+        // [V2 COMPAT] 加入儀器類型到 metadata，供後端 tree_measurement_raw 使用
+        // 這樣 V2 batch_import 可以正確寫入 instrument_type 欄位
+        if (type.isNotEmpty) {
+          metadata['instrument_type'] = type;
+        }
+
+        // [V2 COMPAT] 保存原始 GPS 座標到 metadata，供後端備份
+        metadata['raw_lat'] = lat;
+        metadata['raw_lon'] = lon;
+
+        // 胸徑 (DIA) - VLGEO2 不具備胸徑測量功能，此欄位永遠為空
+        // 需要使用者手動輸入或透過其他儀器測量
         if (fields.length > _idxDia) {
           String diaStr = fields[_idxDia].trim();
           if (diaStr.isNotEmpty) {
@@ -193,6 +204,9 @@ class BleDataProcessor {
             final dateTime = DateTime(year, month, day, hour, minute, second);
             record['timestamp'] = dateTime;
             record['timestamp_iso'] = dateTime.toIso8601String(); // 供後端使用
+            
+            // [V2 COMPAT] 加入測量時間到 metadata，供後端 tree_measurement_raw 使用
+            metadata['measured_at'] = dateTime.toIso8601String();
           } catch (e) {
             debugPrint('Time parse error: $e');
           }

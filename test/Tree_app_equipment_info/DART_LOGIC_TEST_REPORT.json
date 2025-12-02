@@ -1,0 +1,18 @@
+{
+  "DATA_2": {
+    "total": 336,
+    "matches": 336,
+    "differences": 0,
+    "missing": 0,
+    "accuracy": 100.0,
+    "diff_details": []
+  },
+  "DATA_1": {
+    "total": 11,
+    "matches": 11,
+    "differences": 0,
+    "missing": 0,
+    "accuracy": 100.0,
+    "diff_details": []
+  }
+}
