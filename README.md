@@ -3,13 +3,52 @@
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-blue.svg)](https://flutter.dev/)
 [![Dart](https://img.shields.io/badge/Dart-3.x-blue.svg)](https://dart.dev/)
 [![License](https://img.shields.io/badge/License-ISC-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-17.0.0-green.svg)](https://github.com/KyleliuNDHU/tree-project-frontend)
+[![Version](https://img.shields.io/badge/Version-17.1.0-green.svg)](https://github.com/KyleliuNDHU/tree-project-frontend)
 
 > 基於大語言模型的永續發展分析平台 - Flutter 行動應用程式
 
 ---
 
 ## 📦 版本紀錄
+
+### v17.1.0 (2025-12-04) - V3 進階服務層 🛠️
+
+#### 🆕 新增功能
+- **V3 影像記錄系統** - 樹木照片本地儲存與雲端同步
+  - `TreeImageService` - 影像管理服務（本地優先）
+  - 支援多種照片類型：全景、樹幹、DBH 測量、樹冠、損傷
+  - 佇列上傳機制，離線時自動暫存
+- **V3 衝突解決機制** - Optimistic Lock 版本控制
+  - `ConflictResolutionService` - 資料衝突檢測與解決
+  - 自動重試佇列，支援多人協作同步
+  - 衝突對話框 UI 元件
+- **AR 測量整合服務** - 增強版 AR DBH 測量
+  - `ARMeasurementIntegrationService` - 校準資料與信心度估算
+  - 支援快速測量、參照物測量、多角度測量
+  - 品質等級評估 (A-F)
+- **BLE 模擬測試服務** - 開發環境專用
+  - `BLESimulationService` - 模擬 BLE 設備數據
+  - 預定義測試情境：單株測量、多株測量、間歇連線
+  - 控制面板 Widget 便於開發測試
+
+#### 🔧 V3 服務層擴充
+| 服務 | 檔案 | 行數 | 說明 |
+|------|------|------|------|
+| 影像記錄 | `tree_image_service.dart` | 488 | 本地儲存 + 雲端同步 |
+| 衝突解決 | `conflict_resolution_service.dart` | 690 | Optimistic Lock |
+| AR 整合 | `ar_measurement_integration_service.dart` | 574 | 校準 + 信心度 |
+| BLE 模擬 | `ble_simulation_service.dart` | 747 | 開發測試用 |
+
+#### 📋 變更清單
+| 類型 | 說明 |
+|------|------|
+| feat | 新增 V3 影像記錄系統 (`tree_image_service.dart`) |
+| feat | 新增衝突解決服務 (`conflict_resolution_service.dart`) |
+| feat | 新增 AR 測量整合服務 (`ar_measurement_integration_service.dart`) |
+| feat | 新增 BLE 模擬測試服務 (`ble_simulation_service.dart`) |
+| docs | 更新 `V3_DEVELOPMENT_PLAN.md` 實作進度 |
+
+---
 
 ### v17.0.0 (2025-12-03) - V3 專案邊界與智慧匹配 🗺️
 

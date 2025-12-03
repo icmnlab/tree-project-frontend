@@ -718,11 +718,16 @@ $$
 | 地圖多邊形顯示 | `lib/map_page.dart` | 整合專案邊界多邊形、切換按鈕、邊界清單 |
 | 新樹木座標驗證 | `lib/tree_input_page_v2.dart` | 提交前驗證座標是否在專案邊界內 |
 | 批次匯入自動匹配 | `lib/screens/manual_input_page_v2.dart` | BLE 匯入自動根據座標匹配專案 |
+| **V3 影像記錄系統** | `lib/services/v3/tree_image_service.dart` | 488行，本地儲存 + 雲端佇列同步 |
+| **衝突解決服務** | `lib/services/v3/conflict_resolution_service.dart` | 690行，Optimistic Lock + 版本號 |
+| **AR 測量整合服務** | `lib/services/v3/ar_measurement_integration_service.dart` | 574行，校準資料 + 信心度估算 |
+| **BLE 模擬測試服務** | `lib/services/v3/ble_simulation_service.dart` | 747行，模擬設備 + 測試情境 |
 
 ### ⏳ 待完成
 
 | 功能 | 優先級 | 說明 |
 |------|--------|------|
-| V3 影像記錄系統 | 中 | 需要後端 multer 配置 |
-| Race Condition 處理 | 高 | 需要資料庫 version 欄位 |
-| BLE 數據模擬測試 | 低 | 開發測試用 |
+| 後端影像上傳 API | 中 | 需要 multer + S3/Firebase Storage |
+| 後端 V3 衝突處理 API | 中 | 需要資料庫 version 欄位 |
+| 前端 UI 整合 | 低 | 將 V3 服務整合到現有頁面 |
+
