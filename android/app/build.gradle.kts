@@ -37,6 +37,22 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        // 注入 Dart Define 的變數
+        val dartDefines = project.findProperty("dart-defines")?.toString()
+        if (dartDefines != null) {
+            val decodedDefines = dartDefines.split(",").map { 
+                String(java.util.Base64.getDecoder().decode(it))
+            }
+            
+            decodedDefines.find { it.startsWith("GOOGLE_MAPS_API_KEY_ANDROID=") }?.let {
+                manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = it.split("=")[1]
+            }
+        }
+        
+        if (!manifestPlaceholders.containsKey("GOOGLE_MAPS_API_KEY")) {
+             manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = ""
+        }
     }
 
     signingConfigs {
