@@ -496,6 +496,35 @@ class ConflictResolutionService {
       debugPrint('[ConflictResolutionService] 儲存待處理操作失敗: $e');
     }
   }
+
+  /// 重試特定操作
+  Future<bool> retryOperation(String operationId) async {
+    final index = _pendingQueue.indexWhere((op) => op.id == operationId);
+    if (index < 0) {
+      debugPrint('[ConflictResolutionService] 找不到操作: $operationId');
+      return false;
+    }
+    
+    final operation = _pendingQueue[index];
+    try {
+      final success = await _processOperation(operation);
+      if (success) {
+        _removeFromQueue(operationId);
+      }
+      return success;
+    } catch (e) {
+      debugPrint('[ConflictResolutionService] 重試失敗: $e');
+      return false;
+    }
+  }
+
+  /// 放棄特定操作
+  Future<void> abandonOperation(String operationId) async {
+    _removeFromQueue(operationId);
+    await _savePendingOperations();
+    _queueChangeController.add(_pendingQueue);
+    debugPrint('[ConflictResolutionService] 已放棄操作: $operationId');
+  }
   
   /// 啟動自動同步
   void _startAutoSync() {

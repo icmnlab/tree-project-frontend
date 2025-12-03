@@ -485,4 +485,30 @@ class TreeImageService {
     _isIndexLoaded = false;
     await _loadIndex();
   }
+
+  // === Alias 方法（for V3 服務頁面相容） ===
+  
+  /// 取得待同步的照片 (alias for getPendingSyncImages)
+  Future<List<TreeImage>> getUnsyncedImages() async {
+    return getPendingSyncImages();
+  }
+
+  /// 取得所有照片
+  Future<List<TreeImage>> getAllImages() async {
+    await _loadIndex();
+    final allImages = <TreeImage>[];
+    for (final images in _imageIndex.values) {
+      allImages.addAll(images);
+    }
+    return allImages;
+  }
+
+  /// 同步所有照片 (alias for syncAllPendingImages)
+  Future<Map<String, dynamic>> syncAllImages() async {
+    final result = await syncAllPendingImages();
+    return {
+      'synced': result['success'],
+      'failed': result['failed'],
+    };
+  }
 }

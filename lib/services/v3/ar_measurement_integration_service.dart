@@ -143,6 +143,9 @@ class ARMeasurementIntegrationService {
   /// 取得目前校準資料
   CalibrationData get calibration => _currentCalibration;
   
+  /// 取得目前校準資料 (alias)
+  CalibrationData? get currentCalibration => _currentCalibration;
+  
   /// 取得會話歷史
   List<EnhancedMeasurementResult> get sessionHistory => 
       List.unmodifiable(_sessionHistory);
@@ -171,6 +174,12 @@ class ARMeasurementIntegrationService {
   /// 更新校準資料
   void updateCalibration(CalibrationData calibration) {
     _currentCalibration = calibration;
+  }
+
+  /// 設定校準資料 (async alias for updateCalibration)
+  Future<void> setCalibration(CalibrationData calibration) async {
+    _currentCalibration = calibration;
+    // 可在此處加入持久化邏輯
   }
   
   /// 快速 DBH 測量（單張照片）

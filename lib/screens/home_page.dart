@@ -9,6 +9,7 @@ import '../main.dart';
 import 'ble_import_page.dart';
 import 'species_identification_page.dart';
 import 'pending_measurement_task_page.dart';
+import 'v3_services_page.dart';
 import '../constants/colors.dart';
 import '../themes/app_theme.dart';
 
@@ -267,6 +268,16 @@ class _DashboardPageState extends State<DashboardPage> {
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const SpeciesIdentificationPage()),
+                ),
+              ),
+              FeatureCard(
+                title: '進階服務',
+                subtitle: 'V3 功能管理',
+                icon: Icons.settings_suggest_rounded,
+                color: Colors.deepPurple,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const V3ServicesPage()),
                 ),
               ),
             ]),
