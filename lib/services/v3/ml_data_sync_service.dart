@@ -9,6 +9,7 @@
 /// - 網絡狀態感知
 library;
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
@@ -86,8 +87,8 @@ class MLDataSyncService {
   /// 檢查是否應該同步
   Future<bool> shouldSync() async {
     // 檢查網絡
-    final connectivity = await Connectivity().checkConnectivity();
-    if (connectivity == ConnectivityResult.none) {
+    final connectivityResult = await Connectivity().checkConnectivity();
+    if (connectivityResult.contains(ConnectivityResult.none) || connectivityResult.isEmpty) {
       return false;
     }
     
@@ -300,6 +301,39 @@ class MLDataSyncService {
            '${random.nextInt(0xFFFF).toRadixString(16).padLeft(4, '0')}-'
            '${random.nextInt(0xFFFF).toRadixString(16).padLeft(4, '0')}-'
            '${random.nextInt(0xFFFF).toRadixString(16).padLeft(4, '0')}';
+  }
+
+  /// 定時同步 Timer
+  Timer? _periodicTimer;
+
+  /// 啟動定時同步
+  /// 
+  /// [intervalMinutes] 同步間隔（分鐘），預設 30 分鐘
+  void startPeriodicSync({int intervalMinutes = 30}) {
+    // 停止現有定時器
+    stopPeriodicSync();
+    
+    debugPrint('[MLDataSync] 啟動定時同步，間隔: $intervalMinutes 分鐘');
+    
+    // 立即執行一次同步檢查
+    syncIfNeeded();
+    
+    // 設置定時同步
+    _periodicTimer = Timer.periodic(
+      Duration(minutes: intervalMinutes),
+      (_) => syncIfNeeded(),
+    );
+  }
+
+  /// 停止定時同步
+  void stopPeriodicSync() {
+    _periodicTimer?.cancel();
+    _periodicTimer = null;
+  }
+
+  /// 如果需要則同步（不強制）
+  Future<SyncResult> syncIfNeeded() async {
+    return sync(force: false);
   }
 
   /// 獲取同步狀態

@@ -61,6 +61,9 @@ dependencies:
   flutter_client_sse: ^2.0.3
   provider: ^6.0.0
   flutter_blue_plus: 1.32.0
+  connectivity_plus: ^6.0.5  # V3: 網絡狀態檢測
+  package_info_plus: ^8.0.2  # V3: APP 版本資訊
+  device_info_plus: ^11.0.0  # V3: 設備資訊
 
 dev_dependencies:
   flutter_test:

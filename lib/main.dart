@@ -9,6 +9,7 @@ import 'ai_assistant_page.dart';
 import 'screens/ai_chat_page.dart'; // 新版 AI 聊天頁面
 import 'screens/cities_page.dart';
 import 'services/carbon_sink_service.dart';
+import 'services/v3/ml_data_sync_service.dart'; // V3 ML 數據同步服務
 import 'screens/login_page.dart';
 import 'screens/home_page.dart';
 import 'routes/auth_guard.dart';
@@ -36,6 +37,16 @@ void main() async {
     print('樹種資料成功初始化');
   } catch (e) {
     print('樹種資料初始化失敗: $e');
+  }
+
+  // V3: 初始化 ML 數據同步服務
+  try {
+    await MLDataSyncService.initialize(AppConfig().baseUrl);
+    // 啟動背景同步（每 30 分鐘檢查一次）
+    MLDataSyncService().startPeriodicSync();
+    print('ML 數據同步服務已初始化');
+  } catch (e) {
+    print('ML 數據同步服務初始化失敗: $e');
   }
 
   runApp(const MyApp());
