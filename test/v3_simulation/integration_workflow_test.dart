@@ -10,7 +10,7 @@
 // ============================================================================
 
 import 'dart:async';
-import 'dart:convert';
+// dart:convert import removed - unused
 import 'dart:math' as math;
 import 'package:flutter_test/flutter_test.dart';
 

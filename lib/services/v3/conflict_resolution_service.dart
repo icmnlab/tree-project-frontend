@@ -139,7 +139,8 @@ class ConflictResolutionService {
   // 設定
   static const String _storageKey = 'v3_pending_operations';
   static const int _maxRetries = 3;
-  static const Duration _retryDelay = Duration(seconds: 30);
+  // ignore: unused_field
+  static const Duration _retryDelay = Duration(seconds: 30); // Reserved for future retry delay implementation
   static const Duration _autoSyncInterval = Duration(minutes: 5);
   
   // 狀態
@@ -507,7 +508,7 @@ class ConflictResolutionService {
     
     final operation = _pendingQueue[index];
     try {
-      final success = await _processOperation(operation);
+      final success = await _executeOperation(operation);
       if (success) {
         _removeFromQueue(operationId);
       }

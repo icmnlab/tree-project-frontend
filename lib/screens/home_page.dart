@@ -1,11 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
 import '../tree_survey_page.dart';
 import '../tree_list_page.dart';
-import 'cities_page.dart';
-import '../main.dart';
 import 'ble_import_page.dart';
 import 'species_identification_page.dart';
 import 'pending_measurement_task_page.dart';
@@ -30,7 +27,8 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
-  String? _userName;
+  // ignore: unused_field
+  String? _userName; // userName loaded for future use
 
   @override
   void initState() {

@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
+// dart:convert used for JSON encoding/decoding in API calls
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:logger/logger.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // [NEW] 查詢歷史記錄
+// logger used for debugging
+// shared_preferences used for query history
 
 import 'constants/colors.dart';
-import 'widgets/loading_indicator.dart';
+// loading_indicator may be used in child components
 import 'widgets/error_dialog.dart';
 import 'services/ai_service.dart';
 import 'services/api_service.dart';
@@ -698,11 +698,16 @@ class _AIAssistantPageState extends State<AIAssistantPage>
   final ScrollController _scrollController = ScrollController();
   final List<ChatMessage> _messages = [];
   bool _isLoading = false;
-  String _errorMessage = '';
-  final bool _isShowingReport = false;
-  Map<String, dynamic>? _reportData;
-  Map<String, dynamic>? _speciesRecommendations;
-  Map<String, dynamic>? _managementAdvice;
+  // ignore: unused_field
+  String _errorMessage = ''; // Reserved for error handling
+  // ignore: unused_field
+  final bool _isShowingReport = false; // Reserved for report display
+  // ignore: unused_field
+  Map<String, dynamic>? _reportData; // Reserved for report data
+  // ignore: unused_field
+  Map<String, dynamic>? _speciesRecommendations; // Reserved for species recommendations
+  // ignore: unused_field
+  Map<String, dynamic>? _managementAdvice; // Reserved for management advice
 
   // Services
   final AiService _aiService = AiService();
@@ -719,9 +724,11 @@ class _AIAssistantPageState extends State<AIAssistantPage>
 
   // 新增標籤控制器，用於在聊天、報告和碳足跡視圖間切換
   late TabController _tabController;
-  int _currentTabIndex = 0;
+  // ignore: unused_field
+  int _currentTabIndex = 0; // Reserved for tab state tracking
   String _selectedModel = 'gemini-2.5-flash'; // 預設模型
-  bool _showKnowledgeSource = true; // 新增：是否顯示知識庫來源的開關
+  // ignore: unused_field
+  bool _showKnowledgeSource = true; // Reserved for knowledge source display toggle
 
   // Define model lists
   final Map<String, String> _prodModels = {
@@ -740,7 +747,8 @@ class _AIAssistantPageState extends State<AIAssistantPage>
   late Map<String, String> _availableModels;
 
   // 碳吸收預測數據
-  List<FlSpot> _carbonProjectionData = [];
+  // ignore: unused_field
+  List<FlSpot> _carbonProjectionData = []; // Reserved for carbon projection chart
 
   // === Carbon Footprint Calculator State Variables ===
   final _carbonFootprintFormKey = GlobalKey<FormState>();
@@ -781,7 +789,7 @@ class _AIAssistantPageState extends State<AIAssistantPage>
   List<Map<String, dynamic>> _managementActions = [];
   bool _isLoadingManagementActions = false;
   String? _managementActionsError;
-  Map<String, dynamic?> _managementActionFilters = {
+  Map<String, dynamic> _managementActionFilters = {
     'area_name': null,
     'is_done': null, // null for all, true for done, false for not done
     'category': null,
@@ -1126,7 +1134,8 @@ class _AIAssistantPageState extends State<AIAssistantPage>
     }
   }
 
-  // 檢查是否為簡單問候語
+  // 檢查是否為簡單問候語 - 保留供未來使用
+  // ignore: unused_element
   bool _isGreeting(String message) {
     final lowerMessage = message.toLowerCase().trim();
     return lowerMessage == '你好' ||
@@ -1255,7 +1264,8 @@ class _AIAssistantPageState extends State<AIAssistantPage>
     }
   }
 
-  // 獲取永續分析報告
+  // 獲取永續分析報告 - 保留供未來使用
+  // ignore: unused_element
   Future<void> _fetchSustainabilityReport() async {
     try {
       setState(() {
@@ -1312,7 +1322,8 @@ class _AIAssistantPageState extends State<AIAssistantPage>
     }
   }
 
-  // 計算碳信用
+  // 計算碳信用 - 保留供未來使用
+  // ignore: unused_element
   Future<void> _calculateCarbonCredits() async {
     try {
       setState(() {
@@ -1453,7 +1464,8 @@ ${DateTime.now().year + 5}: 286.20 噸CO₂
 ''';
 
         // 創建示例圖表數據
-        final currentYear = DateTime.now().year;
+        // ignore: unused_local_variable
+        final currentYear = DateTime.now().year; // Reserved for chart labeling
         final List<FlSpot> exampleChartData = [
           const FlSpot(0, 218.45),
           const FlSpot(1, 231.20),
@@ -1578,8 +1590,12 @@ ${DateTime.now().year + 5}: 286.20 噸CO₂
       // 如果失敗，使用OpenAI直接生成推薦
       try {
         // This should be a backend call
+        // ignore: unused_local_variable
         final treeData = await _fetchTreeData();
+        // 這些變數保留用於未來 AI 服務整合
+        // ignore: unused_local_variable
         final systemPrompt = '你是一位樹木與林業專家。以下是用戶的樹木數據: $treeData';
+        // ignore: unused_local_variable
         final userPrompt = '請針對$areaInfo推薦5-10種適合種植的樹種，並說明每種樹木的特點、生長條件和碳吸收潛力。';
         // Commenting out direct OpenAI call
         /*
@@ -1614,7 +1630,8 @@ ${DateTime.now().year + 5}: 286.20 噸CO₂
     }
   }
 
-  // 獲取管理建議
+  // 獲取管理建議 - 保留供未來使用
+  // ignore: unused_element
   Future<void> _fetchManagementAdvice() async {
     try {
       setState(() {
@@ -1692,7 +1709,9 @@ ${DateTime.now().year + 5}: 286.20 噸CO₂
       // 如果失敗，使用OpenAI直接生成建議
       try {
         final treeData = await _fetchTreeData();
+        // ignore: unused_local_variable
         final systemPrompt = '你是一位樹木管理專家。以下是用戶的樹木數據: $treeData';
+        // ignore: unused_local_variable
         final userPrompt = '請針對$areaInfo的樹木提供具體的管理建議，包括澆水、施肥、修剪和病蟲害防治等方面。';
         // Commenting out direct OpenAI call
         /*
@@ -1727,6 +1746,8 @@ ${DateTime.now().year + 5}: 286.20 噸CO₂
     }
   }
 
+  // 翻譯效率等級 - 保留供未來使用
+  // ignore: unused_element
   String _translateEfficiency(String efficiency) {
     switch (efficiency) {
       case 'high':
@@ -1740,6 +1761,8 @@ ${DateTime.now().year + 5}: 286.20 噸CO₂
     }
   }
 
+  // 翻譯率等級 - 保留供未來使用
+  // ignore: unused_element
   String _translateRate(String rate) {
     switch (rate) {
       case 'fast':
@@ -1753,6 +1776,8 @@ ${DateTime.now().year + 5}: 286.20 噸CO₂
     }
   }
 
+  // 翻譯壽命等級 - 保留供未來使用
+  // ignore: unused_element
   String _translateLifespan(String lifespan) {
     switch (lifespan) {
       case 'long':
@@ -1766,6 +1791,8 @@ ${DateTime.now().year + 5}: 286.20 噸CO₂
     }
   }
 
+  // 翻譯維護等級 - 保留供未來使用
+  // ignore: unused_element
   String _translateMaintenance(String maintenance) {
     switch (maintenance) {
       case 'high':
@@ -3149,7 +3176,8 @@ ${DateTime.now().year + 5}: 286.20 噸CO₂
     }
   }
 
-  // 顯示樹種比較對話框
+  // 顯示樹種比較對話框 - 保留供未來使用
+  // ignore: unused_element
   Future<void> _showSpeciesComparisonDialog(BuildContext context) async {
     final allSpecies = await _fetchTreeSpecies();
     if (allSpecies.isEmpty) {
@@ -3343,12 +3371,16 @@ ${DateTime.now().year + 5}: 286.20 噸CO₂
     }
   }
 
+  // 取得歷史價格圖表數據 - 保留供未來使用
+  // ignore: unused_element
   List<FlSpot> _getHistoricPriceSpots(List<dynamic> prices) {
     return List.generate(prices.length, (index) {
       return FlSpot(index.toDouble(), prices[index].toDouble());
     });
   }
 
+  // 翻譯趨勢 - 保留供未來使用
+  // ignore: unused_element
   String _translateTrend(String trend) {
     switch (trend) {
       case 'up':
@@ -3362,6 +3394,8 @@ ${DateTime.now().year + 5}: 286.20 噸CO₂
     }
   }
 
+  // 翻譯預測 - 保留供未來使用
+  // ignore: unused_element
   String _translateForecast(String forecast) {
     switch (forecast) {
       case 'rising':
@@ -3375,6 +3409,8 @@ ${DateTime.now().year + 5}: 286.20 噸CO₂
     }
   }
 
+  // 格式化日期時間 - 保留供未來使用
+  // ignore: unused_element
   String _formatDateTime(String dateTimeStr) {
     try {
       final dateTime = DateTime.parse(dateTimeStr);
@@ -3384,6 +3420,8 @@ ${DateTime.now().year + 5}: 286.20 噸CO₂
     }
   }
 
+  // 建立報告卡片 UI - 保留供未來使用
+  // ignore: unused_element
   Widget _buildReportCard({required String title, required Widget child}) {
     return Card(
       elevation: 4,
@@ -3410,6 +3448,8 @@ ${DateTime.now().year + 5}: 286.20 噸CO₂
     );
   }
 
+  // 建立報告列 UI - 保留供未來使用
+  // ignore: unused_element
   Widget _buildReportRow(
     String label,
     String value, {

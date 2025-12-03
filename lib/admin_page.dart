@@ -10,6 +10,7 @@ import 'services/project_service.dart';
 import 'services/admin_service.dart';
 import 'models/project.dart';
 import 'config/app_config.dart'; // Import AppConfig
+import 'screens/v3/project_boundary_draw_page.dart'; // V3 專案邊界繪製
 import '../services/api_service.dart';
 // import '../services/auth_service.dart'; // Unused
 
@@ -1616,6 +1617,10 @@ class _AdminPageState extends State<AdminPage> {
                     icon: Icon(Icons.build),
                     label: Text('管理員專區'),
                   ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.map),
+                    label: Text('專案邊界'),
+                  ),
                 ],
               ),
             if (_isSidebarVisible)
@@ -1634,7 +1639,9 @@ class _AdminPageState extends State<AdminPage> {
                                 ? _buildApiKeyOptions()
                                 : _selectedIndex == 4
                                     ? _buildSystemSettings()
-                                    : _buildAdminZone(),
+                                    : _selectedIndex == 5
+                                        ? _buildAdminZone()
+                                        : const ProjectBoundaryDrawPage(),
               ),
             ),
           ],

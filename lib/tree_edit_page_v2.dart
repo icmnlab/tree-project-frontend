@@ -5,11 +5,10 @@ import 'dart:convert';
 
 // Import services
 import 'services/tree_service.dart';
-import 'services/ar_measurement_service.dart';
 import 'screens/ar_dbh_measurement_page.dart';
 import 'services/project_service.dart';
 import 'services/project_area_service.dart';
-import 'services/location_service.dart';
+// location_service import removed - unused in edit mode
 import 'services/species_service.dart';
 import 'services/v3/ml_data_collector.dart'; // V3 ML 數據收集
 
@@ -49,7 +48,7 @@ class TreeEditPageV2 extends StatefulWidget {
 class _TreeEditPageV2State extends State<TreeEditPageV2> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
-  String _locationError = '';
+  // ignore: _locationError removed - unused
   bool _autoCalculateEnabled = true;
   
   // V3 ML 數據追蹤：記錄原始載入的碳計算值
@@ -62,7 +61,7 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
   final TreeService _treeService = TreeService();
   final ProjectService _projectService = ProjectService();
   final ProjectAreaService _projectAreaService = ProjectAreaService();
-  final LocationService _locationService = LocationService();
+  // LocationService removed - unused in edit mode
   final TreeSpeciesService _speciesService = TreeSpeciesService();
 
   // Data Lists

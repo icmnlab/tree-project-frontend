@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
 import '../project_trees_page.dart';
 import '../tree_survey_page.dart';
 import 'cities_page.dart';
@@ -98,7 +97,7 @@ class _ProjectAreasPageState extends State<ProjectAreasPage> {
         final data = response;
 
         setState(() {
-          if (data != null && data['data'] != null) {
+          if (data['data'] != null) {
             final List<dynamic> areasData = data['data'];
             _areas = List<Map<String, dynamic>>.from(areasData);
           } else {
@@ -121,6 +120,7 @@ class _ProjectAreasPageState extends State<ProjectAreasPage> {
   }
 
   // 使用坐標判斷區位是否在指定縣市內
+  // ignore: unused_element
   bool _isAreaInCity(String area, String city) {
     // 如果沒有坐標資料，則無法判斷
     if (!_areaCoordinatesMap.containsKey(area) ||
@@ -278,6 +278,7 @@ class _ProjectAreasPageState extends State<ProjectAreasPage> {
   }
 
   // 檢查城市名稱是否與區位匹配
+  // ignore: unused_element
   bool _matchCityWithArea(String city, String area) {
     final Map<String, List<String>> cityKeywords = {
       '台北': [
@@ -371,7 +372,7 @@ class _ProjectAreasPageState extends State<ProjectAreasPage> {
       if (response['success'] == true) {
         final data = response;
 
-        if (data != null && data['data'] != null && data['data'] is List) {
+        if (data['data'] != null && data['data'] is List) {
           final List<dynamic> projects = data['data'];
 
           if (projects.isNotEmpty) {

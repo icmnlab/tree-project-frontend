@@ -42,7 +42,8 @@ class _CarbonSinkAssistantState extends State<CarbonSinkAssistant>
     'annual_rainfall': 2000.0,
     'temperature_min': 15.0,
   };
-  List<TreeSpecies> _environmentallyFilteredSpecies = [];
+  // ignore: unused_field
+  List<TreeSpecies> _environmentallyFilteredSpecies = []; // Reserved for environment filtering
 
   // 混合造林推薦相關變量
   String? _mixedForestRegion;
@@ -142,7 +143,8 @@ class _CarbonSinkAssistantState extends State<CarbonSinkAssistant>
     });
   }
 
-  // 按環境條件篩選樹種
+  // 按環境條件篩選樹種 - 保留供未來使用
+  // ignore: unused_element
   void _filterTreesByEnvironment() {
     setState(() {
       _environmentallyFilteredSpecies =

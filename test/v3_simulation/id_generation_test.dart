@@ -9,7 +9,7 @@
 // - ID 唯一性驗證
 // ============================================================================
 
-import 'dart:math' as math;
+// dart:math import removed - unused
 import 'package:flutter_test/flutter_test.dart';
 
 // ============================================================================
@@ -45,7 +45,8 @@ class TestIDGenerator {
   
   /// 創建新專案 (會產生佔位記錄)
   TestTreeRecord createProject(String projectCode, String projectName) {
-    // 產生下一個系統 ID
+    // 產生下一個系統 ID - 計算但佔位記錄使用特殊 ID
+    // ignore: unused_local_variable
     final maxSystemId = _getMaxSystemId(excludePlaceholder: true);
     final systemTreeId = 'PLACEHOLDER-$projectCode';
     

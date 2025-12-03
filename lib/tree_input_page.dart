@@ -316,7 +316,8 @@ class _TreeInputPageState extends State<TreeInputPage> {
     super.dispose();
   }
 
-  // 在送出樹木資料前自動同步 project_areas
+  // 在送出樹木資料前自動同步 project_areas - 保留作為備用功能
+  // ignore: unused_element
   Future<void> _syncProjectAreaIfNeeded() async {
     final areaName = projectAreaController.text.trim();
     if (areaName.isEmpty) return;

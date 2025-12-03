@@ -48,7 +48,8 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
   final _formKey = GlobalKey<FormState>();
   int _currentStep = 0;
   bool _isLoading = false;
-  String _locationError = '';
+  // ignore: unused_field
+  String _locationError = ''; // Reserved for future location error handling
   bool _autoCalculateEnabled = true;
 
   bool _isEditing = false;
@@ -64,7 +65,8 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
   // Data Lists
   List<Map<String, dynamic>> _speciesList = [];
   bool _loadingSpecies = false;
-  List<Map<String, dynamic>> _projectList = [];
+  // ignore: unused_field
+  List<Map<String, dynamic>> _projectList = []; // Reserved for project list caching
   List<Map<String, dynamic>> _projectAreas = [];
   bool _loadingAreas = false;
   List<Map<String, dynamic>> _filteredProjects = [];

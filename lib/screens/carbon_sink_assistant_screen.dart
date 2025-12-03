@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/tree_species.dart';
-import '../services/tree_service.dart';
+// TreeService import removed - available via TreeService() when needed
 import '../services/carbon_sink_service.dart';
 import '../constants/colors.dart';
 
@@ -15,7 +15,7 @@ class CarbonSinkAssistantScreen extends StatefulWidget {
 class _CarbonSinkAssistantScreenState extends State<CarbonSinkAssistantScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final TreeService _treeService = TreeService();
+  // TreeService available via TreeService() when needed
   final CarbonSinkService _carbonSinkService = CarbonSinkService();
 
   // 樹種相關變量

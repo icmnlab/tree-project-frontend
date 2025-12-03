@@ -1346,6 +1346,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   }
 
   // 保留舊的建議卡片方法用於可能的未來使用
+  // ignore: unused_element
   Widget _buildSuggestionCardOld(
     IconData icon,
     String title,

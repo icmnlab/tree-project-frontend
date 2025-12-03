@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'dart:convert';
 import 'tree_input_page.dart';
 import 'services/carbon_calculation_service.dart';
 import '../services/api_service.dart'; // 引入 ApiService

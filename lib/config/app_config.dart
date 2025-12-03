@@ -36,7 +36,6 @@ class AppConfig {
         baseUrl = 'https://tree-app-backend-staging.onrender.com/api';
         break;
       case Environment.prod:
-      default:
         baseUrl = 'https://tree-app-backend-prod.onrender.com/api';
         break;
     }

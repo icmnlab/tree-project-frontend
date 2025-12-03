@@ -38,10 +38,8 @@ StationPosition calculateStationPosition({
   // 每度緯度約 111320 公尺
   const double metersPerDegreeLat = 111320.0;
   
-  // 將方位角轉為弧度
-  final double azimuthRad = azimuth * pi / 180.0;
-  
-  // 反向方位角（加 180 度）
+  // 反向方位角（加 180 度）- 用於計算測站位置
+  // 原始方位角 azimuth 只用於計算反向
   final double reverseAzimuthRad = (azimuth + 180) * pi / 180.0;
   
   // 計算經度方向的縮放因子

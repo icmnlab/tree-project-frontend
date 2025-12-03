@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -95,7 +94,7 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    // Theme available via Theme.of(context) when needed
     
     return Scaffold(
       backgroundColor: Colors.grey.shade50,

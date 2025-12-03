@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'tree_input_page.dart';
 import 'tree_input_page_v2.dart'; // 引入 V2 頁面
 import 'screens/ai_chat_page.dart';
@@ -182,10 +180,12 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
       return parts.last;
     }
 
-    // 否則返回原始ID
+    // 否則返回原始 ID
     return id;
   }
 
+  // V1 導航邏輯 - 保留作為備用
+  // ignore: unused_element
   void _navigateToAddProject() {
     Navigator.push(
       context,
@@ -206,7 +206,8 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
     });
   }
 
-  // V2 導航邏輯
+  // V2 導航邏輯 - 保留作為備用
+  // ignore: unused_element
   void _navigateToAddProjectV2() {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(

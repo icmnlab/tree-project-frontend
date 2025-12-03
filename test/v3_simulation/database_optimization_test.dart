@@ -9,8 +9,7 @@
 // 5. 兼容性驗證（舊版 APP 相容）
 // ============================================================================
 
-import 'dart:convert';
-import 'dart:math' as math;
+// dart:convert and dart:math imports removed - unused
 import 'package:flutter_test/flutter_test.dart';
 
 // ============================================================================

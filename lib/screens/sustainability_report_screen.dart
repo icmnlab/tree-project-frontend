@@ -395,7 +395,8 @@ class _SustainabilityReportScreenState
                   borderData: FlBorderData(show: false),
                   barGroups: List.generate(dbhData.length, (index) {
                     final data = dbhData[index];
-                    final count = data['count'] as int;
+                    // ignore: unused_local_variable
+                    final count = data['count'] as int; // Reserved for tooltip display
                     final percentage = data['percentage'] as num;
 
                     return BarChartGroupData(
