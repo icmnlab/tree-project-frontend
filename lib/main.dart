@@ -5,8 +5,7 @@ import 'admin_page.dart';
 import 'statistics_page.dart';
 import 'map_page.dart';
 import 'screens/ai_sustainability_report_screen.dart';
-import 'ai_assistant_page.dart';
-import 'screens/ai_chat_page.dart'; // 新版 AI 聊天頁面
+import 'screens/ai_chat_page.dart'; // 新版 AI 聊天頁面 (取代 ai_assistant_page)
 import 'screens/cities_page.dart';
 import 'services/carbon_sink_service.dart';
 import 'services/v3/ml_data_sync_service.dart'; // V3 ML 數據同步服務
@@ -72,7 +71,8 @@ class MyApp extends StatelessWidget {
         '/tree-survey': (context) => const TreeSurveyPage(),
         '/statistics': (context) => const StatisticsPage(),
         '/map': (context) => const MapPage(),
-        '/ai-assistant': (context) => AIAssistantPage(
+        // 舊路由保留兼容，重定向到新版 AI Chat
+        '/ai-assistant': (context) => AIChatPage(
               userId: 'user-${DateTime.now().millisecondsSinceEpoch}',
               selectedProjectAreas: const [],
             ),

@@ -8,6 +8,7 @@ import 'cities_page.dart';
 import '../main.dart';
 import 'ble_import_page.dart';
 import 'species_identification_page.dart';
+import 'pending_measurement_task_page.dart';
 import '../constants/colors.dart';
 import '../themes/app_theme.dart';
 
@@ -246,6 +247,16 @@ class _DashboardPageState extends State<DashboardPage> {
                 onTap: () => Navigator.push(
                   context,
                   MaterialPageRoute(builder: (context) => const BleImportPage()),
+                ),
+              ),
+              FeatureCard(
+                title: '待測量任務',
+                subtitle: '現場測量',
+                icon: Icons.assignment_rounded,
+                color: Colors.deepOrange,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const PendingMeasurementTaskPage()),
                 ),
               ),
               FeatureCard(

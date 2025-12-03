@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'tree_input_page.dart';
 import 'tree_input_page_v2.dart'; // 引入 V2 頁面
 import 'tree_survey_page.dart';
-import 'ai_assistant_page.dart';
+import 'screens/ai_chat_page.dart';
 import '../services/api_service.dart'; // 引入 ApiService
 import '../services/project_service.dart'; // 引入 ProjectService
 import '../services/tree_service.dart'; // 引入 TreeService
@@ -289,7 +289,7 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AIAssistantPage(
+        builder: (context) => AIChatPage(
           userId: 'user-${DateTime.now().millisecondsSinceEpoch}',
           selectedProjectAreas: [widget.projectName],
         ),

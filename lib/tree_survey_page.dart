@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'tree_input_page.dart';
 import 'tree_input_page_v2.dart'; // 引入 V2 頁面
-import 'ai_assistant_page.dart';
+import 'screens/ai_chat_page.dart';
 import 'tree_survey_detail_page.dart';
 import 'services/api_service.dart'; // 引入 ApiService
 import 'widgets/add_tree_dialog.dart'; // 引入 AddTreeSelectionDialog
@@ -240,7 +240,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => AIAssistantPage(
+        builder: (context) => AIChatPage(
           userId: 'user-${DateTime.now().millisecondsSinceEpoch}',
           selectedProjectAreas: [widget.projectName ?? ''],
         ),
