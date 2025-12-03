@@ -3,13 +3,45 @@
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-blue.svg)](https://flutter.dev/)
 [![Dart](https://img.shields.io/badge/Dart-3.x-blue.svg)](https://dart.dev/)
 [![License](https://img.shields.io/badge/License-ISC-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-18.0.0-green.svg)](https://github.com/KyleliuNDHU/tree-project-frontend)
+[![Version](https://img.shields.io/badge/Version-18.1.0-green.svg)](https://github.com/KyleliuNDHU/tree-project-frontend)
 
 > 基於大語言模型的永續發展分析平台 - Flutter 行動應用程式
 
 ---
 
 ## 📦 版本紀錄
+
+### v18.1.0 (2025-01-14) - V3 進階服務 UI 整合 🎛️
+
+#### 🆕 新增功能
+- **V3 進階服務管理頁面** - 統一管理所有 V3 進階功能
+  - 樹木影像管理：瀏覽、同步狀態、批量上傳
+  - 資料衝突處理：查看待處理操作、重試/放棄功能
+  - AR 測量校準：距離、相機高度設定介面
+  - ML 數據同步：查看待上傳數據、手動觸發同步
+
+- **首頁新增「進階服務」入口** - 快速存取 V3 功能
+
+#### 📋 擴充 API
+| 服務 | 新增方法 |
+|------|----------|
+| `TreeImageService` | `getUnsyncedImages()`, `getAllImages()`, `syncAllImages()` |
+| `ConflictResolutionService` | `retryOperation()`, `abandonOperation()` |
+| `ARMeasurementIntegrationService` | `currentCalibration`, `setCalibration()` |
+
+#### 🔧 Backend 修復
+- 修正 `users.pg.sql` CASCADE 刪除外鍵依賴問題
+- 統一 `pending_tree_measurements` 資料表結構（使用 `session_id`）
+
+#### 📋 變更清單
+| 類型 | 說明 |
+|------|------|
+| feat | 新增 `v3_services_page.dart` 進階服務管理頁面 |
+| feat | 首頁新增「進階服務」功能卡片 |
+| fix | Backend: CASCADE 處理外鍵依賴 |
+| fix | Backend: 統一 pending_tree_measurements 結構 |
+
+---
 
 ### v18.0.0 (2025-12-03) - V3 測試套件與 ML 同步服務 🧪
 
