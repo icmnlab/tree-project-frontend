@@ -3,13 +3,52 @@
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-blue.svg)](https://flutter.dev/)
 [![Dart](https://img.shields.io/badge/Dart-3.x-blue.svg)](https://dart.dev/)
 [![License](https://img.shields.io/badge/License-ISC-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-17.1.0-green.svg)](https://github.com/KyleliuNDHU/tree-project-frontend)
+[![Version](https://img.shields.io/badge/Version-18.0.0-green.svg)](https://github.com/KyleliuNDHU/tree-project-frontend)
 
 > 基於大語言模型的永續發展分析平台 - Flutter 行動應用程式
 
 ---
 
 ## 📦 版本紀錄
+
+### v18.0.0 (2025-12-03) - V3 測試套件與 ML 同步服務 🧪
+
+#### 🆕 新增功能
+- **ML 數據同步服務** - 自動同步本地 ML 訓練數據到後端
+  - `MLDataSyncService` - 背景同步服務
+  - WiFi 優先上傳，支援離線暫存
+  - 批次上傳（最大 500 條/批）
+  - 自動重試機制
+
+#### 🧪 V3 測試套件 (8,258 行)
+全面覆蓋 V3 功能的測試，共 251 個測試案例全部通過：
+
+| 測試檔案 | 行數 | 測試內容 |
+|----------|------|----------|
+| `extreme_validation_test.dart` | 1,207 | AR/樹種/COMPLETE標準/2NF/ML 驗證 |
+| `database_optimization_test.dart` | 1,145 | 資料庫正規化/索引/圖片存儲/ML API |
+| `conflict_resolution_test.dart` | 1,009 | 衝突檢測/解決策略/版本控制 |
+| `ar_dbh_integration_test.dart` | 903 | AR DBH 測量整合測試 |
+| `ble_simulation_test.dart` | 907 | BLE 設備模擬/訊號測試 |
+| `boundary_service_test.dart` | 896 | 專案邊界/Ray Casting/座標驗證 |
+| `id_generation_test.dart` | 600 | ID 生成/序列/唯一性測試 |
+| `integration_workflow_test.dart` | 591 | 端到端工作流程測試 |
+
+#### 📋 測試覆蓋範圍
+- ✅ Station Arrival COMPLETE 標準（10m 閾值）
+- ✅ AR 參照物最小 30px 驗證
+- ✅ 2NF 資料庫正規化驗證
+- ✅ ML 數據記錄格式驗證
+- ✅ GPS 誤差容忍度計算
+
+#### 📋 變更清單
+| 類型 | 說明 |
+|------|------|
+| feat | 新增 `ml_data_sync_service.dart` ML 數據同步服務 |
+| test | 新增 8 個 V3 測試檔案 (8,258 行) |
+| test | 251 個測試全部通過 |
+
+---
 
 ### v17.1.0 (2025-12-04) - V3 進階服務層 🛠️
 

@@ -722,6 +722,34 @@ $$
 | **衝突解決服務** | `lib/services/v3/conflict_resolution_service.dart` | 690行，Optimistic Lock + 版本號 |
 | **AR 測量整合服務** | `lib/services/v3/ar_measurement_integration_service.dart` | 574行，校準資料 + 信心度估算 |
 | **BLE 模擬測試服務** | `lib/services/v3/ble_simulation_service.dart` | 747行，模擬設備 + 測試情境 |
+| **ML 數據同步服務** | `lib/services/v3/ml_data_sync_service.dart` | 350行，背景同步到後端 |
+| **ML 訓練數據 API** | `backend/routes/ml_training_data.js` | 後端 API，支援批次上傳/統計/導出 |
+| **ML 數據表格 Schema** | `backend/database/initial_data/ml_training_data.pg.sql` | 資料庫結構 |
+
+### 🧪 測試套件 (2025-12-03 新增)
+
+| 測試檔案 | 行數 | 測試數 | 狀態 |
+|----------|------|--------|------|
+| `extreme_validation_test.dart` | 1,207 | 45 | ✅ 通過 |
+| `database_optimization_test.dart` | 1,145 | 38 | ✅ 通過 |
+| `conflict_resolution_test.dart` | 1,009 | 32 | ✅ 通過 |
+| `ar_dbh_integration_test.dart` | 903 | 28 | ✅ 通過 |
+| `ble_simulation_test.dart` | 907 | 30 | ✅ 通過 |
+| `boundary_service_test.dart` | 896 | 26 | ✅ 通過 |
+| `id_generation_test.dart` | 600 | 22 | ✅ 通過 |
+| `integration_workflow_test.dart` | 591 | 30 | ✅ 通過 |
+| **總計** | **8,258** | **251** | **✅ 全部通過** |
+
+### 📏 關鍵驗證標準
+
+| 標準 | 值 | 說明 |
+|------|-----|------|
+| Station Arrival COMPLETE | 10m | GPS 位置到達閾值 |
+| GPS 精度補償上限 | 15m | 當 GPS 精度 >8m 時 |
+| AR 參照物最小像素 | 30px | 確保測量精度 |
+| AR 參照物最大縮放比 | 20x | 防止比例失真 |
+| ML 本地最大記錄數 | 2,000 | SharedPreferences 限制 |
+| ML 批次上傳數量 | 500 | 單次上傳最大記錄數 |
 
 ### ⏳ 待完成
 
