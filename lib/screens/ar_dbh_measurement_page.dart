@@ -1,8 +1,10 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/ar_measurement_service.dart';
+import '../services/camera_height_assistant.dart';
 
 /// AR DBH 測量頁面
 /// 
@@ -16,11 +18,19 @@ class ARDBHMeasurementPage extends StatefulWidget {
   
   /// 樹種名稱（用於顯示參考範圍）
   final String? speciesName;
+  
+  /// 已知距離（從 VLGEO2 待測量任務自動帶入）
+  final double? knownDistance;
+  
+  /// 是否自動校準模式（使用已知距離）
+  final bool autoCalibrate;
 
   const ARDBHMeasurementPage({
     super.key,
     this.initialDbh,
     this.speciesName,
+    this.knownDistance,
+    this.autoCalibrate = false,
   });
 
   @override
@@ -45,7 +55,8 @@ class _ARDBHMeasurementPageState extends State<ARDBHMeasurementPage>
   File? _twoPointImage;
   MeasurementPoint? _point1;
   MeasurementPoint? _point2;
-  double _estimatedDistance = 1.5; // 預設距離 1.5m
+  late double _estimatedDistance; // 距離（可從 VLGEO2 自動帶入）
+  bool _distanceAutoSet = false; // 距離是否自動設定
   
   // 參照物測量狀態
   File? _referenceImage;
@@ -56,16 +67,33 @@ class _ARDBHMeasurementPageState extends State<ARDBHMeasurementPage>
   
   // 環繞測量狀態
   final List<File> _multiAngleImages = [];
+  
+  // 相機高度輔助
+  final CameraHeightAssistant _cameraAssistant = CameraHeightAssistant();
+  CameraAlignment? _cameraAlignment;
+  bool _showLevelGuide = false;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    
+    // 初始化距離：優先使用 VLGEO2 已知距離
+    if (widget.knownDistance != null && widget.knownDistance! > 0) {
+      _estimatedDistance = widget.knownDistance!;
+      _distanceAutoSet = true;
+    } else {
+      _estimatedDistance = 1.5; // 預設 1.5m
+    }
+    
     _initializeService();
   }
 
   Future<void> _initializeService() async {
     try {
+      // 載入使用者身高設定
+      await _cameraAssistant.loadUserHeight();
+      
       final capabilities = await _measurementService.detectDeviceCapabilities();
       if (mounted) {
         setState(() {
@@ -84,6 +112,7 @@ class _ARDBHMeasurementPageState extends State<ARDBHMeasurementPage>
   @override
   void dispose() {
     _tabController.dispose();
+    _cameraAssistant.stopListening();
     super.dispose();
   }
 
@@ -328,12 +357,31 @@ class _ARDBHMeasurementPageState extends State<ARDBHMeasurementPage>
           
           const SizedBox(height: 16),
           
+          // 水平儀引導（拍照前顯示）
+          if (_twoPointImage == null && _showLevelGuide)
+            _buildLevelGuide(),
+          
           // 拍照按鈕
           if (_twoPointImage == null)
-            _buildPhotoButton(
-              onPressed: () => _takePhoto(MeasurementMethod.twoPoint),
-              label: '拍攝樹幹照片',
-              icon: Icons.camera_alt,
+            Column(
+              children: [
+                _buildPhotoButton(
+                  onPressed: () => _takePhoto(MeasurementMethod.twoPoint),
+                  label: '拍攝樹幹照片',
+                  icon: Icons.camera_alt,
+                ),
+                const SizedBox(height: 12),
+                // 水平儀開關
+                TextButton.icon(
+                  onPressed: _toggleLevelGuide,
+                  icon: Icon(
+                    _showLevelGuide ? Icons.visibility_off : Icons.straighten,
+                    size: 18,
+                  ),
+                  label: Text(_showLevelGuide ? '關閉水平儀' : '開啟水平儀輔助'),
+                  style: TextButton.styleFrom(foregroundColor: Colors.teal),
+                ),
+              ],
             )
           else ...[
             // 顯示照片並允許點擊標記
@@ -345,13 +393,29 @@ class _ARDBHMeasurementPageState extends State<ARDBHMeasurementPage>
             
             const SizedBox(height: 16),
             
-            // 距離輸入
+            // 距離輸入（可自動帶入）
             Row(
               children: [
                 Expanded(
-                  child: Text(
-                    '您與樹幹的距離: ${_estimatedDistance.toStringAsFixed(1)} 公尺',
-                    style: const TextStyle(fontWeight: FontWeight.w500),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '您與樹幹的距離: ${_estimatedDistance.toStringAsFixed(1)} 公尺',
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
+                      if (_distanceAutoSet)
+                        Row(
+                          children: [
+                            Icon(Icons.auto_fix_high, size: 14, color: Colors.green.shade600),
+                            const SizedBox(width: 4),
+                            Text(
+                              '已從 VLGEO2 測量數據自動帶入',
+                              style: TextStyle(fontSize: 11, color: Colors.green.shade600),
+                            ),
+                          ],
+                        ),
+                    ],
                   ),
                 ),
               ],
@@ -359,11 +423,15 @@ class _ARDBHMeasurementPageState extends State<ARDBHMeasurementPage>
             Slider(
               value: _estimatedDistance,
               min: 0.5,
-              max: 5.0,
-              divisions: 45,
+              max: 10.0, // 增加範圍以支援更遠的 VLGEO2 測量
+              divisions: 95,
               label: '${_estimatedDistance.toStringAsFixed(1)}m',
+              activeColor: _distanceAutoSet ? Colors.green : null,
               onChanged: (value) {
-                setState(() => _estimatedDistance = value);
+                setState(() {
+                  _estimatedDistance = value;
+                  _distanceAutoSet = false; // 手動調整後取消自動標記
+                });
                 _recalculateTwoPoint();
               },
             ),
@@ -1077,6 +1145,367 @@ class _ARDBHMeasurementPageState extends State<ARDBHMeasurementPage>
         backgroundColor: Colors.red,
       ),
     );
+  }
+  
+  // === 水平儀輔助功能 ===
+  
+  /// 切換水平儀顯示
+  void _toggleLevelGuide() {
+    setState(() {
+      _showLevelGuide = !_showLevelGuide;
+      if (_showLevelGuide) {
+        _cameraAssistant.startListening(
+          onAlignmentChanged: (alignment) {
+            if (mounted) {
+              setState(() => _cameraAlignment = alignment);
+            }
+          },
+        );
+      } else {
+        _cameraAssistant.stopListening();
+        _cameraAlignment = null;
+      }
+    });
+  }
+  
+  /// 水平儀引導 Widget
+  Widget _buildLevelGuide() {
+    final alignment = _cameraAlignment;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: alignment?.isLevel == true 
+            ? Colors.green.shade50 
+            : Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: alignment?.isLevel == true 
+              ? Colors.green.shade200 
+              : Colors.orange.shade200,
+        ),
+      ),
+      child: Column(
+        children: [
+          // 水平儀圖示
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.straighten,
+                color: alignment?.isLevel == true ? Colors.green : Colors.orange,
+                size: 24,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '相機水平儀',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: alignment?.isLevel == true 
+                      ? Colors.green.shade700 
+                      : Colors.orange.shade700,
+                ),
+              ),
+            ],
+          ),
+          
+          // 身高設定按鈕（如果未設定）
+          if (!_cameraAssistant.hasUserHeight)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: OutlinedButton.icon(
+                onPressed: _showHeightSettingDialog,
+                icon: const Icon(Icons.person_outline, size: 16),
+                label: const Text('設定身高（提高精確度）'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.blue.shade700,
+                  side: BorderSide(color: Colors.blue.shade300),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  textStyle: const TextStyle(fontSize: 12),
+                ),
+              ),
+            ),
+          
+          const SizedBox(height: 12),
+          
+          // 水平指示器（改進版：顯示目標角度）
+          _buildLevelIndicator(alignment),
+          
+          const SizedBox(height: 8),
+          
+          // 引導文字
+          Text(
+            alignment?.guidance ?? '啟動中...',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+              color: alignment?.isLevel == true 
+                  ? Colors.green.shade700 
+                  : Colors.orange.shade700,
+            ),
+          ),
+          
+          // 估計高度顯示（如果有身高設定）
+          if (alignment?.estimatedCameraHeightCm != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                '估計相機高度: ${alignment!.estimatedCameraHeightCm!.toStringAsFixed(0)} cm',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ),
+          
+          const SizedBox(height: 8),
+          
+          // 說明（根據是否有身高設定顯示不同內容）
+          Text(
+            _cameraAssistant.hasUserHeight
+                ? '身高 ${_cameraAssistant.userHeightCm?.toStringAsFixed(0)} cm → '
+                  '肩膀約 ${(_cameraAssistant.userHeightCm! * 0.82).toStringAsFixed(0)} cm\n'
+                  '手臂水平伸直，跟隨引導對準 1.3m'
+                : '請設定身高以獲得精確引導\n或將手機對準樹幹約 1.3m 高度處',
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey.shade600,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+  
+  /// 水平指示器 Widget
+  Widget _buildLevelIndicator(CameraAlignment? alignment) {
+    final targetPitch = alignment?.targetPitch ?? 0;
+    final currentPitch = alignment?.pitch ?? 0;
+    final screenWidth = MediaQuery.of(context).size.width - 64; // 扣除 padding
+    
+    return SizedBox(
+      height: 50,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // 背景刻度
+          Container(
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          
+          // 目標位置標記（如果有身高設定）
+          if (_cameraAssistant.hasUserHeight)
+            Positioned(
+              left: screenWidth / 2 + targetPitch.clamp(-30.0, 30.0) * (screenWidth / 60),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 2,
+                    height: 30,
+                    color: Colors.green.shade400,
+                  ),
+                  Text(
+                    '1.3m',
+                    style: TextStyle(
+                      fontSize: 9,
+                      color: Colors.green.shade600,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          
+          // 中心標記（水平線）
+          Container(
+            width: 2,
+            height: 20,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade400,
+              borderRadius: BorderRadius.circular(1),
+            ),
+          ),
+          
+          // 目前位置氣泡
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 100),
+            left: screenWidth / 2 + currentPitch.clamp(-30.0, 30.0) * (screenWidth / 60) - 12,
+            child: Container(
+              width: 24,
+              height: 24,
+              decoration: BoxDecoration(
+                color: alignment?.isLevel == true 
+                    ? Colors.green 
+                    : Colors.orange,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
+              child: const Icon(
+                Icons.camera_alt,
+                size: 14,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  /// 顯示身高設定對話框
+  Future<void> _showHeightSettingDialog() async {
+    double height = _cameraAssistant.userHeightCm ?? 170;
+    
+    final result = await showDialog<double>(
+      context: context,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Row(
+            children: [
+              Icon(Icons.height, color: Colors.teal),
+              SizedBox(width: 8),
+              Text('設定身高'),
+            ],
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // 持機姿勢說明
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.amber.shade200),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(Icons.info_outline, 
+                            color: Colors.amber.shade700, size: 18),
+                          const SizedBox(width: 6),
+                          Text(
+                            '標準持機姿勢',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: Colors.amber.shade800,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '1️⃣ 站直，手臂向前「水平伸直」\n'
+                        '2️⃣ 手機螢幕面對自己（相機朝樹）\n'
+                        '3️⃣ 跟隨水平儀引導微調角度',
+                        style: TextStyle(
+                          fontSize: 12, 
+                          color: Colors.amber.shade900,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  '輸入您的身高，系統會根據您的肩膀高度\n計算如何精確對準 1.3m 的 DBH 測量高度',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  '${height.toStringAsFixed(0)} cm',
+                  style: const TextStyle(
+                    fontSize: 36,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.teal,
+                  ),
+                ),
+                Slider(
+                  value: height,
+                  min: 140,
+                  max: 200,
+                  divisions: 60,
+                  label: '${height.toStringAsFixed(0)} cm',
+                  onChanged: (v) => setDialogState(() => height = v),
+                ),
+                const SizedBox(height: 8),
+                // 計算預覽
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '根據此身高計算：',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue.shade700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '• 肩膀高度: ${(height * 0.82).toStringAsFixed(0)} cm\n'
+                        '• 手臂長度: ${(height * 0.38).toStringAsFixed(0)} cm\n'
+                        '• 需傾斜約: ${_calcPreviewAngle(height).toStringAsFixed(1)}° ${_calcPreviewAngle(height) < 0 ? "向下" : "向上"}',
+                        style: TextStyle(fontSize: 11, color: Colors.blue.shade600),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('取消'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, height),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
+              child: const Text('確定'),
+            ),
+          ],
+        ),
+      ),
+    );
+    
+    if (result != null) {
+      await _cameraAssistant.setUserHeight(result);
+      setState(() {});
+    }
+  }
+  
+  /// 計算預覽角度（根據身高計算肩膀高度和臂長）
+  double _calcPreviewAngle(double heightCm) {
+    final shoulderHeight = heightCm * 0.82;  // 肩膀高度
+    final armLength = heightCm * 0.38;       // 臂長 (肩到手腕)
+    final diff = shoulderHeight - 130;       // 與 1.3m 的差距
+    // 負號表示需要向下傾斜
+    return -math.atan(diff / armLength) * 180 / math.pi;
   }
 }
 

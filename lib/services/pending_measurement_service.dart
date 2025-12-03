@@ -2,15 +2,15 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/pending_tree_measurement.dart';
+import '../config/app_config.dart';
 // BleDataProcessor used indirectly via parseCsvData results
 
 /// 待測量樹木服務
 /// 
 /// 處理 VLGEO2 數據的解析、存儲和第二階段測量的管理
 class PendingMeasurementService {
-  // 後端 API 基礎 URL (與其他服務保持一致)
-  static const String _baseUrl = 'http://10.0.2.2:5000'; // Android 模擬器
-  // static const String _baseUrl = 'http://localhost:5000'; // iOS 模擬器或桌面
+  // 使用 AppConfig 的動態 API URL
+  String get _baseUrl => AppConfig().baseUrl.replaceAll('/api', '');
   
   /// 從 BLE 數據創建待測量記錄
   /// 

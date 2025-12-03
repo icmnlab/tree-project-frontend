@@ -599,12 +599,14 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   void _startMeasurement() async {
     setState(() => _navState = NavigationState.measuring);
     
-    // 跳轉到 AR 測量頁面
+    // 跳轉到 AR 測量頁面，自動帶入 VLGEO2 的水平距離
     final result = await Navigator.of(context).push<MeasurementResult>(
       MaterialPageRoute(
         builder: (context) => ARDBHMeasurementPage(
           initialDbh: _currentTask?.dbhCm,
           speciesName: _currentTask?.speciesName,
+          knownDistance: _currentTask?.horizontalDistance, // 從 VLGEO2 自動帶入距離
+          autoCalibrate: true,
         ),
       ),
     );
