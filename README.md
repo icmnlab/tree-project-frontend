@@ -3,13 +3,52 @@
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-blue.svg)](https://flutter.dev/)
 [![Dart](https://img.shields.io/badge/Dart-3.x-blue.svg)](https://dart.dev/)
 [![License](https://img.shields.io/badge/License-ISC-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-18.3.1-green.svg)](https://github.com/KyleliuNDHU/tree-project-frontend)
+[![Version](https://img.shields.io/badge/Version-18.3.2-green.svg)](https://github.com/KyleliuNDHU/tree-project-frontend)
 
 > 基於大語言模型的永續發展分析平台 - Flutter 行動應用程式
 
 ---
 
 ## 📦 版本紀錄
+
+### v18.3.2 (2025-12-14) - 專案管理邏輯修正與清理機制完善 🔧
+
+#### 🔧 修復與改進
+- **V2 專案區位/專案名稱清理邏輯** - 新增退出時清理機制
+  - 追蹤新增的專案區位 ID 和專案 code
+  - 退出時詢問是否清理未提交的新增資料
+  - 提交成功後不會清理（標記 `_hasSubmitted`）
+- **V2 樹種清理邏輯** - 新增退出時清理機制
+  - 追蹤新增的樹種 ID
+  - 退出時使用 cleanup API 清理未使用的樹種
+- **V3 專案管理邏輯修改** - 改為與 V2 一致的邏輯
+  - 將下拉選單改為點擊輸入框開啟對話框選擇/新增
+  - 支援新增專案區位和專案名稱（類似 V2）
+  - 先選專案區位，再選專案名稱的流程
+  - 添加清理追蹤和退出時清理機制
+
+#### 🗑️ 清理機制
+- **追蹤新增資料**：
+  - 專案區位 ID (`_createdAreaIds`)
+  - 專案 code (`_createdProjectCodes`)
+  - 樹種 ID (`_createdSpeciesIds`)
+- **清理時機**：
+  - 使用者點擊返回按鈕時詢問
+  - 頁面 dispose 時自動清理（若未提交）
+- **清理方式**：
+  - 專案區位：直接刪除 (`deleteProjectArea`)
+  - 專案：直接刪除 (`deleteProject`)
+  - 樹種：觸發後端 cleanup API
+
+#### 📋 變更清單
+| 類型 | 檔案 | 說明 |
+|------|------|------|
+| fix | `lib/tree_input_page_v2.dart` | 添加專案區位/專案名稱/樹種的追蹤和清理邏輯 |
+| fix | `lib/screens/v3/manual_input_page_v3.dart` | 修改專案管理邏輯，添加清理機制 |
+| feat | `lib/tree_input_page_v2.dart` | 添加 WillPopScope 詢問清理 |
+| feat | `lib/screens/v3/manual_input_page_v3.dart` | 添加專案區位/專案名稱對話框和新增功能 |
+
+---
 
 ### v18.3.1 (2025-12-14) - UX 改進與程式碼清理 ✨
 

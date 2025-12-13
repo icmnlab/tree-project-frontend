@@ -54,6 +54,12 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
 
   bool _isEditing = false;
   Map<String, dynamic>? _currentTreeData;
+  
+  // Cleanup Tracking - 追蹤本次 session 新增的專案區位、專案和樹種，以便在退出時清理
+  final List<int> _createdAreaIds = [];
+  final List<String> _createdProjectCodes = [];
+  final List<String> _createdSpeciesIds = []; // 追蹤新增的樹種 ID
+  bool _hasSubmitted = false; // 是否已成功提交樹木資料
 
   // Services
   final TreeService _treeService = TreeService();
@@ -209,8 +215,52 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
     }
   }
 
+  // 清理臨時新增的專案區位、專案和樹種
+  Future<void> _performCleanup() async {
+    if (_createdAreaIds.isEmpty && _createdProjectCodes.isEmpty && _createdSpeciesIds.isEmpty) return;
+    
+    debugPrint('[TreeInputPageV2] 執行清理工作...');
+    
+    // 清理新增的專案區位
+    for (var id in _createdAreaIds) {
+      try {
+        await _projectAreaService.deleteProjectArea(id);
+        debugPrint('[TreeInputPageV2] 已刪除專案區位 ID: $id');
+      } catch (e) {
+        debugPrint('[TreeInputPageV2] 刪除專案區位失敗 (ID: $id): $e');
+      }
+    }
+    
+    // 清理新增的專案
+    for (var code in _createdProjectCodes) {
+      try {
+        await _projectService.deleteProject(code);
+        debugPrint('[TreeInputPageV2] 已刪除專案 Code: $code');
+      } catch (e) {
+        debugPrint('[TreeInputPageV2] 刪除專案失敗 (Code: $code): $e');
+      }
+    }
+    
+    // 清理新增的樹種 - 使用 cleanup API（因為後端沒有直接刪除樹種的 API）
+    if (_createdSpeciesIds.isNotEmpty) {
+      try {
+        await _treeService.cleanupTemporaryData(); // 這會觸發後端清理未使用的樹種
+        debugPrint('[TreeInputPageV2] 已觸發清理未使用的樹種');
+      } catch (e) {
+        debugPrint('[TreeInputPageV2] 清理樹種失敗: $e');
+      }
+    }
+    
+    debugPrint('[TreeInputPageV2] 清理工作完成');
+  }
+
   @override
   void dispose() {
+    // 如果沒有提交且新增了專案區位/專案/樹種，執行清理
+    if (!_hasSubmitted && (_createdAreaIds.isNotEmpty || _createdProjectCodes.isNotEmpty || _createdSpeciesIds.isNotEmpty)) {
+      _performCleanup();
+    }
+    
     treeHeightController.removeListener(_updateCarbonCalculations);
     dbhController.removeListener(_updateCarbonCalculations);
     projectCodeController.removeListener(_onProjectCodeChanged);
@@ -360,6 +410,10 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
 
       if (response['success'] == true) {
         logDebug('請求成功，返回數據: $response');
+        
+        // 標記為已提交，這樣 dispose 時就不會清理新增的專案/區位
+        _hasSubmitted = true;
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(_isEditing ? '更新成功!' : '新增成功 (V2)!')),
         );
@@ -785,6 +839,11 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
       if (!mounted) return;
 
       if (response['success'] == true) {
+        // 追蹤新增的樹種 ID，以便退出時清理
+        if (response['id'] != null) {
+          _createdSpeciesIds.add(response['id'] as String);
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('新增樹種成功: $name')),
         );
@@ -971,6 +1030,11 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
       final response = await _projectAreaService.addProjectArea(requestData);
       
       if (response['success'] == true) {
+        // 追蹤新增的專案區位 ID，以便退出時清理
+        if (response['data'] != null && response['data']['id'] != null) {
+          _createdAreaIds.add(response['data']['id'] as int);
+        }
+        
         await _loadProjectAreas();
         projectAreaController.text = areaName;
         // 清空相關欄位
@@ -1126,6 +1190,12 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
           projectName, projectAreaController.text);
       if (response['success'] == true) {
         final newProject = response['project'];
+        
+        // 追蹤新增的專案 code，以便退出時清理
+        if (newProject['code'] != null) {
+          _createdProjectCodes.add(newProject['code'] as String);
+        }
+        
         setState(() {
           projectNameController.text = newProject['name'];
           projectCodeController.text = newProject['code'];
@@ -1439,7 +1509,38 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return WillPopScope(
+      onWillPop: () async {
+        // 如果新增了專案區位/專案/樹種但還沒提交，詢問是否要清理
+        if (!_hasSubmitted && (_createdAreaIds.isNotEmpty || _createdProjectCodes.isNotEmpty || _createdSpeciesIds.isNotEmpty)) {
+          final shouldPop = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('確定要離開嗎？'),
+              content: const Text('尚未儲存的資料將會遺失，且本次新增的臨時專案/區位將被刪除。確定要放棄嗎？'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('取消'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  child: const Text('放棄並離開'),
+                ),
+              ],
+            ),
+          );
+          
+          if (shouldPop == true) {
+            await _performCleanup();
+            return true;
+          }
+          return false;
+        }
+        return true;
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: Text(_isEditing ? '編輯樹木 (V2)' : '新增樹木 (V2)'),
         flexibleSpace: Container(
@@ -1539,6 +1640,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
                 steps: getSteps(),
               ),
             ),
+        ),
       ),
     );
   }

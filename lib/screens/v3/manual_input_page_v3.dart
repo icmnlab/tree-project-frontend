@@ -11,6 +11,7 @@ import '../../services/v3/tree_image_service.dart';
 import '../../services/v3/ml_data_collector.dart'; // ML Data Collector
 import '../ar_dbh_measurement_page.dart'; // For AR Page
 import '../../services/ar_measurement_service.dart'; // For MeasurementResult
+import '../../services/project_area_service.dart'; // 新增專案區位服務
 
 class ManualInputPageV3 extends StatefulWidget {
   const ManualInputPageV3({super.key});
@@ -29,6 +30,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
   final ProjectBoundaryService _boundaryService = ProjectBoundaryService();
   final TreeImageService _imageService = TreeImageService();
   final TreeSpeciesService _speciesService = TreeSpeciesService();
+  final ProjectAreaService _projectAreaService = ProjectAreaService();
 
   // Step 1: Location & Project
   final TextEditingController _projectController = TextEditingController();
@@ -36,9 +38,20 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
   final TextEditingController _areaController = TextEditingController();
   LatLng? _currentLocation;
   String? _selectedProjectName;
-  List<String> _availableProjects = [];
+  List<String> _availableProjects = []; // 從 _filteredProjects 中獲取，用於自動匹配時的顯示
   bool _isLocationValid = false;
   String? _locationWarning;
+  
+  // V3: 專案區位和專案列表（類似 V2）
+  List<Map<String, dynamic>> _projectAreas = [];
+  List<Map<String, dynamic>> _filteredProjects = [];
+  bool _loadingAreas = false;
+  bool _loadingFilteredProjects = false;
+  
+  // Cleanup Tracking - 追蹤本次 session 新增的專案區位和專案，以便在退出時清理
+  final List<int> _createdAreaIds = [];
+  final List<String> _createdProjectCodes = [];
+  bool _hasSubmitted = false; // 是否已成功提交樹木資料
 
   // Step 2: Species
   final TextEditingController _speciesController = TextEditingController();
@@ -71,23 +84,55 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
   @override
   void initState() {
     super.initState();
-    _loadProjects();
+    _loadProjectAreas(); // V3: 載入專案區位列表
     _loadSpecies();
     _getCurrentLocation();
   }
 
-  Future<void> _loadProjects() async {
+  Future<void> _loadProjectAreas() async {
+    setState(() => _loadingAreas = true);
     try {
-      final result = await _projectService.getProjects();
-      if (result['success'] == true) {
+      final areas = await _projectAreaService.getProjectAreas();
+      if (mounted) {
         setState(() {
-          _availableProjects = (result['data'] as List)
-              .map((p) => p['name'] as String)
-              .toList();
+          _projectAreas = areas;
+          _loadingAreas = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('載入專案區位失敗: $e');
+      if (mounted) {
+        setState(() => _loadingAreas = false);
+      }
+    }
+  }
+
+  Future<void> _updateFilteredProjects(String area) async {
+    setState(() => _loadingFilteredProjects = true);
+    try {
+      final response = await _projectService.getProjectsByArea(area);
+      if (mounted) {
+        setState(() {
+          if (response['success'] == true && response['data'] != null) {
+            _filteredProjects = List<Map<String, dynamic>>.from(response['data']);
+            // 同時更新可用專案名稱列表（用於自動匹配）
+            _availableProjects = _filteredProjects.map((p) => p['name'] as String).toList();
+          } else {
+            _filteredProjects = [];
+            _availableProjects = [];
+          }
+          _loadingFilteredProjects = false;
         });
       }
     } catch (e) {
       debugPrint('載入專案失敗: $e');
+      if (mounted) {
+        setState(() {
+          _filteredProjects = [];
+          _availableProjects = [];
+          _loadingFilteredProjects = false;
+        });
+      }
     }
   }
 
@@ -146,23 +191,27 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
         if (match.projectCode != null) {
           _projectCodeController.text = match.projectCode!;
         }
+        // 自動載入該專案的區位資訊（如果有）
         _isLocationValid = true;
         _locationWarning = null;
       });
       _showSnackBar('已自動匹配專案: ${match.projectName}');
+      
+      // 嘗試載入該專案的區位資訊
+      _updateFilteredProjects(_areaController.text);
     } else {
       // 雖然沒匹配到，但如果是選擇已有專案，需檢查是否在該專案邊界外
-      if (_selectedProjectName != null) {
+      if (_projectController.text.isNotEmpty) {
         _validateLocation();
       }
     }
   }
 
   void _validateLocation() {
-    if (_currentLocation == null || _selectedProjectName == null) return;
+    if (_currentLocation == null || _projectController.text.isEmpty) return;
     
     final validation = _boundaryService.validateCoordinateForProject(
-      projectName: _selectedProjectName!,
+      projectName: _projectController.text,
       lat: _currentLocation!.latitude,
       lng: _currentLocation!.longitude,
     );
@@ -178,9 +227,366 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
+  // 專案區位對話框（類似 V2）
+  void _showProjectAreaDialog() {
+    final areaController = TextEditingController();
+    List<Map<String, dynamic>> filteredAreas = List.from(_projectAreas);
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('選擇專案區位'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: areaController,
+                      decoration: const InputDecoration(
+                        hintText: '搜尋或新增專案區位',
+                        prefixIcon: Icon(Icons.search),
+                      ),
+                      onChanged: (value) {
+                        setState(() {
+                          if (value.isEmpty) {
+                            filteredAreas = List.from(_projectAreas);
+                          } else {
+                            filteredAreas = _projectAreas
+                                .where((area) => (area['area_name'] ?? '')
+                                    .toLowerCase()
+                                    .contains(value.toLowerCase()))
+                                .toList();
+                          }
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    if (_loadingAreas)
+                      const Center(child: CircularProgressIndicator())
+                    else
+                      Expanded(
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: filteredAreas.length,
+                          itemBuilder: (context, index) {
+                            final area = filteredAreas[index];
+                            return ListTile(
+                              title: Text(area['area_name'] ?? ''),
+                              onTap: () {
+                                setState(() {
+                                  _areaController.text = area['area_name'] ?? '';
+                                  _projectController.text = '';
+                                  _projectCodeController.text = '';
+                                  _selectedProjectName = null;
+                                });
+                                _updateFilteredProjects(_areaController.text);
+                                Navigator.pop(context);
+                              },
+                            );
+                          },
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('取消'),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    if (areaController.text.isNotEmpty) {
+                      _addProjectArea(areaController.text);
+                      Navigator.pop(context);
+                    }
+                  },
+                  child: const Text('新增區位'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Future<void> _addProjectArea(String areaName) async {
+    try {
+      Position? position;
+      try {
+        position = await Geolocator.getLastKnownPosition();
+        if (position == null) {
+          position = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.high,
+            timeLimit: const Duration(seconds: 3),
+          );
+        }
+      } catch (e) {
+        debugPrint('獲取位置失敗 (非致命): $e');
+      }
+
+      final requestData = {
+        'area_name': areaName,
+        'description': areaName + '專案區位',
+        'isSubmit': true,
+        if (position != null) 'xCoord': position.longitude,
+        if (position != null) 'yCoord': position.latitude,
+      };
+      
+      final response = await _projectAreaService.addProjectArea(requestData);
+      
+      if (response['success'] == true) {
+        // 追蹤新增的專案區位 ID
+        if (response['data'] != null && response['data']['id'] != null) {
+          _createdAreaIds.add(response['data']['id'] as int);
+        }
+        
+        await _loadProjectAreas();
+        setState(() {
+          _areaController.text = areaName;
+          _projectController.text = '';
+          _projectCodeController.text = '';
+          _selectedProjectName = null;
+        });
+        await _updateFilteredProjects(areaName);
+        
+        if (mounted) {
+          _showSnackBar('專案區位新增成功');
+        }
+      } else {
+        if (mounted) {
+          _showSnackBar(response['message'] ?? '新增失敗');
+          if (response['message'] == '區位已存在') {
+            setState(() => _areaController.text = areaName);
+            await _updateFilteredProjects(areaName);
+          }
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        _showSnackBar('新增失敗: $e');
+      }
+    }
+  }
+
+  void _showProjectDialog() {
+    if (_areaController.text.isEmpty) {
+      _showSnackBar('請先選擇或添加專案區位');
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('選擇專案', style: TextStyle(fontSize: 20)),
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline, color: Colors.teal),
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _showAddProjectDialog();
+                    },
+                  ),
+                ],
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      height: 300,
+                      child: _loadingFilteredProjects
+                          ? const Center(child: CircularProgressIndicator())
+                          : _filteredProjects.isEmpty
+                              ? const Center(child: Text('此區位下沒有專案，請新增專案'))
+                              : ListView.builder(
+                                  itemCount: _filteredProjects.length,
+                                  itemBuilder: (context, index) {
+                                    final project = _filteredProjects[index];
+                                    return Card(
+                                      child: ListTile(
+                                        title: Text(project['name'] ?? '未知專案'),
+                                        subtitle: Text('代碼: ${project['code'] ?? '未知'}'),
+                                        onTap: () {
+                                          setState(() {
+                                            _projectController.text = project['name'] ?? '';
+                                            _projectCodeController.text = project['code'] ?? '';
+                                            _selectedProjectName = project['name'];
+                                          });
+                                          Navigator.pop(context);
+                                          _validateLocation();
+                                        },
+                                      ),
+                                    );
+                                  },
+                                ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showAddProjectDialog() {
+    final newProjectNameController = TextEditingController();
+    final addFormKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('新增專案'),
+          content: Form(
+            key: addFormKey,
+            child: TextFormField(
+              controller: newProjectNameController,
+              decoration: const InputDecoration(labelText: '新專案名稱'),
+              validator: (value) => value!.isEmpty ? '請輸入專案名稱' : null,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('取消'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (addFormKey.currentState!.validate()) {
+                  Navigator.pop(context);
+                  await _addProject(newProjectNameController.text);
+                }
+              },
+              child: const Text('新增'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _addProject(String projectName) async {
+    setState(() => _isLoading = true);
+    try {
+      final response = await _projectService.addProject(projectName, _areaController.text);
+      if (response['success'] == true) {
+        final newProject = response['project'];
+        
+        // 追蹤新增的專案 code
+        if (newProject['code'] != null) {
+          _createdProjectCodes.add(newProject['code'] as String);
+        }
+        
+        setState(() {
+          _projectController.text = newProject['name'];
+          _projectCodeController.text = newProject['code'];
+          _selectedProjectName = newProject['name'];
+        });
+        await _updateFilteredProjects(_areaController.text);
+        _validateLocation();
+        _showSnackBar('專案 "$projectName" 新增成功');
+      }
+    } catch (e) {
+      _showSnackBar('新增專案時連線錯誤: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  // 清理臨時新增的專案區位和專案
+  Future<void> _performCleanup() async {
+    if (_createdAreaIds.isEmpty && _createdProjectCodes.isEmpty) return;
+    
+    debugPrint('[ManualInputPageV3] 執行清理工作...');
+    
+    // 清理新增的專案區位
+    for (var id in _createdAreaIds) {
+      try {
+        await _projectAreaService.deleteProjectArea(id);
+        debugPrint('[ManualInputPageV3] 已刪除專案區位 ID: $id');
+      } catch (e) {
+        debugPrint('[ManualInputPageV3] 刪除專案區位失敗 (ID: $id): $e');
+      }
+    }
+    
+    // 清理新增的專案
+    for (var code in _createdProjectCodes) {
+      try {
+        await _projectService.deleteProject(code);
+        debugPrint('[ManualInputPageV3] 已刪除專案 Code: $code');
+      } catch (e) {
+        debugPrint('[ManualInputPageV3] 刪除專案失敗 (Code: $code): $e');
+      }
+    }
+    
+    debugPrint('[ManualInputPageV3] 清理工作完成');
+  }
+
+  @override
+  void dispose() {
+    // 如果沒有提交且新增了專案區位/專案，執行清理
+    if (!_hasSubmitted && (_createdAreaIds.isNotEmpty || _createdProjectCodes.isNotEmpty)) {
+      _performCleanup();
+    }
+    
+    _projectController.dispose();
+    _projectCodeController.dispose();
+    _areaController.dispose();
+    _speciesController.dispose();
+    _dbhController.dispose();
+    _heightController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return WillPopScope(
+      onWillPop: () async {
+        // 如果新增了專案區位/專案但還沒提交，詢問是否要清理
+        if (!_hasSubmitted && (_createdAreaIds.isNotEmpty || _createdProjectCodes.isNotEmpty)) {
+          final shouldPop = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('確定要離開嗎？'),
+              content: const Text('尚未儲存的資料將會遺失，且本次新增的臨時專案/區位將被刪除。確定要放棄嗎？'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('取消'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: TextButton.styleFrom(foregroundColor: Colors.red),
+                  child: const Text('放棄並離開'),
+                ),
+              ],
+            ),
+          );
+          
+          if (shouldPop == true) {
+            await _performCleanup();
+            return true;
+          }
+          return false;
+        }
+        return true;
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('新增樹木 (V3)'),
         backgroundColor: Colors.teal,
@@ -218,6 +624,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
             state: _currentStep > 3 ? StepState.complete : StepState.editing,
           ),
         ],
+      ),
       ),
     );
   }
@@ -267,11 +674,14 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
 
   void _handleStepContinue() {
     if (_currentStep == 0) {
-      if (_selectedProjectName == null) {
-        _showSnackBar('請選擇專案');
+      // 檢查專案區位和專案名稱是否都已選擇
+      if (_areaController.text.isEmpty || _projectController.text.isEmpty) {
+        _showSnackBar('請選擇專案區位和專案名稱');
         return;
       }
-      if (!_isLocationValid) {
+      
+      // 如果有選擇專案名稱，驗證位置
+      if (_projectController.text.isNotEmpty && !_isLocationValid) {
         // 警告但允許繼續 (V3 原則：Validation Warning)
         showDialog(
           context: context,
@@ -362,20 +772,39 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
         
         const SizedBox(height: 16),
         
-        DropdownButtonFormField<String>(
-          value: _selectedProjectName,
-          decoration: const InputDecoration(
-            labelText: '專案名稱',
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.folder),
+        // 專案區位選擇（類似 V2）
+        TextFormField(
+          controller: _areaController,
+          decoration: InputDecoration(
+            labelText: '專案區位 *',
+            border: const OutlineInputBorder(),
+            prefixIcon: const Icon(Icons.map),
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.arrow_drop_down),
+              onPressed: _showProjectAreaDialog,
+            ),
           ),
-          items: _availableProjects.map((p) => DropdownMenuItem(value: p, child: Text(p))).toList(),
-          onChanged: (value) {
-            setState(() {
-              _selectedProjectName = value;
-              _projectController.text = value ?? '';
-              _validateLocation();
-            });
+          readOnly: true,
+          onTap: _showProjectAreaDialog,
+        ),
+        
+        const SizedBox(height: 16),
+        
+        // 專案名稱選擇（類似 V2）
+        TextFormField(
+          controller: _projectController,
+          decoration: InputDecoration(
+            labelText: '專案名稱 *',
+            border: const OutlineInputBorder(),
+            prefixIcon: const Icon(Icons.folder),
+            suffixIcon: IconButton(
+              icon: const Icon(Icons.arrow_drop_down),
+              onPressed: _areaController.text.isNotEmpty ? _showProjectDialog : null,
+            ),
+          ),
+          readOnly: true,
+          onTap: _areaController.text.isNotEmpty ? _showProjectDialog : () {
+            _showSnackBar('請先選擇專案區位');
           },
         ),
         
@@ -390,17 +819,6 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
               ],
             ),
           ),
-          
-        const SizedBox(height: 16),
-        
-        TextFormField(
-          controller: _areaController,
-          decoration: const InputDecoration(
-            labelText: '專案分區 (選填)',
-            border: OutlineInputBorder(),
-            prefixIcon: Icon(Icons.map),
-          ),
-        ),
       ],
     );
   }
@@ -790,7 +1208,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
     try {
       // 1. 準備提交數據 (相容 V2 API)
       final treeData = {
-        "project_name": _selectedProjectName,
+        "project_name": _projectController.text.isNotEmpty ? _projectController.text : _selectedProjectName,
         "project_code": _projectCodeController.text,
         "project_area": _areaController.text,
         
@@ -820,6 +1238,9 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
       final response = await _treeService.createTreeV2(treeData);
       
       if (response['success'] == true) {
+        // 標記為已提交，這樣 dispose 時就不會清理新增的專案/區位
+        _hasSubmitted = true;
+        
         final treeId = response['id'].toString(); // 假設回傳 ID
         
         // 3. 儲存照片 (關聯到新創建的 treeId)
