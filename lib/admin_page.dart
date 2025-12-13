@@ -131,46 +131,26 @@ class _AdminPageState extends State<AdminPage> {
     });
 
     try {
-      final response = await http.get(
-        Uri.parse('http://172.20.10.4:3000/api/users'),
-        headers: {
-          // 如果您的 API 需要認證，請在此處添加 token
-          // 'Authorization': 'Bearer YOUR_ACCESS_TOKEN',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['success'] == true && data['users'] != null) {
-          setState(() {
-            _users = List<Map<String, dynamic>>.from(data['users'])
-                .map((user) => {...user, 'is_active': user['is_active'] == 1})
-                .toList(); // 將 is_active 從 0/1 轉換為 bool
-          });
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(data['message'] ?? '無法正確解析使用者資料')),
-            );
-          }
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('無法載入使用者資料')),
-          );
-        }
+      final users = await _userService.fetchUsers();
+      if (mounted) {
+        setState(() {
+          _users = users
+              .map((user) => {...user, 'is_active': user['is_active'] == 1})
+              .toList(); // 將 is_active 從 0/1 轉換為 bool
+        });
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('發生錯誤: $e')),
+          SnackBar(content: Text('無法載入使用者資料: $e')),
         );
       }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
   */
