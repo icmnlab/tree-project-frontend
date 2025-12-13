@@ -44,6 +44,10 @@ class _TreeListPageState extends State<TreeListPage> {
   // 匯入相關
   bool _isImporting = false;
   String _importStatus = '';
+  
+  // 匯出相關
+  bool _isExportingExcel = false;
+  bool _isExportingPdf = false;
 
   final TreeService _treeService = TreeService();
 
@@ -245,6 +249,9 @@ class _TreeListPageState extends State<TreeListPage> {
   }
 
   Future<void> _exportToExcel() async {
+    if (_isExportingExcel) return; // 防止重複點擊
+    
+    setState(() => _isExportingExcel = true);
     try {
       final result = await ExportService.downloadExcel([]);
       if (mounted) {
@@ -263,6 +270,10 @@ class _TreeListPageState extends State<TreeListPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('匯出時發生錯誤: $e')),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isExportingExcel = false);
       }
     }
   }
@@ -298,6 +309,9 @@ class _TreeListPageState extends State<TreeListPage> {
   */
 
   Future<void> _exportToPDF() async {
+    if (_isExportingPdf) return; // 防止重複點擊
+    
+    setState(() => _isExportingPdf = true);
     try {
       final result = await ExportService.downloadPdf([]);
       if (mounted) {
@@ -316,6 +330,10 @@ class _TreeListPageState extends State<TreeListPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('匯出時發生錯誤: $e')),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isExportingPdf = false);
       }
     }
   }
@@ -897,21 +915,35 @@ class _TreeListPageState extends State<TreeListPage> {
               itemBuilder: (context) => [
                 PopupMenuItem(
                   value: 'excel',
+                  enabled: !_isExportingExcel && !_isExportingPdf,
                   child: Row(
                     children: [
-                      Icon(Icons.table_chart_rounded, color: AppColors.forestGreen),
+                      _isExportingExcel
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Icon(Icons.table_chart_rounded, color: AppColors.forestGreen),
                       const SizedBox(width: 12),
-                      const Text('匯出 Excel'),
+                      Text(_isExportingExcel ? '匯出 Excel 中...' : '匯出 Excel'),
                     ],
                   ),
                 ),
                 PopupMenuItem(
                   value: 'pdf',
+                  enabled: !_isExportingExcel && !_isExportingPdf,
                   child: Row(
                     children: [
-                      Icon(Icons.picture_as_pdf_rounded, color: AppColors.tipcRed),
+                      _isExportingPdf
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : Icon(Icons.picture_as_pdf_rounded, color: AppColors.tipcRed),
                       const SizedBox(width: 12),
-                      const Text('匯出 PDF'),
+                      Text(_isExportingPdf ? '匯出 PDF 中...' : '匯出 PDF'),
                     ],
                   ),
                 ),

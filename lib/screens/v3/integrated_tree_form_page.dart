@@ -1,6 +1,5 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../models/pending_tree_measurement.dart';
 import '../../services/pending_measurement_service.dart';
 import '../../services/species_identification_service.dart';

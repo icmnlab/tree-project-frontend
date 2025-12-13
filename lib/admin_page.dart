@@ -51,6 +51,8 @@ class _AdminPageState extends State<AdminPage> {
   List<Project> _projectsForExport = [];
   List<String> _selectedProjectCodesForMultiExport = []; // 用於儲存多選的專案代碼
   bool _isLoadingProjects = false;
+  bool _isExportingExcel = false;
+  bool _isExportingPdf = false;
   final TextEditingController _tokenController =
       TextEditingController(); // Create controller as a state variable
 
@@ -351,6 +353,9 @@ class _AdminPageState extends State<AdminPage> {
   }
 
   Future<void> _exportExcel() async {
+    if (_isExportingExcel) return; // 防止重複點擊
+    
+    setState(() => _isExportingExcel = true);
     try {
       final result = await ExportService.downloadExcel(_selectedProjectCodesForMultiExport);
       if (mounted) {
@@ -369,6 +374,10 @@ class _AdminPageState extends State<AdminPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('下載 Excel 檔案時發生錯誤: $e')),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isExportingExcel = false);
       }
     }
   }
@@ -398,6 +407,9 @@ class _AdminPageState extends State<AdminPage> {
   */
 
   Future<void> _exportPDF() async {
+    if (_isExportingPdf) return; // 防止重複點擊
+    
+    setState(() => _isExportingPdf = true);
     try {
       final result = await ExportService.downloadPdf(_selectedProjectCodesForMultiExport);
       if (mounted) {
@@ -416,6 +428,10 @@ class _AdminPageState extends State<AdminPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('下載 PDF 檔案時發生錯誤: $e')),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isExportingPdf = false);
       }
     }
   }
@@ -1077,9 +1093,18 @@ class _AdminPageState extends State<AdminPage> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: ElevatedButton.icon(
-            icon: const Icon(Icons.file_download),
-            label: const Text('匯出 Excel'),
-            onPressed: (_isLoadingProjects && _projectsForExport.isEmpty)
+            icon: _isExportingExcel
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Icon(Icons.file_download),
+            label: Text(_isExportingExcel ? '匯出中...' : '匯出 Excel'),
+            onPressed: (_isLoadingProjects && _projectsForExport.isEmpty) || _isExportingExcel
                 ? null
                 : _exportExcel,
             style: ElevatedButton.styleFrom(
@@ -1094,9 +1119,18 @@ class _AdminPageState extends State<AdminPage> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: ElevatedButton.icon(
-            icon: const Icon(Icons.picture_as_pdf),
-            label: const Text('匯出 PDF'),
-            onPressed: (_isLoadingProjects && _projectsForExport.isEmpty)
+            icon: _isExportingPdf
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                  )
+                : const Icon(Icons.picture_as_pdf),
+            label: Text(_isExportingPdf ? '匯出中...' : '匯出 PDF'),
+            onPressed: (_isLoadingProjects && _projectsForExport.isEmpty) || _isExportingPdf
                 ? null
                 : _exportPDF,
             style: ElevatedButton.styleFrom(

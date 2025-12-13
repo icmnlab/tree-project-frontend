@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import '../models/pending_tree_measurement.dart';
 import '../services/pending_measurement_service.dart';
-import '../services/ar_measurement_service.dart';
 import 'v3/integrated_tree_form_page.dart'; // V3 整合表單
 
 /// 待測量任務頁面

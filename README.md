@@ -3,13 +3,43 @@
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-blue.svg)](https://flutter.dev/)
 [![Dart](https://img.shields.io/badge/Dart-3.x-blue.svg)](https://dart.dev/)
 [![License](https://img.shields.io/badge/License-ISC-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-18.3.0-green.svg)](https://github.com/KyleliuNDHU/tree-project-frontend)
+[![Version](https://img.shields.io/badge/Version-18.3.1-green.svg)](https://github.com/KyleliuNDHU/tree-project-frontend)
 
 > 基於大語言模型的永續發展分析平台 - Flutter 行動應用程式
 
 ---
 
 ## 📦 版本紀錄
+
+### v18.3.1 (2025-12-14) - UX 改進與程式碼清理 ✨
+
+#### ✨ 使用者體驗改進
+- **匯出功能 Loading 動畫** - 所有匯出按鈕現在顯示 loading 狀態
+  - Admin 頁面 Excel/PDF 匯出按鈕顯示 loading 指示器
+  - 樹木列表頁面 Excel/PDF 匯出顯示 loading 狀態
+  - AI 永續報告 PDF 匯出顯示 loading 動畫
+  - 防止重複點擊匯出按鈕
+- **表單提交 Loading 狀態** - V3 手動輸入頁面提交按鈕顯示 loading
+
+#### 🧹 程式碼清理
+- **移除未使用的 Imports** - 清理 6 個未使用的 import 語句
+  - `lib/main.dart` - 移除 `integrated_tree_form_page.dart` import
+  - `lib/screens/v3/manual_input_page_v3.dart` - 移除未使用服務
+  - `lib/screens/v3/integrated_tree_form_page.dart` - 移除 `image_picker` import
+  - `lib/screens/pending_measurement_task_page.dart` - 移除未使用 import
+  - `lib/services/api_service.dart` - 移除 `flutter/material.dart` import
+- **修復 Linter Warnings** - 所有 linter 警告已修復
+
+#### 📋 變更清單
+| 類型 | 檔案 | 說明 |
+|------|------|------|
+| feat | `lib/admin_page.dart` | 匯出按鈕添加 loading 動畫 |
+| feat | `lib/tree_list_page.dart` | 匯出按鈕添加 loading 動畫 |
+| feat | `lib/screens/ai_sustainability_report_screen.dart` | PDF 匯出添加 loading 動畫 |
+| feat | `lib/screens/v3/manual_input_page_v3.dart` | 提交按鈕添加 loading 狀態 |
+| refactor | 多個檔案 | 清理未使用的 imports |
+
+---
 
 ### v18.3.0 (2025-12-14) - 編譯修復與穩定性改進 🔧
 

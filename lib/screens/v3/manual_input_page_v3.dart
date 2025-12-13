@@ -8,7 +8,6 @@ import '../../services/species_service.dart';
 import '../../services/species_identification_service.dart';
 import '../../services/v3/project_boundary_service.dart';
 import '../../services/v3/tree_image_service.dart';
-import '../../services/v3/ar_measurement_integration_service.dart';
 import '../../services/v3/ml_data_collector.dart'; // ML Data Collector
 import '../ar_dbh_measurement_page.dart'; // For AR Page
 import '../../services/ar_measurement_service.dart'; // For MeasurementResult
@@ -28,7 +27,6 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
   final ProjectService _projectService = ProjectService();
   final TreeService _treeService = TreeService();
   final ProjectBoundaryService _boundaryService = ProjectBoundaryService();
-  final SpeciesIdentificationService _speciesIdService = SpeciesIdentificationService();
   final TreeImageService _imageService = TreeImageService();
   final TreeSpeciesService _speciesService = TreeSpeciesService();
 
@@ -232,13 +230,22 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
         children: [
           Expanded(
             child: ElevatedButton(
-              onPressed: details.onStepContinue,
+              onPressed: _isLoading ? null : details.onStepContinue,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.teal,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
               ),
-              child: Text(isLastStep ? '提交' : '下一步'),
+              child: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : Text(isLastStep ? '提交' : '下一步'),
             ),
           ),
           if (_currentStep > 0) ...[

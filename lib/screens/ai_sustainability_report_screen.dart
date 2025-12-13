@@ -32,6 +32,7 @@ class _AISustainabilityReportScreenState
   // 加載狀態
   bool _isLoadingAreas = false;
   bool _isLoadingSpecies = false;
+  bool _isExportingPdf = false;
 
   @override
   void initState() {
@@ -190,9 +191,14 @@ class _AISustainabilityReportScreenState
   }
 
   Future<void> _downloadPdfReport() async {
-    final Map<String, String> queryParams = {};
-    if (_selectedProjectAreas.isNotEmpty) {
-      queryParams['projectAreas'] = _selectedProjectAreas.join(',');
+    if (_isExportingPdf) return; // 防止重複點擊
+    
+    setState(() => _isExportingPdf = true);
+    
+    try {
+      final Map<String, String> queryParams = {};
+      if (_selectedProjectAreas.isNotEmpty) {
+        queryParams['projectAreas'] = _selectedProjectAreas.join(',');
     }
     if (_selectedSpecies.isNotEmpty) {
       queryParams['species'] = _selectedSpecies.join(',');
@@ -218,15 +224,26 @@ class _AISustainabilityReportScreenState
       suggestedFilename: 'ai_sustainability_report.pdf',
     );
 
-    if (mounted) {
-      if (result.success) {
+      if (mounted) {
+        if (result.success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result.warning ?? 'PDF 報告已下載並開啟')),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result.error ?? '下載失敗')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result.warning ?? 'PDF 報告已下載並開啟')),
+          SnackBar(content: Text('下載 PDF 報告時發生錯誤: $e')),
         );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result.error ?? '下載失敗')),
-        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isExportingPdf = false);
       }
     }
   }
@@ -685,9 +702,18 @@ class _AISustainabilityReportScreenState
         actions: [
           if (_reportData != null && !_isLoading)
             IconButton(
-              icon: const Icon(Icons.picture_as_pdf),
-              onPressed: _downloadPdfReport,
-              tooltip: '匯出 PDF',
+              icon: _isExportingPdf
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Icon(Icons.picture_as_pdf),
+              onPressed: _isExportingPdf ? null : _downloadPdfReport,
+              tooltip: _isExportingPdf ? '匯出中...' : '匯出 PDF',
             ),
         ],
       ),
