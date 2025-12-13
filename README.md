@@ -11,6 +11,28 @@
 
 ## 📦 版本紀錄
 
+### v18.3.0 (2025-12-14) - 編譯修復與穩定性改進 🔧
+
+#### 🔧 修復
+- **編譯錯誤修復**
+  - 修復 `IntegratedTreeFormPage` 路由編譯錯誤（註解需要參數的路由）
+  - 修復 `download_service.dart` 正則表達式語法錯誤
+  - 修復 `main.dart` import 路徑問題
+  - 所有編譯錯誤已解決，APK 可正常生成
+- **路由優化**
+  - 註解 `/v3-integrated-form` 路由（需 task 參數，改用 MaterialPageRoute 直接導航）
+  - 功能保持正常運作，不影響現有使用方式
+
+#### 📋 變更清單
+| 類型 | 說明 |
+|------|------|
+| fix | 修復 IntegratedTreeFormPage 路由編譯錯誤 |
+| fix | 修復 download_service.dart 正則表達式問題 |
+| fix | 修復 main.dart import 路徑 |
+| refactor | 優化路由定義（移除無法使用的路由） |
+
+---
+
 ### v18.2.0 (2025-12-14) - AR 測量優化與安全改進 🔒
 
 #### 🆕 新增功能
