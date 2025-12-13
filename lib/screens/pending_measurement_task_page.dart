@@ -5,7 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import '../models/pending_tree_measurement.dart';
 import '../services/pending_measurement_service.dart';
 import '../services/ar_measurement_service.dart';
-import 'ar_dbh_measurement_page.dart';
+import 'v3/integrated_tree_form_page.dart'; // V3 整合表單
 
 /// 待測量任務頁面
 /// 
@@ -13,7 +13,7 @@ import 'ar_dbh_measurement_page.dart';
 /// 1. 顯示待測量任務列表
 /// 2. 導航引導到測站位置
 /// 3. 箭頭指向目標樹木
-/// 4. 整合 AR DBH 測量
+/// 4. 整合 AR DBH 測量 (使用 V3 IntegratedTreeFormPage)
 class PendingMeasurementTaskPage extends StatefulWidget {
   final String? sessionId;
   
@@ -599,62 +599,38 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   void _startMeasurement() async {
     setState(() => _navState = NavigationState.measuring);
     
-    // 跳轉到 AR 測量頁面，自動帶入 VLGEO2 的水平距離
-    final result = await Navigator.of(context).push<MeasurementResult>(
+    // 跳轉到 V3 整合式表單頁面
+    final success = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (context) => ARDBHMeasurementPage(
-          initialDbh: _currentTask?.dbhCm,
-          speciesName: _currentTask?.speciesName,
-          knownDistance: _currentTask?.horizontalDistance, // 從 VLGEO2 自動帶入距離
-          autoCalibrate: true,
+        builder: (context) => IntegratedTreeFormPage(
+          task: _currentTask!,
         ),
       ),
     );
     
-    if (result != null && _currentTask != null) {
-      // 更新測量結果
-      try {
-        await _service.updateMeasurement(
-          id: _currentTask!.id!,
-          dbhCm: result.diameterCm,
-          confidence: result.confidenceScore,
-          method: result.method.name,
-          notes: result.notes,
+    if (success == true) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('測量已完成並提交'),
+            backgroundColor: Colors.green,
+          ),
         );
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('已記錄 DBH: ${result.diameterCm.toStringAsFixed(1)} cm'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-        
-        // 載入下一個任務
-        await _loadTasks();
-        
-        if (_pendingTrees.isNotEmpty) {
-          _startTask(_pendingTrees.first);
-        } else {
-          setState(() {
-            _navState = NavigationState.selectingTask;
-            _currentTask = null;
-          });
-        }
-        
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('儲存失敗: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+      }
+      
+      // 載入下一個任務
+      await _loadTasks();
+      
+      if (_pendingTrees.isNotEmpty) {
+        _startTask(_pendingTrees.first);
+      } else {
+        setState(() {
+          _navState = NavigationState.selectingTask;
+          _currentTask = null;
+        });
       }
     } else {
-      // 用戶取消
+      // 用戶取消或返回
       setState(() => _navState = NavigationState.pointingToTree);
     }
   }

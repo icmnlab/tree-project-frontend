@@ -1,7 +1,10 @@
 import 'dart:convert';
+import 'package:flutter/material.dart'; // Import for Navigator
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart'; // Import AppConfig
+import '../config/global_keys.dart'; // Import GlobalKeys
+import 'auth_service.dart'; // Import AuthService
 
 class ApiService {
   // The baseUrl is now dynamically retrieved from AppConfig
@@ -144,6 +147,17 @@ class ApiService {
 
   // 處理 HTTP 響應
   static Map<String, dynamic> _handleResponse(http.Response response) {
+    // 處理 401 Unauthorized
+    if (response.statusCode == 401) {
+      AuthService.clearSession();
+      GlobalKeys.navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
+      
+      return {
+        'success': false,
+        'message': '認證失效，請重新登入',
+      };
+    }
+
     if (response.statusCode >= 200 && response.statusCode < 300) {
       try {
         return json.decode(response.body);

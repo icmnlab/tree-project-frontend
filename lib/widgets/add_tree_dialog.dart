@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../constants/colors.dart';
 import '../tree_input_page.dart';
 import '../tree_input_page_v2.dart';
+import '../screens/v3/manual_input_page_v3.dart'; // Import V3 page
 
 /// Modern minimalist dialog for selecting tree input mode
 /// Features: Glassmorphism effect, smooth animations, clean typography
@@ -137,6 +138,25 @@ class AddTreeSelectionDialog extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (context) => TreeInputPageV2(treeData: initialData),
+                        ),
+                      ).then((_) => onDataChanged());
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _ModeOptionCard(
+                    icon: Icons.science_rounded,
+                    iconColor: Colors.deepPurple,
+                    iconBgColor: Colors.deepPurple.shade50,
+                    title: '整合模式',
+                    subtitle: 'V3 全新流程：AR 測量 + AI 辨識',
+                    badge: 'V3 Dev',
+                    badgeColor: Colors.deepPurple,
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ManualInputPageV3(),
                         ),
                       ).then((_) => onDataChanged());
                     },

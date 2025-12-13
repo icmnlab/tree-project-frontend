@@ -1358,6 +1358,140 @@ class _AdminPageState extends State<AdminPage> {
     );
   }
 
+  Widget _buildProjectManagement() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '專案管理',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _fetchProjectsForExport,
+              tooltip: '重新整理列表',
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          '警告：刪除專案將會永久刪除該專案下的所有樹木調查資料，此操作無法復原。',
+          style: TextStyle(color: Colors.red, fontSize: 14),
+        ),
+        const SizedBox(height: 16),
+        Expanded(
+          child: _isLoadingProjects
+              ? const Center(child: CircularProgressIndicator())
+              : _projectsForExport.isEmpty
+                  ? const Center(child: Text('目前沒有專案'))
+                  : ListView.builder(
+                      itemCount: _projectsForExport.length,
+                      itemBuilder: (context, index) {
+                        final project = _projectsForExport[index];
+                        return Card(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          elevation: 2,
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor:
+                                  Theme.of(context).colorScheme.primaryContainer,
+                              child: Text(project.code),
+                            ),
+                            title: Text(project.name),
+                            subtitle: Text('區域: ${project.area ?? "無"}'),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete_outline,
+                                  color: Colors.red),
+                              onPressed: () => _confirmDeleteProject(project),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _confirmDeleteProject(Project project) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('確認刪除專案'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('您確定要刪除專案 "${project.name}" (代碼: ${project.code}) 嗎？'),
+            const SizedBox(height: 12),
+            const Text(
+              '此操作將會刪除該專案下所有的樹木資料！',
+              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            const Text('請輸入專案代碼以確認刪除：'),
+            const SizedBox(height: 8),
+            // Note: In a real app, we might add a text field here for double confirmation
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('確認刪除'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      await _deleteProject(project.code);
+    }
+  }
+
+  Future<void> _deleteProject(String projectCode) async {
+    setState(() => _isLoadingProjects = true);
+    try {
+      final response = await _projectService.deleteProject(projectCode);
+      if (mounted) {
+        if (response['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(response['message'] ?? '專案已刪除'),
+                backgroundColor: Colors.green),
+          );
+          _fetchProjectsForExport(); // Refresh list
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(response['message'] ?? '刪除失敗'),
+                backgroundColor: Colors.red),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('刪除錯誤: $e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingProjects = false);
+      }
+    }
+  }
+
   Widget _buildSectionTitle(String title) {
     return Row(
       children: [
@@ -1604,6 +1738,10 @@ class _AdminPageState extends State<AdminPage> {
                     label: Text('管理員專區'),
                   ),
                   NavigationRailDestination(
+                    icon: Icon(Icons.folder_delete),
+                    label: Text('專案管理'),
+                  ),
+                  NavigationRailDestination(
                     icon: Icon(Icons.map),
                     label: Text('專案邊界'),
                   ),
@@ -1627,7 +1765,9 @@ class _AdminPageState extends State<AdminPage> {
                                     ? _buildSystemSettings()
                                     : _selectedIndex == 5
                                         ? _buildAdminZone()
-                                        : const ProjectBoundaryDrawPage(),
+                                        : _selectedIndex == 6
+                                            ? _buildProjectManagement()
+                                            : const ProjectBoundaryDrawPage(),
               ),
             ),
           ],

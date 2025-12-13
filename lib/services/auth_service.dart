@@ -35,13 +35,18 @@ class AuthService {
 
   // 清除使用者資訊（登出時使用）
   static Future<void> logout(BuildContext context) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_userKey);
-    await ApiService.setJwtToken(null);
+    await clearSession();
     // 導航到登入頁面，並清除所有路由歷史
     if (context.mounted) {
       Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
     }
+  }
+
+  // 清除 session 資料 (不含導航)
+  static Future<void> clearSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_userKey);
+    await ApiService.setJwtToken(null);
   }
 
   // 檢查使用者是否已登入

@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'tree_survey_page.dart'; // 查詢頁面
-import 'admin_page.dart';
-import 'statistics_page.dart';
-import 'map_page.dart';
-import 'screens/ai_sustainability_report_screen.dart';
-import 'screens/ai_chat_page.dart'; // 新版 AI 聊天頁面 (取代 ai_assistant_page)
-import 'screens/cities_page.dart';
-import 'services/carbon_sink_service.dart';
-import 'services/v3/ml_data_sync_service.dart'; // V3 ML 數據同步服務
-import 'services/api_service.dart';
 import 'screens/login_page.dart';
 import 'screens/home_page.dart';
-import 'routes/auth_guard.dart';
-import 'config/app_config.dart';
-import 'themes/app_theme.dart'; // 新設計系統
+import 'screens/admin_page.dart';
+import 'screens/tree_survey_page.dart';
+import 'screens/statistics_page.dart';
+import 'screens/map_page.dart';
+import 'screens/ai_chat_page.dart';
+import 'screens/ai_sustainability_report_screen.dart';
+import 'screens/cities_page.dart';
+import 'screens/v3/manual_input_page_v3.dart';
+import 'screens/v3/integrated_tree_form_page.dart';
+import 'screens/v3/project_boundary_draw_page.dart';
+import 'screens/v3_services_page.dart';
+import 'widgets/auth_guard.dart';
+import 'config/app_theme.dart';
+import 'config/global_keys.dart';
+import 'services/carbon_sink_service.dart';
+import 'services/v3/ml_data_sync_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -61,6 +64,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: '永續碳匯管理系統',
+      navigatorKey: GlobalKeys.navigatorKey, // Assign global navigator key
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme, // 使用新設計系統
       initialRoute: '/login',
@@ -87,6 +91,11 @@ class MyApp extends StatelessWidget {
         '/ai-sustainability-report': (context) =>
             const AISustainabilityReportScreen(),
         '/cities': (context) => const CitiesPage(),
+        // V3 功能路由
+        '/v3-services': (context) => const V3ServicesPage(),
+        '/v3-manual-input': (context) => const ManualInputPageV3(),
+        '/v3-integrated-form': (context) => const IntegratedTreeFormPage(),
+        '/v3-project-boundary': (context) => const ProjectBoundaryDrawPage(),
       },
     );
   }

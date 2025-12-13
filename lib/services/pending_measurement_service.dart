@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import '../models/pending_tree_measurement.dart';
 import '../config/app_config.dart';
 import 'api_service.dart';
-// BleDataProcessor used indirectly via parseCsvData results
+import 'v3/station_service.dart'; // Import StationService
 
 /// 待測量樹木服務
 /// 
@@ -12,6 +12,7 @@ import 'api_service.dart';
 class PendingMeasurementService {
   // 使用 AppConfig 的動態 API URL
   String get _baseUrl => AppConfig().baseUrl.replaceAll('/api', '');
+  final StationService _stationService = StationService();
   
   /// 從 BLE 數據創建待測量記錄
   /// 
@@ -20,7 +21,7 @@ class PendingMeasurementService {
   /// [projectCode] - 專案代碼
   /// [projectName] - 專案名稱
   /// [createdBy] - 創建者 ID
-  static List<PendingTreeMeasurement> createFromBleData({
+  List<PendingTreeMeasurement> createFromBleData({
     required List<Map<String, dynamic>> bleData,
     String? projectArea,
     String? projectCode,
@@ -48,12 +49,12 @@ class PendingMeasurementService {
         if (lat == 0 && lon == 0) continue;
         if (horizontalDistance <= 0) continue;
         
-        // 計算測站位置 (反推)
-        final stationPos = PendingTreeMeasurement.calculateStationPosition(
+        // 計算測站位置 (使用 StationService)
+        final stationPos = _stationService.calculateStationPosition(
           treeLat: lat,
-          treeLon: lon,
-          horizontalDistance: horizontalDistance,
-          azimuth: azimuth,
+          treeLng: lon,
+          distanceMeters: horizontalDistance,
+          azimuthDegrees: azimuth,
         );
         
         // 創建待測量記錄
@@ -66,8 +67,8 @@ class PendingMeasurementService {
           treeHeight: height,
           treeLatitude: lat,
           treeLongitude: lon,
-          stationLatitude: stationPos.lat,
-          stationLongitude: stationPos.lon,
+          stationLatitude: stationPos.latitude,
+          stationLongitude: stationPos.longitude,
           horizontalDistance: horizontalDistance,
           slopeDistance: slopeDistance,
           azimuth: azimuth,
@@ -201,22 +202,29 @@ class PendingMeasurementService {
     required double confidence,
     required String method,
     String? notes,
+    String? speciesName,
   }) async {
     try {
+      final body = {
+        'measured_dbh_cm': dbhCm,
+        'measurement_confidence': confidence,
+        'measurement_method': method,
+        'measurement_notes': notes,
+        'status': MeasurementStatus.completed.value,
+        'completed_at': DateTime.now().toIso8601String(),
+      };
+
+      if (speciesName != null) {
+        body['species_name'] = speciesName;
+      }
+
       final response = await http.patch(
         Uri.parse('$_baseUrl/api/pending-measurements/$id'),
         headers: {
           'Content-Type': 'application/json',
           ...ApiService.getAuthHeaders(),
         },
-        body: jsonEncode({
-          'measured_dbh_cm': dbhCm,
-          'measurement_confidence': confidence,
-          'measurement_method': method,
-          'measurement_notes': notes,
-          'status': MeasurementStatus.completed.value,
-          'completed_at': DateTime.now().toIso8601String(),
-        }),
+        body: jsonEncode(body),
       );
       
       if (response.statusCode == 200) {

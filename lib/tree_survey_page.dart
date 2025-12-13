@@ -3,7 +3,7 @@ import 'tree_input_page.dart';
 import 'tree_input_page_v2.dart'; // 引入 V2 頁面
 import 'screens/ai_chat_page.dart';
 import 'tree_survey_detail_page.dart';
-import 'services/api_service.dart'; // 引入 ApiService
+import 'services/tree_service.dart'; // 引入 TreeService
 import 'widgets/add_tree_dialog.dart'; // 引入 AddTreeSelectionDialog
 import 'constants/colors.dart';
 
@@ -22,6 +22,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
   List<Map<String, dynamic>> _trees = [];
   bool _isLoading = true;
   String _errorMessage = '';
+  final TreeService _treeService = TreeService();
 
   // 記錄日誌用的輔助函數
   void _logDebug(String message) {
@@ -42,26 +43,22 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
     });
 
     try {
-      final String endpoint;
+      Map<String, dynamic> response;
 
       if (widget.projectName != null) {
         // 如果有專案名稱，則按專案名稱過濾
         _logDebug('按專案名稱過濾: ${widget.projectName}');
-        endpoint =
-            'tree_survey/by_project/${Uri.encodeComponent(widget.projectName!)}';
+        response = await _treeService.getTreesByProjectName(widget.projectName!);
       } else if (widget.areaName != null) {
         // 如果有區位名稱，則按區位名稱過濾
         _logDebug('按區位名稱過濾: ${widget.areaName}');
-        endpoint =
-            'tree_survey/by_area/${Uri.encodeComponent(widget.areaName!)}';
+        response = await _treeService.getTreesByArea(widget.areaName!);
       } else {
         // 否則獲取所有樹木
         _logDebug('獲取所有樹木');
-        endpoint = 'tree_survey';
+        response = await _treeService.getAllTrees();
       }
 
-      // 使用 ApiService 並處理標準回應格式
-      final response = await ApiService.get(endpoint);
       _logDebug('API 響應成功');
 
       if (response['success'] == true && response['data'] != null) {
@@ -136,14 +133,8 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
   Future<void> _cleanupUnusedData() async {
     try {
       _logDebug('開始清理未使用的數據...');
-      // 使用 ApiService 發送 POST 請求
-      final response = await ApiService.post('project_areas/cleanup', {});
-
-      if (response['success'] == true) {
-        _logDebug('清理完成，影響行數: ${response['affectedRows']}');
-      } else {
-        _logDebug('清理API返回錯誤: ${response['message']}');
-      }
+      await _treeService.cleanupTemporaryData();
+      _logDebug('清理請求已發送');
     } catch (e) {
       _logDebug('清理過程發生錯誤: $e');
       // 不阻止正常流程，所以這裡只記錄錯誤
@@ -682,7 +673,10 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
             ),
       ),
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 80), // 為底部導航預留空間
+        padding: EdgeInsets.only(
+            bottom: Navigator.canPop(context)
+                ? 16
+                : 80), // 如果是 push 進來的(獨立頁面)則不需太高，如果是 Tab 則需避開底部導航
         child: Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),

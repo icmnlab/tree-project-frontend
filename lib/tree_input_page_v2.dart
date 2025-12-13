@@ -945,11 +945,21 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
     try {
       Position? position;
       try {
-        position = await Geolocator.getCurrentPosition(
-            desiredAccuracy: LocationAccuracy.high);
+        // 優化：先嘗試獲取最後已知位置，避免等待
+        position = await Geolocator.getLastKnownPosition();
+        
+        // 如果沒有最後位置，則嘗試獲取當前位置，但設定超時
+        if (position == null) {
+          position = await Geolocator.getCurrentPosition(
+            desiredAccuracy: LocationAccuracy.high,
+            timeLimit: const Duration(seconds: 3), // 3秒超時
+          );
+        }
       } catch (e) {
-        // Ignore
+        logDebug('獲取位置失敗 (非致命): $e');
+        // 位置獲取失敗不應阻止新增區位
       }
+
       final requestData = {
         'area_name': areaName,
         'description': areaName + '專案區位',
@@ -957,18 +967,43 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
         if (position != null) 'xCoord': position.longitude,
         if (position != null) 'yCoord': position.latitude,
       };
+      
       final response = await _projectAreaService.addProjectArea(requestData);
+      
       if (response['success'] == true) {
         await _loadProjectAreas();
         projectAreaController.text = areaName;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('專案區位新增成功')),
-        );
+        // 清空相關欄位
+        projectNameController.text = '';
+        projectCodeController.text = '';
+        _filteredProjects = [];
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('專案區位新增成功')),
+          );
+        }
+      } else {
+        // 處理後端返回的業務錯誤 (例如區位已存在)
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(response['message'] ?? '新增失敗')),
+          );
+          
+          // 如果區位已存在，或許我們應該直接選中它？
+          if (response['message'] == '區位已存在') {
+             projectAreaController.text = areaName;
+             // 重新載入該區位的專案
+             _updateFilteredProjects(areaName);
+          }
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('新增失敗: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('新增失敗: $e')),
+        );
+      }
     }
   }
 
