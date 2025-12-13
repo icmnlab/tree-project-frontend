@@ -66,10 +66,18 @@ class DownloadService {
   static String _extractFilename(http.Response response, Uri uri) {
     final contentDisposition = response.headers['content-disposition'];
     if (contentDisposition != null) {
-      final filenameMatch = RegExp(r'filename[^;=\n]*=((["\']).*?\2|[^;\n]*)').firstMatch(contentDisposition);
-      if (filenameMatch != null && filenameMatch.groupCount >= 1) {
-        var filename = filenameMatch.group(1) ?? '';
-        filename = filename.replaceAll(RegExp(r'^["\']|["\']$'), '');
+      // 使用更簡單的正則表達式避免 Dart 解析問題
+      final filenamePattern = RegExp(r'filename[^;=\n]*=([^;\n]*)');
+      final match = filenamePattern.firstMatch(contentDisposition);
+      if (match != null && match.groupCount >= 1) {
+        var filename = match.group(1) ?? '';
+        // 移除前後的引號
+        filename = filename.trim();
+        if (filename.startsWith('"') && filename.endsWith('"')) {
+          filename = filename.substring(1, filename.length - 1);
+        } else if (filename.startsWith("'") && filename.endsWith("'")) {
+          filename = filename.substring(1, filename.length - 1);
+        }
         if (filename.isNotEmpty) {
           return Uri.decodeComponent(filename);
         }
