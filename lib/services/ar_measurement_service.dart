@@ -185,7 +185,11 @@ class ReferenceObject {
     ),
     ReferenceObject(
       name: 'a4_paper_short',
-      nameZh: 'A4紙短邊',
+      nameZh: 'A4紙 (短邊水平)',
+      // A4紙尺寸: 21.0 x 29.7 cm
+      // 假設放在地上，短邊貼地垂直站立 (高度29.7)
+      // 或者平放，長邊垂直於鏡頭方向 (高度29.7)
+      // 這裡定義：寬度=21.0 (短邊), 高度=29.7 (長邊)
       widthCm: 21.0,
       heightCm: 29.7,
       iconName: 'description',
@@ -205,10 +209,10 @@ class ReferenceObject {
       iconName: 'straighten',
     ),
     ReferenceObject(
-      name: 'dbh_tape',
-      nameZh: '專業 DBH 皮尺',
-      widthCm: 100.0,  // 假設 1m 展開
-      heightCm: 2.0,
+      name: 'measurement_card',
+      nameZh: '專用測量卡 (15x10)',
+      widthCm: 15.0,
+      heightCm: 10.0,
       iconName: 'square_foot',
     ),
   ];
@@ -357,7 +361,7 @@ class ARMeasurementService {
     required double referencePixelWidth,
     required double treePixelWidth,
   }) {
-    // 計算比例
+    // 計算比例 (cm/px)
     double scale = reference.widthCm / referencePixelWidth;
     double diameterCm = treePixelWidth * scale;
     
@@ -374,6 +378,29 @@ class ARMeasurementService {
       points: [],
       notes: '參照物: ${reference.nameZh} (${reference.widthCm}cm)',
     );
+  }
+
+  /// [New] 計算虛擬 1.3m 高度的像素位置
+  /// 
+  /// 根據根部參照物的尺寸，推算螢幕上 1.3m 的位置
+  /// [referencePixelHeight] 參照物在畫面中的像素高度
+  /// [referenceActualHeightCm] 參照物實際高度 (cm)
+  /// [referenceBottomY] 參照物底部在畫面中的 Y 座標 (通常是地面)
+  /// 
+  /// 返回：相對於 referenceBottomY 的像素偏移量 (向上為負)
+  double calculateVirtualHeightOffset({
+    required double referencePixelHeight,
+    required double referenceActualHeightCm,
+    double targetHeightCm = 130.0, // DBH 標準高度
+  }) {
+    // 計算比例尺 (px/cm)
+    // 假設線性投影（在同一垂直平面上誤差可接受）
+    double pixelsPerCm = referencePixelHeight / referenceActualHeightCm;
+    
+    // 計算目標高度的像素量
+    double targetPixels = targetHeightCm * pixelsPerCm;
+    
+    return targetPixels;
   }
   
   double _calculateReferenceConfidence({
@@ -533,11 +560,11 @@ class ARMeasurementService {
 ''';
       case MeasurementMethod.reference:
         return '''
-📏 參照物測量提示：
-• 將參照物（如信用卡）緊貼樹幹
-• 確保參照物完全可見
-• 參照物應與樹幹在同一平面
-• 垂直拍攝，避免傾斜
+📏 參照物測量提示 (iPhone 測距儀模式)：
+1. 將 A4 紙或測量卡放在「樹根地面」
+2. 在螢幕上框選地面的參照物
+3. 系統會自動畫出 1.3m 高度線
+4. 對準該線進行測量，無需手動量高
 ''';
       case MeasurementMethod.multiAngle:
         return '''

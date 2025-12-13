@@ -6,6 +6,11 @@ import '../services/project_service.dart';
 import '../services/species_service.dart';
 import '../services/tree_service.dart';
 
+/// @Deprecated('Use ManualInputPageV2 (manual_input_page_v2.dart) instead.')
+///
+/// This is the V1 manual input page.
+/// It is kept for backward compatibility with older workflows,
+/// but new development should focus on V2 or V3.
 class ManualInputPage extends StatefulWidget {
   final List<Map<String, dynamic>> importedData;
 

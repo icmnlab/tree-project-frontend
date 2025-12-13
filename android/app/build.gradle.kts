@@ -1,5 +1,6 @@
 import java.util.Properties
 import java.io.FileInputStream
+import java.util.Base64
 
 plugins {
     id("com.android.application")
@@ -38,21 +39,9 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         
-        // 注入 Dart Define 的變數
-        val dartDefines = project.findProperty("dart-defines")?.toString()
-        if (dartDefines != null) {
-            val decodedDefines = dartDefines.split(",").map { 
-                String(java.util.Base64.getDecoder().decode(it))
-            }
-            
-            decodedDefines.find { it.startsWith("GOOGLE_MAPS_API_KEY_ANDROID=") }?.let {
-                manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = it.split("=")[1]
-            }
-        }
-        
-        if (!manifestPlaceholders.containsKey("GOOGLE_MAPS_API_KEY")) {
-             manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = ""
-        }
+        // 從 gradle.properties 讀取 Google Maps API Key（安全方式，不會提交到 Git）
+        val googleMapsApiKey = project.findProperty("GOOGLE_MAPS_API_KEY") as String? ?: ""
+        manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = googleMapsApiKey
     }
 
     signingConfigs {

@@ -202,7 +202,8 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
           initialDbh: double.tryParse(_dbhController.text),
           speciesName: _speciesController.text,
           knownDistance: widget.task.horizontalDistance,
-          autoCalibrate: true,
+          targetLat: widget.task.treeLatitude,
+          targetLon: widget.task.treeLongitude,
         ),
       ),
     );

@@ -67,7 +67,7 @@ class DownloadService {
     final contentDisposition = response.headers['content-disposition'];
     if (contentDisposition != null) {
       final filenameMatch = RegExp(r'filename[^;=\n]*=((["\']).*?\2|[^;\n]*)').firstMatch(contentDisposition);
-      if (filenameMatch != null) {
+      if (filenameMatch != null && filenameMatch.groupCount >= 1) {
         var filename = filenameMatch.group(1) ?? '';
         filename = filename.replaceAll(RegExp(r'^["\']|["\']$'), '');
         if (filename.isNotEmpty) {

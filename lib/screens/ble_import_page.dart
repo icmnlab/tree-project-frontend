@@ -21,7 +21,7 @@ class BleImportPage extends StatefulWidget {
 class _BleImportPageState extends State<BleImportPage> {
   // 狀態變數
   bool _isScanning = false;
-  bool _useV2Import = false; // [DEV] 切換 V2 匯入邏輯
+  bool _useV2Import = true; // [Default: V2] 預設使用新版批量匯入
   List<ScanResult> _scanResults = [];
   BluetoothDevice? _connectedDevice;
   bool _isConnecting = false;

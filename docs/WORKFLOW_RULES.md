@@ -1,65 +1,29 @@
-# 專案開發工作流程規範 (Project Development Workflow Rules)
+# TreeAI 開發工作流程規範 (WORKFLOW_RULES)
 
-> 📅 建立日期：2025-12-13
-> 🎯 目的：確保開發品質、兼容性與可維護性
+## 1. 開發前準備
+*   **閱讀文件**：開始任何工作前，必須閱讀 `MASTER_PLAN.md`、`V3_DEVELOPMENT_PLAN.md` 以及相關模組的程式碼。
+*   **工作規劃**：在工作文件（如 `DEVELOPMENT_STATUS_AND_TODO.md` 或 `V3_DEVELOPMENT_PLAN.md`）中明確寫下接下來的目標、預期產出以及與過往功能的關聯。
+*   **架構思考**：修改前需先確認「入口點 (Entry Point)」與「呼叫鏈 (Call Chain)」，嚴禁在未理解全貌下動手。
 
-為確保開發品質與維護性，所有開發工作必須嚴格遵守以下流程：
+## 2. 程式碼修改原則
+*   **兼容性優先 (Compatibility First)**：
+    *   採用「增量修改」，保留舊有 API 與邏輯，避免大規模刪除導致舊版 App 崩潰。
+    *   若需淘汰舊功能，必須設計過渡期或雙軌制。
+*   **禁止破壞性重構**：除非有明確授權，否則不進行大規模的檔案刪除或重寫。
+*   **前後端一致性**：修改後端 API 必須同步檢查前端 Service 的對應處理。
+*   **註解廢棄程式碼**：對於不再使用的頁面或功能（如舊版 AI Assistant），應保留檔案但加上 `@Deprecated` 標註與詳細註解，說明替代方案與廢棄原因，避免日後誤用或誤刪。
 
-## 1. 前置準備 (Preparation)
+## 3. 測試與驗收
+*   **小步快跑**：一個功能修改完成後，立即進行測試，通過後再進行下一個。
+*   **Debug 埋點**：程式碼中應保留適當的 Debug Log 機制，以便快速定位問題。
+*   **真實性驗證**：涉及演算法（如碳匯計算、測量公式）必須查證學術或官方資料，確保可信度。
+*   **最小回歸清單**：每次提交前，需測試核心路徑（登入 -> 專案列表 -> 新增/編輯樹木 -> 測量 -> 上傳）。
 
-1.  **文件閱讀 (Document Review)**
-    *   在開始任何工作前，必須閱讀相關的技術文件、規劃書 (如 `V3_DEVELOPMENT_PLAN.md`, `DEVELOPMENT_PLAN.md`)。
-    *   若涉及計算公式或科學數據，必須閱讀學術參考文獻 (`ACADEMIC_REFERENCES.md`)。
-    *   確認了解當前任務在整體架構中的位置與目的。
+## 4. 文件與交接
+*   **同步更新**：工作每完成一個階段，立即更新相關文件（Markdown），標註已完成項目與新發現的 BUG。
+*   **明確交接**：在工作結束時，需在文件中寫下「下一步建議」與「目前已知風險」，確保未來的 Agent 能無縫接手。
 
-2.  **工作規劃 (Planning)**
-    *   工作文件 (如 Todo List) 必須包含接下來的詳細步驟。
-    *   明確定義未來目的與回顧之前的進度。
-    *   規劃測試流程或程式測試代碼。
-
-## 2. 開發原則 (Development Principles)
-
-3.  **兼容性優先 (Compatibility First)**
-    *   **嚴禁**大規模刪除現有代碼。
-    *   所有修改必須保持向後兼容 (Backward Compatibility)，確保舊版 APK 功能仍能正常運作。
-    *   若需棄用舊功能，必須採並行策略 (Deprecation Strategy)，直到舊版完全淘汰。
-
-4.  **全面理解 (Comprehensive Understanding)**
-    *   修改代碼前，必須閱讀並理解所有相關的檔案（包含前端與後端）。
-    *   確認數據流向 (Data Flow) 與依賴關係 (Dependencies)。
-
-5.  **小步迭代 (Iterative Development)**
-    *   一個部分一個部分修改，避免一次性的大規模重構。
-    *   代碼中應包含 Debug 用的輸出 (如 `debugPrint`)，以便快速定位問題。
-
-## 3. 測試與驗證 (Testing & Verification)
-
-6.  **即時測試 (Immediate Testing)**
-    *   改完一個小部分立即跑測試。
-    *   **測試通過後**才能進行下一個部分。
-
-7.  **確保準確度 (Accuracy & Credibility)**
-    *   涉及數據計算、科學公式的功能，必須上網查證或參考學術文獻。
-    *   確保功能的準確度與可信度，不可猜測。
-
-## 4. 收尾與交接 (Completion & Handover)
-
-8.  **文件更新 (Documentation Update)**
-    *   每完成一部分工作，必須更新相關文件 (如 `README.md`, `DEVELOPMENT_PLAN.md`)。
-    *   記錄已解決的問題與尚待解決的 BUG。
-
-9.  **交接準備 (Handover Preparation)**
-    *   工作完成後，檢查文件內容，確保下一階段的 Agent 能順利接手。
-    *   寫下明確的下一步工作指引。
-
-10. **最終檢查 (Final Verification)**
-    *   仔細檢查所有修改是否完美實現功能。
-    *   確認沒有破壞任何既有的功能 (Regression Check)。
-
----
-
-## 特別注意事項 (Special Notes)
-
-*   **API 統一性**：所有後端呼叫必須透過 `ApiService` 或專屬 Service (如 `TreeService`)，禁止在 UI 層直接使用 `http` 套件。
-*   **安全性**：前端不得儲存敏感金鑰，所有權限驗證邏輯需在後端執行。
-*   **成本控制**：設計架構時需考慮 Render 成本與學生預算，優先選擇高性價比方案。
+## 5. 安全性 (Phase 4 準則)
+*   前端不得寫入敏感數據（API Keys, Secrets）。
+*   密碼驗證邏輯必須在後端執行。
+*   所有涉及資料寫入的 API 需具備權限控管與 Log 審計。

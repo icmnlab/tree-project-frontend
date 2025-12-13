@@ -11,6 +11,49 @@
 
 ## 📦 版本紀錄
 
+### v18.2.0 (2025-12-14) - AR 測量優化與安全改進 🔒
+
+#### 🆕 新增功能
+- **AR 測量 GPS 距離模式** - 支援使用手機 GPS 與樹木座標自動計算距離
+  - 整合 `geolocator` 套件實現 GPS 定位
+  - 自動計算使用者位置與目標樹木的距離（Haversine 公式）
+  - 適用於 VLGEO2 第二階段測量場景
+- **虛擬 1.3m 測量線** - 參考 iPhone 測距儀設計
+  - 在相機預覽畫面顯示虛擬 1.3m DBH 測量線
+  - 引導測量員找到正確的測量位置
+  - 不再依賴使用者身高或手持方式
+
+#### 🔒 安全性改進
+- **Google Maps API Key 安全設定**
+  - API Key 存放於 `android/gradle.properties`（不提交到 Git）
+  - 已加入 `.gitignore` 確保不會洩漏
+  - 配合 Google Cloud Console 的應用程式限制與 API 限制，提供完整安全保護
+
+#### 🔧 整合優化
+- **IntegratedTreeFormPage** - 整合 GPS 距離計算功能
+  - 自動從 VLGEO2 任務資料取得樹木座標
+  - 測量時可選擇使用已知距離或 GPS 計算距離
+- **ManualInputPageV3** - 整合 GPS 距離計算
+  - 使用當前位置與輸入的樹木座標計算距離
+  - 支援 AR 測量時自動填入距離
+
+#### 📋 技術變更
+- 新增 `geolocator: ^10.1.0` 套件
+- 新增 `camera: ^0.11.3` 套件（用於 Live Camera 預覽）
+- 移除已廢棄的 `CameraHeightAssistant` 服務
+- 修復 `build.gradle.kts` 的 Base64 解碼問題
+
+#### 📋 變更清單
+| 類型 | 說明 |
+|------|------|
+| feat | AR 測量新增 GPS 距離模式 |
+| feat | AR 測量新增虛擬 1.3m 線引導 |
+| security | Google Maps API Key 移至 gradle.properties |
+| refactor | 移除 CameraHeightAssistant，改用視覺引導 |
+| fix | 修復 build.gradle.kts 編譯錯誤 |
+
+---
+
 ### v18.1.0 (2025-01-14) - V3 進階服務 UI 整合 🎛️
 
 #### 🆕 新增功能

@@ -1,36 +1,34 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter/services.dart'; // Import for DeviceOrientation
+import 'package:camera/camera.dart';
+import 'package:geolocator/geolocator.dart'; // [New] For GPS distance
+import 'package:latlong2/latlong.dart' as latlong; // [New] For distance calculation
 import '../services/ar_measurement_service.dart';
-import '../services/camera_height_assistant.dart';
 
-/// AR DBH 測量頁面
-/// 
-/// 提供多種測量方法的視覺化介面：
-/// 1. 雙點測量法 - 點擊標記樹幹邊緣
-/// 2. 參照物比例法 - 使用已知尺寸物體
-/// 3. 環繞拍攝法 - 多角度測量取平均
+/// 現代化 AR 測量介面 (iPhone 測距儀風格)
+///
+/// 核心功能：
+/// 1. Live Camera Preview (全螢幕即時預覽)
+/// 2. 根部參照物定位 (或 GPS 自動距離) -> 自動延伸 1.3m 虛擬尺
+/// 3. 一鍵測量 DBH
 class ARDBHMeasurementPage extends StatefulWidget {
-  /// 初始 DBH 值（如有）
   final double? initialDbh;
-  
-  /// 樹種名稱（用於顯示參考範圍）
   final String? speciesName;
-  
-  /// 已知距離（從 VLGEO2 待測量任務自動帶入）
   final double? knownDistance;
   
-  /// 是否自動校準模式（使用已知距離）
-  final bool autoCalibrate;
+  // [New] 樹木座標，用於 GPS 自動測距
+  final double? targetLat;
+  final double? targetLon;
 
   const ARDBHMeasurementPage({
     super.key,
     this.initialDbh,
     this.speciesName,
     this.knownDistance,
-    this.autoCalibrate = false,
+    this.targetLat,
+    this.targetLon,
   });
 
   @override
@@ -38,1505 +36,766 @@ class ARDBHMeasurementPage extends StatefulWidget {
 }
 
 class _ARDBHMeasurementPageState extends State<ARDBHMeasurementPage>
-    with SingleTickerProviderStateMixin {
-  final ARMeasurementService _measurementService = ARMeasurementService();
-  final ImagePicker _imagePicker = ImagePicker();
+    with WidgetsBindingObserver {
+  // Camera
+  CameraController? _cameraController;
+  List<CameraDescription> _cameras = [];
+  bool _isCameraInitialized = false;
 
-  // 狀態
-  late TabController _tabController;
-  DeviceCapabilities? _deviceCapabilities;
-  bool _isLoading = true;
-  
-  // 測量結果
+  // Measurement State
+  int _step = 0;
+
+  // Measurement Mode
+  bool _useDistanceMode = false; // 是否使用「已知距離模式」
+
+  // Reference Object
+  ReferenceObject _selectedReference = ReferenceObject.commonObjects[0]; // Default Credit Card
+  Rect? _referenceRect;
+  Offset? _dragStart;
+  Offset? _dragCurrent;
+
+  // Manual/GPS Distance Input
+  late TextEditingController _distanceController;
+  bool _isLocating = false; // GPS 定位中
+
+  // Virtual Ruler
+  double? _pixelsPerCm;
+  double? _virtualLineY;
+
+  // Tree Width Measurement
+  Offset? _measureLineStart;
+  Offset? _measureLineEnd;
+
+  // Result
   MeasurementResult? _currentResult;
-  final List<MeasurementResult> _multiAngleResults = [];
-  
-  // 雙點測量狀態
-  File? _twoPointImage;
-  MeasurementPoint? _point1;
-  MeasurementPoint? _point2;
-  late double _estimatedDistance; // 距離（可從 VLGEO2 自動帶入）
-  bool _distanceAutoSet = false; // 距離是否自動設定
-  
-  // 參照物測量狀態
-  File? _referenceImage;
-  ReferenceObject? _selectedReference;
-  double _referencePixelWidth = 0;
-  double _treePixelWidth = 0;
-  int _referenceStep = 0; // 0: 選擇參照物, 1: 標記參照物, 2: 標記樹幹
-  
-  // 環繞測量狀態
-  final List<File> _multiAngleImages = [];
-  
-  // 相機高度輔助
-  final CameraHeightAssistant _cameraAssistant = CameraHeightAssistant();
-  CameraAlignment? _cameraAlignment;
-  bool _showLevelGuide = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    WidgetsBinding.instance.addObserver(this);
     
-    // 初始化距離：優先使用 VLGEO2 已知距離
-    if (widget.knownDistance != null && widget.knownDistance! > 0) {
-      _estimatedDistance = widget.knownDistance!;
-      _distanceAutoSet = true;
-    } else {
-      _estimatedDistance = 1.5; // 預設 1.5m
+    // 初始化距離：優先使用傳入的已知距離
+    _distanceController = TextEditingController(
+      text: widget.knownDistance?.toString() ?? '1.5',
+    );
+    
+    // 如果有傳入樹木座標，且沒有已知距離，預設開啟距離模式並嘗試自動計算
+    if (widget.targetLat != null && widget.targetLon != null && widget.knownDistance == null) {
+      _useDistanceMode = true;
+      // 延遲執行，以免在 initState 中觸發 setState
+      Future.delayed(Duration.zero, _calculateDistanceByGPS);
+    } else if (widget.knownDistance != null) {
+      // 如果有 VLGEO 傳來的已知距離，也預設開啟距離模式
+      _useDistanceMode = true;
     }
-    
-    _initializeService();
-  }
 
-  Future<void> _initializeService() async {
-    try {
-      // 載入使用者身高設定
-      await _cameraAssistant.loadUserHeight();
-      
-      final capabilities = await _measurementService.detectDeviceCapabilities();
-      if (mounted) {
-        setState(() {
-          _deviceCapabilities = capabilities;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      debugPrint('初始化測量服務失敗: $e');
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
+    _initializeCamera();
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
-    _cameraAssistant.stopListening();
+    WidgetsBinding.instance.removeObserver(this);
+    _cameraController?.dispose();
+    _distanceController.dispose();
     super.dispose();
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final CameraController? cameraController = _cameraController;
+    if (cameraController == null || !cameraController.value.isInitialized) {
+      return;
+    }
+    if (state == AppLifecycleState.inactive) {
+      cameraController.dispose();
+    } else if (state == AppLifecycleState.resumed) {
+      _initializeCamera();
+    }
+  }
+
+  Future<void> _initializeCamera() async {
+    try {
+      _cameras = await availableCameras();
+      if (_cameras.isEmpty) return;
+
+      final camera = _cameras.firstWhere(
+        (camera) => camera.lensDirection == CameraLensDirection.back,
+        orElse: () => _cameras.first,
+      );
+
+      _cameraController = CameraController(
+        camera,
+        ResolutionPreset.high,
+        enableAudio: false,
+        imageFormatGroup: Platform.isAndroid ? ImageFormatGroup.jpeg : ImageFormatGroup.bgra8888,
+      );
+
+      await _cameraController!.initialize();
+      await _cameraController!.lockCaptureOrientation(DeviceOrientation.portraitUp);
+
+      if (mounted) {
+        setState(() {
+          _isCameraInitialized = true;
+        });
+      }
+    } catch (e) {
+      debugPrint('相機初始化失敗: $e');
+    }
+  }
+
+  // [New] 使用 GPS 計算與樹木的距離
+  Future<void> _calculateDistanceByGPS() async {
+    if (widget.targetLat == null || widget.targetLon == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('無樹木座標資料，無法使用 GPS 測距')),
+      );
+      return;
+    }
+
+    setState(() => _isLocating = true);
+
+    try {
+      // 檢查定位權限
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          throw '定位權限被拒絕';
+        }
+      }
+
+      // 獲取當前位置 (高精度)
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.bestForNavigation,
+      );
+
+      // 計算距離 (使用 latlong2 的 Distance)
+      final latlong.Distance distance = latlong.Distance();
+      final double meter = distance(
+        latlong.LatLng(position.latitude, position.longitude),
+        latlong.LatLng(widget.targetLat!, widget.targetLon!),
+      );
+
+      // 更新 UI
+      if (mounted) {
+        setState(() {
+          _distanceController.text = meter.toStringAsFixed(2);
+          _isLocating = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('GPS 自動測距: ${meter.toStringAsFixed(2)} 公尺'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('GPS 測距失敗: $e');
+      if (mounted) {
+        setState(() => _isLocating = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('GPS 測距失敗: $e')),
+        );
+      }
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (!_isCameraInitialized || _cameraController == null) {
+      return const Scaffold(
+        backgroundColor: Colors.black,
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('DBH 智慧測量'),
-        backgroundColor: Colors.teal,
-        foregroundColor: Colors.white,
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          tabs: const [
-            Tab(icon: Icon(Icons.touch_app), text: '雙點測量'),
-            Tab(icon: Icon(Icons.straighten), text: '參照物'),
-            Tab(icon: Icon(Icons.threesixty), text: '環繞測量'),
-          ],
-        ),
-        actions: [
-          if (_currentResult != null)
-            IconButton(
-              icon: const Icon(Icons.check),
-              tooltip: '確認使用此測量結果',
-              onPressed: _confirmResult,
+      backgroundColor: Colors.black,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          Center(child: CameraPreview(_cameraController!)),
+          GestureDetector(
+            onPanStart: _handlePanStart,
+            onPanUpdate: _handlePanUpdate,
+            onPanEnd: _handlePanEnd,
+            child: CustomPaint(
+              painter: _AROverlayPainter(
+                step: _step,
+                referenceRect: _referenceRect,
+                dragStart: _dragStart,
+                dragCurrent: _dragCurrent,
+                virtualLineY: _virtualLineY,
+                measureLineStart: _measureLineStart,
+                measureLineEnd: _measureLineEnd,
+                pixelsPerCm: _pixelsPerCm,
+                useDistanceMode: _useDistanceMode,
+              ),
+              child: Container(color: Colors.transparent),
             ),
-        ],
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
+          ),
+          SafeArea(
+            child: Column(
               children: [
-                // 設備能力提示
-                if (_deviceCapabilities != null)
-                  _buildCapabilitiesBar(),
-                
-                // 測量結果顯示
-                if (_currentResult != null)
-                  _buildResultCard(),
-                
-                // 分頁內容
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildTwoPointTab(),
-                      _buildReferenceTab(),
-                      _buildMultiAngleTab(),
-                    ],
-                  ),
-                ),
+                _buildTopBar(),
+              const Spacer(),
+                _buildInstructionOverlay(),
+                const SizedBox(height: 20),
+                _buildBottomControls(),
+                const SizedBox(height: 20),
               ],
             ),
+          ),
+        ],
+      ),
     );
   }
 
-  /// 設備能力提示欄
-  Widget _buildCapabilitiesBar() {
-    final caps = _deviceCapabilities!;
-    final recommended = caps.recommendedMethod;
-    
-    String recommendedText;
-    IconData recommendedIcon;
-    
-    switch (recommended) {
-      case MeasurementMethod.arDepth:
-        recommendedText = caps.hasLiDAR ? 'LiDAR 深度測量 (最精確)' : 'AR 深度測量';
-        recommendedIcon = Icons.view_in_ar;
-        break;
-      case MeasurementMethod.twoPoint:
-        recommendedText = '雙點測量法';
-        recommendedIcon = Icons.touch_app;
-        break;
-      case MeasurementMethod.reference:
-        recommendedText = '參照物比例法';
-        recommendedIcon = Icons.straighten;
-        break;
-      default:
-        recommendedText = '標準測量';
-        recommendedIcon = Icons.camera_alt;
-    }
-    
+  Widget _buildTopBar() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      color: Colors.teal.shade50,
+      color: Colors.black45,
       child: Row(
-        children: [
-          Icon(recommendedIcon, color: Colors.teal, size: 20),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              '推薦方法: $recommendedText',
-              style: TextStyle(
-                color: Colors.teal.shade700,
-                fontSize: 13,
-              ),
-            ),
-          ),
-          if (caps.hasLiDAR)
-            Chip(
-              label: const Text('LiDAR'),
-              backgroundColor: Colors.green.shade100,
-              labelStyle: TextStyle(
-                color: Colors.green.shade700,
-                fontSize: 11,
-              ),
-              padding: EdgeInsets.zero,
-              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-            ),
-        ],
-      ),
-    );
-  }
-
-  /// 測量結果卡片
-  Widget _buildResultCard() {
-    final result = _currentResult!;
-    final isValid = _measurementService.validateMeasurement(result);
-    
-    return Container(
-      margin: const EdgeInsets.all(12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: isValid ? Colors.green.shade50 : Colors.orange.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: isValid ? Colors.green.shade200 : Colors.orange.shade200,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                isValid ? Icons.check_circle : Icons.warning,
-                color: isValid ? Colors.green : Colors.orange,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '測量結果',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: isValid ? Colors.green.shade700 : Colors.orange.shade700,
-                ),
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _getConfidenceColor(result.confidenceScore),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '信心度: ${result.confidenceLevel}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildResultMetric(
-                '直徑 (DBH)',
-                '${result.diameterCm.toStringAsFixed(1)} cm',
-                Icons.circle_outlined,
-              ),
-              _buildResultMetric(
-                '圓周',
-                '${result.circumferenceCm.toStringAsFixed(1)} cm',
-                Icons.panorama_fish_eye,
-              ),
-              _buildResultMetric(
-                '誤差範圍',
-                '±${result.estimatedErrorCm.toStringAsFixed(1)} cm',
-                Icons.error_outline,
-              ),
-            ],
-          ),
-          if (result.notes != null) ...[
-            const SizedBox(height: 8),
-            Text(
-              result.notes!,
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey.shade600,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildResultMetric(String label, String value, IconData icon) {
-    return Column(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Icon(icon, color: Colors.teal, size: 24),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.white),
+            onPressed: () => Navigator.of(context).pop(),
           ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            color: Colors.grey.shade600,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Color _getConfidenceColor(double score) {
-    if (score >= 0.8) return Colors.green;
-    if (score >= 0.6) return Colors.teal;
-    if (score >= 0.4) return Colors.orange;
-    return Colors.red;
-  }
-
-  /// 雙點測量分頁
-  Widget _buildTwoPointTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // 提示卡片
-          _buildTipsCard(MeasurementMethod.twoPoint),
-          
-          const SizedBox(height: 16),
-          
-          // 水平儀引導（拍照前顯示）
-          if (_twoPointImage == null && _showLevelGuide)
-            _buildLevelGuide(),
-          
-          // 拍照按鈕
-          if (_twoPointImage == null)
             Column(
               children: [
-                _buildPhotoButton(
-                  onPressed: () => _takePhoto(MeasurementMethod.twoPoint),
-                  label: '拍攝樹幹照片',
-                  icon: Icons.camera_alt,
-                ),
-                const SizedBox(height: 12),
-                // 水平儀開關
-                TextButton.icon(
-                  onPressed: _toggleLevelGuide,
-                  icon: Icon(
-                    _showLevelGuide ? Icons.visibility_off : Icons.straighten,
-                    size: 18,
-                  ),
-                  label: Text(_showLevelGuide ? '關閉水平儀' : '開啟水平儀輔助'),
-                  style: TextButton.styleFrom(foregroundColor: Colors.teal),
-                ),
-              ],
-            )
-          else ...[
-            // 顯示照片並允許點擊標記
-            _buildInteractiveImage(
-              image: _twoPointImage!,
-              onTap: _onTwoPointTap,
-              points: [_point1, _point2].whereType<MeasurementPoint>().toList(),
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // 距離輸入（可自動帶入）
-            Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+              const Text(
+                'AR 智慧測量',
+                style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              if (widget.targetLat != null)
                       Text(
-                        '您與樹幹的距離: ${_estimatedDistance.toStringAsFixed(1)} 公尺',
-                        style: const TextStyle(fontWeight: FontWeight.w500),
-                      ),
-                      if (_distanceAutoSet)
-                        Row(
-                          children: [
-                            Icon(Icons.auto_fix_high, size: 14, color: Colors.green.shade600),
-                            const SizedBox(width: 4),
-                            Text(
-                              '已從 VLGEO2 測量數據自動帶入',
-                              style: TextStyle(fontSize: 11, color: Colors.green.shade600),
+                  '樹木座標: ${widget.targetLat!.toStringAsFixed(5)}, ${widget.targetLon!.toStringAsFixed(5)}',
+                  style: const TextStyle(color: Colors.white70, fontSize: 10),
                             ),
                           ],
                         ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            Slider(
-              value: _estimatedDistance,
-              min: 0.5,
-              max: 10.0, // 增加範圍以支援更遠的 VLGEO2 測量
-              divisions: 95,
-              label: '${_estimatedDistance.toStringAsFixed(1)}m',
-              activeColor: _distanceAutoSet ? Colors.green : null,
-              onChanged: (value) {
-                setState(() {
-                  _estimatedDistance = value;
-                  _distanceAutoSet = false; // 手動調整後取消自動標記
-                });
-                _recalculateTwoPoint();
-              },
-            ),
-            
-            const SizedBox(height: 8),
-            
-            // 狀態指示
-            _buildPointStatus(),
-            
-            const SizedBox(height: 16),
-            
-            // 操作按鈕
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _resetTwoPoint,
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('重新測量'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _point1 != null && _point2 != null
-                        ? _calculateTwoPoint
-                        : null,
-                    icon: const Icon(Icons.calculate),
-                    label: const Text('計算直徑'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+          IconButton(
+            icon: const Icon(Icons.help_outline, color: Colors.white),
+            onPressed: _showHelpDialog,
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildPointStatus() {
-    return Row(
-      children: [
-        _buildPointIndicator(1, _point1 != null),
-        const SizedBox(width: 8),
-        const Icon(Icons.arrow_forward, size: 16, color: Colors.grey),
-        const SizedBox(width: 8),
-        _buildPointIndicator(2, _point2 != null),
-        const Spacer(),
-        Text(
-          _point1 == null
-              ? '請點擊樹幹左側邊緣'
-              : _point2 == null
-                  ? '請點擊樹幹右側邊緣'
-                  : '標記完成',
-          style: TextStyle(
-            color: Colors.grey.shade600,
-            fontSize: 13,
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _buildInstructionOverlay() {
+    String text = '';
+    Color bgColor = Colors.black54;
 
-  Widget _buildPointIndicator(int number, bool isSet) {
-    return Container(
-      width: 28,
-      height: 28,
-      decoration: BoxDecoration(
-        color: isSet ? Colors.teal : Colors.grey.shade300,
-        shape: BoxShape.circle,
-      ),
-      child: Center(
-        child: Text(
-          '$number',
-          style: TextStyle(
-            color: isSet ? Colors.white : Colors.grey.shade600,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 參照物測量分頁
-  Widget _buildReferenceTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // 提示卡片
-          _buildTipsCard(MeasurementMethod.reference),
-          
-          const SizedBox(height: 16),
-          
-          // 步驟指示
-          _buildStepIndicator(),
-          
-          const SizedBox(height: 16),
-          
-          // 步驟內容
-          if (_referenceStep == 0)
-            _buildReferenceSelection()
-          else if (_referenceImage == null)
-            _buildPhotoButton(
-              onPressed: () => _takePhoto(MeasurementMethod.reference),
-              label: '拍攝照片（包含參照物和樹幹）',
-              icon: Icons.camera_alt,
-            )
-          else
-            _buildReferenceMarkingUI(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStepIndicator() {
-    return Row(
-      children: [
-        _buildStepChip(0, '選擇參照物'),
-        const Expanded(child: Divider()),
-        _buildStepChip(1, '拍攝照片'),
-        const Expanded(child: Divider()),
-        _buildStepChip(2, '標記測量'),
-      ],
-    );
-  }
-
-  Widget _buildStepChip(int step, String label) {
-    final isActive = _referenceStep >= step;
-    final isCurrent = _referenceStep == step;
-    
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: isCurrent
-            ? Colors.teal
-            : isActive
-                ? Colors.teal.shade100
-                : Colors.grey.shade200,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: 12,
-          color: isCurrent
-              ? Colors.white
-              : isActive
-                  ? Colors.teal.shade700
-                  : Colors.grey.shade600,
-          fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildReferenceSelection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          '選擇您手邊的參照物:',
-          style: TextStyle(fontWeight: FontWeight.w500),
-        ),
-        const SizedBox(height: 12),
-        ...ReferenceObject.commonObjects.map((ref) => _buildReferenceItem(ref)),
-      ],
-    );
-  }
-
-  Widget _buildReferenceItem(ReferenceObject ref) {
-    final isSelected = _selectedReference?.name == ref.name;
-    
-    return Card(
-      margin: const EdgeInsets.only(bottom: 8),
-      color: isSelected ? Colors.teal.shade50 : null,
-      child: ListTile(
-        leading: Icon(
-          _getIconData(ref.iconName),
-          color: isSelected ? Colors.teal : Colors.grey,
-        ),
-        title: Text(ref.nameZh),
-        subtitle: Text('${ref.widthCm} × ${ref.heightCm} cm'),
-        trailing: isSelected
-            ? const Icon(Icons.check_circle, color: Colors.teal)
-            : null,
-        onTap: () {
-          setState(() {
-            _selectedReference = ref;
-            _referenceStep = 1;
-          });
-        },
-      ),
-    );
-  }
-
-  IconData _getIconData(String iconName) {
-    switch (iconName) {
-      case 'credit_card':
-        return Icons.credit_card;
-      case 'description':
-        return Icons.description;
-      case 'smartphone':
-        return Icons.smartphone;
-      case 'straighten':
-        return Icons.straighten;
-      case 'square_foot':
-        return Icons.square_foot;
-      default:
-        return Icons.help_outline;
+    switch (_step) {
+      case 0:
+        text = _useDistanceMode 
+            ? '請輸入距離 (可使用 GPS 自動計算)\n或輸入 VLGEO 測量數據'
+            : '請將 [${_selectedReference.nameZh}] 放在樹根地面\n點擊下方按鈕開始標記';
+        break;
+      case 1:
+        text = '在螢幕上框選地面的參照物\n(確保框線貼合邊緣)';
+        break;
+      case 2:
+        text = _useDistanceMode
+            ? '滑動黃色測量線的兩端\n使其對齊樹幹寬度'
+            : '綠線為地面向上 1.3m 處\n調整手機讓綠線對準樹幹胸高\n然後滑動綠線兩端測量寬度';
+        bgColor = Colors.green.withOpacity(0.6);
+        break;
+      case 3:
+        text = '測量完成！\nDBH: ${_currentResult?.diameterCm.toStringAsFixed(1)} cm';
+        bgColor = Colors.blue.withOpacity(0.6);
+        break;
     }
-  }
 
-  Widget _buildReferenceMarkingUI() {
-    return Column(
-      children: [
-        // 顯示照片
-        ClipRRect(
-          borderRadius: BorderRadius.circular(12),
-          child: Image.file(
-            _referenceImage!,
-            width: double.infinity,
-            fit: BoxFit.contain,
-          ),
-        ),
-        
-        const SizedBox(height: 16),
-        
-        // 參照物寬度輸入
-        Row(
-          children: [
-            const Text('參照物像素寬度:'),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextField(
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  hintText: '測量或估計',
-                  suffixText: 'px',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  isDense: true,
-                ),
-                onChanged: (v) => _referencePixelWidth = double.tryParse(v) ?? 0,
-              ),
-            ),
-          ],
-        ),
-        
-        const SizedBox(height: 12),
-        
-        // 樹幹寬度輸入
-        Row(
-          children: [
-            const Text('樹幹像素寬度:'),
-            const SizedBox(width: 12),
-            Expanded(
-              child: TextField(
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  hintText: '測量或估計',
-                  suffixText: 'px',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  isDense: true,
-                ),
-                onChanged: (v) => _treePixelWidth = double.tryParse(v) ?? 0,
-              ),
-            ),
-          ],
-        ),
-        
-        const SizedBox(height: 16),
-        
-        // 計算按鈕
-        Row(
-          children: [
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: _resetReference,
-                icon: const Icon(Icons.refresh),
-                label: const Text('重新開始'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: ElevatedButton.icon(
-                onPressed: _referencePixelWidth > 0 && _treePixelWidth > 0
-                    ? _calculateReference
-                    : null,
-                icon: const Icon(Icons.calculate),
-                label: const Text('計算直徑'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.teal,
-                  foregroundColor: Colors.white,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(30),
+      ),
+        child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: const TextStyle(color: Colors.white, fontSize: 14),
+      ),
     );
   }
 
-  /// 環繞測量分頁
-  Widget _buildMultiAngleTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+  Widget _buildBottomControls() {
+    if (_step == 0) {
+      return Column(
         children: [
-          // 提示卡片
-          _buildTipsCard(MeasurementMethod.multiAngle),
-          
-          const SizedBox(height: 16),
-          
-          // 已拍攝照片列表
-          if (_multiAngleImages.isNotEmpty) ...[
-            Text(
-              '已拍攝 ${_multiAngleImages.length} 張照片',
-              style: const TextStyle(fontWeight: FontWeight.w500),
+          Container(
+            margin: const EdgeInsets.only(bottom: 16),
+            padding: const EdgeInsets.all(4),
+            decoration: BoxDecoration(
+              color: Colors.white24,
+              borderRadius: BorderRadius.circular(20),
             ),
-            const SizedBox(height: 8),
-            SizedBox(
-              height: 80,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+      children: [
+                _buildModeButton('參照物模式', !_useDistanceMode, () {
+                  setState(() => _useDistanceMode = false);
+                }),
+                _buildModeButton('距離模式 (GPS)', _useDistanceMode, () {
+                  setState(() => _useDistanceMode = true);
+                }),
+              ],
+            ),
+          ),
+          
+          if (!_useDistanceMode) ...[
+            Container(
+              height: 50,
+              margin: const EdgeInsets.only(bottom: 16),
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
-                itemCount: _multiAngleImages.length,
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                itemCount: ReferenceObject.commonObjects.length,
                 itemBuilder: (context, index) {
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: Stack(
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.file(
-                            _multiAngleImages[index],
-                            width: 80,
-                            height: 80,
-                            fit: BoxFit.cover,
-                          ),
+                  final ref = ReferenceObject.commonObjects[index];
+                  final isSelected = ref.name == _selectedReference.name;
+                  return GestureDetector(
+                    onTap: () => setState(() => _selectedReference = ref),
+                    child: Container(
+                      margin: const EdgeInsets.only(right: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+                        color: isSelected ? Colors.teal : Colors.grey[800],
+                        borderRadius: BorderRadius.circular(20),
+                        border: isSelected ? Border.all(color: Colors.white, width: 2) : null,
+                      ),
+                      alignment: Alignment.center,
+      child: Text(
+                        ref.nameZh,
+        style: TextStyle(
+                          color: isSelected ? Colors.white : Colors.white70,
+                          fontWeight: FontWeight.bold,
                         ),
-                        Positioned(
-                          top: 4,
-                          right: 4,
-                          child: GestureDetector(
-                            onTap: () => _removeMultiAngleImage(index),
-                            child: Container(
-                              padding: const EdgeInsets.all(2),
-                              decoration: const BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.close,
-                                size: 14,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   );
                 },
               ),
             ),
-            const SizedBox(height: 16),
-          ],
-          
-          // 已計算的結果列表
-          if (_multiAngleResults.isNotEmpty) ...[
-            Text(
-              '各角度測量結果:',
-              style: const TextStyle(fontWeight: FontWeight.w500),
+            FloatingActionButton.extended(
+              onPressed: () => setState(() => _step = 1),
+              icon: const Icon(Icons.crop_free),
+              label: const Text('開始標記參照物'),
+              backgroundColor: Colors.teal,
             ),
-            const SizedBox(height: 8),
-            ...List.generate(_multiAngleResults.length, (index) {
-              final r = _multiAngleResults[index];
-              return Card(
-                margin: const EdgeInsets.only(bottom: 8),
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: Colors.teal,
-                    foregroundColor: Colors.white,
-                    child: Text('${index + 1}'),
-                  ),
-                  title: Text('${r.diameterCm.toStringAsFixed(1)} cm'),
-                  subtitle: Text('信心度: ${r.confidenceLevel}'),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline, color: Colors.red),
-                    onPressed: () => _removeMultiAngleResult(index),
-                  ),
-                ),
-              );
-            }),
-            const SizedBox(height: 16),
-          ],
-          
-          // 按鈕區
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () => _takePhoto(MeasurementMethod.multiAngle),
-                  icon: const Icon(Icons.add_a_photo),
-                  label: const Text('添加照片'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: _multiAngleResults.length >= 2
-                      ? _calculateMultiAngle
-                      : null,
-                  icon: const Icon(Icons.calculate),
-                  label: const Text('計算平均'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
-                    foregroundColor: Colors.white,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          
-          if (_multiAngleResults.length < 2)
+          ] else ...[
+            // [Modified] 距離輸入介面 (整合 GPS 按鈕)
             Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: Text(
-                '至少需要 2 個角度的測量結果',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  /// 提示卡片
-  Widget _buildTipsCard(MeasurementMethod method) {
-    final tips = _measurementService.getMeasurementTips(method);
-    
-    return Card(
-      color: Colors.blue.shade50,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: Row(
           children: [
-            Icon(Icons.lightbulb_outline, color: Colors.blue.shade700),
-            const SizedBox(width: 12),
             Expanded(
-              child: Text(
-                tips,
-                style: TextStyle(
-                  fontSize: 13,
-                  color: Colors.blue.shade900,
-                ),
+              child: TextField(
+                      controller: _distanceController,
+                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      style: const TextStyle(color: Colors.white, fontSize: 24),
+                      textAlign: TextAlign.center,
+                      decoration: const InputDecoration(
+                        labelText: '距離 (公尺)',
+                        labelStyle: TextStyle(color: Colors.white70),
+                        enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.white)),
+                        focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: Colors.tealAccent)),
+                        suffixText: 'm',
+                        suffixStyle: TextStyle(color: Colors.white70),
+                      ),
+                    ),
+                  ),
+            const SizedBox(width: 12),
+                  // GPS 定位按鈕
+                  SizedBox(
+                    height: 56,
+                    width: 56,
+                    child: ElevatedButton(
+                      onPressed: (widget.targetLat == null || _isLocating) 
+                          ? null 
+                          : _calculateDistanceByGPS,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue,
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: _isLocating 
+                          ? const SizedBox(
+                              width: 24, height: 24, 
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)
+                            )
+                          : const Icon(Icons.gps_fixed, color: Colors.white),
               ),
             ),
           ],
         ),
-      ),
-    );
+            ),
+            FloatingActionButton.extended(
+              onPressed: _startDistanceMeasurement,
+              icon: const Icon(Icons.straighten),
+              label: const Text('開始測量'),
+              backgroundColor: Colors.orange,
+            ),
+          ],
+        ],
+      );
+    } else if (_step == 1) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          FloatingActionButton(
+            onPressed: () => setState(() {
+              _step = 0;
+              _referenceRect = null;
+            }),
+            backgroundColor: Colors.grey,
+            child: const Icon(Icons.arrow_back),
+          ),
+          if (_referenceRect != null)
+            FloatingActionButton.extended(
+              onPressed: _calculateScaleAndProceed,
+              icon: const Icon(Icons.check),
+              label: const Text('確認參照物'),
+              backgroundColor: Colors.green,
+            ),
+        ],
+      );
+    } else if (_step == 2) {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+          FloatingActionButton(
+            onPressed: () => setState(() => _step = _useDistanceMode ? 0 : 1),
+            backgroundColor: Colors.grey,
+            child: const Icon(Icons.arrow_back),
+          ),
+          FloatingActionButton.extended(
+            onPressed: _measureAndFinish,
+            icon: const Icon(Icons.camera),
+            label: const Text('完成測量'),
+            backgroundColor: Colors.blue,
+          ),
+        ],
+      );
+    } else {
+      return Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+          FloatingActionButton.extended(
+            onPressed: () => setState(() => _step = 0),
+            icon: const Icon(Icons.refresh),
+            label: const Text('重測'),
+            backgroundColor: Colors.orange,
+          ),
+          FloatingActionButton.extended(
+            onPressed: () => Navigator.of(context).pop(_currentResult),
+            icon: const Icon(Icons.check),
+            label: const Text('使用此結果'),
+            backgroundColor: Colors.green,
+          ),
+        ],
+      );
+    }
   }
-
-  /// 拍照按鈕
-  Widget _buildPhotoButton({
-    required VoidCallback onPressed,
-    required String label,
-    required IconData icon,
-  }) {
-    return ElevatedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 48),
-      label: Text(label),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: Colors.teal,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(vertical: 32),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-      ),
-    );
-  }
-
-  /// 可互動的圖片（用於雙點標記）
-  Widget _buildInteractiveImage({
-    required File image,
-    required Function(Offset) onTap,
-    required List<MeasurementPoint> points,
-  }) {
+  
+  Widget _buildModeButton(String text, bool isSelected, VoidCallback onTap) {
     return GestureDetector(
-      onTapDown: (details) {
-        final RenderBox box = context.findRenderObject() as RenderBox;
-        final localOffset = box.globalToLocal(details.globalPosition);
-        onTap(localOffset);
-      },
-      child: Stack(
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.file(
-              image,
-              width: double.infinity,
-              fit: BoxFit.contain,
-            ),
-          ),
-          // 標記點
-          ...points.asMap().entries.map((entry) {
-            final index = entry.key;
-            final point = entry.value;
-            return Positioned(
-              left: point.x - 12,
-              top: point.y - 12,
+      onTap: onTap,
               child: Container(
-                width: 24,
-                height: 24,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
-                  color: index == 0 ? Colors.red : Colors.blue,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
+          color: isSelected ? Colors.teal : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
                 ),
-                child: Center(
                   child: Text(
-                    '${index + 1}',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
+          text,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.white70,
                       fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }),
-          // 連接線
-          if (points.length == 2)
-            CustomPaint(
-              painter: LinePainter(
-                point1: Offset(points[0].x, points[0].y),
-                point2: Offset(points[1].x, points[1].y),
-              ),
-            ),
-        ],
+          ),
+        ),
       ),
     );
   }
 
-  // === 事件處理 ===
-
-  Future<void> _takePhoto(MeasurementMethod method) async {
-    try {
-      final XFile? image = await _imagePicker.pickImage(
-        source: ImageSource.camera,
-        preferredCameraDevice: CameraDevice.rear,
-      );
-      
-      if (image != null) {
+  void _handlePanStart(DragStartDetails details) {
+    if (_step == 1) {
         setState(() {
-          switch (method) {
-            case MeasurementMethod.twoPoint:
-              _twoPointImage = File(image.path);
-              _point1 = null;
-              _point2 = null;
-              break;
-            case MeasurementMethod.reference:
-              _referenceImage = File(image.path);
-              _referenceStep = 2;
-              break;
-            case MeasurementMethod.multiAngle:
-              _multiAngleImages.add(File(image.path));
-              break;
-            default:
-              break;
-          }
-        });
-      }
-    } catch (e) {
-      _showError('拍照失敗: $e');
+        _dragStart = details.localPosition;
+        _dragCurrent = details.localPosition;
+        _referenceRect = null;
+      });
     }
   }
 
-  void _onTwoPointTap(Offset position) {
+  void _handlePanUpdate(DragUpdateDetails details) {
+    if (_step == 1) {
     setState(() {
-      if (_point1 == null) {
-        _point1 = MeasurementPoint(x: position.dx, y: position.dy);
-      } else if (_point2 == null) {
-        _point2 = MeasurementPoint(x: position.dx, y: position.dy);
-        _calculateTwoPoint();
+        _dragCurrent = details.localPosition;
+        if (_dragStart != null) {
+          _referenceRect = Rect.fromPoints(_dragStart!, _dragCurrent!);
+        }
+      });
+    } else if (_step == 2) {
+      if (_measureLineStart == null) {
+         final center = details.localPosition;
+         _measureLineStart = center - const Offset(50, 0);
+         _measureLineEnd = center + const Offset(50, 0);
       }
-    });
-  }
-
-  void _recalculateTwoPoint() {
-    if (_point1 != null && _point2 != null) {
-      _calculateTwoPoint();
-    }
-  }
-
-  void _calculateTwoPoint() {
-    if (_point1 == null || _point2 == null) return;
-    
-    final screenSize = MediaQuery.of(context).size;
-    
-    try {
-      final result = _measurementService.calculateFromTwoPoints(
-        point1: _point1!,
-        point2: _point2!,
-        screenWidth: screenSize.width,
-        screenHeight: screenSize.height,
-        distance: _estimatedDistance,
-      );
       
-      setState(() => _currentResult = result);
-    } catch (e) {
-      _showError('計算失敗: $e');
+      setState(() {
+        _virtualLineY = details.localPosition.dy;
+        if (_measureLineStart != null && _measureLineEnd != null) {
+           double width = (_measureLineEnd!.dx - _measureLineStart!.dx).abs();
+           double centerX = details.localPosition.dx;
+           _measureLineStart = Offset(centerX - width/2, _virtualLineY!);
+           _measureLineEnd = Offset(centerX + width/2, _virtualLineY!);
+        }
+      });
+    }
+  }
+  
+  void _handlePanEnd(DragEndDetails details) {
+    if (_step == 1) {
+    setState(() {
+        _dragStart = null;
+        _dragCurrent = null;
+      });
     }
   }
 
-  void _resetTwoPoint() {
+  void _startDistanceMeasurement() {
+    double? dist = double.tryParse(_distanceController.text);
+    if (dist == null || dist <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('請輸入有效距離')));
+      return;
+    }
+    
+    double centerX = MediaQuery.of(context).size.width / 2;
+    double centerY = MediaQuery.of(context).size.height / 2;
+    
+    _measureLineStart = Offset(centerX - 100, centerY);
+    _measureLineEnd = Offset(centerX + 100, centerY);
+    _virtualLineY = centerY;
+    
     setState(() {
-      _twoPointImage = null;
-      _point1 = null;
-      _point2 = null;
-      _currentResult = null;
+      _step = 2;
     });
   }
 
-  void _calculateReference() {
-    if (_selectedReference == null) return;
-    if (_referencePixelWidth <= 0 || _treePixelWidth <= 0) return;
-    
-    try {
-      final result = _measurementService.calculateFromReference(
-        reference: _selectedReference!,
-        referencePixelWidth: _referencePixelWidth,
-        treePixelWidth: _treePixelWidth,
-      );
+  void _calculateScaleAndProceed() {
+    if (_referenceRect == null) return;
+
+    double refPixelHeight = _referenceRect!.height;
+    double realHeight = _selectedReference.heightCm;
+    _pixelsPerCm = refPixelHeight / realHeight;
+
+    double offsetPixels = 130.0 * _pixelsPerCm!;
+    _virtualLineY = _referenceRect!.bottom - offsetPixels;
+
+    double initialWidthPixels = 30.0 * _pixelsPerCm!;
+    double centerX = MediaQuery.of(context).size.width / 2;
+    _measureLineStart = Offset(centerX - initialWidthPixels / 2, _virtualLineY!);
+    _measureLineEnd = Offset(centerX + initialWidthPixels / 2, _virtualLineY!);
+
+    setState(() {
+      _step = 2;
+    });
+  }
+
+  void _measureAndFinish() {
+    if (_measureLineStart == null || _measureLineEnd == null) return;
+
+    double diameterCm = 0;
+    String methodNote = '';
+
+    if (_useDistanceMode) {
+      double distanceM = double.tryParse(_distanceController.text) ?? 1.5;
+      double pixelWidth = (_measureLineEnd!.dx - _measureLineStart!.dx).abs();
+      double screenWidth = MediaQuery.of(context).size.width;
       
-      setState(() => _currentResult = result);
-    } catch (e) {
-      _showError('計算失敗: $e');
-    }
-  }
-
-  void _resetReference() {
-    setState(() {
-      _referenceImage = null;
-      _selectedReference = null;
-      _referenceStep = 0;
-      _referencePixelWidth = 0;
-      _treePixelWidth = 0;
-      _currentResult = null;
-    });
-  }
-
-  void _removeMultiAngleImage(int index) {
-    setState(() {
-      _multiAngleImages.removeAt(index);
-    });
-  }
-
-  void _removeMultiAngleResult(int index) {
-    setState(() {
-      _multiAngleResults.removeAt(index);
-      if (_multiAngleResults.isEmpty) {
-        _currentResult = null;
-      }
-    });
-  }
-
-  void _calculateMultiAngle() {
-    if (_multiAngleResults.length < 2) return;
-    
-    try {
-      final result = _measurementService.calculateFromMultiAngle(
-        measurements: _multiAngleResults,
-      );
+      // 經驗法則焦距
+      double focalLengthPx = screenWidth * 4.0;
       
-      setState(() => _currentResult = result);
-    } catch (e) {
-      _showError('計算失敗: $e');
+      double diameterM = (pixelWidth * distanceM) / focalLengthPx;
+      diameterCm = diameterM * 100;
+      methodNote = '距離模式: ${distanceM}m (GPS/輸入)';
+      
+    } else {
+      if (_pixelsPerCm == null) return;
+      double pixelWidth = (_measureLineEnd!.dx - _measureLineStart!.dx).abs();
+      diameterCm = pixelWidth / _pixelsPerCm!;
+      methodNote = '參照物: ${_selectedReference.nameZh}';
     }
-  }
 
-  void _confirmResult() {
-    if (_currentResult == null) return;
-    
-    // 返回測量結果
-    Navigator.of(context).pop(_currentResult);
-  }
-
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-      ),
-    );
-  }
-  
-  // === 水平儀輔助功能 ===
-  
-  /// 切換水平儀顯示
-  void _toggleLevelGuide() {
     setState(() {
-      _showLevelGuide = !_showLevelGuide;
-      if (_showLevelGuide) {
-        _cameraAssistant.startListening(
-          onAlignmentChanged: (alignment) {
-            if (mounted) {
-              setState(() => _cameraAlignment = alignment);
-            }
-          },
-        );
-      } else {
-        _cameraAssistant.stopListening();
-        _cameraAlignment = null;
-      }
+      _currentResult = MeasurementResult(
+        diameterCm: diameterCm,
+        confidenceScore: _useDistanceMode ? 0.6 : 0.85,
+        method: _useDistanceMode ? MeasurementMethod.twoPoint : MeasurementMethod.reference,
+        points: [],
+        notes: methodNote,
+      );
+      _step = 3;
     });
   }
-  
-  /// 水平儀引導 Widget
-  Widget _buildLevelGuide() {
-    final alignment = _cameraAlignment;
-    
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: alignment?.isLevel == true 
-            ? Colors.green.shade50 
-            : Colors.orange.shade50,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: alignment?.isLevel == true 
-              ? Colors.green.shade200 
-              : Colors.orange.shade200,
-        ),
-      ),
-      child: Column(
-        children: [
-          // 水平儀圖示
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.straighten,
-                color: alignment?.isLevel == true ? Colors.green : Colors.orange,
-                size: 24,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                '相機水平儀',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: alignment?.isLevel == true 
-                      ? Colors.green.shade700 
-                      : Colors.orange.shade700,
-                ),
-              ),
-            ],
-          ),
-          
-          // 身高設定按鈕（如果未設定）
-          if (!_cameraAssistant.hasUserHeight)
-            Padding(
-              padding: const EdgeInsets.only(top: 8),
-              child: OutlinedButton.icon(
-                onPressed: _showHeightSettingDialog,
-                icon: const Icon(Icons.person_outline, size: 16),
-                label: const Text('設定身高（提高精確度）'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.blue.shade700,
-                  side: BorderSide(color: Colors.blue.shade300),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                  textStyle: const TextStyle(fontSize: 12),
-                ),
-              ),
-            ),
-          
-          const SizedBox(height: 12),
-          
-          // 水平指示器（改進版：顯示目標角度）
-          _buildLevelIndicator(alignment),
-          
-          const SizedBox(height: 8),
-          
-          // 引導文字
-          Text(
-            alignment?.guidance ?? '啟動中...',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-              color: alignment?.isLevel == true 
-                  ? Colors.green.shade700 
-                  : Colors.orange.shade700,
-            ),
-          ),
-          
-          // 估計高度顯示（如果有身高設定）
-          if (alignment?.estimatedCameraHeightCm != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                '估計相機高度: ${alignment!.estimatedCameraHeightCm!.toStringAsFixed(0)} cm',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-            ),
-          
-          const SizedBox(height: 8),
-          
-          // 說明（根據是否有身高設定顯示不同內容）
-          Text(
-            _cameraAssistant.hasUserHeight
-                ? '身高 ${_cameraAssistant.userHeightCm?.toStringAsFixed(0)} cm → '
-                  '肩膀約 ${(_cameraAssistant.userHeightCm! * 0.82).toStringAsFixed(0)} cm\n'
-                  '手臂水平伸直，跟隨引導對準 1.3m'
-                : '請設定身高以獲得精確引導\n或將手機對準樹幹約 1.3m 高度處',
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey.shade600,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-  
-  /// 水平指示器 Widget
-  Widget _buildLevelIndicator(CameraAlignment? alignment) {
-    final targetPitch = alignment?.targetPitch ?? 0;
-    final currentPitch = alignment?.pitch ?? 0;
-    final screenWidth = MediaQuery.of(context).size.width - 64; // 扣除 padding
-    
-    return SizedBox(
-      height: 50,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          // 背景刻度
-          Container(
-            height: 4,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(2),
-            ),
-          ),
-          
-          // 目標位置標記（如果有身高設定）
-          if (_cameraAssistant.hasUserHeight)
-            Positioned(
-              left: screenWidth / 2 + targetPitch.clamp(-30.0, 30.0) * (screenWidth / 60),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 2,
-                    height: 30,
-                    color: Colors.green.shade400,
-                  ),
-                  Text(
-                    '1.3m',
-                    style: TextStyle(
-                      fontSize: 9,
-                      color: Colors.green.shade600,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          
-          // 中心標記（水平線）
-          Container(
-            width: 2,
-            height: 20,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade400,
-              borderRadius: BorderRadius.circular(1),
-            ),
-          ),
-          
-          // 目前位置氣泡
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 100),
-            left: screenWidth / 2 + currentPitch.clamp(-30.0, 30.0) * (screenWidth / 60) - 12,
-            child: Container(
-              width: 24,
-              height: 24,
-              decoration: BoxDecoration(
-                color: alignment?.isLevel == true 
-                    ? Colors.green 
-                    : Colors.orange,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.2),
-                    blurRadius: 4,
-                  ),
-                ],
-              ),
-              child: const Icon(
-                Icons.camera_alt,
-                size: 14,
-                color: Colors.white,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  /// 顯示身高設定對話框
-  Future<void> _showHeightSettingDialog() async {
-    double height = _cameraAssistant.userHeightCm ?? 170;
-    
-    final result = await showDialog<double>(
+
+  void _showHelpDialog() {
+    showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.height, color: Colors.teal),
-              SizedBox(width: 8),
-              Text('設定身高'),
-            ],
-          ),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // 持機姿勢說明
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.amber.shade200),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Icon(Icons.info_outline, 
-                            color: Colors.amber.shade700, size: 18),
-                          const SizedBox(width: 6),
-                          Text(
-                            '標準持機姿勢',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.amber.shade800,
-                              fontSize: 13,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '1️⃣ 站直，手臂向前「水平伸直」\n'
-                        '2️⃣ 手機螢幕面對自己（相機朝樹）\n'
-                        '3️⃣ 跟隨水平儀引導微調角度',
-                        style: TextStyle(
-                          fontSize: 12, 
-                          color: Colors.amber.shade900,
-                          height: 1.4,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  '輸入您的身高，系統會根據您的肩膀高度\n計算如何精確對準 1.3m 的 DBH 測量高度',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  '${height.toStringAsFixed(0)} cm',
-                  style: const TextStyle(
-                    fontSize: 36,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.teal,
-                  ),
-                ),
-                Slider(
-                  value: height,
-                  min: 140,
-                  max: 200,
-                  divisions: 60,
-                  label: '${height.toStringAsFixed(0)} cm',
-                  onChanged: (v) => setDialogState(() => height = v),
-                ),
-                const SizedBox(height: 8),
-                // 計算預覽
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '根據此身高計算：',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue.shade700,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '• 肩膀高度: ${(height * 0.82).toStringAsFixed(0)} cm\n'
-                        '• 手臂長度: ${(height * 0.38).toStringAsFixed(0)} cm\n'
-                        '• 需傾斜約: ${_calcPreviewAngle(height).toStringAsFixed(1)}° ${_calcPreviewAngle(height) < 0 ? "向下" : "向上"}',
-                        style: TextStyle(fontSize: 11, color: Colors.blue.shade600),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('取消'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, height),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
-              child: const Text('確定'),
-            ),
-          ],
+      builder: (context) => AlertDialog(
+        title: const Text('如何使用'),
+        content: Text(
+          _useDistanceMode
+          ? '1. 點擊 GPS 按鈕自動計算距離 (需有樹木座標)\n'
+            '2. 或手動輸入距離。\n'
+            '3. 螢幕會出現黃色測量線。\n'
+            '4. 對準樹幹胸高位置 (1.3m) 並調整寬度。'
+          : '1. 將標準參照物（如信用卡）放在樹根地面。\n'
+            '2. 用手指框選畫面中的參照物。\n'
+            '3. 系統會自動畫出一條綠線，代表離地 1.3m 的位置。\n'
+            '4. 調整綠線使其切過樹幹，並拉動綠線兩端來測量直徑。'
         ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('了解')),
+        ],
       ),
     );
-    
-    if (result != null) {
-      await _cameraAssistant.setUserHeight(result);
-      setState(() {});
-    }
-  }
-  
-  /// 計算預覽角度（根據身高計算肩膀高度和臂長）
-  double _calcPreviewAngle(double heightCm) {
-    final shoulderHeight = heightCm * 0.82;  // 肩膀高度
-    final armLength = heightCm * 0.38;       // 臂長 (肩到手腕)
-    final diff = shoulderHeight - 130;       // 與 1.3m 的差距
-    // 負號表示需要向下傾斜
-    return -math.atan(diff / armLength) * 180 / math.pi;
   }
 }
 
-/// 連接線繪製器
-class LinePainter extends CustomPainter {
-  final Offset point1;
-  final Offset point2;
-  
-  LinePainter({required this.point1, required this.point2});
-  
+class _AROverlayPainter extends CustomPainter {
+  final int step;
+  final Rect? referenceRect;
+  final Offset? dragStart;
+  final Offset? dragCurrent;
+  final double? virtualLineY;
+  final Offset? measureLineStart;
+  final Offset? measureLineEnd;
+  final double? pixelsPerCm;
+  final bool useDistanceMode;
+
+  _AROverlayPainter({
+    required this.step,
+    this.referenceRect,
+    this.dragStart,
+    this.dragCurrent,
+    this.virtualLineY,
+    this.measureLineStart,
+    this.measureLineEnd,
+    this.pixelsPerCm,
+    this.useDistanceMode = false,
+  });
+
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.yellow
-      ..strokeWidth = 3
-      ..style = PaintingStyle.stroke;
-    
-    canvas.drawLine(point1, point2, paint);
-    
-    // 繪製虛線
-    final dashedPaint = Paint()
-      ..color = Colors.white
-      ..strokeWidth = 1
-      ..style = PaintingStyle.stroke;
-    
-    final path = Path()..moveTo(point1.dx, point1.dy)..lineTo(point2.dx, point2.dy);
-    canvas.drawPath(path, dashedPaint);
+    if (step == 1 && !useDistanceMode) {
+      final Paint borderPaint = Paint()
+        ..color = Colors.tealAccent
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0;
+
+      final Paint fillPaint = Paint()
+        ..color = Colors.teal.withOpacity(0.2)
+        ..style = PaintingStyle.fill;
+
+      Rect? rectToDraw = referenceRect;
+      
+      if (dragStart != null && dragCurrent != null) {
+        rectToDraw = Rect.fromPoints(dragStart!, dragCurrent!);
+      }
+
+      if (rectToDraw != null) {
+        canvas.drawRect(rectToDraw, fillPaint);
+        canvas.drawRect(rectToDraw, borderPaint);
+        _drawText(canvas, '參照物', rectToDraw.topCenter - const Offset(0, 20), Colors.tealAccent);
+      }
+    }
+
+    if (step == 2 && virtualLineY != null) {
+      if (!useDistanceMode) {
+        final Paint guidePaint = Paint()
+          ..color = Colors.green.withOpacity(0.5)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.0;
+        
+        double dashWidth = 5, dashSpace = 5, startX = 0;
+        while (startX < size.width) {
+          canvas.drawLine(Offset(startX, virtualLineY!), Offset(startX + dashWidth, virtualLineY!), guidePaint);
+          startX += dashWidth + dashSpace;
+        }
+        _drawText(canvas, '1.3m 高度', Offset(size.width - 60, virtualLineY! - 15), Colors.green);
+        
+        if (referenceRect != null) {
+          canvas.drawRect(referenceRect!, Paint()..color = Colors.white.withOpacity(0.1)..style = PaintingStyle.stroke);
+          canvas.drawLine(
+            referenceRect!.topCenter,
+            Offset(referenceRect!.center.dx, virtualLineY!),
+            Paint()..color = Colors.white.withOpacity(0.3)..style = PaintingStyle.stroke..strokeWidth = 1.0
+          );
+        }
+      } else {
+        canvas.drawLine(
+          Offset(0, virtualLineY!), 
+          Offset(size.width, virtualLineY!), 
+          Paint()..color = Colors.white24..strokeWidth = 1.0
+        );
+      }
+
+      if (measureLineStart != null && measureLineEnd != null) {
+        final Paint measurePaint = Paint()
+          ..color = Colors.yellow
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 4.0
+          ..strokeCap = StrokeCap.round;
+
+        canvas.drawLine(measureLineStart!, measureLineEnd!, measurePaint);
+        canvas.drawCircle(measureLineStart!, 8.0, Paint()..color = Colors.yellow);
+        canvas.drawCircle(measureLineEnd!, 8.0, Paint()..color = Colors.yellow);
+
+        if (!useDistanceMode && pixelsPerCm != null) {
+          double widthPx = (measureLineEnd!.dx - measureLineStart!.dx).abs();
+          double widthCm = widthPx / pixelsPerCm!;
+          _drawText(
+            canvas, 
+            '${widthCm.toStringAsFixed(1)} cm', 
+            Offset((measureLineStart!.dx + measureLineEnd!.dx)/2, virtualLineY! - 30), 
+            Colors.yellow,
+            fontSize: 24,
+                              fontWeight: FontWeight.bold,
+          );
+        }
+      }
+    }
+  }
+
+  void _drawText(Canvas canvas, String text, Offset position, Color color, 
+      {double fontSize = 14, FontWeight fontWeight = FontWeight.normal}) {
+    final textSpan = TextSpan(
+      text: text,
+      style: TextStyle(color: color, fontSize: fontSize, fontWeight: fontWeight, shadows: [
+        const Shadow(offset: Offset(1, 1), blurRadius: 2, color: Colors.black),
+      ]),
+    );
+    final textPainter = TextPainter(
+      text: textSpan,
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+    textPainter.paint(canvas, position - Offset(textPainter.width / 2, 0));
   }
   
   @override
-  bool shouldRepaint(covariant LinePainter oldDelegate) {
-    return point1 != oldDelegate.point1 || point2 != oldDelegate.point2;
+  bool shouldRepaint(covariant _AROverlayPainter oldDelegate) {
+    return oldDelegate.step != step ||
+           oldDelegate.dragCurrent != dragCurrent ||
+           oldDelegate.virtualLineY != virtualLineY ||
+           oldDelegate.measureLineStart != measureLineStart ||
+           oldDelegate.useDistanceMode != useDistanceMode;
   }
 }

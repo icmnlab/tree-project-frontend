@@ -52,6 +52,7 @@ key.properties
 **/*.keystore
 **/*.jks
 local.properties
+android/gradle.properties
 
 # iOS Secrets & Configs
 ios/Flutter/Generated.xcconfig

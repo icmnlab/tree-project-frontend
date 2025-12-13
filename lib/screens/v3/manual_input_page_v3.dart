@@ -676,7 +676,8 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
         builder: (context) => ARDBHMeasurementPage(
           initialDbh: double.tryParse(_dbhController.text),
           speciesName: _speciesController.text,
-          autoCalibrate: false,
+          targetLat: _currentLocation?.latitude,
+          targetLon: _currentLocation?.longitude,
         ),
       ),
     );
@@ -819,7 +820,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
           await _imageService.saveMeasurementImage(
             treeId: treeId,
             image: photo,
-            type: TreeImageType.general, // 或區分照片類型
+            type: TreeImageType.overview, // 或區分照片類型
           );
         }
 
