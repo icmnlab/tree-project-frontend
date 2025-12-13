@@ -87,6 +87,9 @@ class TreeService {
     final response = await dio.post(
       '${ApiService.baseUrl}/tree_survey/import',
       data: formData,
+      options: Options(
+        headers: ApiService.getAuthHeaders(),
+      ),
       onSendProgress: (int sent, int total) {
         onProgress(sent / total);
       },

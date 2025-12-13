@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'dart:convert';
 import '../config/app_config.dart';
+import 'api_service.dart';
 
 /// 樹種辨識服務
 /// 整合 Pl@ntNet、GBIF、iNaturalist 等開源 API
@@ -41,6 +42,8 @@ class SpeciesIdentificationService {
         'POST',
         Uri.parse('$baseUrl/species/identify'),
       );
+
+      request.headers.addAll(ApiService.getAuthHeaders());
 
       // 明確設定 content-type 為 image/jpeg
       request.files.add(http.MultipartFile.fromBytes(
@@ -81,6 +84,7 @@ class SpeciesIdentificationService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/species/search?q=${Uri.encodeComponent(query)}'),
+        headers: ApiService.getAuthHeaders(),
       ).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
@@ -104,6 +108,7 @@ class SpeciesIdentificationService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/species/gbif/${Uri.encodeComponent(scientificName)}'),
+        headers: ApiService.getAuthHeaders(),
       ).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
@@ -127,6 +132,7 @@ class SpeciesIdentificationService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/species/inaturalist/$taxonId'),
+        headers: ApiService.getAuthHeaders(),
       ).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
@@ -150,6 +156,7 @@ class SpeciesIdentificationService {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/species/status'),
+        headers: ApiService.getAuthHeaders(),
       ).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {

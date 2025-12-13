@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../services/api_service.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../services/download_service.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import '../constants/colors.dart';
 
@@ -213,13 +213,19 @@ class _AISustainabilityReportScreenState
     final String pdfUrl =
         '${ApiService.baseUrl}/reports/ai-sustainability/pdf$queryString';
 
-    final Uri uri = Uri.parse(pdfUrl);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else {
-      if (mounted) {
+    final result = await DownloadService.downloadAndOpen(
+      pdfUrl,
+      suggestedFilename: 'ai_sustainability_report.pdf',
+    );
+
+    if (mounted) {
+      if (result.success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('無法開啟下載連結: $pdfUrl')),
+          SnackBar(content: Text(result.warning ?? 'PDF 報告已下載並開啟')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(result.error ?? '下載失敗')),
         );
       }
     }

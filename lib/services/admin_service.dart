@@ -1,5 +1,5 @@
 import './api_service.dart';
-import 'package:url_launcher/url_launcher.dart';
+import './download_service.dart';
 
 class AdminService {
   Future<Map<String, dynamic>> backupDatabase() async {
@@ -27,10 +27,13 @@ class ExportService {
     return '${ApiService.baseUrl}/export/pdf$query';
   }
 
-  static Future<void> launchExportUrl(String url) async {
-    final Uri uri = Uri.parse(url);
-    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
-      throw 'Could not launch $url';
-    }
+  static Future<DownloadResult> downloadExcel(List<String> projectCodes) async {
+    final url = getExcelExportUrl(projectCodes);
+    return DownloadService.downloadAndOpen(url, suggestedFilename: 'tree_survey_export.xlsx');
+  }
+
+  static Future<DownloadResult> downloadPdf(List<String> projectCodes) async {
+    final url = getPdfExportUrl(projectCodes);
+    return DownloadService.downloadAndOpen(url, suggestedFilename: 'tree_survey_export.pdf');
   }
 }

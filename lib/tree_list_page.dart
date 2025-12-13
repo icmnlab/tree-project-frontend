@@ -245,14 +245,18 @@ class _TreeListPageState extends State<TreeListPage> {
   }
 
   Future<void> _exportToExcel() async {
-    final url = ExportService.getExcelExportUrl(
-        []); // Empty list for all projects for now
     try {
-      await ExportService.launchExportUrl(url);
+      final result = await ExportService.downloadExcel([]);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Excel 檔案下載已啟動')),
-        );
+        if (result.success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result.warning ?? 'Excel 檔案已下載並開啟')),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result.error ?? '下載失敗')),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -294,14 +298,18 @@ class _TreeListPageState extends State<TreeListPage> {
   */
 
   Future<void> _exportToPDF() async {
-    final url = ExportService.getPdfExportUrl(
-        []); // Empty list for all projects for now
     try {
-      await ExportService.launchExportUrl(url);
+      final result = await ExportService.downloadPdf([]);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('PDF 檔案下載已啟動')),
-        );
+        if (result.success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result.warning ?? 'PDF 檔案已下載並開啟')),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result.error ?? '下載失敗')),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -592,7 +600,10 @@ class _TreeListPageState extends State<TreeListPage> {
         for (var item in data) {
           final response = await http.post(
             Uri.parse('${ApiService.baseUrl}/tree_survey'),
-            headers: {'Content-Type': 'application/json'},
+            headers: {
+              'Content-Type': 'application/json',
+              ...ApiService.getAuthHeaders(),
+            },
             body: jsonEncode(item),
           );
 

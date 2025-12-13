@@ -37,6 +37,7 @@ class AuthService {
   static Future<void> logout(BuildContext context) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_userKey);
+    await ApiService.setJwtToken(null);
     // 導航到登入頁面，並清除所有路由歷史
     if (context.mounted) {
       Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);

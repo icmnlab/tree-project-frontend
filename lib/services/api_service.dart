@@ -1,11 +1,49 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart'; // Import AppConfig
 
 class ApiService {
   // The baseUrl is now dynamically retrieved from AppConfig
   static String get baseUrl => AppConfig().baseUrl;
   static String? _apiKey;
+  static String? _jwtToken;
+  static const String _jwtTokenKey = 'auth_jwt_token';
+
+  static Future<void> initialize() async {
+    final prefs = await SharedPreferences.getInstance();
+    _jwtToken = prefs.getString(_jwtTokenKey);
+  }
+
+  static Future<void> setJwtToken(String? token) async {
+    _jwtToken = token;
+
+    final prefs = await SharedPreferences.getInstance();
+    if (token == null || token.isEmpty) {
+      await prefs.remove(_jwtTokenKey);
+      return;
+    }
+
+    await prefs.setString(_jwtTokenKey, token);
+  }
+
+  static String? getJwtToken() {
+    return _jwtToken;
+  }
+
+  static Map<String, String> getAuthHeaders() {
+    final headers = <String, String>{};
+
+    if (_apiKey != null) {
+      headers['X-API-Key'] = _apiKey!;
+    }
+
+    if (_jwtToken != null && _jwtToken!.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $_jwtToken';
+    }
+
+    return headers;
+  }
 
   // 設置 API 密鑰
   static void setApiKey(String apiKey) {
@@ -129,20 +167,18 @@ class ApiService {
 
   // 獲取請求頭
   static Map<String, String> _getHeaders() {
-    final headers = {
+    return {
       'Content-Type': 'application/json',
+      ...getAuthHeaders(),
     };
-
-    if (_apiKey != null) {
-      headers['X-API-Key'] = _apiKey!;
-    }
-
-    return headers;
   }
 
   Future<List<Map<String, dynamic>>> fetchTreeSurveyData() async {
     try {
-      final response = await http.get(Uri.parse('$baseUrl/tree_survey'));
+      final response = await http.get(
+        Uri.parse('$baseUrl/tree_survey'),
+        headers: _getHeaders(),
+      );
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);

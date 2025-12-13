@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
 import '../services/auth_service.dart';
+import '../services/api_service.dart';
 import '../constants/colors.dart';
 
 class LoginPage extends StatefulWidget {
@@ -73,6 +74,13 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
       if (!mounted) return;
 
       if (data['success']) {
+        final token = data['token'];
+        if (token is String && token.isNotEmpty) {
+          await ApiService.setJwtToken(token);
+        } else {
+          await ApiService.setJwtToken(null);
+        }
+
         await AuthService.saveUserInfo(data['user']);
 
         if (_loginType == 'admin') {

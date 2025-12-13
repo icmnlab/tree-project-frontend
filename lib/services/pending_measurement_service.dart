@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/pending_tree_measurement.dart';
 import '../config/app_config.dart';
+import 'api_service.dart';
 // BleDataProcessor used indirectly via parseCsvData results
 
 /// 待測量樹木服務
@@ -109,7 +110,10 @@ class PendingMeasurementService {
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/api/pending-measurements/batch'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          ...ApiService.getAuthHeaders(),
+        },
         body: jsonEncode({
           'measurements': measurements.map((m) => m.toJson()).toList(),
         }),
@@ -131,6 +135,7 @@ class PendingMeasurementService {
     try {
       final response = await http.get(
         Uri.parse('$_baseUrl/api/pending-measurements/sessions'),
+        headers: ApiService.getAuthHeaders(),
       );
       
       if (response.statusCode == 200) {
@@ -161,7 +166,10 @@ class PendingMeasurementService {
       final uri = Uri.parse('$_baseUrl/api/pending-measurements/trees')
           .replace(queryParameters: queryParams.isEmpty ? null : queryParams);
       
-      final response = await http.get(uri);
+      final response = await http.get(
+        uri,
+        headers: ApiService.getAuthHeaders(),
+      );
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as List;
@@ -197,7 +205,10 @@ class PendingMeasurementService {
     try {
       final response = await http.patch(
         Uri.parse('$_baseUrl/api/pending-measurements/$id'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          ...ApiService.getAuthHeaders(),
+        },
         body: jsonEncode({
           'measured_dbh_cm': dbhCm,
           'measurement_confidence': confidence,
@@ -224,7 +235,10 @@ class PendingMeasurementService {
     try {
       await http.patch(
         Uri.parse('$_baseUrl/api/pending-measurements/$id'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          ...ApiService.getAuthHeaders(),
+        },
         body: jsonEncode({
           'status': MeasurementStatus.skipped.value,
           'measurement_notes': reason ?? '使用者跳過',
@@ -243,7 +257,10 @@ class PendingMeasurementService {
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/api/pending-measurements/transfer'),
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          ...ApiService.getAuthHeaders(),
+        },
         body: jsonEncode({
           'session_id': sessionId,
         }),

@@ -12,7 +12,7 @@ import 'models/project.dart';
 import 'config/app_config.dart'; // Import AppConfig
 import 'screens/v3/project_boundary_draw_page.dart'; // V3 專案邊界繪製
 import '../services/api_service.dart';
-// import '../services/auth_service.dart'; // Unused
+import '../services/auth_service.dart';
 
 // 定義專案資料結構 - 已移至 models/project.dart，此處註解代碼可移除以避免混淆
 /*
@@ -371,19 +371,23 @@ class _AdminPageState extends State<AdminPage> {
   }
 
   Future<void> _exportExcel() async {
-    final url =
-        ExportService.getExcelExportUrl(_selectedProjectCodesForMultiExport);
     try {
-      await ExportService.launchExportUrl(url);
+      final result = await ExportService.downloadExcel(_selectedProjectCodesForMultiExport);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Excel 檔案下載已啟動，請檢查您的瀏覽器下載項目')),
-        );
+        if (result.success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result.warning ?? 'Excel 檔案已下載並開啟')),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result.error ?? '下載失敗')),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('無法開啟瀏覽器以下載 Excel 檔案: $e')),
+          SnackBar(content: Text('下載 Excel 檔案時發生錯誤: $e')),
         );
       }
     }
@@ -414,19 +418,23 @@ class _AdminPageState extends State<AdminPage> {
   */
 
   Future<void> _exportPDF() async {
-    final url =
-        ExportService.getPdfExportUrl(_selectedProjectCodesForMultiExport);
     try {
-      await ExportService.launchExportUrl(url);
+      final result = await ExportService.downloadPdf(_selectedProjectCodesForMultiExport);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('PDF 檔案下載已啟動，請檢查您的瀏覽器下載項目')),
-        );
+        if (result.success) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result.warning ?? 'PDF 檔案已下載並開啟')),
+          );
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(result.error ?? '下載失敗')),
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('無法開啟瀏覽器以下載 PDF 檔案: $e')),
+          SnackBar(content: Text('下載 PDF 檔案時發生錯誤: $e')),
         );
       }
     }
@@ -1549,9 +1557,7 @@ class _AdminPageState extends State<AdminPage> {
           IconButton(
             icon: const Icon(Icons.logout, color: Colors.white),
             onPressed: () {
-              // 使用 pushNamedAndRemoveUntil 確保完全登出並清除路由堆疊
-              Navigator.of(context)
-                  .pushNamedAndRemoveUntil('/login', (route) => false);
+              AuthService.logout(context);
             },
             tooltip: '登出',
           ),

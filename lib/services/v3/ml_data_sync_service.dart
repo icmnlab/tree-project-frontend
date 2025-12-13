@@ -21,6 +21,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
 
 import 'ml_data_collector.dart';
+import '../api_service.dart';
 
 /// ML 數據同步服務
 class MLDataSyncService {
@@ -55,7 +56,7 @@ class MLDataSyncService {
 
   /// 初始化
   static Future<void> initialize(String baseUrl) async {
-    _baseUrl = baseUrl;
+    _baseUrl = baseUrl.replaceFirst(RegExp(r'/api/?$'), '');
     await _instance._loadDeviceInfo();
     debugPrint('[MLDataSync] 已初始化，API: $baseUrl');
   }
@@ -214,6 +215,7 @@ class MLDataSyncService {
         Uri.parse('$_baseUrl/api/ml-training/batch'),
         headers: {
           'Content-Type': 'application/json',
+          ...ApiService.getAuthHeaders(),
         },
         body: body,
       ).timeout(
