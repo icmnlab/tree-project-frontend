@@ -72,7 +72,8 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
   
   Future<void> _loadSpecies() async {
     try {
-      final species = await _speciesService.getSpecies();
+      // 優先載入增強版列表（含同義詞）
+      final species = await _speciesService.getEnhancedSpecies();
       setState(() {
         _allSpecies = species;
       });
@@ -138,14 +139,18 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
             displayName = commonNames.first;
           }
 
-          // 嘗試在已知樹種中尋找對應 ID
+          // 嘗試在已知樹種中尋找對應 ID（含同義詞匹配）
           String? matchedId;
           try {
             final match = _allSpecies.firstWhere((s) {
               final dbName = (s['name'] ?? '').toString().toLowerCase();
               final dbSciName = (s['scientific_name'] ?? '').toString().toLowerCase();
-              return dbName == displayName.toLowerCase() || 
-                     (dbSciName.isNotEmpty && dbSciName == speciesName.toLowerCase());
+              final synonyms = (s['synonyms'] as List?)?.map((e) => e.toString().toLowerCase()).toList() ?? [];
+              final displayLower = displayName.toLowerCase();
+              final sciLower = speciesName.toLowerCase();
+              return dbName == displayLower || 
+                     (dbSciName.isNotEmpty && dbSciName == sciLower) ||
+                     synonyms.contains(displayLower);
             });
             matchedId = match['id'] ?? match['樹種編號'];
           } catch (_) {
@@ -222,6 +227,15 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
           }
         }
       });
+
+      // 如果尚未辨識樹種且有拍攝影像，自動進行樹種辨識
+      if (_speciesController.text.isEmpty && result.capturedImagePath != null) {
+        final imageFile = File(result.capturedImagePath!);
+        if (await imageFile.exists()) {
+          setState(() => _mainImage ??= imageFile);
+          _identifySpecies(imageFile);
+        }
+      }
     }
   }
 
@@ -231,12 +245,23 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       return;
     }
     
-    // 從已載入的樹種列表中搜尋
+    // 先嘗試 server-side 搜尋（含同義詞）
+    try {
+      final serverResults = await _speciesService.searchSpecies(query);
+      if (serverResults.isNotEmpty && mounted) {
+        setState(() => _speciesSearchResults = serverResults);
+        return;
+      }
+    } catch (_) {}
+    
+    // Fallback: 從已載入的樹種列表中搜尋（含同義詞）
     final results = _allSpecies.where((s) {
       final name = (s['name'] ?? s['樹種名稱']).toString().toLowerCase();
       final id = (s['id'] ?? s['樹種編號']).toString().toLowerCase();
+      final sciName = (s['scientific_name'] ?? '').toString().toLowerCase();
+      final synonyms = (s['synonyms'] as List?)?.join(' ').toLowerCase() ?? '';
       final q = query.toLowerCase();
-      return name.contains(q) || id.contains(q);
+      return name.contains(q) || id.contains(q) || sciName.contains(q) || synonyms.contains(q);
     }).toList();
 
     setState(() {
@@ -594,9 +619,21 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
               itemCount: _speciesSearchResults.length,
               itemBuilder: (context, index) {
                 final species = _speciesSearchResults[index];
+                final matchType = species['match_type'];
+                final matchedVariant = species['matched_variant'];
                 return ListTile(
+                  leading: Icon(
+                    matchType == 'synonym' ? Icons.swap_horiz : Icons.park,
+                    color: matchType == 'synonym' ? Colors.orange : Colors.green,
+                    size: 20,
+                  ),
                   title: Text(species['name'] ?? species['樹種名稱'] ?? ''),
-                  subtitle: Text(species['scientific_name'] ?? species['樹種編號'] ?? ''),
+                  subtitle: Text(
+                    matchType == 'synonym' && matchedVariant != null
+                        ? '同義: $matchedVariant | ${species['scientific_name'] ?? ''}'
+                        : species['scientific_name'] ?? species['樹種編號'] ?? '',
+                    style: const TextStyle(fontSize: 12),
+                  ),
                   onTap: () {
                     setState(() {
                       _speciesController.text = species['name'] ?? species['樹種名稱'];

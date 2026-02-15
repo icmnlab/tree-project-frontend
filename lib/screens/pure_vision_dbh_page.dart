@@ -312,6 +312,7 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
       confidenceScore: _result!.confidence,
       method: MeasurementMethod.pureVision,
       points: [],
+      capturedImagePath: _capturedImage?.path,
       notes: '純視覺 AI 測量 | '
           '深度: ${_result!.trunkDepthM.toStringAsFixed(2)}m | '
           '信心度: ${_result!.confidenceLevel} | '

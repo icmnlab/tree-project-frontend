@@ -60,6 +60,7 @@ class MeasurementResult {
   final MeasurementMethod method;    // 使用的方法
   final List<MeasurementPoint> points; // 測量點
   final String? notes;               // 備註
+  final String? capturedImagePath;   // 拍攝影像路徑（可用於樹種辨識）
   final DateTime timestamp;
   
   MeasurementResult({
@@ -68,6 +69,7 @@ class MeasurementResult {
     required this.method,
     required this.points,
     this.notes,
+    this.capturedImagePath,
     DateTime? timestamp,
   }) : timestamp = timestamp ?? DateTime.now();
   
@@ -116,6 +118,7 @@ class MeasurementResult {
     'timestamp': timestamp.toIso8601String(),
     'circumference_cm': circumferenceCm,
     'estimated_error_cm': estimatedErrorCm,
+    'captured_image_path': capturedImagePath,
   };
 }
 
