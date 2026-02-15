@@ -65,6 +65,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   }
   
   Future<void> _loadTasks() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _error = null;
@@ -82,12 +83,14 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
         sortByDistance: true,
       );
       
+      if (!mounted) return;
       setState(() {
         _pendingTrees = trees;
         _userPosition = position;
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = '載入任務失敗: $e';
         _isLoading = false;
@@ -110,7 +113,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
           distanceFilter: 1, // 每移動 1m 更新
         ),
       ).listen((position) {
-        setState(() => _userPosition = position);
+        if (mounted) setState(() => _userPosition = position);
       });
       
     } catch (e) {
