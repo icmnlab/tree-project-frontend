@@ -137,6 +137,59 @@ class PureVisionDbhService {
 
     return json.decode(response.body);
   }
+
+  /// 全自動 DBH 測量 — 不需要手動框選樹幹
+  ///
+  /// 拍照 → AI 自動偵測樹幹 → 自動計算 DBH
+  /// 類似 Tesla 純視覺：對準拍攝，AI 做所有事
+  Future<AutoMeasureResult> autoMeasureDbh({
+    required File imageFile,
+    double? focalLengthMm,
+    double? focalLength35mm,
+    double? fovDegrees,
+    bool returnVisualization = true,
+    bool returnDetectionVisualization = true,
+  }) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/auto-measure-dbh');
+      final request = http.MultipartRequest('POST', uri);
+
+      request.files.add(
+        await http.MultipartFile.fromPath('image', imageFile.path),
+      );
+
+      request.fields['fov_degrees'] = (fovDegrees ?? 70.0).toString();
+      request.fields['return_visualization'] = returnVisualization.toString();
+      request.fields['return_detection_visualization'] =
+          returnDetectionVisualization.toString();
+
+      if (focalLengthMm != null) {
+        request.fields['focal_length_mm'] = focalLengthMm.toString();
+      }
+      if (focalLength35mm != null) {
+        request.fields['focal_length_35mm'] = focalLength35mm.toString();
+      }
+
+      debugPrint('[PureVisionDbhService] Auto-measure request to $uri');
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 120),
+      );
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode != 200) {
+        throw PureVisionException(
+          'API 錯誤 (${response.statusCode}): ${response.body}',
+        );
+      }
+
+      final data = json.decode(response.body);
+      return AutoMeasureResult.fromJson(data);
+    } on SocketException {
+      throw PureVisionException('無法連接 ML 服務，請確認服務已啟動');
+    } on http.ClientException catch (e) {
+      throw PureVisionException('網路錯誤: $e');
+    }
+  }
 }
 
 /// 純視覺 DBH 測量結果
@@ -213,6 +266,181 @@ class PureVisionDbhResult {
     if (confidence >= 0.6) return '中等';
     if (confidence >= 0.4) return '低';
     return '極低';
+  }
+}
+
+/// 自動偵測 + 量測的結果
+class AutoMeasureResult {
+  final bool success;
+  final bool autoDetected;
+
+  // DBH 量測結果 (success == true 時有值)
+  final double? dbhCm;
+  final double? confidence;
+  final double? trunkDepthM;
+  final double? trunkPixelWidth;
+  final double? chordLengthM;
+  final double? focalLengthPx;
+  final int? measurementRow;
+  final String? method;
+  final List<String> notes;
+
+  // 距離驗證
+  final String distanceStatus;   // "ok", "too_close", "too_far", "warning"
+  final String distanceMessage;
+
+  // 偵測到的框
+  final Map<String, int>? detectedBbox;
+  final double detectionConfidence;
+
+  // 所有偵測到的樹幹
+  final List<DetectedTrunkInfo> allTrunks;
+
+  // 計時
+  final double depthEstimationMs;
+  final double detectionMs;
+  final double dbhCalculationMs;
+  final double totalMs;
+
+  // 視覺化
+  final Uint8List? visualizationBytes;
+  final Uint8List? detectionVisualizationBytes;
+
+  // 錯誤訊息
+  final String? errorMessage;
+
+  AutoMeasureResult({
+    required this.success,
+    this.autoDetected = false,
+    this.dbhCm,
+    this.confidence,
+    this.trunkDepthM,
+    this.trunkPixelWidth,
+    this.chordLengthM,
+    this.focalLengthPx,
+    this.measurementRow,
+    this.method,
+    this.notes = const [],
+    this.distanceStatus = 'unknown',
+    this.distanceMessage = '',
+    this.detectedBbox,
+    this.detectionConfidence = 0,
+    this.allTrunks = const [],
+    this.depthEstimationMs = 0,
+    this.detectionMs = 0,
+    this.dbhCalculationMs = 0,
+    this.totalMs = 0,
+    this.visualizationBytes,
+    this.detectionVisualizationBytes,
+    this.errorMessage,
+  });
+
+  factory AutoMeasureResult.fromJson(Map<String, dynamic> json) {
+    final timing = json['timing'] ?? {};
+
+    Uint8List? vizBytes;
+    if (json['visualization_base64'] != null) {
+      vizBytes = base64.decode(json['visualization_base64']);
+    }
+    Uint8List? detVizBytes;
+    if (json['detection_visualization_base64'] != null) {
+      detVizBytes = base64.decode(json['detection_visualization_base64']);
+    }
+
+    final notesList = json['notes'];
+    final trunksList = json['all_trunks'] as List? ?? [];
+
+    Map<String, int>? bbox;
+    if (json['detected_bbox'] != null) {
+      final b = json['detected_bbox'];
+      bbox = {
+        'x1': (b['x1'] as num).toInt(),
+        'y1': (b['y1'] as num).toInt(),
+        'x2': (b['x2'] as num).toInt(),
+        'y2': (b['y2'] as num).toInt(),
+      };
+    }
+
+    return AutoMeasureResult(
+      success: json['success'] == true,
+      autoDetected: json['auto_detected'] == true,
+      dbhCm: (json['dbh_cm'] as num?)?.toDouble(),
+      confidence: (json['confidence'] as num?)?.toDouble(),
+      trunkDepthM: (json['trunk_depth_m'] as num?)?.toDouble(),
+      trunkPixelWidth: (json['trunk_pixel_width'] as num?)?.toDouble(),
+      chordLengthM: (json['chord_length_m'] as num?)?.toDouble(),
+      focalLengthPx: (json['focal_length_px'] as num?)?.toDouble(),
+      measurementRow: json['measurement_row'] as int?,
+      method: json['method'] as String?,
+      notes: notesList is List
+          ? notesList.map((e) => e.toString()).toList()
+          : <String>[],
+      distanceStatus: json['distance_status'] as String? ?? 'unknown',
+      distanceMessage: json['distance_message'] as String? ?? '',
+      detectedBbox: bbox,
+      detectionConfidence: (json['detection_confidence'] as num?)?.toDouble() ?? 0,
+      allTrunks: trunksList.map((t) => DetectedTrunkInfo.fromJson(t)).toList(),
+      depthEstimationMs: (timing['depth_estimation_ms'] as num?)?.toDouble() ?? 0,
+      detectionMs: (timing['detection_ms'] as num?)?.toDouble() ?? 0,
+      dbhCalculationMs: (timing['dbh_calculation_ms'] as num?)?.toDouble() ?? 0,
+      totalMs: (timing['total_ms'] as num?)?.toDouble() ?? 0,
+      visualizationBytes: vizBytes,
+      detectionVisualizationBytes: detVizBytes,
+      errorMessage: json['message'] as String?,
+    );
+  }
+
+  /// 信心度等級 (中文)
+  String get confidenceLevel {
+    final c = confidence ?? 0;
+    if (c >= 0.9) return '極高';
+    if (c >= 0.75) return '高';
+    if (c >= 0.6) return '中等';
+    if (c >= 0.4) return '低';
+    return '極低';
+  }
+
+  /// 距離狀態是否正常
+  bool get isDistanceOk =>
+      distanceStatus == 'ok';
+
+  /// 距離狀態 icon 顏色
+  bool get isDistanceWarning =>
+      distanceStatus == 'warning' ||
+      distanceStatus == 'too_close' ||
+      distanceStatus == 'too_far';
+}
+
+/// 偵測到的個別樹幹資訊
+class DetectedTrunkInfo {
+  final Map<String, int> bbox;
+  final double confidence;
+  final double depthM;
+  final String distanceStatus;
+  final String distanceMessage;
+
+  DetectedTrunkInfo({
+    required this.bbox,
+    required this.confidence,
+    required this.depthM,
+    required this.distanceStatus,
+    required this.distanceMessage,
+  });
+
+  factory DetectedTrunkInfo.fromJson(Map<String, dynamic> json) {
+    final b = json['bbox'] ?? {};
+    return DetectedTrunkInfo(
+      bbox: {
+        'x1': (b['x1'] as num?)?.toInt() ?? 0,
+        'y1': (b['y1'] as num?)?.toInt() ?? 0,
+        'x2': (b['x2'] as num?)?.toInt() ?? 0,
+        'y2': (b['y2'] as num?)?.toInt() ?? 0,
+      },
+      confidence: (json['confidence'] as num?)?.toDouble() ?? 0,
+      depthM: (json['depth_m'] as num?)?.toDouble() ?? 0,
+      distanceStatus: json['distance_status'] as String? ?? 'unknown',
+      distanceMessage: json['distance_message'] as String? ?? '',
+    );
   }
 }
 

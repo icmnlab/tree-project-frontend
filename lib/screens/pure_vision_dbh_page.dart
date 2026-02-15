@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' show atan;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/services.dart';
@@ -48,7 +49,11 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
 
   // Result
   PureVisionDbhResult? _result;
+  AutoMeasureResult? _autoResult;
   String? _errorMessage;
+
+  // Auto mode
+  bool _isAutoMode = true;
 
   // EXIF 焦距
   double? _focalLengthMm;
@@ -169,11 +174,21 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
         _imageSize = Size(decoded.width.toDouble(), decoded.height.toDouble());
         _focalLengthMm = focalMm;
         _focalLength35mm = focal35;
-        _step = _PageStep.drawBbox;
         _currentBbox = null;
         _bboxStart = null;
         _bboxEnd = null;
+        if (_isAutoMode) {
+          // 自動模式：跳過框選，直接進入 AI 自動偵測
+          _step = _PageStep.processing;
+        } else {
+          _step = _PageStep.drawBbox;
+        }
       });
+
+      // 自動模式下自動送出
+      if (_isAutoMode) {
+        _submitAutoMeasurement();
+      }
     } catch (e) {
       debugPrint('拍照失敗: $e');
       if (mounted) {
@@ -301,6 +316,121 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
   }
 
   // ===========================================================
+  // 步驟 3b: 自動偵測 + 量測 (Auto Mode)
+  // ===========================================================
+
+  Future<void> _submitAutoMeasurement() async {
+    if (_capturedImage == null) return;
+
+    setState(() {
+      _step = _PageStep.processing;
+      _errorMessage = null;
+      _autoResult = null;
+    });
+
+    try {
+      final result = await _service.autoMeasureDbh(
+        imageFile: _capturedImage!,
+        focalLengthMm: _focalLengthMm,
+        focalLength35mm: _focalLength35mm,
+      );
+
+      if (mounted) {
+        if (result.success) {
+          setState(() {
+            _autoResult = result;
+            _step = _PageStep.result;
+          });
+        } else {
+          // 自動偵測失敗 — 顯示偵測視覺化圖，並提供手動模式
+          setState(() {
+            _autoResult = result;
+            _errorMessage = result.errorMessage ?? '未偵測到樹幹，請改用手動框選';
+            _step = _PageStep.drawBbox;
+          });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('自動偵測未找到樹幹 — 已切換至手動模式'),
+                backgroundColor: Colors.orange,
+                action: SnackBarAction(
+                  label: '了解',
+                  textColor: Colors.white,
+                  onPressed: () {},
+                ),
+                duration: const Duration(seconds: 4),
+              ),
+            );
+          }
+          // 自動切換成手動模式
+          _isAutoMode = false;
+        }
+      }
+    } on PureVisionException catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.message;
+          _isAutoMode = false;
+          _step = _PageStep.drawBbox;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.message), backgroundColor: Colors.red),
+        );
+      }
+    } on TimeoutException {
+      if (mounted) {
+        setState(() {
+          _errorMessage = '請求逾時，伺服器可能正在喚醒，請稍後再試';
+          _isAutoMode = false;
+          _step = _PageStep.drawBbox;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('請求逾時 — 伺服器可能正在喚醒中，請稍後再試'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 5),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = e.toString();
+          _isAutoMode = false;
+          _step = _PageStep.drawBbox;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('錯誤: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  // ===========================================================
+  // 使用自動量測結果 → 回傳 MeasurementResult
+  // ===========================================================
+
+  void _useAutoResult() {
+    final r = _autoResult;
+    if (r == null || !r.success) return;
+
+    final measureResult = MeasurementResult(
+      diameterCm: r.dbhCm!,
+      confidenceScore: r.confidence ?? 0,
+      method: MeasurementMethod.pureVision,
+      points: [],
+      capturedImagePath: _capturedImage?.path,
+      notes: '自動偵測 AI 測量 | '
+          '深度: ${r.trunkDepthM?.toStringAsFixed(2) ?? "?"}m | '
+          '信心度: ${r.confidenceLevel} | '
+          '距離: ${r.distanceMessage} | '
+          '推論: ${r.totalMs.toStringAsFixed(0)}ms',
+    );
+
+    Navigator.of(context).pop(measureResult);
+  }
+
+  // ===========================================================
   // 使用結果 → 回傳 MeasurementResult
   // ===========================================================
 
@@ -395,8 +525,53 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
           left: 0,
           right: 0,
           child: _buildInstructionChip(
-            '📸 對準樹幹拍照',
-            subtitle: '建議距離 1-5 公尺，確保樹幹完整入鏡',
+            _isAutoMode ? '🤖 AI 自動偵測模式' : '📸 手動框選模式',
+            subtitle: _isAutoMode
+                ? '對準樹幹拍照，AI 自動辨識並量測'
+                : '拍照後手動框選樹幹範圍',
+          ),
+        ),
+
+        // 模式切換
+        Positioned(
+          bottom: 104,
+          right: 16,
+          child: GestureDetector(
+            onTap: () {
+              setState(() => _isAutoMode = !_isAutoMode);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: _isAutoMode
+                    ? Colors.tealAccent.withValues(alpha: 0.2)
+                    : Colors.grey.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: _isAutoMode ? Colors.tealAccent : Colors.grey,
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    _isAutoMode ? Icons.auto_awesome : Icons.touch_app,
+                    color: _isAutoMode ? Colors.tealAccent : Colors.grey,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    _isAutoMode ? '自動' : '手動',
+                    style: TextStyle(
+                      color: _isAutoMode ? Colors.tealAccent : Colors.grey,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
 
@@ -594,9 +769,9 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
               ),
             ),
             const SizedBox(height: 24),
-            const Text(
-              'AI 深度估計中...',
-              style: TextStyle(
+            Text(
+              _isAutoMode ? 'AI 自動偵測中...' : 'AI 深度估計中...',
+              style: const TextStyle(
                 color: Colors.white,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -604,7 +779,9 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
             ),
             const SizedBox(height: 8),
             Text(
-              '正在使用 Depth Anything V2 分析影像',
+              _isAutoMode
+                  ? '正在自動辨識樹幹並計算胸徑'
+                  : '正在使用 Depth Anything V2 分析影像',
               style: TextStyle(color: Colors.grey[400], fontSize: 14),
             ),
             const SizedBox(height: 4),
@@ -617,7 +794,11 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
             TextButton.icon(
               onPressed: () {
                 setState(() {
-                  _step = _PageStep.drawBbox;
+                  if (_isAutoMode) {
+                    _step = _PageStep.camera;
+                  } else {
+                    _step = _PageStep.drawBbox;
+                  }
                   _errorMessage = '已取消分析';
                 });
               },
@@ -635,8 +816,279 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
   // -----------------------------------------------------------
 
   Widget _buildResultStep() {
+    // 根據模式選擇結果來源
+    if (_isAutoMode && _autoResult != null) {
+      return _buildAutoResultView();
+    }
     final r = _result;
     if (r == null) return const SizedBox.shrink();
+    return _buildManualResultView(r);
+  }
+
+  /// 自動偵測模式的結果頁
+  Widget _buildAutoResultView() {
+    final r = _autoResult!;
+    final dbh = r.dbhCm ?? 0;
+    final conf = r.confidence ?? 0;
+
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          _buildAppBar('自動偵測結果'),
+
+          // 距離狀態提示
+          if (r.distanceStatus != 'ok' && r.distanceMessage.isNotEmpty)
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: _distanceStatusColor(r.distanceStatus)
+                    .withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: _distanceStatusColor(r.distanceStatus)
+                      .withValues(alpha: 0.5),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    _distanceStatusIcon(r.distanceStatus),
+                    color: _distanceStatusColor(r.distanceStatus),
+                    size: 22,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      r.distanceMessage,
+                      style: TextStyle(
+                        color: _distanceStatusColor(r.distanceStatus),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          // 偵測視覺化 + 量測視覺化
+          if (r.detectionVisualizationBytes != null)
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[700]!),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Column(
+                children: [
+                  Image.memory(
+                    r.detectionVisualizationBytes!,
+                    fit: BoxFit.contain,
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
+                    color: Colors.grey[900],
+                    child: Row(
+                      children: [
+                        Icon(Icons.auto_awesome,
+                            color: Colors.tealAccent, size: 16),
+                        const SizedBox(width: 6),
+                        Text(
+                          '自動偵測 · 信心度 ${(r.detectionConfidence * 100).toStringAsFixed(0)}%',
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 12),
+                        ),
+                        const Spacer(),
+                        Text(
+                          '${r.allTrunks.length} 棵樹幹',
+                          style: const TextStyle(
+                              color: Colors.white54, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+          if (r.visualizationBytes != null)
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey[700]!),
+              ),
+              clipBehavior: Clip.antiAlias,
+              child: Image.memory(
+                r.visualizationBytes!,
+                fit: BoxFit.contain,
+              ),
+            ),
+
+          // DBH 主數值
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.teal.shade700, Colors.teal.shade900],
+              ),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.auto_awesome,
+                        color: Colors.tealAccent, size: 18),
+                    const SizedBox(width: 6),
+                    const Text('自動偵測 DBH (胸徑)',
+                        style:
+                            TextStyle(color: Colors.white70, fontSize: 14)),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '${dbh.toStringAsFixed(1)} cm',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 42,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 4,
+                  alignment: WrapAlignment.center,
+                  children: [
+                    _buildBadge('信心度: ${r.confidenceLevel}',
+                        _confidenceColor(conf)),
+                    _buildBadge(
+                        '深度: ${r.trunkDepthM?.toStringAsFixed(2) ?? "?"}m',
+                        Colors.blueGrey),
+                    _buildBadge(
+                      _distanceStatusLabel(r.distanceStatus),
+                      _distanceStatusColor(r.distanceStatus),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+
+          // 詳細資料
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey[900],
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('詳細資料',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold)),
+                const Divider(color: Colors.grey),
+                _buildDetailRow('偵測方式', '自動 (深度分析)'),
+                if (r.trunkPixelWidth != null)
+                  _buildDetailRow('樹幹像素寬度',
+                      '${r.trunkPixelWidth!.toStringAsFixed(0)} px'),
+                if (r.chordLengthM != null)
+                  _buildDetailRow(
+                      '弦長', '${r.chordLengthM!.toStringAsFixed(4)} m'),
+                if (r.focalLengthPx != null)
+                  _buildDetailRow(
+                      '焦距', '${r.focalLengthPx!.toStringAsFixed(1)} px'),
+                if (r.method != null)
+                  _buildDetailRow('測量方法', r.method!),
+                _buildDetailRow('深度估計耗時',
+                    '${r.depthEstimationMs.toStringAsFixed(0)} ms'),
+                _buildDetailRow(
+                    '偵測耗時', '${r.detectionMs.toStringAsFixed(0)} ms'),
+                _buildDetailRow(
+                    'DBH 計算耗時',
+                    '${r.dbhCalculationMs.toStringAsFixed(0)} ms'),
+                _buildDetailRow('總耗時',
+                    '${r.totalMs.toStringAsFixed(0)} ms'),
+                if (r.notes.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  const Text('備註:',
+                      style:
+                          TextStyle(color: Colors.white70, fontSize: 12)),
+                  ...r.notes.map((n) => Padding(
+                        padding: const EdgeInsets.only(left: 8, top: 2),
+                        child: Text('• $n',
+                            style: const TextStyle(
+                                color: Colors.white60, fontSize: 12)),
+                      )),
+                ],
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // 底部按鈕
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        _step = _PageStep.camera;
+                        _capturedImage = null;
+                        _currentBbox = null;
+                        _result = null;
+                        _autoResult = null;
+                        _isAutoMode = true;
+                      });
+                    },
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('重新測量'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Colors.white54),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton.icon(
+                    onPressed: _useAutoResult,
+                    icon: const Icon(Icons.check),
+                    label: const Text('使用此結果'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+
+  /// 手動框選模式的結果頁（原有邏輯）
+  Widget _buildManualResultView(PureVisionDbhResult r) {
 
     return SingleChildScrollView(
       child: Column(
@@ -754,6 +1206,8 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
                         _capturedImage = null;
                         _currentBbox = null;
                         _result = null;
+                        _autoResult = null;
+                        _isAutoMode = true;
                       });
                     },
                     icon: const Icon(Icons.refresh),
@@ -879,6 +1333,54 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
     return Colors.red;
   }
 
+  /// 距離狀態顏色
+  Color _distanceStatusColor(String status) {
+    switch (status) {
+      case 'ok':
+        return Colors.green;
+      case 'warning':
+        return Colors.orange;
+      case 'too_close':
+        return Colors.red;
+      case 'too_far':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  /// 距離狀態圖標
+  IconData _distanceStatusIcon(String status) {
+    switch (status) {
+      case 'ok':
+        return Icons.check_circle;
+      case 'warning':
+        return Icons.warning_amber;
+      case 'too_close':
+        return Icons.zoom_in;
+      case 'too_far':
+        return Icons.zoom_out;
+      default:
+        return Icons.info_outline;
+    }
+  }
+
+  /// 距離狀態標籤
+  String _distanceStatusLabel(String status) {
+    switch (status) {
+      case 'ok':
+        return '距離適中';
+      case 'warning':
+        return '距離偏遠';
+      case 'too_close':
+        return '距離過近';
+      case 'too_far':
+        return '距離過遠';
+      default:
+        return '距離未知';
+    }
+  }
+
   void _showHelp() {
     showDialog(
       context: context,
@@ -887,14 +1389,18 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
         content: const Text(
           '此功能使用 Depth Anything V2 深度估計模型，'
           '從單張 RGB 照片自動推算樹幹直徑。\n\n'
-          '使用步驟：\n'
+          '🤖 自動模式（預設）：\n'
           '1. 距離樹幹 1-5 公尺處拍照\n'
-          '2. 用手指框選樹幹範圍\n'
-          '3. 點擊「AI 分析」等待結果\n\n'
+          '2. AI 自動偵測樹幹位置\n'
+          '3. 自動計算 DBH 並顯示結果\n'
+          '4. 若偵測失敗會自動切換至手動模式\n\n'
+          '✋ 手動模式：\n'
+          '1. 拍照後用手指框選樹幹範圍\n'
+          '2. 點擊「AI 分析」等待結果\n\n'
           '提示：\n'
           '• 確保光線充足\n'
-          '• 框選時貼緊樹幹邊緣\n'
-          '• 避免遮擋物干擾',
+          '• 距離太近或太遠會影響精準度\n'
+          '• 畫面中應有明顯的樹幹',
         ),
         actions: [
           TextButton(
