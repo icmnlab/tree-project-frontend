@@ -140,9 +140,11 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
     try {
       // 優先載入增強版列表（含同義詞）
       final species = await _speciesService.getEnhancedSpecies();
-      setState(() {
-        _allSpecies = species;
-      });
+      if (mounted) {
+        setState(() {
+          _allSpecies = species;
+        });
+      }
     } catch (e) {
       debugPrint('載入樹種失敗: $e');
     }
@@ -888,7 +890,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
                   ),
                   onTap: () {
                     setState(() {
-                      _speciesController.text = species['name'];
+                      _speciesController.text = species['name'] ?? '';
                       _speciesId = species['id']?.toString();
                       _speciesSearchResults.clear();
                     });
@@ -926,9 +928,11 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
       return name.contains(q) || id.contains(q) || sciName.contains(q) || synonyms.contains(q);
     }).toList();
 
-    setState(() {
-      _speciesSearchResults = results;
-    });
+    if (mounted) {
+      setState(() {
+        _speciesSearchResults = results;
+      });
+    }
   }
 
   // 顯示新增樹種對話框
@@ -1371,7 +1375,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
         // 標記為已提交，這樣 dispose 時就不會清理新增的專案/區位
         _hasSubmitted = true;
         
-        final treeId = response['id'].toString(); // 假設回傳 ID
+        final treeId = (response['id'] ?? response['data']?['id'] ?? 'unknown').toString();
         
         // 3. 儲存照片 (關聯到新創建的 treeId)
         for (var photo in _photos) {
@@ -1404,7 +1408,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
             autoIdentifiedSpeciesName: _autoIdentifiedSpeciesName!,
             userSelectedSpeciesId: _speciesId ?? 'unknown',
             userSelectedSpeciesName: _speciesController.text,
-            confidence: _speciesConfidence != null ? double.tryParse(_speciesConfidence!)! / 100.0 : null,
+            confidence: _speciesConfidence != null ? (double.tryParse(_speciesConfidence!) ?? 0) / 100.0 : null,
             topPredictions: _aiPredictions,
             imagePath: _identificationImage?.path,
           );

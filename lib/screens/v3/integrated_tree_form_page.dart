@@ -74,9 +74,11 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
     try {
       // 優先載入增強版列表（含同義詞）
       final species = await _speciesService.getEnhancedSpecies();
-      setState(() {
-        _allSpecies = species;
-      });
+      if (mounted) {
+        setState(() {
+          _allSpecies = species;
+        });
+      }
     } catch (e) {
       debugPrint('載入樹種失敗: $e');
     }
@@ -147,11 +149,14 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
           if (localMatch != null && localMatch['id'] != null) {
             matchedId = localMatch['id'].toString();
             // 若是自動新增的樹種，動態加入本地列表
-            if (wasAutoAdded) {
-              _allSpecies.add({
-                'id': localMatch['id'],
-                'name': localMatch['name'] ?? displayName,
-                'scientific_name': localMatch['scientificName'] ?? speciesName,
+            if (wasAutoAdded && mounted) {
+              setState(() {
+                _allSpecies.add({
+                  'id': localMatch['id'],
+                  'name': localMatch['name'] ?? displayName,
+                  'scientific_name': localMatch['scientificName'] ?? speciesName,
+                });
+                _allSpecies.sort((a, b) => (a['name'] ?? '').toString().compareTo((b['name'] ?? '').toString()));
               });
             }
           } else {
@@ -167,7 +172,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
                        (dbSciName.isNotEmpty && dbSciName == sciLower) ||
                        synonyms.contains(displayLower);
               });
-              matchedId = match['id'] ?? match['樹種編號'];
+              matchedId = (match['id'] ?? match['樹種編號'])?.toString();
             } catch (_) {
               // No match found
             }
@@ -288,9 +293,11 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       return name.contains(q) || id.contains(q) || sciName.contains(q) || synonyms.contains(q);
     }).toList();
 
-    setState(() {
-      _speciesSearchResults = results;
-    });
+    if (mounted) {
+      setState(() {
+        _speciesSearchResults = results;
+      });
+    }
   }
 
   // 顯示新增樹種對話框
@@ -380,7 +387,12 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
     setState(() => _isLoading = true);
 
     try {
-      final dbh = double.parse(_dbhController.text);
+      final dbh = double.tryParse(_dbhController.text);
+      if (dbh == null) {
+        _showError('請輸入有效的數值');
+        setState(() => _isLoading = false);
+        return;
+      }
 
       // 1. 儲存照片 (如果有)
       if (_mainImage != null && widget.task.originalRecordId != null) {
@@ -422,7 +434,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
           autoIdentifiedSpeciesName: _autoIdentifiedSpeciesName!,
           userSelectedSpeciesId: _speciesId ?? 'unknown', // 使用者輸入的可能沒有 ID，除非是選單選的
           userSelectedSpeciesName: _speciesController.text,
-          confidence: _speciesConfidence != null ? double.tryParse(_speciesConfidence!)! / 100.0 : null,
+          confidence: _speciesConfidence != null ? (double.tryParse(_speciesConfidence!) ?? 0) / 100.0 : null,
           topPredictions: _aiPredictions,
           imagePath: _mainImage?.path,
         );
