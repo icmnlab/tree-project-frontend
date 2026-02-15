@@ -17,6 +17,7 @@ enum MeasurementMethod {
   twoPoint,       // 雙點標記法
   reference,      // 參照物比例法
   multiAngle,     // 環繞拍攝法
+  pureVision,     // 純視覺 AI 深度估計 (Depth Anything V2)
 }
 
 /// 測量點資料
@@ -99,6 +100,9 @@ class MeasurementResult {
       case MeasurementMethod.multiAngle:
         baseError = 2.5;  // ±2.5cm
         break;
+      case MeasurementMethod.pureVision:
+        baseError = 3.0;  // ±3cm (neural network depth estimation)
+        break;
     }
     return baseError * (2.0 - confidenceScore);
   }
@@ -137,8 +141,8 @@ class DeviceCapabilities {
   MeasurementMethod get recommendedMethod {
     if (hasLiDAR) return MeasurementMethod.arDepth;
     if (hasDepthAPI) return MeasurementMethod.arDepth;
-    if (hasDualCamera) return MeasurementMethod.twoPoint;
-    return MeasurementMethod.reference;
+    // 純視覺 AI 模式適用於所有設備
+    return MeasurementMethod.pureVision;
   }
   
   /// 可用的測量方法列表
@@ -150,6 +154,7 @@ class DeviceCapabilities {
     }
     
     // 這些方法都可用
+    methods.add(MeasurementMethod.pureVision);
     methods.add(MeasurementMethod.twoPoint);
     methods.add(MeasurementMethod.reference);
     methods.add(MeasurementMethod.multiAngle);
@@ -573,6 +578,15 @@ class ARMeasurementService {
 • 每次旋轉約 45-90 度
 • 保持與樹幹相同距離
 • 系統會自動計算平均值
+''';
+      case MeasurementMethod.pureVision:
+        return '''
+🤖 純視覺 AI 測量提示：
+• 距離樹幹 1-5 公尺處拍照
+• 確保樹幹完整入鏡
+• 用手指框選樹幹範圍
+• AI 會自動估算深度並計算 DBH
+• 不需要任何參照物或距離資料
 ''';
     }
   }

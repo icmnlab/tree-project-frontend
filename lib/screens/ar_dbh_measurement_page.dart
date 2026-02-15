@@ -6,6 +6,7 @@ import 'package:camera/camera.dart';
 import 'package:geolocator/geolocator.dart'; // [New] For GPS distance
 import 'package:latlong2/latlong.dart' as latlong; // [New] For distance calculation
 import '../services/ar_measurement_service.dart';
+import 'pure_vision_dbh_page.dart';
 
 /// 現代化 AR 測量介面 (iPhone 測距儀風格)
 ///
@@ -201,6 +202,23 @@ class _ARDBHMeasurementPageState extends State<ARDBHMeasurementPage>
     }
   }
 
+  // [New] 開啟純視覺 AI 測量頁面
+  Future<void> _openPureVisionMode() async {
+    final result = await Navigator.of(context).push<MeasurementResult>(
+      MaterialPageRoute(
+        builder: (context) => PureVisionDbhPage(
+          initialDbh: widget.initialDbh,
+          speciesName: widget.speciesName,
+        ),
+      ),
+    );
+
+    if (result != null && mounted) {
+      // 直接回傳結果給上層 (透傳)
+      Navigator.of(context).pop(result);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!_isCameraInitialized || _cameraController == null) {
@@ -328,6 +346,23 @@ class _ARDBHMeasurementPageState extends State<ARDBHMeasurementPage>
     if (_step == 0) {
       return Column(
         children: [
+          // 純視覺 AI 模式入口
+          Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: ElevatedButton.icon(
+              onPressed: _openPureVisionMode,
+              icon: const Icon(Icons.auto_awesome, size: 20),
+              label: const Text('🤖 純視覺 AI 測量 (推薦)'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.deepPurple,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+              ),
+            ),
+          ),
           Container(
             margin: const EdgeInsets.only(bottom: 16),
             padding: const EdgeInsets.all(4),

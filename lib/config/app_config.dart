@@ -7,6 +7,7 @@ enum Environment { prod, staging }
 class AppConfig {
   late Environment environment;
   late String baseUrl;
+  late String mlServiceUrl;
 
   static final AppConfig _instance = AppConfig._internal();
 
@@ -34,9 +35,11 @@ class AppConfig {
     switch (env) {
       case Environment.staging:
         baseUrl = 'https://tree-app-backend-staging.onrender.com/api';
+        mlServiceUrl = 'https://tree-app-ml-service.onrender.com/api/v1';
         break;
       case Environment.prod:
         baseUrl = 'https://tree-app-backend-prod.onrender.com/api';
+        mlServiceUrl = 'https://tree-app-ml-service.onrender.com/api/v1';
         break;
     }
   }

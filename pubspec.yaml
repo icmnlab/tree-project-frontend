@@ -67,6 +67,7 @@ dependencies:
   device_info_plus: ^11.0.0  # V3: 設備資訊
   sensors_plus: ^5.0.1  # V3: 手機傾斜度感測（相機高度輔助）
   camera: ^0.11.3
+  exif: ^3.3.0  # EXIF 焦距提取 (純 Dart，無原生依賴)
 
 dev_dependencies:
   flutter_test:
