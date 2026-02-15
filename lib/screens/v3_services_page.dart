@@ -10,7 +10,7 @@ import '../services/v3/ml_data_sync_service.dart';
 /// 功能：
 /// 1. 樹木影像管理 - 查看、同步照片
 /// 2. 衝突解決 - 查看待處理的衝突
-/// 3. AR 測量校準 - 校準 AR 測量設定
+/// 3. DBH 測量校準 - 校準測量設定
 /// 4. ML 數據同步 - 管理訓練數據同步
 class V3ServicesPage extends StatefulWidget {
   const V3ServicesPage({super.key});
@@ -105,7 +105,7 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
                   ),
                   const SizedBox(height: 12),
                   _buildServiceCard(
-                    title: 'AR 測量校準',
+                    title: 'DBH 測量校準',
                     subtitle: '目前使用: ${_currentCalibration != null ? "自訂校準" : "標準設定"}',
                     icon: Icons.straighten,
                     color: Colors.teal,
@@ -342,7 +342,7 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
           const SizedBox(height: 12),
           Text(
             'V3 進階服務提供離線資料管理、衝突解決、'
-            'AR 測量校準等功能。所有資料會在有網路時自動同步。',
+            'DBH 測量校準等功能。所有資料會在有網路時自動同步。',
             style: TextStyle(
               fontSize: 13,
               color: Colors.grey.shade600,
@@ -860,7 +860,7 @@ class _ARCalibrationPageState extends State<_ARCalibrationPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('AR 測量校準'),
+        title: const Text('DBH 測量校準'),
         backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
       ),

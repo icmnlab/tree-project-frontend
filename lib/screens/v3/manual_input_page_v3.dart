@@ -9,7 +9,7 @@ import '../../services/species_identification_service.dart';
 import '../../services/v3/project_boundary_service.dart';
 import '../../services/v3/tree_image_service.dart';
 import '../../services/v3/ml_data_collector.dart'; // ML Data Collector
-import '../ar_dbh_measurement_page.dart'; // For AR Page
+import '../pure_vision_dbh_page.dart'; // For DBH measurement
 import '../../services/ar_measurement_service.dart'; // For MeasurementResult
 import '../../services/project_area_service.dart'; // 新增專案區位服務
 
@@ -1119,7 +1119,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
             ),
             const SizedBox(width: 12),
             ElevatedButton(
-              onPressed: _startARMeasurement,
+              onPressed: _startDBHMeasurement,
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 backgroundColor: Colors.teal.shade50,
@@ -1127,8 +1127,8 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
               ),
               child: const Column(
                 children: [
-                  Icon(Icons.view_in_ar),
-                  Text('AR 測量', style: TextStyle(fontSize: 10)),
+                  Icon(Icons.camera_alt),
+                  Text('DBH 測量', style: TextStyle(fontSize: 10)),
                 ],
               ),
             ),
@@ -1150,14 +1150,12 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
     );
   }
 
-  Future<void> _startARMeasurement() async {
+  Future<void> _startDBHMeasurement() async {
     final result = await Navigator.of(context).push<MeasurementResult>(
       MaterialPageRoute(
-        builder: (context) => ARDBHMeasurementPage(
+        builder: (context) => PureVisionDbhPage(
           initialDbh: double.tryParse(_dbhController.text),
           speciesName: _speciesController.text,
-          targetLat: _currentLocation?.latitude,
-          targetLon: _currentLocation?.longitude,
         ),
       ),
     );

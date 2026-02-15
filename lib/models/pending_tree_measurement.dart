@@ -43,8 +43,8 @@ class PendingTreeMeasurement {
   final String? assignedTo;         // 指派給哪位測量員
   final int? priority;              // 優先級 (1-5)
   
-  // AR 測量結果 (第二階段填入)
-  final double? measuredDbhCm;      // AR 測量的 DBH
+  // DBH 測量結果 (第二階段填入)
+  final double? measuredDbhCm;      // 測量的 DBH
   final double? measurementConfidence; // 測量信心度
   final String? measurementMethod;  // 測量方法
   final String? measurementNotes;   // 測量備註

@@ -5,7 +5,8 @@ import 'dart:convert';
 
 // Import services
 import 'services/tree_service.dart';
-import 'screens/ar_dbh_measurement_page.dart';
+import 'screens/pure_vision_dbh_page.dart';
+import 'services/ar_measurement_service.dart'; // For MeasurementResult
 import 'services/project_service.dart';
 import 'services/project_area_service.dart';
 // location_service import removed - unused in edit mode
@@ -531,7 +532,7 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
     );
   }
 
-  // AR DBH 測量按鈕欄位
+  // 影像 DBH 測量按鈕欄位
   Widget _buildDbhFieldWithArButton() {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
@@ -563,20 +564,20 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
           ),
           const SizedBox(width: 8),
           Tooltip(
-            message: 'AR 測量胸徑',
+            message: '影像測量胸徑',
             child: Material(
-              color: Colors.purple.shade100,
+              color: Colors.teal.shade100,
               borderRadius: BorderRadius.circular(12),
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
-                onTap: _openARMeasurement,
+                onTap: _openDBHMeasurement,
                 child: Container(
                   width: 56,
                   height: 56,
                   alignment: Alignment.center,
                   child: Icon(
                     Icons.camera_alt,
-                    color: Colors.purple.shade700,
+                    color: Colors.teal.shade700,
                     size: 28,
                   ),
                 ),
@@ -588,21 +589,21 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
     );
   }
 
-  // 開啟 AR 測量頁面
-  Future<void> _openARMeasurement() async {
-    final result = await Navigator.of(context).push<double>(
+  // 開啟影像測量頁面
+  Future<void> _openDBHMeasurement() async {
+    final result = await Navigator.of(context).push<MeasurementResult>(
       MaterialPageRoute(
-        builder: (_) => const ARDBHMeasurementPage(),
+        builder: (_) => const PureVisionDbhPage(),
       ),
     );
 
     if (result != null && mounted) {
       setState(() {
-        dbhController.text = result.toStringAsFixed(1);
+        dbhController.text = result.diameterCm.toStringAsFixed(1);
       });
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('AR 測量完成：胸徑 ${result.toStringAsFixed(1)} cm'),
+          content: Text('測量完成：胸徑 ${result.diameterCm.toStringAsFixed(1)} cm'),
           backgroundColor: Colors.green,
         ),
       );

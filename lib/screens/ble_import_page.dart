@@ -982,7 +982,7 @@ class _BleImportPageState extends State<BleImportPage> {
                   Expanded(
                     child: OutlinedButton.icon(
                       icon: const Icon(Icons.camera_alt, size: 18),
-                      label: const Text('儲存到待測量 (AR DBH)'),
+                      label: const Text('儲存到待測量 (DBH 測量)'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: Colors.purple,
                         side: const BorderSide(color: Colors.purple),

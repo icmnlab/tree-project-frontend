@@ -148,7 +148,7 @@ class AddTreeSelectionDialog extends StatelessWidget {
                     iconColor: Colors.deepPurple,
                     iconBgColor: Colors.deepPurple.shade50,
                     title: '整合模式',
-                    subtitle: 'V3 全新流程：AR 測量 + AI 辨識',
+                    subtitle: 'V3 全新流程：影像測量 + AI 辨識',
                     badge: 'V3 Dev',
                     badgeColor: Colors.deepPurple,
                     onTap: () {

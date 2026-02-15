@@ -5,7 +5,8 @@ import '../services/project_service.dart';
 import '../services/species_service.dart';
 import '../services/tree_service.dart';
 import '../services/v3/project_boundary_service.dart'; // V3: 專案邊界自動匹配
-import 'ar_dbh_measurement_page.dart';
+import 'pure_vision_dbh_page.dart';
+import '../services/ar_measurement_service.dart'; // For MeasurementResult
 
 /// ManualInputPageV2
 ///
@@ -1019,30 +1020,30 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // AR 測量按鈕
+            // 影像測量按鈕
             Container(
               width: double.infinity,
               margin: const EdgeInsets.only(bottom: 16),
               child: ElevatedButton.icon(
                 icon: const Icon(Icons.camera_alt),
-                label: const Text('AR 測量胸徑'),
+                label: const Text('影像測量胸徑'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.purple.shade100,
-                  foregroundColor: Colors.purple.shade700,
+                  backgroundColor: Colors.teal.shade100,
+                  foregroundColor: Colors.teal.shade700,
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),
                 onPressed: () async {
                   Navigator.pop(context);
-                  final result = await Navigator.of(context).push<double>(
+                  final result = await Navigator.of(context).push<MeasurementResult>(
                     MaterialPageRoute(
-                      builder: (_) => const ARDBHMeasurementPage(),
+                      builder: (_) => const PureVisionDbhPage(),
                     ),
                   );
                   if (result != null) {
-                    _batchUpdateField('dbh', result);
+                    _batchUpdateField('dbh', result.diameterCm);
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('AR 測量完成：胸徑 ${result.toStringAsFixed(1)} cm'),
+                        content: Text('測量完成：胸徑 ${result.diameterCm.toStringAsFixed(1)} cm'),
                         backgroundColor: Colors.green,
                       ),
                     );

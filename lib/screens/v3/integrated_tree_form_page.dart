@@ -7,13 +7,13 @@ import '../../services/species_service.dart'; // Import SpeciesService
 import '../../services/v3/tree_image_service.dart';
 import '../../services/v3/ml_data_collector.dart'; // ML Data Collector
 import '../../services/ar_measurement_service.dart'; // For MeasurementResult
-import '../ar_dbh_measurement_page.dart';
+import '../pure_vision_dbh_page.dart';
 
 /// V3 整合式樹木測量表單
 /// 
 /// 整合了：
 /// 1. 照片拍攝與管理
-/// 2. AR DBH 測量
+/// 2. 影像 DBH 測量
 /// 3. AI 樹種辨識
 /// 4. 待測量任務資料確認與提交
 class IntegratedTreeFormPage extends StatefulWidget {
@@ -228,15 +228,12 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
     }
   }
 
-  Future<void> _startARMeasurement() async {
+  Future<void> _startDBHMeasurement() async {
     final result = await Navigator.of(context).push<MeasurementResult>(
       MaterialPageRoute(
-        builder: (context) => ARDBHMeasurementPage(
+        builder: (context) => PureVisionDbhPage(
           initialDbh: double.tryParse(_dbhController.text),
           speciesName: _speciesController.text,
-          knownDistance: widget.task.horizontalDistance,
-          targetLat: widget.task.treeLatitude,
-          targetLon: widget.task.treeLongitude,
         ),
       ),
     );
@@ -702,7 +699,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
             ),
             const SizedBox(width: 12),
             ElevatedButton(
-              onPressed: _startARMeasurement,
+              onPressed: _startDBHMeasurement,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.teal.shade50,
                 foregroundColor: Colors.teal,
@@ -711,9 +708,9 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
               ),
               child: const Column(
                 children: [
-                  Icon(Icons.view_in_ar),
+                  Icon(Icons.camera_alt),
                   SizedBox(height: 4),
-                  Text('AR 測量'),
+                  Text('DBH 測量'),
                 ],
               ),
             ),
@@ -732,7 +729,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  'AR 測量信心度: ${(_measurementConfidence! * 100).toStringAsFixed(0)}%',
+                  '測量信心度: ${(_measurementConfidence! * 100).toStringAsFixed(0)}%',
                   style: TextStyle(
                     fontSize: 12,
                     color: _measurementConfidence! > 0.8 ? Colors.green : Colors.orange,

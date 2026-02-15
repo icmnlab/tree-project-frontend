@@ -12,7 +12,7 @@ import 'v3/integrated_tree_form_page.dart'; // V3 整合表單
 /// 1. 顯示待測量任務列表
 /// 2. 導航引導到測站位置
 /// 3. 箭頭指向目標樹木
-/// 4. 整合 AR DBH 測量 (使用 V3 IntegratedTreeFormPage)
+/// 4. 整合 DBH 測量 (使用 V3 IntegratedTreeFormPage)
 class PendingMeasurementTaskPage extends StatefulWidget {
   final String? sessionId;
   
