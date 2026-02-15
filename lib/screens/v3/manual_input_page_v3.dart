@@ -1018,7 +1018,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
       final result = await SpeciesIdentificationService.identifyFromFile(image, lang: 'zh');
       
       if (result['success'] == true && mounted) {
-        final results = result['results'] as List;
+        final results = result['results'] as List? ?? [];
         if (results.isNotEmpty) {
           final bestMatch = results.first;
           final speciesName = bestMatch['species']['scientificNameWithoutAuthor'];
@@ -1030,22 +1030,45 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
             displayName = commonNames.first;
           }
           
-          // 嘗試在已知樹種中尋找對應 ID
+          // 優先使用後端回傳的 localMatch（含自動新增結果）
           String? matchedId;
-          try {
-            final match = _allSpecies.firstWhere((s) {
-              final dbName = (s['name'] ?? '').toString().toLowerCase();
-              final dbSciName = (s['scientific_name'] ?? '').toString().toLowerCase();
-              final synonyms = (s['synonyms'] as List?)?.map((e) => e.toString().toLowerCase()).toList() ?? [];
-              final displayLower = displayName.toLowerCase();
-              final sciLower = speciesName.toLowerCase();
-              return dbName == displayLower || 
-                     (dbSciName.isNotEmpty && dbSciName == sciLower) ||
-                     synonyms.contains(displayLower);
-            });
-            matchedId = match['id']?.toString() ?? match['樹種編號']?.toString();
-          } catch (_) {
-            // No match found
+          final localMatch = result['localMatch'] as Map<String, dynamic>?;
+          final wasAutoAdded = result['autoAdded'] == true;
+          
+          if (localMatch != null && localMatch['id'] != null) {
+            matchedId = localMatch['id'].toString();
+            if (wasAutoAdded) {
+              _allSpecies.add({
+                'id': localMatch['id'],
+                'name': localMatch['name'] ?? displayName,
+                'scientific_name': localMatch['scientificName'] ?? speciesName,
+              });
+            }
+          } else {
+            // Fallback: 在本地列表匹配
+            try {
+              final match = _allSpecies.firstWhere((s) {
+                final dbName = (s['name'] ?? '').toString().toLowerCase();
+                final dbSciName = (s['scientific_name'] ?? '').toString().toLowerCase();
+                final synonyms = (s['synonyms'] as List?)?.map((e) => e.toString().toLowerCase()).toList() ?? [];
+                final displayLower = displayName.toLowerCase();
+                final sciLower = speciesName.toLowerCase();
+                return dbName == displayLower || 
+                       (dbSciName.isNotEmpty && dbSciName == sciLower) ||
+                       synonyms.contains(displayLower);
+              });
+              matchedId = match['id']?.toString() ?? match['樹種編號']?.toString();
+            } catch (_) {
+              // No match found
+            }
+          }
+
+          // 構建提示訊息
+          String snackMsg = '辨識成功: $displayName (信心度 $score%)';
+          if (wasAutoAdded) {
+            snackMsg += ' [新樹種已自動建檔]';
+          } else if (matchedId != null) {
+            snackMsg += ' [已匹配]';
           }
 
           setState(() {
@@ -1061,7 +1084,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
             _speciesConfidence = score;
             _identificationImage = image;
           });
-          _showSnackBar('辨識成功: $displayName (信心度 $score%)${matchedId != null ? " [已匹配]" : ""}');
+          _showSnackBar(snackMsg);
         }
       } else {
         _showSnackBar('辨識失敗: ${result['error']}');
@@ -1159,7 +1182,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
     try {
       final result = await SpeciesIdentificationService.identifyFromFile(image, lang: 'zh');
       if (result['success'] == true && mounted) {
-        final results = result['results'] as List;
+        final results = result['results'] as List? ?? [];
         if (results.isNotEmpty) {
           final bestMatch = results.first;
           final speciesName = bestMatch['species']['scientificNameWithoutAuthor'];
@@ -1168,20 +1191,42 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
           String displayName = speciesName;
           if (commonNames != null && commonNames.isNotEmpty) displayName = commonNames.first;
 
+          // 優先使用後端回傳的 localMatch（含自動新增結果）
           String? matchedId;
-          try {
-            final match = _allSpecies.firstWhere((s) {
-              final dbName = (s['name'] ?? '').toString().toLowerCase();
-              final dbSciName = (s['scientific_name'] ?? '').toString().toLowerCase();
-              final synonyms = (s['synonyms'] as List?)?.map((e) => e.toString().toLowerCase()).toList() ?? [];
-              final displayLower = displayName.toLowerCase();
-              final sciLower = speciesName.toLowerCase();
-              return dbName == displayLower || 
-                     (dbSciName.isNotEmpty && dbSciName == sciLower) ||
-                     synonyms.contains(displayLower);
-            });
-            matchedId = match['id']?.toString() ?? match['樹種編號']?.toString();
-          } catch (_) {}
+          final localMatch = result['localMatch'] as Map<String, dynamic>?;
+          final wasAutoAdded = result['autoAdded'] == true;
+          
+          if (localMatch != null && localMatch['id'] != null) {
+            matchedId = localMatch['id'].toString();
+            if (wasAutoAdded) {
+              _allSpecies.add({
+                'id': localMatch['id'],
+                'name': localMatch['name'] ?? displayName,
+                'scientific_name': localMatch['scientificName'] ?? speciesName,
+              });
+            }
+          } else {
+            try {
+              final match = _allSpecies.firstWhere((s) {
+                final dbName = (s['name'] ?? '').toString().toLowerCase();
+                final dbSciName = (s['scientific_name'] ?? '').toString().toLowerCase();
+                final synonyms = (s['synonyms'] as List?)?.map((e) => e.toString().toLowerCase()).toList() ?? [];
+                final displayLower = displayName.toLowerCase();
+                final sciLower = speciesName.toLowerCase();
+                return dbName == displayLower || 
+                       (dbSciName.isNotEmpty && dbSciName == sciLower) ||
+                       synonyms.contains(displayLower);
+              });
+              matchedId = match['id']?.toString() ?? match['樹種編號']?.toString();
+            } catch (_) {}
+          }
+
+          String snackMsg = '從量測照片辨識: $displayName (信心度 $score%)';
+          if (wasAutoAdded) {
+            snackMsg += ' [新樹種已自動建檔]';
+          } else if (matchedId != null) {
+            snackMsg += ' [已匹配]';
+          }
 
           setState(() {
             _speciesController.text = displayName;
@@ -1192,7 +1237,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
             _speciesConfidence = score;
             _identificationImage = image;
           });
-          _showSnackBar('從量測照片辨識: $displayName (信心度 $score%)${matchedId != null ? " [已匹配]" : ""}');
+          _showSnackBar(snackMsg);
         }
       }
     } catch (e) {

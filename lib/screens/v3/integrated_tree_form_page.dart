@@ -127,7 +127,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       );
       
       if (result['success'] == true && mounted) {
-        final results = result['results'] as List;
+        final results = result['results'] as List? ?? [];
         if (results.isNotEmpty) {
           final bestMatch = results.first;
           final speciesName = bestMatch['species']['scientificNameWithoutAuthor'];
@@ -139,24 +139,48 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
             displayName = commonNames.first;
           }
 
-          // 嘗試在已知樹種中尋找對應 ID（含同義詞匹配）
+          // 優先使用後端回傳的 localMatch（含自動新增結果）
           String? matchedId;
-          try {
-            final match = _allSpecies.firstWhere((s) {
-              final dbName = (s['name'] ?? '').toString().toLowerCase();
-              final dbSciName = (s['scientific_name'] ?? '').toString().toLowerCase();
-              final synonyms = (s['synonyms'] as List?)?.map((e) => e.toString().toLowerCase()).toList() ?? [];
-              final displayLower = displayName.toLowerCase();
-              final sciLower = speciesName.toLowerCase();
-              return dbName == displayLower || 
-                     (dbSciName.isNotEmpty && dbSciName == sciLower) ||
-                     synonyms.contains(displayLower);
-            });
-            matchedId = match['id'] ?? match['樹種編號'];
-          } catch (_) {
-            // No match found
+          final localMatch = result['localMatch'] as Map<String, dynamic>?;
+          final wasAutoAdded = result['autoAdded'] == true;
+          
+          if (localMatch != null && localMatch['id'] != null) {
+            matchedId = localMatch['id'].toString();
+            // 若是自動新增的樹種，動態加入本地列表
+            if (wasAutoAdded) {
+              _allSpecies.add({
+                'id': localMatch['id'],
+                'name': localMatch['name'] ?? displayName,
+                'scientific_name': localMatch['scientificName'] ?? speciesName,
+              });
+            }
+          } else {
+            // Fallback: 在本地列表匹配（含同義詞）
+            try {
+              final match = _allSpecies.firstWhere((s) {
+                final dbName = (s['name'] ?? '').toString().toLowerCase();
+                final dbSciName = (s['scientific_name'] ?? '').toString().toLowerCase();
+                final synonyms = (s['synonyms'] as List?)?.map((e) => e.toString().toLowerCase()).toList() ?? [];
+                final displayLower = displayName.toLowerCase();
+                final sciLower = speciesName.toLowerCase();
+                return dbName == displayLower || 
+                       (dbSciName.isNotEmpty && dbSciName == sciLower) ||
+                       synonyms.contains(displayLower);
+              });
+              matchedId = match['id'] ?? match['樹種編號'];
+            } catch (_) {
+              // No match found
+            }
           }
           
+          // 構建 SnackBar 訊息
+          String snackMsg = '辨識結果: $displayName (信心度: $score%)';
+          if (wasAutoAdded) {
+            snackMsg += ' [新樹種已自動建檔]';
+          } else if (matchedId != null) {
+            snackMsg += ' [已匹配]';
+          }
+
           // [ML Data Collection] 暫存自動辨識結果
           setState(() {
              _autoIdentifiedSpeciesName = displayName;
@@ -167,7 +191,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('辨識結果: $displayName (信心度: $score%)${matchedId != null ? " [已匹配]" : ""}'),
+              content: Text(snackMsg),
               action: SnackBarAction(
                 label: '套用',
                 onPressed: () {
