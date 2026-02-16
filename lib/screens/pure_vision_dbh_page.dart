@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:exif/exif.dart';
 import '../services/pure_vision_dbh_service.dart';
 import '../services/ar_measurement_service.dart';
+import '../config/app_config.dart';
 
 /// 純視覺 DBH 測量頁面
 ///
@@ -534,7 +535,7 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
           top: 0,
           left: 0,
           right: 0,
-          child: _buildAppBar('純視覺 AI 測量'),
+          child: _buildCameraAppBar(),
         ),
 
         // 服務狀態
@@ -1320,6 +1321,188 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
         ],
       ),
     );
+  }
+
+  /// 相機頁面專用 AppBar（含 ML 設定按鈕）
+  Widget _buildCameraAppBar() {
+    final config = AppConfig();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      color: Colors.black54,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            children: [
+              IconButton(
+                icon: const Icon(Icons.close, color: Colors.white),
+                onPressed: () => Navigator.of(context).pop(),
+              ),
+              const Expanded(
+                child: Text(
+                  '純視覺 AI 測量',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              IconButton(
+                icon: Icon(
+                  Icons.dns_rounded,
+                  color: config.useSelfHostedMl
+                      ? Colors.tealAccent
+                      : Colors.white,
+                ),
+                tooltip: 'ML 服務設定',
+                onPressed: _showMlServiceSettings,
+              ),
+              IconButton(
+                icon: const Icon(Icons.help_outline, color: Colors.white),
+                onPressed: _showHelp,
+              ),
+            ],
+          ),
+          // ML 來源指示器
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+            child: Text(
+              'ML: ${config.mlServiceSource}',
+              style: TextStyle(
+                color: config.useSelfHostedMl
+                    ? Colors.tealAccent.withValues(alpha: 0.8)
+                    : Colors.white54,
+                fontSize: 11,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// ML 服務設定對話框
+  Future<void> _showMlServiceSettings() async {
+    final config = AppConfig();
+    final controller = TextEditingController(
+      text: config.useSelfHostedMl
+          ? config.mlServiceUrl.replaceAll('/api/v1', '')
+          : '',
+    );
+    bool useSelfHosted = config.useSelfHostedMl;
+
+    await showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              title: const Text('ML 服務設定'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // 切換開關
+                    SwitchListTile(
+                      title: const Text('使用自架 ML 服務'),
+                      subtitle: Text(
+                        useSelfHosted ? '連接到自己的電腦' : '使用 Render 雲端',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      value: useSelfHosted,
+                      activeColor: Colors.teal,
+                      contentPadding: EdgeInsets.zero,
+                      onChanged: (val) {
+                        setDialogState(() => useSelfHosted = val);
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    // URL 輸入框
+                    if (useSelfHosted) ...[
+                      const Text(
+                        'ngrok URL:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      TextField(
+                        controller: controller,
+                        decoration: const InputDecoration(
+                          hintText: 'https://xxxx.ngrok-free.app',
+                          hintStyle: TextStyle(fontSize: 13),
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                        ),
+                        style: const TextStyle(fontSize: 13),
+                        keyboardType: TextInputType.url,
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        '在 MacBook 上啟動 ML Service 後，\n'
+                        '用 ngrok 產生的 URL 貼在這裡',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('取消'),
+                ),
+                FilledButton(
+                  onPressed: () async {
+                    if (useSelfHosted) {
+                      final url = controller.text.trim();
+                      if (url.isEmpty) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('請輸入 ngrok URL')),
+                        );
+                        return;
+                      }
+                      await config.setSelfHostedMlUrl(url);
+                    } else {
+                      await config.setSelfHostedMlUrl(null);
+                    }
+                    if (ctx.mounted) Navigator.pop(ctx);
+                    // 重新檢查服務連線
+                    _checkService();
+                    setState(() {});
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            useSelfHosted
+                                ? '已切換至自架 ML 服務'
+                                : '已切換至 Render 雲端',
+                          ),
+                          backgroundColor: Colors.teal,
+                        ),
+                      );
+                    }
+                  },
+                  child: const Text('儲存'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    controller.dispose();
   }
 
   Widget _buildInstructionChip(String text, {String? subtitle}) {
