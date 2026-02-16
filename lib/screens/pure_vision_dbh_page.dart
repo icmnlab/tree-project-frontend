@@ -235,11 +235,17 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
     double toImgX(double sx) => ((sx - offsetX) / scale).clamp(0, _imageSize!.width);
     double toImgY(double sy) => ((sy - offsetY) / scale).clamp(0, _imageSize!.height);
 
+    final x1 = toImgX(screenBbox.left);
+    final y1 = toImgY(screenBbox.top);
+    final x2 = toImgX(screenBbox.right);
+    final y2 = toImgY(screenBbox.bottom);
+
+    // 確保 x1 < x2, y1 < y2（防止 clamp 後座標反轉或重疊）
     return Rect.fromLTRB(
-      toImgX(screenBbox.left),
-      toImgY(screenBbox.top),
-      toImgX(screenBbox.right),
-      toImgY(screenBbox.bottom),
+      x1 < x2 ? x1 : x2,
+      y1 < y2 ? y1 : y2,
+      x1 < x2 ? x2 : x1 + 1,
+      y1 < y2 ? y2 : y1 + 1,
     );
   }
 
@@ -258,13 +264,24 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
   Future<void> _submitMeasurement(Size displaySize) async {
     if (_currentBbox == null || _capturedImage == null) return;
 
+    // 前端先驗證 bbox 最小尺寸（螢幕座標至少 20px）
+    if (_currentBbox!.width < 20 || _currentBbox!.height < 20) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('框選範圍太小，請框選更大的樹幹區域'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _step = _PageStep.processing;
       _errorMessage = null;
     });
 
     try {
-      // 轉換座標
+      // 轉換座標（Rect.fromPoints 已正規化，left<=right, top<=bottom）
       final imgBbox = _screenBboxToImageBbox(_currentBbox!, displaySize);
 
       // 計算 FOV (如果有 35mm 等效焦距)
