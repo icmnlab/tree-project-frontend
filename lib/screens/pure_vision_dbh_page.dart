@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math' show atan;
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/services.dart';
@@ -287,7 +286,7 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
         fovDegrees: fovDeg,
         phoneMake: _phoneMake,
         phoneModel: _phoneModel,
-        returnVisualization: true,
+        returnVisualization: false,
       );
 
       if (mounted) {
@@ -360,6 +359,8 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
         fovDegrees: fovDeg,
         phoneMake: _phoneMake,
         phoneModel: _phoneModel,
+        returnVisualization: false,
+        returnDetectionVisualization: false,
       );
 
       if (mounted) {
