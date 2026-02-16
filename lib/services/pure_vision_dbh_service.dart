@@ -53,6 +53,8 @@ class PureVisionDbhService {
     double? focalLengthPx,
     double? focalLengthMm,
     double? focalLength35mm,
+    String? phoneMake,
+    String? phoneModel,
     bool returnVisualization = true,
   }) async {
     try {
@@ -84,6 +86,12 @@ class PureVisionDbhService {
       if (focalLength35mm != null) {
         request.fields['focal_length_35mm'] = focalLength35mm.toString();
       }
+      if (phoneMake != null) {
+        request.fields['phone_make'] = phoneMake;
+      }
+      if (phoneModel != null) {
+        request.fields['phone_model'] = phoneModel;
+      }
 
       debugPrint('[PureVisionDbhService] Sending request to $uri'
           '${focalLengthMm != null ? " (focal: ${focalLengthMm}mm)" : ""}'
@@ -107,6 +115,8 @@ class PureVisionDbhService {
       return PureVisionDbhResult.fromJson(data);
     } on SocketException {
       throw PureVisionException('無法連接 ML 服務，請確認服務已啟動');
+    } on TimeoutException {
+      throw PureVisionException('請求逾時，伺服器可能正在喚醒，請稍後再試');
     } on http.ClientException catch (e) {
       throw PureVisionException('網路錯誤: $e');
     }
@@ -147,6 +157,8 @@ class PureVisionDbhService {
     double? focalLengthMm,
     double? focalLength35mm,
     double? fovDegrees,
+    String? phoneMake,
+    String? phoneModel,
     bool returnVisualization = true,
     bool returnDetectionVisualization = true,
   }) async {
@@ -169,6 +181,12 @@ class PureVisionDbhService {
       if (focalLength35mm != null) {
         request.fields['focal_length_35mm'] = focalLength35mm.toString();
       }
+      if (phoneMake != null) {
+        request.fields['phone_make'] = phoneMake;
+      }
+      if (phoneModel != null) {
+        request.fields['phone_model'] = phoneModel;
+      }
 
       debugPrint('[PureVisionDbhService] Auto-measure request to $uri');
       final streamedResponse = await request.send().timeout(
@@ -186,6 +204,8 @@ class PureVisionDbhService {
       return AutoMeasureResult.fromJson(data);
     } on SocketException {
       throw PureVisionException('無法連接 ML 服務，請確認服務已啟動');
+    } on TimeoutException {
+      throw PureVisionException('請求逾時，伺服器可能正在喚醒，請稍後再試');
     } on http.ClientException catch (e) {
       throw PureVisionException('網路錯誤: $e');
     }
@@ -244,7 +264,7 @@ class PureVisionDbhResult {
       trunkDepthM: (json['trunk_depth_m'] as num).toDouble(),
       trunkPixelWidth: (json['trunk_pixel_width'] as num).toDouble(),
       chordLengthM: (json['chord_length_m'] as num).toDouble(),
-      focalLengthPx: (json['focal_length_px'] as num).toDouble(),
+      focalLengthPx: (json['focal_length_px'] as num?)?.toDouble() ?? 0,
       measurementRow: json['measurement_row'] as int,
       method: json['method'] as String,
       notes: notesList is List

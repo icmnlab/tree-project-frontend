@@ -59,6 +59,10 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
   double? _focalLengthMm;
   double? _focalLength35mm;
 
+  // EXIF 手機型號 (用於感測器寬度查詢)
+  String? _phoneMake;
+  String? _phoneModel;
+
   // Service
   final PureVisionDbhService _service = PureVisionDbhService();
   bool _serviceAvailable = false;
@@ -142,9 +146,11 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
       final bytes = await file.readAsBytes();
       final decoded = await decodeImageFromList(bytes);
 
-      // 提取 EXIF 焦距
+      // 提取 EXIF 焦距 + 手機型號
       double? focalMm;
       double? focal35;
+      String? phoneMake;
+      String? phoneModel;
       try {
         final exifData = await readExifFromBytes(bytes);
         // FocalLength: e.g. "471/100" → 4.71mm
@@ -162,9 +168,17 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
         if (focal35Tag != null) {
           focal35 = double.tryParse(focal35Tag.printable.replaceAll(' ', ''));
         }
-        if (focalMm != null) {
-          debugPrint('[EXIF] FocalLength: ${focalMm}mm, 35mm equiv: $focal35');
+        // Make & Model for sensor width lookup
+        final makeTag = exifData['Image Make'];
+        if (makeTag != null) {
+          phoneMake = makeTag.printable.trim();
         }
+        final modelTag = exifData['Image Model'];
+        if (modelTag != null) {
+          phoneModel = modelTag.printable.trim();
+        }
+        debugPrint('[EXIF] Make: $phoneMake, Model: $phoneModel, '
+            'FocalLength: ${focalMm}mm, 35mm equiv: $focal35');
       } catch (e) {
         debugPrint('[EXIF] Failed to read: $e');
       }
@@ -174,6 +188,8 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
         _imageSize = Size(decoded.width.toDouble(), decoded.height.toDouble());
         _focalLengthMm = focalMm;
         _focalLength35mm = focal35;
+        _phoneMake = phoneMake;
+        _phoneModel = phoneModel;
         _currentBbox = null;
         _bboxStart = null;
         _bboxEnd = null;
@@ -269,6 +285,8 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
         focalLengthMm: _focalLengthMm,
         focalLength35mm: _focalLength35mm,
         fovDegrees: fovDeg,
+        phoneMake: _phoneMake,
+        phoneModel: _phoneModel,
         returnVisualization: true,
       );
 
@@ -329,10 +347,19 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
     });
 
     try {
+      // 計算 FOV (如果有 35mm 等效焦距)
+      double? fovDeg;
+      if (_focalLength35mm != null && _focalLength35mm! > 0) {
+        fovDeg = 2 * atan(36.0 / (2 * _focalLength35mm!)) * 180.0 / 3.14159265;
+      }
+
       final result = await _service.autoMeasureDbh(
         imageFile: _capturedImage!,
         focalLengthMm: _focalLengthMm,
         focalLength35mm: _focalLength35mm,
+        fovDegrees: fovDeg,
+        phoneMake: _phoneMake,
+        phoneModel: _phoneModel,
       );
 
       if (mounted) {
