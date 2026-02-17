@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:ui';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
+import '../config/app_config.dart';
 import '../constants/colors.dart';
 
 class LoginPage extends StatefulWidget {
@@ -82,6 +83,18 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
         }
 
         await AuthService.saveUserInfo(data['user']);
+
+        // 自動套用後端下發的 ML Service 設定（自架 ngrok URL + API Key）
+        final mlConfig = data['mlConfig'];
+        if (mlConfig is Map) {
+          final config = AppConfig();
+          if (mlConfig['url'] is String) {
+            await config.setSelfHostedMlUrl(mlConfig['url'] as String);
+          }
+          if (mlConfig['apiKey'] is String) {
+            await config.setMlApiKey(mlConfig['apiKey'] as String);
+          }
+        }
 
         if (_loginType == 'admin') {
           Navigator.pushNamedAndRemoveUntil(context, '/admin', (route) => false);
