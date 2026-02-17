@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/app_config.dart'; // Import AppConfig
 import '../config/global_keys.dart'; // Import GlobalKeys
 import 'auth_service.dart'; // Import AuthService
@@ -8,25 +8,23 @@ import 'auth_service.dart'; // Import AuthService
 class ApiService {
   // The baseUrl is now dynamically retrieved from AppConfig
   static String get baseUrl => AppConfig().baseUrl;
-  static String? _apiKey;
   static String? _jwtToken;
   static const String _jwtTokenKey = 'auth_jwt_token';
+  static const _secureStorage = FlutterSecureStorage();
 
   static Future<void> initialize() async {
-    final prefs = await SharedPreferences.getInstance();
-    _jwtToken = prefs.getString(_jwtTokenKey);
+    _jwtToken = await _secureStorage.read(key: _jwtTokenKey);
   }
 
   static Future<void> setJwtToken(String? token) async {
     _jwtToken = token;
 
-    final prefs = await SharedPreferences.getInstance();
     if (token == null || token.isEmpty) {
-      await prefs.remove(_jwtTokenKey);
+      await _secureStorage.delete(key: _jwtTokenKey);
       return;
     }
 
-    await prefs.setString(_jwtTokenKey, token);
+    await _secureStorage.write(key: _jwtTokenKey, value: token);
   }
 
   static String? getJwtToken() {
@@ -36,25 +34,11 @@ class ApiService {
   static Map<String, String> getAuthHeaders() {
     final headers = <String, String>{};
 
-    if (_apiKey != null) {
-      headers['X-API-Key'] = _apiKey!;
-    }
-
     if (_jwtToken != null && _jwtToken!.isNotEmpty) {
       headers['Authorization'] = 'Bearer $_jwtToken';
     }
 
     return headers;
-  }
-
-  // 設置 API 密鑰
-  static void setApiKey(String apiKey) {
-    _apiKey = apiKey;
-  }
-
-  // 獲取 API 密鑰
-  static String? getApiKey() {
-    return _apiKey;
   }
 
   // HTTP GET 請求

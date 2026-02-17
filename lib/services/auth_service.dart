@@ -1,10 +1,11 @@
 import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/material.dart';
 import 'api_service.dart'; // 引入 ApiService
 
 class AuthService {
   static const String _userKey = 'user_info';
+  static const _secureStorage = FlutterSecureStorage();
 
   // 新增：登入函式
   static Future<Map<String, dynamic>> login(
@@ -17,16 +18,14 @@ class AuthService {
     return response;
   }
 
-  // 儲存使用者資訊
+  // 儲存使用者資訊（使用加密存儲）
   static Future<void> saveUserInfo(Map<String, dynamic> userInfo) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_userKey, jsonEncode(userInfo));
+    await _secureStorage.write(key: _userKey, value: jsonEncode(userInfo));
   }
 
   // 獲取使用者資訊
   static Future<Map<String, dynamic>?> getUserInfo() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userString = prefs.getString(_userKey);
+    final userString = await _secureStorage.read(key: _userKey);
     if (userString != null) {
       return jsonDecode(userString) as Map<String, dynamic>;
     }
@@ -44,8 +43,7 @@ class AuthService {
 
   // 清除 session 資料 (不含導航)
   static Future<void> clearSession() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_userKey);
+    await _secureStorage.delete(key: _userKey);
     await ApiService.setJwtToken(null);
   }
 
@@ -81,5 +79,46 @@ class AuthService {
 
     final projects = await getAccessibleProjects();
     return projects.contains(projectCode);
+  }
+
+  // 角色階層定義（數字越大權限越高）
+  static const Map<String, int> _roleHierarchy = {
+    '系統管理員': 5,
+    '業務管理員': 4,
+    '專案管理員': 3,
+    '調查管理員': 2,
+    '一般使用者': 1,
+  };
+
+  /// 取得目前使用者角色名稱
+  static Future<String> getUserRole() async {
+    final userInfo = await getUserInfo();
+    return userInfo?['role'] as String? ?? '一般使用者';
+  }
+
+  /// 取得角色層級數字
+  static int getRoleLevel(String role) {
+    return _roleHierarchy[role] ?? 0;
+  }
+
+  /// 檢查目前使用者是否 >= 指定最低角色
+  static Future<bool> hasMinimumRole(String minimumRole) async {
+    final role = await getUserRole();
+    return getRoleLevel(role) >= getRoleLevel(minimumRole);
+  }
+
+  /// 是否可以新增/編輯樹木資料（調查管理員以上）
+  static Future<bool> canEditTrees() async {
+    return await hasMinimumRole('調查管理員');
+  }
+
+  /// 是否可以刪除樹木資料（專案管理員以上）
+  static Future<bool> canDeleteTrees() async {
+    return await hasMinimumRole('專案管理員');
+  }
+
+  /// 是否可以管理使用者（業務管理員以上）
+  static Future<bool> canManageUsers() async {
+    return await hasMinimumRole('業務管理員');
   }
 }

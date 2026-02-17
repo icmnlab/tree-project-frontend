@@ -5,6 +5,7 @@ import 'screens/ai_chat_page.dart';
 import '../services/project_service.dart'; // 引入 ProjectService
 import '../services/tree_service.dart'; // 引入 TreeService
 import 'widgets/add_tree_dialog.dart'; // 引入 AddTreeSelectionDialog
+import 'services/auth_service.dart'; // 角色權限
 import 'constants/colors.dart';
 
 class ProjectTreesPage extends StatefulWidget {
@@ -22,6 +23,7 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
   List<Map<String, dynamic>> _trees = [];
   bool _isLoading = true;
   String _errorMessage = '';
+  bool _canEdit = false;
 
   // [REFACTOR] 移除日誌輔助函數，改為使用標準日誌庫 (如有需要)
   // void _logDebug(String message) {
@@ -31,23 +33,29 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
   @override
   void initState() {
     super.initState();
-    // 觸發一次性的背景清理任務
-    // ApiService.triggerCleanup(); // 根據新架構，此類呼叫應由更上層的邏輯處理，此處移除
     _fetchProjectData();
+    _loadPermissions();
+  }
+
+  Future<void> _loadPermissions() async {
+    final authService = AuthService();
+    final canEdit = await authService.canEditTrees();
+    if (mounted) {
+      setState(() => _canEdit = canEdit);
+    }
   }
 
   final ProjectService _projectService = ProjectService();
   final TreeService _treeService = TreeService();
 
-  // [REFACTOR] 將 _fetchProjectInfo 拆分為 _fetchProjectData 和 _fetchTrees
   Future<void> _fetchProjectData() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _errorMessage = '';
     });
 
     try {
-      // 使用 ProjectService 獲取專案資訊
       final projectResult =
           await _projectService.getProjectByName(widget.projectName);
 
@@ -56,32 +64,36 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
         final projectCode = projectData['code']?.toString();
 
         if (projectCode != null) {
-          setState(() {
-            _projectInfo = projectData;
-          });
-          // 成功獲取專案資訊後，接著獲取樹木列表
+          if (mounted) {
+            setState(() {
+              _projectInfo = projectData;
+            });
+          }
           await _fetchTrees(projectCode);
         } else {
           throw Exception('專案代碼遺失');
         }
       } else {
-        // 如果按名稱找不到，嘗試按代碼獲取 (假設 projectName 可能也是 code)
         final projectResultByCode =
             await _projectService.getProjectByCode(widget.projectName);
         if (projectResultByCode['success']) {
           final projectData = projectResultByCode['data'];
-          setState(() {
-            _projectInfo = projectData;
-          });
+          if (mounted) {
+            setState(() {
+              _projectInfo = projectData;
+            });
+          }
           await _fetchTrees(widget.projectName);
         } else {
           throw Exception(projectResult['message'] ?? '找不到專案');
         }
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = '載入專案資料失敗: $e';
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = '載入專案資料失敗: $e';
+        });
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -98,15 +110,16 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
 
       if (treesResult['success']) {
         final List<dynamic> treeData = treesResult['data'];
-        setState(() {
-          _trees = List<Map<String, dynamic>>.from(treeData);
-          // 排序邏輯保持不變
-          _trees.sort((a, b) {
-            final aNum = int.tryParse(a['專案樹木']?.toString() ?? '0') ?? 0;
-            final bNum = int.tryParse(b['專案樹木']?.toString() ?? '0') ?? 0;
-            return aNum.compareTo(bNum);
+        if (mounted) {
+          setState(() {
+            _trees = List<Map<String, dynamic>>.from(treeData);
+            _trees.sort((a, b) {
+              final aNum = int.tryParse(a['專案樹木']?.toString() ?? '0') ?? 0;
+              final bNum = int.tryParse(b['專案樹木']?.toString() ?? '0') ?? 0;
+              return aNum.compareTo(bNum);
+            });
           });
-        });
+        }
       } else {
         throw Exception(treesResult['message'] ?? '無法載入樹木列表');
       }
@@ -118,136 +131,6 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
       }
     }
   }
-
-  // [REFACTOR] 移除舊的 _fetchProjectInfo 和 _fetchTreesByProjectId
-  /*
-  Future<void> _fetchProjectInfo() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = '';
-    });
-
-    try {
-      // 首先嘗試使用專案名稱獲取專案信息
-      _logDebug('使用專案名稱獲取資料: ${widget.projectName}');
-
-      // 確保URL正確編碼
-      final String encodedName = Uri.encodeComponent(widget.projectName);
-      final Uri uri = Uri.parse(
-          'http://172.20.10.4:3000/api/projects/by_name/$encodedName');
-
-      _logDebug('API請求URL: ${uri.toString()}');
-      final response = await http.get(uri);
-      _logDebug('API響應狀態碼: ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        _logDebug('成功獲取專案信息');
-
-        setState(() {
-          _projectInfo = data;
-          _isLoading = false;
-        });
-
-        // 如果專案信息存在，使用專案ID獲取樹木
-        if (_projectInfo != null && _projectInfo!['id'] != null) {
-          _fetchTreesByProjectId(_projectInfo!['id'].toString());
-        }
-      } else if (response.statusCode == 404) {
-        _logDebug('未找到專案，嘗試使用專案代碼獲取');
-
-        // 如果名稱不存在，嘗試使用專案代碼
-        final String projectCode = widget.projectName.replaceAll(' ', '_');
-        final Uri codeUri = Uri.parse(
-            'http://172.20.10.4:3000/api/projects/by_code/$projectCode');
-
-        _logDebug('嘗試使用代碼API請求URL: ${codeUri.toString()}');
-        final codeResponse = await http.get(codeUri);
-        _logDebug('代碼API響應狀態碼: ${codeResponse.statusCode}');
-
-        if (codeResponse.statusCode == 200) {
-          final data = jsonDecode(codeResponse.body);
-          _logDebug('成功使用專案代碼獲取資料');
-
-          setState(() {
-            _projectInfo = data;
-            _isLoading = false;
-          });
-
-          // 如果專案信息存在，使用專案ID獲取樹木
-          if (_projectInfo != null && _projectInfo!['id'] != null) {
-            _fetchTreesByProjectId(_projectInfo!['id'].toString());
-          }
-        } else {
-          _logDebug('使用專案代碼獲取失敗: ${codeResponse.statusCode}');
-          setState(() {
-            _errorMessage = '無法找到專案資料 (錯誤: ${codeResponse.statusCode})';
-            _isLoading = false;
-          });
-        }
-      } else {
-        _logDebug('API請求失敗: ${response.statusCode}');
-        setState(() {
-          _errorMessage = '無法載入專案資料 (錯誤: ${response.statusCode})';
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      _logDebug('發生錯誤: $e');
-      setState(() {
-        _errorMessage = '發生錯誤: $e';
-        _isLoading = false;
-      });
-    }
-  }
-
-  // 使用專案ID獲取樹木
-  Future<void> _fetchTreesByProjectId(String projectId) async {
-    try {
-      _logDebug('使用專案ID獲取樹木: $projectId');
-      // 修改 API 路徑，使用專案名稱而非 ID
-      final Uri treesUri = Uri.parse(
-          'http://172.20.10.4:3000/api/tree_survey/by_project/${Uri.encodeComponent(widget.projectName)}');
-
-      _logDebug('樹木API請求URL: ${treesUri.toString()}');
-      final treesResponse = await http.get(treesUri);
-      _logDebug('樹木API響應狀態碼: ${treesResponse.statusCode}');
-
-      if (treesResponse.statusCode == 200) {
-        final List<dynamic> treeData = jsonDecode(treesResponse.body);
-        _logDebug('成功獲取 ${treeData.length} 棵樹');
-
-        setState(() {
-          _trees = List<Map<String, dynamic>>.from(treeData);
-
-          // 按照專案樹木編號排序 (project_tree_number)
-          _trees.sort((a, b) {
-            // 首先檢查是否存在project_tree_number
-            if (a['project_tree_number'] == null &&
-                b['project_tree_number'] == null) {
-              return 0;
-            }
-            if (a['project_tree_number'] == null) {
-              return 1;
-            }
-            if (b['project_tree_number'] == null) {
-              return -1;
-            }
-
-            // 確保數字比較（避免字串比較）
-            final aNum = int.tryParse('${a['project_tree_number']}') ?? 0;
-            final bNum = int.tryParse('${b['project_tree_number']}') ?? 0;
-            return aNum.compareTo(bNum);
-          });
-        });
-      } else {
-        _logDebug('獲取樹木失敗: ${treesResponse.statusCode}');
-      }
-    } catch (e) {
-      _logDebug('獲取樹木時發生錯誤: $e');
-    }
-  }
-  */
 
   void _navigateToAddTree() {
     Navigator.push(
@@ -377,18 +260,20 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
                                   ),
                                 ),
                               ),
-                              const SizedBox(width: 10),
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  icon: const Icon(Icons.add),
-                                  label: const Text('新增樹木'),
-                                  onPressed: _navigateToAddTree,
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green,
-                                    padding: const EdgeInsets.all(12),
+                              if (_canEdit) ...[
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    icon: const Icon(Icons.add),
+                                    label: const Text('新增樹木'),
+                                    onPressed: _navigateToAddTree,
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: Colors.green,
+                                      padding: const EdgeInsets.all(12),
+                                    ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ],
                           ),
                           const SizedBox(height: 20),
@@ -478,30 +363,32 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
                         ],
                       ),
                     ),
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [AppColors.leafGreen, AppColors.forestGreen],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.forestGreen.withOpacity(0.4),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: FloatingActionButton(
-          onPressed: _showAddDialog,
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          tooltip: '新增樹木資料',
-          child: const Icon(Icons.add, size: 28),
-        ),
-      ),
+      floatingActionButton: _canEdit
+          ? Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [AppColors.leafGreen, AppColors.forestGreen],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppColors.forestGreen.withOpacity(0.4),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: FloatingActionButton(
+                onPressed: _showAddDialog,
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                tooltip: '新增樹木資料',
+                child: const Icon(Icons.add, size: 28),
+              ),
+            )
+          : null,
     );
   }
 }

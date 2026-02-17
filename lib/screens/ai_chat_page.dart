@@ -391,6 +391,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
 
     // 添加用戶訊息
     final userMessage = ChatMessage(content: message, isUser: true);
+    if (!mounted) return;
     setState(() {
       _currentSession!.messages.add(userMessage);
       _currentSession!.updatedAt = DateTime.now();
@@ -409,6 +410,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
       isUser: false,
       isLoading: true,
     );
+    if (!mounted) return;
     setState(() {
       _currentSession!.messages.add(aiPlaceholder);
       _isLoading = true;
@@ -457,28 +459,30 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
         }
       }
       
-      setState(() {
-        final index = _currentSession!.messages.indexOf(aiPlaceholder);
-        if (index != -1) {
-          _currentSession!.messages[index] = aiPlaceholder.copyWith(
-            content: response['response'] ?? response['answer'] ?? '抱歉，我無法處理這個請求。',
-            isLoading: false,
-            sources: response['sources'] != null
-                ? List<Map<String, dynamic>>.from(response['sources'])
-                : null,
-            executedSQL: response['executedSQL'],
-            chartData: chartData,
-            suggestions: suggestions, // [NEW] 加入智慧建議
-            anomalies: anomalies, // [NEW] 加入異常警示
-          );
-        }
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          final index = _currentSession!.messages.indexOf(aiPlaceholder);
+          if (index != -1) {
+            _currentSession!.messages[index] = aiPlaceholder.copyWith(
+              content: response['response'] ?? response['answer'] ?? '抱歉，我無法處理這個請求。',
+              isLoading: false,
+              sources: response['sources'] != null
+                  ? List<Map<String, dynamic>>.from(response['sources'])
+                  : null,
+              executedSQL: response['executedSQL'],
+              chartData: chartData,
+              suggestions: suggestions,
+              anomalies: anomalies,
+            );
+          }
+          _isLoading = false;
+        });
+      }
       
       // 每次訊息後自動儲存
       _saveSessions();
     } catch (e) {
-      // 處理錯誤
+      if (!mounted) return;
       setState(() {
         final index = _currentSession!.messages.indexOf(aiPlaceholder);
         if (index != -1) {

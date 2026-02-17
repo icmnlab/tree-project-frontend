@@ -76,30 +76,39 @@ class MyApp extends StatelessWidget {
         '/home': (context) => const AuthGuard(child: HomePage()),
         '/admin': (context) =>
             const AuthGuard(requireAdmin: true, child: AdminPage()),
-        '/tree-survey': (context) => const TreeSurveyPage(),
-        '/statistics': (context) => const StatisticsPage(),
-        '/map': (context) => const MapPage(),
+        '/tree-survey': (context) =>
+            const AuthGuard(child: TreeSurveyPage()),
+        '/statistics': (context) =>
+            const AuthGuard(child: StatisticsPage()),
+        '/map': (context) => const AuthGuard(child: MapPage()),
         // 舊路由保留兼容，重定向到新版 AI Chat
-        '/ai-assistant': (context) => AIChatPage(
-              userId: 'user-${DateTime.now().millisecondsSinceEpoch}',
-              selectedProjectAreas: const [],
+        '/ai-assistant': (context) => AuthGuard(
+              child: AIChatPage(
+                userId: 'user-${DateTime.now().millisecondsSinceEpoch}',
+                selectedProjectAreas: const [],
+              ),
             ),
         // 新版 AI 聊天頁面 (ChatGPT 風格)
-        '/ai-chat': (context) => AIChatPage(
-              userId: 'user-${DateTime.now().millisecondsSinceEpoch}',
-              selectedProjectAreas: const [],
+        '/ai-chat': (context) => AuthGuard(
+              child: AIChatPage(
+                userId: 'user-${DateTime.now().millisecondsSinceEpoch}',
+                selectedProjectAreas: const [],
+              ),
             ),
         '/ai-sustainability-report': (context) =>
-            const AISustainabilityReportScreen(),
-        '/cities': (context) => const CitiesPage(),
+            const AuthGuard(child: AISustainabilityReportScreen()),
+        '/cities': (context) => const AuthGuard(child: CitiesPage()),
         // V3 功能路由
-        '/v3-services': (context) => const V3ServicesPage(),
-        '/v3-manual-input': (context) => const ManualInputPageV3(),
+        '/v3-services': (context) =>
+            const AuthGuard(child: V3ServicesPage()),
+        '/v3-manual-input': (context) =>
+            const AuthGuard(child: ManualInputPageV3()),
         // IntegratedTreeFormPage 需要 task 參數，不應放在 routes 中
         // 目前由 PendingMeasurementTaskPage 使用 MaterialPageRoute 直接導航
         // 如需路由方式，應使用 onGenerateRoute 處理 arguments
         // '/v3-integrated-form': (context) => const IntegratedTreeFormPage(),
-        '/v3-project-boundary': (context) => const ProjectBoundaryDrawPage(),
+        '/v3-project-boundary': (context) =>
+            const AuthGuard(child: ProjectBoundaryDrawPage()),
       },
     );
   }

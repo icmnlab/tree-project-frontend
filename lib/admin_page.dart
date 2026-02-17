@@ -14,25 +14,6 @@ import 'screens/v3/project_boundary_draw_page.dart'; // V3 專案邊界繪製
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 
-// 定義專案資料結構 - 已移至 models/project.dart，此處註解代碼可移除以避免混淆
-/*
-class Project {
-  final String code; // 專案代碼現在應始終視為 String，即使來源是數字
-  final String name;
-  final String? area;
-
-  Project({required this.code, required this.name, this.area});
-
-  factory Project.fromJson(Map<String, dynamic> json) {
-    return Project(
-      code: (json['code'] ?? '').toString(),
-      name: (json['name'] ?? '').toString(),
-      area: json['area']?.toString(),
-    );
-  }
-}
-*/
-
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
 
@@ -126,36 +107,6 @@ class _AdminPageState extends State<AdminPage> {
       });
     }
   }
-  /*
-  Future<void> _fetchUsers() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final users = await _userService.fetchUsers();
-      if (mounted) {
-        setState(() {
-          _users = users
-              .map((user) => {...user, 'is_active': user['is_active'] == 1})
-              .toList(); // 將 is_active 從 0/1 轉換為 bool
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('無法載入使用者資料: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-  */
 
   Future<void> _fetchProjectsForExport() async {
     setState(() {
@@ -190,58 +141,6 @@ class _AdminPageState extends State<AdminPage> {
       });
     }
   }
-
-  /*
-  Future<void> _fetchProjectsForExport() async {
-    setState(() {
-      _isLoadingProjects = true;
-      _selectedProjectCodesForMultiExport.clear(); // 清空已選
-    });
-    try {
-      final response = await http.get(
-        Uri.parse('http://172.20.10.4:3000/api/projects'),
-        headers: {
-          // 'Authorization': 'Bearer YOUR_ACCESS_TOKEN',
-        },
-      );
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        // 後端 /api/projects 返回的結構是 { success: true, data: [...] }
-        // 或 { success: true, message: '...', data: [...] }
-        if (data['success'] == true && data['data'] != null) {
-          List<Project> projects = (data['data'] as List)
-              .map((projectJson) => Project.fromJson(projectJson))
-              .toList();
-          setState(() {
-            _projectsForExport = projects;
-          });
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text(data['message'] ?? '無法載入專案列表')),
-            );
-          }
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('載入專案列表失敗: ${response.statusCode}')),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('載入專案列表發生錯誤: $e')),
-        );
-      }
-    } finally {
-      setState(() {
-        _isLoadingProjects = false;
-      });
-    }
-  }
-  */
 
   // 新增方法：顯示專案多選對話框
   Future<void> _showProjectMultiSelectDialog() async {
@@ -381,30 +280,6 @@ class _AdminPageState extends State<AdminPage> {
       }
     }
   }
-  /*
-  Future<void> _exportExcel() async {
-    String apiUrl = 'http://172.20.10.4:3000/api/export/excel';
-    if (_selectedProjectCodesForMultiExport.isNotEmpty) {
-      apiUrl +=
-          '?project_codes=${Uri.encodeComponent(_selectedProjectCodesForMultiExport.join(','))}';
-    }
-    final Uri url = Uri.parse(apiUrl);
-
-    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('無法開啟瀏覽器以下載 Excel 檔案')),
-        );
-      }
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Excel 檔案下載已啟動，請檢查您的瀏覽器下載項目')),
-        );
-      }
-    }
-  }
-  */
 
   Future<void> _exportPDF() async {
     if (_isExportingPdf) return; // 防止重複點擊
@@ -435,30 +310,6 @@ class _AdminPageState extends State<AdminPage> {
       }
     }
   }
-  /*
-  Future<void> _exportPDF() async {
-    String apiUrl = 'http://172.20.10.4:3000/api/export/pdf';
-    if (_selectedProjectCodesForMultiExport.isNotEmpty) {
-      apiUrl +=
-          '?project_codes=${Uri.encodeComponent(_selectedProjectCodesForMultiExport.join(','))}';
-    }
-    final Uri url = Uri.parse(apiUrl);
-
-    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('無法開啟瀏覽器以下載 PDF 檔案')),
-        );
-      }
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('PDF 檔案下載已啟動，請檢查您的瀏覽器下載項目')),
-        );
-      }
-    }
-  }
-  */
 
   Future<void> _backupDatabase() async {
     try {
@@ -476,35 +327,6 @@ class _AdminPageState extends State<AdminPage> {
       }
     }
   }
-  /*
-  Future<void> _backupDatabase() async {
-    try {
-      final response = await http.post(
-        Uri.parse('http://172.20.10.4:3000/api/backup'),
-      );
-
-      if (response.statusCode == 200) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('資料庫備份成功')),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('資料庫備份失敗')),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('發生錯誤: $e')),
-        );
-      }
-    }
-  }
-  */
 
   Future<void> _deleteUser(Map<String, dynamic> user) async {
     // 顯示確認對話框
@@ -564,80 +386,6 @@ class _AdminPageState extends State<AdminPage> {
       }
     }
   }
-
-  /*
-  Future<void> _deleteUser(Map<String, dynamic> user) async {
-    // 顯示確認對話框
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('確認刪除'),
-        content: Text(
-            '確定要刪除使用者 "${user['display_name'] ?? user['username']}" 嗎？\n此操作無法復原。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
-            child: const Text('刪除'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final response = await http.delete(
-        Uri.parse('http://172.20.10.4:3000/api/users/${user['user_id']}'),
-      );
-
-      if (!mounted) return;
-
-      if (response.statusCode == 200) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('使用者刪除成功'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        _fetchUsers(); // 重新載入使用者列表
-      } else {
-        final data = jsonDecode(response.body);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(data['message'] ?? '刪除失敗'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('發生錯誤: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-  */
 
   Future<void> _toggleUserStatus(Map<String, dynamic> user) async {
     final bool currentStatus = user['is_active'] as bool;
@@ -702,92 +450,6 @@ class _AdminPageState extends State<AdminPage> {
       }
     }
   }
-
-  /*
-  Future<void> _toggleUserStatus(Map<String, dynamic> user) async {
-    final bool currentStatus = user['is_active'] as bool;
-    final bool newStatus = !currentStatus;
-    final String actionText = newStatus ? '啟用' : '禁用';
-
-    // 顯示確認對話框
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('確認$actionText帳號'),
-        content: Text(
-            '確定要$actionText使用者 "${user['display_name'] ?? user['username']}" 的帳號嗎？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(
-              foregroundColor: newStatus ? Colors.green : Colors.red,
-            ),
-            child: Text(actionText),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed != true) return;
-
-    setState(() {
-      _isLoading = true; // 可以考慮為單個項目設置載入狀態，而非整個列表
-    });
-
-    try {
-      final response = await http.put(
-        Uri.parse(
-            'http://172.20.10.4:3000/api/users/${user['user_id']}/status'),
-        headers: {
-          'Content-Type': 'application/json; charset=UTF-8',
-          // 'Authorization': 'Bearer YOUR_ACCESS_TOKEN', // 如果需要認證
-        },
-        body: jsonEncode(<String, bool>{
-          'isActive': newStatus,
-        }),
-      );
-
-      if (!mounted) return;
-
-      final responseData = jsonDecode(response.body);
-      if (response.statusCode == 200 && responseData['success'] == true) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('使用者帳號已$actionText'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        _fetchUsers(); // 重新載入使用者列表以更新狀態
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(responseData['message'] ?? '操作失敗，請稍後再試'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('發生錯誤: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-  */
 
   void _navigateToAddUser() {
     Navigator.push(
@@ -1177,7 +839,23 @@ class _AdminPageState extends State<AdminPage> {
           icon: const Icon(Icons.restore),
           label: const Text('還原資料庫'),
           onPressed: () {
-            // 實作還原資料庫功能
+            showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                title: const Text('還原資料庫'),
+                content: const Text(
+                  '還原功能將會覆蓋現有資料庫內容，此操作無法復原。\n\n'
+                  '目前此功能需要在伺服器端手動操作（透過管理員 API），'
+                  '請聯繫系統管理員進行還原。',
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.of(ctx).pop(),
+                    child: const Text('了解'),
+                  ),
+                ],
+              ),
+            );
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.orange,

@@ -4,6 +4,7 @@ import 'services/carbon_calculation_service.dart';
 import '../services/api_service.dart'; // 引入 ApiService
 import 'tree_edit_page_v2.dart'; // [V2] 引入新的編輯頁面
 import '../services/tree_service.dart'; // [V2] 引入 TreeService
+import 'services/auth_service.dart'; // 角色權限
 import 'constants/colors.dart';
 
 class TreeSurveyDetailPage extends StatefulWidget {
@@ -17,6 +18,8 @@ class TreeSurveyDetailPage extends StatefulWidget {
 
 class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
   late Map<String, dynamic> _treeData;
+  bool _canEdit = false;
+  bool _canDelete = false;
 
   @override
   void initState() {
@@ -24,6 +27,19 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
     // 觸發一次性的背景清理任務
     ApiService.triggerCleanup();
     _treeData = Map<String, dynamic>.from(widget.treeData);
+    _loadPermissions();
+  }
+
+  Future<void> _loadPermissions() async {
+    final authService = AuthService();
+    final canEdit = await authService.canEditTrees();
+    final canDelete = await authService.canDeleteTrees();
+    if (mounted) {
+      setState(() {
+        _canEdit = canEdit;
+        _canDelete = canDelete;
+      });
+    }
   }
 
   void _editTree() async {
@@ -206,16 +222,18 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
         ),
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.edit_rounded),
-            tooltip: '編輯',
-            onPressed: _editTree,
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline_rounded),
-            tooltip: '刪除資料',
-            onPressed: _confirmAndDeleteTree,
-          ),
+          if (_canEdit)
+            IconButton(
+              icon: const Icon(Icons.edit_rounded),
+              tooltip: '編輯',
+              onPressed: _editTree,
+            ),
+          if (_canDelete)
+            IconButton(
+              icon: const Icon(Icons.delete_outline_rounded),
+              tooltip: '刪除資料',
+              onPressed: _confirmAndDeleteTree,
+            ),
           const SizedBox(width: 8),
         ],
       ),

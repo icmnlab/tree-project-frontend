@@ -6,6 +6,7 @@ import 'dart:io';
 import 'services/tree_service.dart';
 import 'services/admin_service.dart';
 import 'services/api_service.dart';
+import 'services/auth_service.dart'; // 角色權限
 import 'constants/colors.dart';
 
 class TreeListPage extends StatefulWidget {
@@ -49,6 +50,10 @@ class _TreeListPageState extends State<TreeListPage> {
   bool _isExportingExcel = false;
   bool _isExportingPdf = false;
 
+  // 角色權限
+  bool _canEdit = false;
+  bool _canDelete = false;
+
   final TreeService _treeService = TreeService();
 
   @override
@@ -58,6 +63,19 @@ class _TreeListPageState extends State<TreeListPage> {
     ApiService.triggerCleanup();
 
     _fetchTrees();
+    _loadPermissions();
+  }
+
+  Future<void> _loadPermissions() async {
+    final authService = AuthService();
+    final canEdit = await authService.canEditTrees();
+    final canDelete = await authService.canDeleteTrees();
+    if (mounted) {
+      setState(() {
+        _canEdit = canEdit;
+        _canDelete = canDelete;
+      });
+    }
   }
 
   @override
@@ -99,43 +117,6 @@ class _TreeListPageState extends State<TreeListPage> {
       });
     }
   }
-  /*
-  Future<void> _fetchTrees() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = '';
-    });
-
-    try {
-      final response = await http.get(
-        Uri.parse('http://172.20.10.4:3000/api/tree_survey'),
-      );
-
-      if (response.statusCode == 200) {
-        final List<dynamic> data = jsonDecode(response.body);
-        setState(() {
-          _trees = List<Map<String, dynamic>>.from(data);
-          _projects = [
-            '全部',
-            ..._trees.map((t) => t['專案名稱'] as String).toSet().toList()
-          ];
-          _filterAndSortTrees();
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _errorMessage = '無法載入資料 (狀態碼: ${response.statusCode})';
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _errorMessage = '發生錯誤: $e';
-        _isLoading = false;
-      });
-    }
-  }
-  */
 
   void _filterAndSortTrees() {
     final searchText = _searchController.text.toLowerCase();
@@ -248,12 +229,22 @@ class _TreeListPageState extends State<TreeListPage> {
     });
   }
 
+  /// 取得目前過濾後的專案代碼列表
+  List<String> _getFilteredProjectCodes() {
+    final codes = _filteredTrees
+        .map((t) => t['專案代碼']?.toString() ?? '')
+        .where((c) => c.isNotEmpty)
+        .toSet()
+        .toList();
+    return codes;
+  }
+
   Future<void> _exportToExcel() async {
-    if (_isExportingExcel) return; // 防止重複點擊
+    if (_isExportingExcel) return;
     
     setState(() => _isExportingExcel = true);
     try {
-      final result = await ExportService.downloadExcel([]);
+      final result = await ExportService.downloadExcel(_getFilteredProjectCodes());
       if (mounted) {
         if (result.success) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -277,43 +268,13 @@ class _TreeListPageState extends State<TreeListPage> {
       }
     }
   }
-  /*
-  Future<void> _exportToExcel() async {
-    try {
-      final response = await http.get(
-        Uri.parse('http://172.20.10.4:3000/api/export/excel'),
-      );
-
-      if (response.statusCode == 200) {
-        // 在實際應用中，這裡需要處理檔案下載
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Excel 檔案已準備好下載')),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('匯出失敗')),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('匯出時發生錯誤: $e')),
-        );
-      }
-    }
-  }
-  */
 
   Future<void> _exportToPDF() async {
     if (_isExportingPdf) return; // 防止重複點擊
     
     setState(() => _isExportingPdf = true);
     try {
-      final result = await ExportService.downloadPdf([]);
+      final result = await ExportService.downloadPdf(_getFilteredProjectCodes());
       if (mounted) {
         if (result.success) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -337,36 +298,6 @@ class _TreeListPageState extends State<TreeListPage> {
       }
     }
   }
-  /*
-  Future<void> _exportToPDF() async {
-    try {
-      final response = await http.get(
-        Uri.parse('http://172.20.10.4:3000/api/export/pdf'),
-      );
-
-      if (response.statusCode == 200) {
-        // 在實際應用中，這裡需要處理檔案下載
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('PDF 檔案已準備好下載')),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('匯出失敗')),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('匯出時發生錯誤: $e')),
-        );
-      }
-    }
-  }
-  */
 
   Future<void> _batchDelete() async {
     if (_selectedIndices.isEmpty) {
@@ -420,63 +351,6 @@ class _TreeListPageState extends State<TreeListPage> {
       }
     }
   }
-  /*
-  Future<void> _batchDelete() async {
-    if (_selectedIndices.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('請先選擇要刪除的項目')),
-      );
-      return;
-    }
-
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('確認刪除'),
-        content: Text('確定要刪除選中的 ${_selectedIndices.length} 筆資料嗎？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('確定'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      try {
-        for (final index in _selectedIndices) {
-          final tree = _filteredTrees[index];
-          final response = await http.delete(
-            Uri.parse('${ApiService.baseUrl}/tree_survey/${tree['id']}'),
-          );
-
-          if (response.statusCode != 200) {
-            throw Exception('刪除失敗: ${response.statusCode}');
-          }
-        }
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('批次刪除成功')),
-          );
-          _toggleSelectionMode();
-          _fetchTrees();
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('刪除時發生錯誤: $e')),
-          );
-        }
-      }
-    }
-  }
-  */
 
   Future<void> _importFromExcel() async {
     try {
@@ -560,101 +434,6 @@ class _TreeListPageState extends State<TreeListPage> {
       }
     }
   }
-  /*
-  Future<void> _importFromExcel() async {
-    try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['xlsx', 'xls'],
-      );
-
-      if (result != null) {
-        setState(() {
-          _isImporting = true;
-          _importStatus = '正在讀取檔案...';
-        });
-
-        final file = File(result.files.single.path!);
-        final bytes = await file.readAsBytes();
-        final excel = Excel.decodeBytes(bytes);
-
-        setState(() {
-          _importStatus = '正在解析資料...';
-        });
-
-        final sheet = excel.tables.keys.first;
-        final rows = excel.tables[sheet]!.rows;
-
-        // 跳過標題行
-        final data = rows.skip(1).map((row) {
-          return {
-            '專案區位': row[0]?.value?.toString() ?? '',
-            '專案代碼': row[1]?.value?.toString() ?? '',
-            '專案名稱': row[2]?.value?.toString() ?? '',
-            '系統樹木': row[3]?.value?.toString() ?? '',
-            '專案樹木': row[4]?.value?.toString() ?? '',
-            '樹種編號': row[5]?.value?.toString() ?? '',
-            '樹種名稱': row[6]?.value?.toString() ?? '',
-            'X坐標': double.tryParse(row[7]?.value?.toString() ?? '0') ?? 0,
-            'Y坐標': double.tryParse(row[8]?.value?.toString() ?? '0') ?? 0,
-            '狀況': row[9]?.value?.toString() ?? '',
-            '註記': row[10]?.value?.toString() ?? '',
-            '樹木備註': row[11]?.value?.toString() ?? '',
-            '樹高（公尺）': double.tryParse(row[12]?.value?.toString() ?? '0') ?? 0,
-            '胸徑（公分）': double.tryParse(row[13]?.value?.toString() ?? '0') ?? 0,
-            '調查備註': row[14]?.value?.toString() ?? '',
-            '調查時間':
-                row[15]?.value?.toString() ?? DateTime.now().toIso8601String(),
-            '碳儲存量': double.tryParse(row[16]?.value?.toString() ?? '0') ?? 0,
-            '推估年碳吸存量': double.tryParse(row[17]?.value?.toString() ?? '0') ?? 0,
-          };
-        }).toList();
-
-        setState(() {
-          _importStatus = '正在上傳資料...';
-        });
-
-        // 批次上傳資料
-        for (var item in data) {
-          final response = await http.post(
-            Uri.parse('${ApiService.baseUrl}/tree_survey'),
-            headers: {
-              'Content-Type': 'application/json',
-              ...ApiService.getAuthHeaders(),
-            },
-            body: jsonEncode(item),
-          );
-
-          if (response.statusCode != 200) {
-            throw Exception('上傳失敗: ${response.statusCode}');
-          }
-        }
-
-        setState(() {
-          _isImporting = false;
-          _importStatus = '';
-        });
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('資料匯入成功')),
-          );
-          _fetchTrees();
-        }
-      }
-    } catch (e) {
-      setState(() {
-        _isImporting = false;
-        _importStatus = '';
-      });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('匯入失敗: $e')),
-        );
-      }
-    }
-  }
-  */
 
   Future<void> _batchUpdate() async {
     if (_selectedIndices.isEmpty) {
@@ -741,97 +520,6 @@ class _TreeListPageState extends State<TreeListPage> {
       }
     }
   }
-  /*
-  Future<void> _batchUpdate() async {
-    if (_selectedIndices.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('請先選擇要更新的項目')),
-      );
-      return;
-    }
-
-    final result = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('批次更新'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                decoration: const InputDecoration(
-                  labelText: '專案區位',
-                  hintText: '留空表示不更新',
-                ),
-                onChanged: (value) => _batchUpdateData['專案區位'] = value,
-              ),
-              TextField(
-                decoration: const InputDecoration(
-                  labelText: '專案代碼',
-                  hintText: '留空表示不更新',
-                ),
-                onChanged: (value) => _batchUpdateData['專案代碼'] = value,
-              ),
-              TextField(
-                decoration: const InputDecoration(
-                  labelText: '專案名稱',
-                  hintText: '留空表示不更新',
-                ),
-                onChanged: (value) => _batchUpdateData['專案名稱'] = value,
-              ),
-              // 可以添加更多欄位
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, _batchUpdateData),
-            child: const Text('確定'),
-          ),
-        ],
-      ),
-    );
-
-    if (result != null) {
-      try {
-        for (final index in _selectedIndices) {
-          final tree = _filteredTrees[index];
-          final updateData = Map<String, dynamic>.from(result);
-          updateData.removeWhere(
-              (key, value) => value == null || value.toString().isEmpty);
-
-          final response = await http.put(
-            Uri.parse('${ApiService.baseUrl}/tree_survey/${tree['id']}'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode(updateData),
-          );
-
-          if (response.statusCode != 200) {
-            throw Exception('更新失敗: ${response.statusCode}');
-          }
-        }
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('批次更新成功')),
-          );
-          _toggleSelectionMode();
-          _fetchTrees();
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('更新時發生錯誤: $e')),
-          );
-        }
-      }
-    }
-  }
-  */
 
   final Map<String, dynamic> _batchUpdateData = {};
 
@@ -870,16 +558,18 @@ class _TreeListPageState extends State<TreeListPage> {
         iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           if (_isSelectionMode) ...[
-            IconButton(
-              icon: const Icon(Icons.edit_rounded),
-              tooltip: '批次更新',
-              onPressed: _batchUpdate,
-            ),
-            IconButton(
-              icon: const Icon(Icons.delete_outline_rounded),
-              tooltip: '批次刪除',
-              onPressed: _batchDelete,
-            ),
+            if (_canEdit)
+              IconButton(
+                icon: const Icon(Icons.edit_rounded),
+                tooltip: '批次更新',
+                onPressed: _batchUpdate,
+              ),
+            if (_canDelete)
+              IconButton(
+                icon: const Icon(Icons.delete_outline_rounded),
+                tooltip: '批次刪除',
+                onPressed: _batchDelete,
+              ),
             IconButton(
               icon: const Icon(Icons.close_rounded),
               tooltip: '取消選擇',

@@ -5,6 +5,7 @@ import 'screens/ai_chat_page.dart';
 import 'tree_survey_detail_page.dart';
 import 'services/tree_service.dart'; // 引入 TreeService
 import 'widgets/add_tree_dialog.dart'; // 引入 AddTreeSelectionDialog
+import 'services/auth_service.dart'; // 角色權限
 import 'constants/colors.dart';
 
 class TreeSurveyPage extends StatefulWidget {
@@ -23,6 +24,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
   bool _isLoading = true;
   String _errorMessage = '';
   final TreeService _treeService = TreeService();
+  bool _canEdit = false;
 
   // 記錄日誌用的輔助函數
   void _logDebug(String message) {
@@ -34,6 +36,15 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
     super.initState();
     _fetchTrees();
     _cleanupUnusedData();
+    _loadPermissions();
+  }
+
+  Future<void> _loadPermissions() async {
+    final authService = AuthService();
+    final canEdit = await authService.canEditTrees();
+    if (mounted) {
+      setState(() => _canEdit = canEdit);
+    }
   }
 
   Future<void> _fetchTrees() async {
@@ -672,49 +683,51 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
               ],
             ),
       ),
-      floatingActionButton: Padding(
-        padding: EdgeInsets.only(
-            bottom: Navigator.canPop(context)
-                ? 16
-                : 80), // 如果是 push 進來的(獨立頁面)則不需太高，如果是 Tab 則需避開底部導航
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [AppColors.portBlue, AppColors.portBlue.withOpacity(0.85)],
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: AppColors.portBlue.withOpacity(0.4),
-                blurRadius: 16,
-                spreadRadius: 0,
-                offset: const Offset(0, 6),
+      floatingActionButton: _canEdit
+          ? Padding(
+              padding: EdgeInsets.only(
+                  bottom: Navigator.canPop(context)
+                      ? 16
+                      : 80), // 如果是 push 進來的(獨立頁面)則不需太高，如果是 Tab 則需避開底部導航
+              child: Container(
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [AppColors.portBlue, AppColors.portBlue.withOpacity(0.85)],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.portBlue.withOpacity(0.4),
+                      blurRadius: 16,
+                      spreadRadius: 0,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: FloatingActionButton(
+                  onPressed: () {
+                    AddTreeSelectionDialog.show(
+                      context,
+                      initialData: widget.projectName != null
+                          ? {'project_name': widget.projectName}
+                          : widget.areaName != null
+                              ? {'project_location': widget.areaName}
+                              : {},
+                      onDataChanged: () {
+                        _cleanupUnusedData().then((_) => _fetchTrees());
+                      },
+                    );
+                  },
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                  tooltip: '新增樹木資料',
+                  child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
+                ),
               ),
-            ],
-          ),
-          child: FloatingActionButton(
-            onPressed: () {
-              AddTreeSelectionDialog.show(
-                context,
-                initialData: widget.projectName != null
-                    ? {'project_name': widget.projectName}
-                    : widget.areaName != null
-                        ? {'project_location': widget.areaName}
-                        : {},
-                onDataChanged: () {
-                  _cleanupUnusedData().then((_) => _fetchTrees());
-                },
-              );
-            },
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            tooltip: '新增樹木資料',
-            child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
-          ),
-        ),
-      ),
+            )
+          : null,
     );
   }
 
