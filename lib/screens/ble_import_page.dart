@@ -8,8 +8,7 @@ import '../services/ble_packet_decoder.dart'; // 引入封包解碼器
 import '../services/pending_measurement_service.dart'; // 待測量服務
 import '../services/v3/data_filter_service.dart'; // V3 數據過濾服務
 import '../services/v3/project_boundary_service.dart'; // 專案邊界服務（自動匹配專案）
-import 'manual_input_page.dart'; // 引入手動補全頁面
-import 'manual_input_page_v2.dart'; // 引入 V2 頁面
+import 'manual_input_page_v2.dart'; // V2 批次匯入
 import 'pending_measurement_task_page.dart'; // 引入待測量任務頁面
 
 class BleImportPage extends StatefulWidget {
@@ -22,7 +21,7 @@ class BleImportPage extends StatefulWidget {
 class _BleImportPageState extends State<BleImportPage> {
   // 狀態變數
   bool _isScanning = false;
-  bool _useV2Import = true; // [Default: V2] 預設使用新版批量匯入
+  // V2 批次匯入模式（V1 已退役）
   List<ScanResult> _scanResults = [];
   BluetoothDevice? _connectedDevice;
   bool _isConnecting = false;
@@ -668,26 +667,6 @@ class _BleImportPageState extends State<BleImportPage> {
       appBar: AppBar(
         title: const Text('從儀器匯入數據'),
         actions: [
-          // [DEV] V2 切換開關
-          Row(
-            children: [
-              const Text('V2', style: TextStyle(fontSize: 12)),
-              Switch(
-                value: _useV2Import,
-                onChanged: (val) {
-                  setState(() => _useV2Import = val);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content:
-                          Text(val ? '已切換至 V2 匯入 (批量API)' : '已切換至 V1 匯入 (舊版)'),
-                      duration: const Duration(seconds: 1),
-                    ),
-                  );
-                },
-                activeColor: Colors.tealAccent,
-              ),
-            ],
-          ),
           if (_connectedDevice != null)
             IconButton(
               icon: const Icon(Icons.bluetooth_disabled),
@@ -938,40 +917,23 @@ class _BleImportPageState extends State<BleImportPage> {
                                 return;
                               }
 
-                              // 根據開關決定導航到 V1 或 V2
-                              if (_useV2Import) {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        ManualInputPageV2(importedData: filteredData),
-                                  ),
-                                ).then((_) {
-                                  // [FIX] 從手動頁面返回時，重置所有狀態，防止殘留數據導致的崩潰
-                                  _resetState();
-                                });
-                              } else {
-                                // 舊版邏輯
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        ManualInputPage(importedData: filteredData),
-                                  ),
-                                ).then((_) {
-                                  // [FIX] 從手動頁面返回時，重置所有狀態，防止殘留數據導致的崩潰
-                                  _resetState();
-                                });
-                              }
+                              // 使用 V2 批次匯入
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      ManualInputPageV2(importedData: filteredData),
+                                ),
+                              ).then((_) {
+                                _resetState();
+                              });
                             }
                           : null,
                       child: Text(
-                          _useV2Import
-                              ? '解析並匯入數據 (V2 Batch)'
-                              : '解析並匯入數據 (${_receivedCsvLines.length}筆)',
-                          style: TextStyle(
-                              color: _useV2Import ? Colors.teal : null,
-                              fontWeight: _useV2Import ? FontWeight.bold : null)),
+                          '解析並匯入數據 (${_receivedCsvLines.length}筆)',
+                          style: const TextStyle(
+                              color: Colors.teal,
+                              fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],

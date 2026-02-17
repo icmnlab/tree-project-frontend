@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import '../constants/colors.dart';
-import '../tree_input_page.dart';
 import '../tree_input_page_v2.dart';
-import '../screens/v3/manual_input_page_v3.dart'; // Import V3 page
+import '../screens/v3/manual_input_page_v3.dart';
 
 /// Modern minimalist dialog for selecting tree input mode
 /// Features: Glassmorphism effect, smooth animations, clean typography
@@ -107,18 +106,19 @@ class AddTreeSelectionDialog extends StatelessWidget {
               child: Column(
                 children: [
                   _ModeOptionCard(
-                    icon: Icons.article_rounded,
+                    icon: Icons.auto_awesome_rounded,
                     iconColor: AppColors.accent,
                     iconBgColor: AppColors.accentSurface,
-                    title: '標準模式',
-                    subtitle: '傳統輸入介面，前端生成編號',
-                    badge: 'V1',
+                    title: '智慧模式',
+                    subtitle: 'GPS 定位 + AI 辨識 + 影像測量',
+                    badge: '推薦',
+                    badgeColor: AppColors.accent,
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => TreeInputPage(treeData: initialData),
+                          builder: (context) => const ManualInputPageV3(),
                         ),
                       ).then((_) => onDataChanged());
                     },
@@ -129,8 +129,8 @@ class AddTreeSelectionDialog extends StatelessWidget {
                     iconColor: AppColors.primary,
                     iconBgColor: AppColors.primarySurface,
                     title: '快速模式',
-                    subtitle: '優化輸入體驗，後端生成編號',
-                    badge: 'V2 Beta',
+                    subtitle: '精簡表單輸入，後端自動編號',
+                    badge: '表單',
                     badgeColor: AppColors.tipcTeal,
                     onTap: () {
                       Navigator.pop(context);
@@ -138,25 +138,6 @@ class AddTreeSelectionDialog extends StatelessWidget {
                         context,
                         MaterialPageRoute(
                           builder: (context) => TreeInputPageV2(treeData: initialData),
-                        ),
-                      ).then((_) => onDataChanged());
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  _ModeOptionCard(
-                    icon: Icons.science_rounded,
-                    iconColor: Colors.deepPurple,
-                    iconBgColor: Colors.deepPurple.shade50,
-                    title: '整合模式',
-                    subtitle: 'V3 全新流程：影像測量 + AI 辨識',
-                    badge: 'V3 Dev',
-                    badgeColor: Colors.deepPurple,
-                    onTap: () {
-                      Navigator.pop(context);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const ManualInputPageV3(),
                         ),
                       ).then((_) => onDataChanged());
                     },

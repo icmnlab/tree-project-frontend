@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'tree_input_page.dart';
+import 'tree_input_page_v2.dart';
 import 'tree_survey_page.dart';
 import 'screens/ai_chat_page.dart';
 import '../services/project_service.dart'; // 引入 ProjectService
@@ -137,10 +137,10 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
       context,
       MaterialPageRoute(
         builder: (context) =>
-            TreeInputPage(treeData: {'專案名稱': widget.projectName}),
+            TreeInputPageV2(treeData: {'project_name': widget.projectName}),
       ),
     ).then((_) {
-      _fetchProjectData(); // 刷新頁面
+      _fetchProjectData();
     });
   }
 

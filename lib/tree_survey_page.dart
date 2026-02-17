@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'tree_input_page.dart';
-import 'tree_input_page_v2.dart'; // 引入 V2 頁面
+import 'tree_input_page_v2.dart';
 import 'screens/ai_chat_page.dart';
 import 'tree_survey_detail_page.dart';
 import 'services/tree_service.dart'; // 引入 TreeService
@@ -184,59 +183,6 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
 
     // 否則返回原始 ID
     return id;
-  }
-
-  // V1 導航邏輯 - 保留作為備用
-  // ignore: unused_element
-  void _navigateToAddProject() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => TreeInputPage(
-          treeData: widget.projectName != null
-              ? {'專案名稱': widget.projectName}
-              : widget.areaName != null
-                  ? {'專案區位': widget.areaName}
-                  : {},
-        ),
-      ),
-    ).then((_) {
-      setState(() {
-        // 返回頁面時，先清理，再獲取最新樹木數據
-        _cleanupUnusedData().then((_) => _fetchTrees());
-      });
-    });
-  }
-
-  // V2 導航邏輯 - 保留作為備用
-  // ignore: unused_element
-  void _navigateToAddProjectV2() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('進入 V2 新增模式 (後端生成 ID)'),
-        backgroundColor: Colors.teal,
-        duration: Duration(seconds: 1),
-      ),
-    );
-
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => TreeInputPageV2(
-          treeData: widget.projectName != null
-              ? {
-                  'project_name': widget.projectName
-                } // 注意：V2 可能使用不同的鍵名，但在 populate 時會映射
-              : widget.areaName != null
-                  ? {'project_location': widget.areaName}
-                  : {},
-        ),
-      ),
-    ).then((_) {
-      setState(() {
-        _cleanupUnusedData().then((_) => _fetchTrees());
-      });
-    });
   }
 
   void _showAiAssistant() {
