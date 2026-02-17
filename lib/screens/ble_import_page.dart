@@ -7,6 +7,7 @@ import '../services/ble_data_processor.dart'; // 引入解析器
 import '../services/ble_packet_decoder.dart'; // 引入封包解碼器
 import '../services/pending_measurement_service.dart'; // 待測量服務
 import '../services/v3/data_filter_service.dart'; // V3 數據過濾服務
+import '../services/v3/project_boundary_service.dart'; // 專案邊界服務（自動匹配專案）
 import 'manual_input_page.dart'; // 引入手動補全頁面
 import 'manual_input_page_v2.dart'; // 引入 V2 頁面
 import 'pending_measurement_task_page.dart'; // 引入待測量任務頁面
@@ -1078,6 +1079,7 @@ class _BleImportPageState extends State<BleImportPage> {
 
   // 儲存到待測量任務
   Future<void> _saveToPendingMeasurements(String batchName) async {
+    bool loadingDialogShown = false;
     try {
       // 解析數據
       String fullData = _dataBuffer.toString();
@@ -1123,23 +1125,54 @@ class _BleImportPageState extends State<BleImportPage> {
       }
 
       // 顯示載入中
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => const Center(
+            child: CircularProgressIndicator(),
+          ),
+        );
+        loadingDialogShown = true;
+      }
 
-      // 呼叫服務儲存（使用過濾後的資料）
+      // 嘗試根據第一棵樹的 GPS 座標自動匹配專案
+      String? autoProjectArea;
+      String? autoProjectCode;
+      String? autoProjectName;
+      try {
+        final firstTree = filteredData.first;
+        final lat = double.tryParse(firstTree['latitude']?.toString() ?? '');
+        final lon = double.tryParse(firstTree['longitude']?.toString() ?? '');
+        if (lat != null && lon != null && lat != 0 && lon != 0) {
+          final boundaryService = ProjectBoundaryService();
+          await boundaryService.getAllBoundaries(); // 確保快取已載入
+          final matchResult = boundaryService.findProjectByCoordinate(lat: lat, lng: lon);
+          if (matchResult.matched) {
+            autoProjectName = matchResult.projectName;
+            autoProjectCode = matchResult.projectCode;
+            debugPrint('[BLE] 自動匹配專案: $autoProjectName ($autoProjectCode)');
+          }
+        }
+      } catch (e) {
+        debugPrint('[BLE] 專案自動匹配失敗（不影響儲存）: $e');
+      }
+
+      // 呼叫服務儲存（使用過濾後的資料，附帶自動匹配的專案資訊）
       final service = PendingMeasurementService();
       final result = await service.createAndUploadFromBle(
         bleData: filteredData,
         batchName: batchName,
+        projectArea: autoProjectArea,
+        projectCode: autoProjectCode,
+        projectName: autoProjectName,
       );
 
       // 關閉載入中
-      if (mounted) Navigator.pop(context);
+      if (mounted && loadingDialogShown) {
+        Navigator.of(context).pop();
+        loadingDialogShown = false;
+      }
 
       if (result['success'] == true) {
         final count = result['count'] ?? filteredData.length;
@@ -1174,9 +1207,12 @@ class _BleImportPageState extends State<BleImportPage> {
         );
       }
     } catch (e) {
-      // 確保載入中對話框已關閉
-      if (mounted) Navigator.of(context).pop();
+      // 安全關閉載入對話框（僅在確實有顯示時才 pop）
+      if (mounted && loadingDialogShown) {
+        Navigator.of(context).pop();
+      }
       
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('發生錯誤: $e'),

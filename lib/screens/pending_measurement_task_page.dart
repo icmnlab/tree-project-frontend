@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 import '../models/pending_tree_measurement.dart';
 import '../services/pending_measurement_service.dart';
 import 'v3/integrated_tree_form_page.dart'; // V3 整合表單
@@ -38,7 +39,8 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   // 位置追蹤
   Position? _userPosition;
   StreamSubscription<Position>? _positionSubscription;
-  double? _currentHeading; // 用戶朝向
+  StreamSubscription<MagnetometerEvent>? _magnetometerSubscription;
+  double? _currentHeading; // 用戶朝向（磁北基準）
   
   // 導航狀態
   NavigationState _navState = NavigationState.selectingTask;
@@ -60,6 +62,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   @override
   void dispose() {
     _positionSubscription?.cancel();
+    _magnetometerSubscription?.cancel();
     _arrowAnimController.dispose();
     super.dispose();
   }
@@ -106,14 +109,35 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
         await Geolocator.requestPermission();
       }
       
-      // 開始追蹤位置
+      // 開始追蹤位置（含方向）
       _positionSubscription = Geolocator.getPositionStream(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
           distanceFilter: 1, // 每移動 1m 更新
         ),
       ).listen((position) {
-        if (mounted) setState(() => _userPosition = position);
+        if (mounted) {
+          setState(() {
+            _userPosition = position;
+            // Position.heading 是移動方向（0-360 度），速度夠快時才準確
+            if (position.heading >= 0 && position.speed > 0.3) {
+              _currentHeading = position.heading;
+            }
+          });
+        }
+      });
+      
+      // 使用磁力計提供靜止時的方向
+      _magnetometerSubscription = magnetometerEventStream()?.listen((event) {
+        if (!mounted) return;
+        // 用 atan2 從磁力計 x,y 計算磁北方向
+        final heading = (math.atan2(-event.x, event.y) * 180 / math.pi + 360) % 360;
+        setState(() {
+          // 靜止時用磁力計，移動時 GPS heading 更準
+          if (_userPosition == null || _userPosition!.speed <= 0.3) {
+            _currentHeading = heading;
+          }
+        });
       });
       
     } catch (e) {

@@ -391,16 +391,9 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
 
       Map<String, dynamic> response;
       if (_isEditing) {
-        // 編輯模式：暫時沿用舊 API (因為 V2 Create 僅負責新增)
-        // 這裡可以之後再升級為 V2 Update
-        final updateData = {
-          // ... 舊版所需的欄位 ...
-          ...treeData,
-          "系統樹木": systemTreeController.text,
-          "專案樹木": projectTreeController.text,
-        };
-        response = await _treeService.updateTree(
-            _currentTreeData!['id'].toString(), updateData);
+        // 編輯模式：使用 V2 Update API
+        response = await _treeService.updateTreeV2(
+            _currentTreeData!['id'].toString(), treeData);
       } else {
         // 新增模式：呼叫 V2 Create API
         response = await _treeService.createTreeV2(treeData);

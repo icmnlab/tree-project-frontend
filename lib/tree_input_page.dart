@@ -13,6 +13,13 @@ import 'dart:async';
 // Import services
 import 'services/tree_service.dart';
 import 'services/project_service.dart';
+
+/// 生成安全的備用 ID（用時間戳避免碰撞，比隨機數安全）
+int _generateSafeFallbackId() {
+  final now = DateTime.now();
+  // 用時分秒毫秒組成 6 位數字，比 4 位隨機數碰撞機率低很多
+  return (now.hour * 100000) + (now.minute * 1000) + (now.second * 10) + (now.millisecond ~/ 100) + 100000;
+}
 import 'services/project_area_service.dart';
 import 'services/location_service.dart';
 import 'services/species_service.dart';
@@ -410,8 +417,7 @@ class _TreeInputPageState extends State<TreeInputPage> {
         if (response['success'] == true) {
           systemTreeController.text = 'ST-${response['nextNumber']}';
         } else {
-          final random = Random();
-          final randomNumber = 1000 + random.nextInt(9000);
+          final randomNumber = _generateSafeFallbackId();
           systemTreeController.text = 'ST-$randomNumber';
         }
         /*
@@ -439,8 +445,7 @@ class _TreeInputPageState extends State<TreeInputPage> {
         */
       } catch (e) {
         // 如果發生錯誤，使用隨機編號
-        final random = Random();
-        final randomNumber = 1000 + random.nextInt(9000);
+        final randomNumber = _generateSafeFallbackId();
         systemTreeController.text = 'ST-$randomNumber';
       }
     }
@@ -458,8 +463,7 @@ class _TreeInputPageState extends State<TreeInputPage> {
           if (response['success'] == true) {
             projectTreeController.text = 'PT-${response['nextNumber']}';
           } else {
-            final random = Random();
-            final randomNumber = 1000 + random.nextInt(9000);
+            final randomNumber = _generateSafeFallbackId();
             projectTreeController.text = 'PT-$randomNumber';
           }
           /*
@@ -486,15 +490,12 @@ class _TreeInputPageState extends State<TreeInputPage> {
           }
           */
         } catch (e) {
-          // 如果發生錯誤，使用隨機編號
-          final random = Random();
-          final randomNumber = 1000 + random.nextInt(9000);
+          final randomNumber = _generateSafeFallbackId();
           projectTreeController.text = 'PT-$randomNumber';
         }
       } else {
         // 如果沒有專案代碼，使用隨機編號
-        final random = Random();
-        final randomNumber = 1000 + random.nextInt(9000);
+        final randomNumber = _generateSafeFallbackId();
         projectTreeController.text = 'PT-$randomNumber';
       }
     }
@@ -2128,8 +2129,7 @@ class _TreeInputPageState extends State<TreeInputPage> {
       } else {
         logDebug('API 返回失敗，使用隨機編號');
         // 生成隨機編號作為備用
-        final random = Random();
-        final randomNumber = 1000 + random.nextInt(9000);
+        final randomNumber = _generateSafeFallbackId();
         setState(() {
           systemTreeController.text = 'ST-$randomNumber';
         });
@@ -2158,8 +2158,7 @@ class _TreeInputPageState extends State<TreeInputPage> {
       } else {
         logDebug('系統樹木編號 API 請求失敗，狀態碼: ${response.statusCode}');
         // 生成隨機編號作為備用
-        final random = Random();
-        final randomNumber = 1000 + random.nextInt(9000);
+        final randomNumber = _generateSafeFallbackId();
         setState(() {
           systemTreeController.text = 'ST-$randomNumber';
         });
@@ -2171,17 +2170,14 @@ class _TreeInputPageState extends State<TreeInputPage> {
         await _generateProjectTreeNumber();
       } else {
         // 如果沒有專案代碼，使用隨機編號
-        final random = Random();
-        final randomNumber = 1000 + random.nextInt(9000);
+        final randomNumber = _generateSafeFallbackId();
         setState(() {
           projectTreeController.text = 'PT-$randomNumber';
         });
       }
     } catch (e) {
       logDebug('生成樹木編號時發生錯誤: $e');
-      // 生成隨機編號作為備用
-      final random = Random();
-      final randomNumber = 1000 + random.nextInt(9000);
+      final randomNumber = _generateSafeFallbackId();
       if (mounted) {
         setState(() {
           systemTreeController.text = 'ST-$randomNumber';
