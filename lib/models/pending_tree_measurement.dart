@@ -122,26 +122,49 @@ class PendingTreeMeasurement {
   static double _toRadians(double degrees) => degrees * math.pi / 180;
   static double _toDegrees(double radians) => radians * 180 / math.pi;
   
-  /// 從 VLGEO2 數據計算測站位置
+  /// 從 VLGEO2 數據正向推算樹木位置
   /// 
-  /// VLGEO2 記錄的座標是樹木位置，需要反推測站位置
-  /// 公式：測站位置 = 樹木位置 - (水平距離 × 方位角方向)
+  /// [修正 2026-02] VLGEO2 的 GPS 座標是操作員位置，不是樹木位置。
+  /// 公式：樹木位置 = 操作員GPS + offset(HD, AZ)
+  static ({double lat, double lon}) calculateTreePositionFromStation({
+    required double stationLat,
+    required double stationLon,
+    required double horizontalDistance,
+    required double azimuth,
+  }) {
+    const double R = 6371000;
+    
+    double azimuthRad = _toRadians(azimuth);
+    double stationLatRad = _toRadians(stationLat);
+    double stationLonRad = _toRadians(stationLon);
+    double angularDistance = horizontalDistance / R;
+    
+    double treeLatRad = math.asin(
+      math.sin(stationLatRad) * math.cos(angularDistance) +
+      math.cos(stationLatRad) * math.sin(angularDistance) * math.cos(azimuthRad)
+    );
+    
+    double treeLonRad = stationLonRad + math.atan2(
+      math.sin(azimuthRad) * math.sin(angularDistance) * math.cos(stationLatRad),
+      math.cos(angularDistance) - math.sin(stationLatRad) * math.sin(treeLatRad)
+    );
+    
+    return (lat: _toDegrees(treeLatRad), lon: _toDegrees(treeLonRad));
+  }
+
+  /// [向後相容] 反推測站位置
+  @Deprecated('Use calculateTreePositionFromStation instead. GPS coords are station, not tree.')
   static ({double lat, double lon}) calculateStationPosition({
     required double treeLat,
     required double treeLon,
     required double horizontalDistance,
     required double azimuth,
   }) {
-    const double R = 6371000; // 地球半徑 (公尺)
-    
-    // 反向方位角 (樹 → 測站)
+    const double R = 6371000;
     double reverseAzimuth = (azimuth + 180) % 360;
     double azimuthRad = _toRadians(reverseAzimuth);
-    
     double treeLatRad = _toRadians(treeLat);
     double treeLonRad = _toRadians(treeLon);
-    
-    // 計算測站位置
     double angularDistance = horizontalDistance / R;
     
     double stationLatRad = math.asin(

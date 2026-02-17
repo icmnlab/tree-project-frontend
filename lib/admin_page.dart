@@ -11,6 +11,7 @@ import 'services/admin_service.dart';
 import 'models/project.dart';
 import 'config/app_config.dart'; // Import AppConfig
 import 'screens/v3/project_boundary_draw_page.dart'; // V3 專案邊界繪製
+import 'screens/csv_import_page.dart'; // [Phase C] CSV 匯入頁面
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 
@@ -1457,6 +1458,10 @@ class _AdminPageState extends State<AdminPage> {
                     icon: Icon(Icons.map),
                     label: Text('專案邊界'),
                   ),
+                  NavigationRailDestination(
+                    icon: Icon(Icons.upload_file),
+                    label: Text('CSV 匯入'),
+                  ),
                 ],
               ),
             if (_isSidebarVisible)
@@ -1479,7 +1484,9 @@ class _AdminPageState extends State<AdminPage> {
                                         ? _buildAdminZone()
                                         : _selectedIndex == 6
                                             ? _buildProjectManagement()
-                                            : const ProjectBoundaryDrawPage(),
+                                            : _selectedIndex == 7
+                                                ? const ProjectBoundaryDrawPage()
+                                                : const CsvImportPage(),
               ),
             ),
           ],

@@ -193,6 +193,8 @@ class PureVisionDbhService {
   /// [mode] 精度模式：'fast'(~1.5s), 'balanced'(~3-6s), 'accurate'(~5-10s)
   ///        預設 null 時由 ML Service 決定（通常為 balanced）
   /// [tapX], [tapY] 使用者點擊的樹幹位置（SAM 分割 prompt，Phase 2+）
+  /// [referenceDistanceM] 已知的參考距離（公尺），用於校正深度估計
+  ///        例如手機 GPS 到樹的距離，ML Service 可用此校正 Depth Anything 的相對深度
   Future<AutoMeasureResult> autoMeasureDbh({
     required File imageFile,
     double? focalLengthMm,
@@ -203,6 +205,7 @@ class PureVisionDbhService {
     String? mode,
     int? tapX,
     int? tapY,
+    double? referenceDistanceM,
     bool returnVisualization = true,
     bool returnDetectionVisualization = true,
   }) async {
@@ -210,7 +213,6 @@ class PureVisionDbhService {
       final uri = Uri.parse('$_baseUrl/auto-measure-dbh');
       final request = http.MultipartRequest('POST', uri);
 
-      // 添加 ML API Key 認證
       request.headers.addAll(_authHeaders);
 
       request.files.add(
@@ -234,9 +236,12 @@ class PureVisionDbhService {
       if (phoneModel != null) {
         request.fields['phone_model'] = phoneModel;
       }
-      // 精度模式 (Phase 1+)
       if (mode != null) {
         request.fields['mode'] = mode;
+      }
+      // [Phase 2] 參考距離校正
+      if (referenceDistanceM != null && referenceDistanceM > 0) {
+        request.fields['reference_distance'] = referenceDistanceM.toString();
       }
       // SAM 分割觸碰點 (Phase 2+)
       if (tapX != null) {

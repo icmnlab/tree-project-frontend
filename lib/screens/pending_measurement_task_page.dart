@@ -36,6 +36,11 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   List<PendingTreeMeasurement> _pendingTrees = [];
   PendingTreeMeasurement? _currentTask;
   
+  // [Phase 3] 連續測量進度
+  int _totalTasksInSession = 0;
+  int _completedCount = 0;
+  bool _isTransferring = false;
+  
   // 位置追蹤
   Position? _userPosition;
   StreamSubscription<Position>? _positionSubscription;
@@ -94,6 +99,10 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
         _pendingTrees = trees;
         _userPosition = position;
         _isLoading = false;
+        // [Phase 3] 第一次載入時記錄總數
+        if (_totalTasksInSession == 0 && trees.isNotEmpty) {
+          _totalTasksInSession = trees.length;
+        }
       });
     } catch (e) {
       if (!mounted) return;
@@ -116,17 +125,19 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
       _positionSubscription = Geolocator.getPositionStream(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
-          distanceFilter: 1, // 每移動 1m 更新
+          distanceFilter: 1,
         ),
       ).listen((position) {
         if (mounted) {
           setState(() {
             _userPosition = position;
-            // Position.heading 是移動方向（0-360 度），速度夠快時才準確
             if (position.heading >= 0 && position.speed > 0.3) {
               _currentHeading = position.heading;
             }
           });
+          
+          // [Phase 3] GPS 接近目標時自動推進流程
+          _checkProximityAutoAdvance(position);
         }
       });
       
@@ -174,6 +185,29 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     }
   }
   
+  /// [Phase 3] 當 GPS 接近目標樹木時，自動推進導航狀態
+  void _checkProximityAutoAdvance(Position position) {
+    if (_currentTask == null) return;
+    
+    final task = _currentTask!;
+    
+    // 計算到樹木的距離
+    final distToTree = Geolocator.distanceBetween(
+      position.latitude, position.longitude,
+      task.treeLatitude, task.treeLongitude,
+    );
+    
+    // 導航到測站時：到達 5m 內自動切換到「對準樹木」
+    if (_navState == NavigationState.navigatingToStation && distToTree < 8) {
+      _arrivedAtStation();
+    }
+    
+    // 對準樹木時：到達 5m 內自動觸發測量
+    if (_navState == NavigationState.pointingToTree && distToTree < 5) {
+      _startMeasurement();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -275,6 +309,35 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     
     return Column(
       children: [
+        // [Phase 3] 進度條
+        if (_completedCount > 0 && _totalTasksInSession > 0)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('完成進度 $_completedCount/$_totalTasksInSession',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                    Text('${(_completedCount / _totalTasksInSession * 100).toStringAsFixed(0)}%',
+                        style: TextStyle(fontSize: 12, color: Colors.teal.shade700, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: _completedCount / _totalTasksInSession,
+                    minHeight: 6,
+                    backgroundColor: Colors.grey.shade200,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.teal.shade400),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        
         // 統計卡片
         _buildStatsCard(),
         
@@ -288,6 +351,24 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
             },
           ),
         ),
+        
+        // [Phase 3] Batch transfer 按鈕（有已完成的任務時顯示）
+        if (_completedCount > 0 && widget.sessionId != null)
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child: ElevatedButton.icon(
+              onPressed: _isTransferring ? null : _executeBatchTransfer,
+              icon: _isTransferring
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  : const Icon(Icons.upload),
+              label: Text(_isTransferring ? '轉移中...' : '轉移已完成的測量到正式資料庫'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal,
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 48),
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -644,10 +725,10 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
       _navState = NavigationState.navigatingToStation;
     });
     
-    // 標記為進行中（讓其他用戶看到此樹正在被處理）
+    // 標記為進行中（使用 skip 的 HTTP 方式，只更新 status）
     if (task.id != null) {
       try {
-        await _service.updateMeasurement(task.id!, {'status': 'in_progress'});
+        await _service.skipMeasurement(task.id!, reason: 'in_progress');
       } catch (e) {
         debugPrint('[PendingTask] 設定 in_progress 失敗: $e');
       }
@@ -663,7 +744,6 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   void _startMeasurement() async {
     setState(() => _navState = NavigationState.measuring);
     
-    // 跳轉到 V3 整合式表單頁面
     final success = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (context) => IntegratedTreeFormPage(
@@ -673,30 +753,102 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     );
     
     if (success == true) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('測量已完成並提交'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
+      // [Phase 3] 更新進度
+      setState(() => _completedCount++);
       
-      // 載入下一個任務
       await _loadTasks();
       
       if (_pendingTrees.isNotEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('完成 $_completedCount/$_totalTasksInSession — 自動跳轉下一棵'),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+        // 自動跳到下一棵最近的樹
         _startTask(_pendingTrees.first);
       } else {
+        // [Phase 3] 全部完成，提示 batch transfer
         setState(() {
           _navState = NavigationState.selectingTask;
           _currentTask = null;
         });
+        _showBatchTransferDialog();
       }
     } else {
-      // 用戶取消或返回
       setState(() => _navState = NavigationState.pointingToTree);
     }
+  }
+  
+  /// [Phase 3] 全部完成後顯示 batch transfer 對話框
+  void _showBatchTransferDialog() {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('所有測量已完成'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.check_circle, size: 64, color: Colors.green.shade400),
+            const SizedBox(height: 12),
+            Text('已完成 $_completedCount 棵樹的測量。'),
+            const SizedBox(height: 8),
+            const Text('要立即將數據轉移到正式資料庫嗎？'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('稍後再說'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _executeBatchTransfer();
+            },
+            icon: const Icon(Icons.upload),
+            label: const Text('立即轉移'),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  /// [Phase 3] 執行 batch transfer
+  Future<void> _executeBatchTransfer() async {
+    if (widget.sessionId == null) {
+      _showError('缺少 session ID');
+      return;
+    }
+    
+    setState(() => _isTransferring = true);
+    try {
+      final result = await _service.transferToTreeSurvey(sessionId: widget.sessionId!);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message'] ?? '轉移成功'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      _showError('轉移失敗: $e');
+    } finally {
+      if (mounted) setState(() => _isTransferring = false);
+    }
+  }
+  
+  void _showError(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(msg), backgroundColor: Colors.red),
+    );
   }
   
   void _skipCurrentTask() async {

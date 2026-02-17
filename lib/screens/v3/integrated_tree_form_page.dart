@@ -1,12 +1,14 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../models/pending_tree_measurement.dart';
 import '../../services/pending_measurement_service.dart';
 import '../../services/species_identification_service.dart';
-import '../../services/species_service.dart'; // Import SpeciesService
+import '../../services/species_service.dart';
+import '../../services/pure_vision_dbh_service.dart';
 import '../../services/v3/tree_image_service.dart';
-import '../../services/v3/ml_data_collector.dart'; // ML Data Collector
-import '../../services/ar_measurement_service.dart'; // For MeasurementResult
+import '../../services/v3/ml_data_collector.dart';
+import '../../services/ar_measurement_service.dart';
 import '../pure_vision_dbh_page.dart';
 
 /// V3 整合式樹木測量表單
@@ -44,14 +46,17 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
   final List<String> _statusOptions = ['正常', '枯死', '病蟲害', '傾斜', '斷梢', '空洞', '其他'];
 
   bool _isLoading = false;
-  bool _isIdentifying = false;
+  bool _isAutoPilotRunning = false;
   File? _mainImage;
   String? _speciesConfidence;
+  
+  // [Phase 0.5] 手機 GPS 定位
+  double? _phoneToTreeDistance;
   
   // 樹種資料
   List<Map<String, dynamic>> _allSpecies = [];
   List<Map<String, dynamic>> _speciesSearchResults = [];
-  String? _speciesId; // 記錄使用者選擇的樹種 ID (若有的話)
+  String? _speciesId;
   
   // 測量結果暫存
   double? _measuredDbh;
@@ -60,14 +65,57 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
   
   // AI 辨識暫存
   String? _autoIdentifiedSpeciesName;
-  String? _autoIdentifiedSpeciesId; // 目前 API 可能沒回傳 ID，視情況而定
+  String? _autoIdentifiedSpeciesId;
   List<Map<String, dynamic>>? _aiPredictions;
+  
+  // [Phase 1] AutoPilot 進度
+  String _autoPilotStatus = '';
+  bool _dbhReady = false;
+  bool _speciesReady = false;
 
   @override
   void initState() {
     super.initState();
     _initializeForm();
     _loadSpecies();
+    _acquirePhoneGps();
+  }
+  
+  /// [Phase 0.5] 取得手機 GPS 位置，計算到推算樹木位置的距離
+  Future<void> _acquirePhoneGps() async {
+    try {
+      final permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        await Geolocator.requestPermission();
+      }
+      
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      
+      if (!mounted) return;
+      
+      final dist = Geolocator.distanceBetween(
+        position.latitude, position.longitude,
+        widget.task.treeLatitude, widget.task.treeLongitude,
+      );
+      
+      setState(() {
+        _phoneToTreeDistance = dist;
+      });
+      
+      if (dist > 15) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('您距離目標樹木約 ${dist.toStringAsFixed(0)}m，請確認是否在正確位置'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('[GPS] 定位失敗: $e');
+    }
   }
   
   Future<void> _loadSpecies() async {
@@ -110,22 +158,79 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
         setState(() {
           _mainImage = image;
         });
-        
-        // 自動觸發樹種辨識
-        _identifySpecies(image);
+        // [Phase 1] 拍照後自動啟動 AutoPilot
+        _runAutoPilot(image);
       }
     } catch (e) {
       _showError('拍照失敗: $e');
     }
   }
 
+  /// [Phase 1] AutoPilot 一鍵量測
+  /// 同時觸發 DBH 測量和樹種辨識（並行），自動填入結果
+  Future<void> _runAutoPilot(File image) async {
+    setState(() {
+      _isAutoPilotRunning = true;
+      _autoPilotStatus = 'AI 分析中...';
+      _dbhReady = false;
+      _speciesReady = false;
+    });
+
+    // 並行執行 DBH 量測和樹種辨識
+    await Future.wait([
+      _autoMeasureDbh(image),
+      _identifySpecies(image),
+    ]);
+
+    if (mounted) {
+      setState(() {
+        _isAutoPilotRunning = false;
+        _autoPilotStatus = _dbhReady && _speciesReady
+            ? '分析完成'
+            : _dbhReady ? '樹種辨識需確認' 
+            : _speciesReady ? 'DBH 需確認' 
+            : '需手動確認';
+      });
+    }
+  }
+
+  /// [Phase 1] 自動 DBH 量測（不需進入 PureVisionDbhPage）
+  Future<void> _autoMeasureDbh(File image) async {
+    try {
+      setState(() => _autoPilotStatus = '測量 DBH 中...');
+      
+      final service = PureVisionDbhService();
+      final available = await service.isServiceAvailable();
+      if (!available) {
+        debugPrint('[AutoPilot] ML Service 不可用，跳過自動 DBH');
+        return;
+      }
+
+      final result = await service.autoMeasureDbh(
+        imageFile: image,
+        referenceDistanceM: _phoneToTreeDistance,
+      );
+
+      if (result.success && result.dbhCm != null && mounted) {
+        setState(() {
+          _measuredDbh = result.dbhCm;
+          _measurementConfidence = result.confidence;
+          _measurementMethod = 'autopilot_vision';
+          _dbhController.text = result.dbhCm!.toStringAsFixed(1);
+          _dbhReady = (result.confidence ?? 0) >= 0.6;
+        });
+      }
+    } catch (e) {
+      debugPrint('[AutoPilot] DBH 自動量測失敗: $e');
+    }
+  }
+
   Future<void> _identifySpecies(File image) async {
-    setState(() => _isIdentifying = true);
     
     try {
       final result = await SpeciesIdentificationService.identifyFromFile(
         image,
-        lang: 'zh', // 中文結果
+        lang: 'zh',
       );
       
       if (result['success'] == true && mounted) {
@@ -134,21 +239,20 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
           final bestMatch = results.first;
           final speciesName = bestMatch['species']['scientificNameWithoutAuthor'];
           final commonNames = bestMatch['species']['commonNames'] as List?;
-          final score = (bestMatch['score'] * 100).toStringAsFixed(1);
+          final scoreNum = (bestMatch['score'] as num).toDouble();
+          final score = (scoreNum * 100).toStringAsFixed(1);
           
           String displayName = speciesName;
           if (commonNames != null && commonNames.isNotEmpty) {
             displayName = commonNames.first;
           }
 
-          // 優先使用後端回傳的 localMatch（含自動新增結果）
           String? matchedId;
           final localMatch = result['localMatch'] as Map<String, dynamic>?;
           final wasAutoAdded = result['autoAdded'] == true;
           
           if (localMatch != null && localMatch['id'] != null) {
             matchedId = localMatch['id'].toString();
-            // 若是自動新增的樹種，動態加入本地列表
             if (wasAutoAdded && mounted) {
               setState(() {
                 _allSpecies.add({
@@ -160,7 +264,6 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
               });
             }
           } else {
-            // Fallback: 在本地列表匹配（含同義詞）
             try {
               final match = _allSpecies.firstWhere((s) {
                 final dbName = (s['name'] ?? '').toString().toLowerCase();
@@ -173,20 +276,9 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
                        synonyms.contains(displayLower);
               });
               matchedId = (match['id'] ?? match['樹種編號'])?.toString();
-            } catch (_) {
-              // No match found
-            }
-          }
-          
-          // 構建 SnackBar 訊息
-          String snackMsg = '辨識結果: $displayName (信心度: $score%)';
-          if (wasAutoAdded) {
-            snackMsg += ' [新樹種已自動建檔]';
-          } else if (matchedId != null) {
-            snackMsg += ' [已匹配]';
+            } catch (_) {}
           }
 
-          // [ML Data Collection] 暫存自動辨識結果
           setState(() {
              _autoIdentifiedSpeciesName = displayName;
              _autoIdentifiedSpeciesId = matchedId;
@@ -194,23 +286,48 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
              _speciesConfidence = score;
           });
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(snackMsg),
-              action: SnackBarAction(
-                label: '套用',
-                onPressed: () {
-                  setState(() {
-                    _speciesController.text = displayName;
-                    if (matchedId != null) {
-                      _speciesId = matchedId;
-                    }
-                  });
-                },
-              ),
-              duration: const Duration(seconds: 8),
-            ),
-          );
+          // [Phase 1] 高信心度 (>=50%) 時自動套用，不需手動點「套用」
+          final bool highConfidence = scoreNum >= 0.50;
+          
+          if (highConfidence && _speciesController.text.isEmpty) {
+            setState(() {
+              _speciesController.text = displayName;
+              if (matchedId != null) {
+                _speciesId = matchedId;
+              }
+              _speciesReady = true;
+            });
+            if (mounted && !_isAutoPilotRunning) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('已自動套用: $displayName (信心度: $score%)'),
+                  backgroundColor: Colors.green,
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+            }
+          } else {
+            // 低信心度：提示使用者確認
+            setState(() => _speciesReady = false);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('辨識結果: $displayName (信心度: $score%)'),
+                  action: SnackBarAction(
+                    label: '套用',
+                    onPressed: () {
+                      setState(() {
+                        _speciesController.text = displayName;
+                        if (matchedId != null) _speciesId = matchedId;
+                        _speciesReady = true;
+                      });
+                    },
+                  ),
+                  duration: const Duration(seconds: 8),
+                ),
+              );
+            }
+          }
         }
       } else {
         if (mounted) {
@@ -221,13 +338,10 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       }
     } catch (e) {
       debugPrint('樹種辨識錯誤: $e');
-    } finally {
-      if (mounted) {
-        setState(() => _isIdentifying = false);
-      }
     }
   }
 
+  /// 手動進入 PureVisionDbhPage 量測（保留原有功能）
   Future<void> _startDBHMeasurement() async {
     final result = await Navigator.of(context).push<MeasurementResult>(
       MaterialPageRoute(
@@ -244,6 +358,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
         _measurementConfidence = result.confidenceScore;
         _measurementMethod = result.method.name;
         _dbhController.text = result.diameterCm.toStringAsFixed(1);
+        _dbhReady = true;
         
         if (result.notes != null && result.notes!.isNotEmpty) {
           if (_notesController.text.isNotEmpty) {
@@ -254,7 +369,6 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
         }
       });
 
-      // 如果尚未辨識樹種且有拍攝影像，自動進行樹種辨識
       if (_speciesController.text.isEmpty && result.capturedImagePath != null) {
         final imageFile = File(result.capturedImagePath!);
         if (await imageFile.exists()) {
@@ -513,67 +627,129 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
   }
 
   Widget _buildPhotoSection() {
-    return AspectRatio(
-      aspectRatio: 16 / 9,
-      child: GestureDetector(
-        onTap: _takePhoto,
-        child: Container(
-          decoration: BoxDecoration(
-            color: Colors.grey.shade200,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade400),
-            image: _mainImage != null
-                ? DecorationImage(
-                    image: FileImage(_mainImage!),
-                    fit: BoxFit.cover,
-                  )
-                : null,
+    return Column(
+      children: [
+        // [Phase 0.5] GPS 距離提示
+        if (_phoneToTreeDistance != null)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            margin: const EdgeInsets.only(bottom: 8),
+            decoration: BoxDecoration(
+              color: _phoneToTreeDistance! <= 10 ? Colors.green.shade50 : Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: _phoneToTreeDistance! <= 10 ? Colors.green.shade300 : Colors.orange.shade300,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  _phoneToTreeDistance! <= 10 ? Icons.gps_fixed : Icons.gps_not_fixed,
+                  size: 16,
+                  color: _phoneToTreeDistance! <= 10 ? Colors.green.shade700 : Colors.orange.shade700,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  '距目標樹木約 ${_phoneToTreeDistance!.toStringAsFixed(1)}m',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: _phoneToTreeDistance! <= 10 ? Colors.green.shade800 : Colors.orange.shade800,
+                  ),
+                ),
+              ],
+            ),
           ),
-          child: _mainImage == null
-              ? Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Icon(Icons.add_a_photo, size: 48, color: Colors.grey),
-                    const SizedBox(height: 8),
-                    const Text('點擊拍攝樹木照片'),
-                    const Text(
-                      '(拍攝後將自動辨識樹種)',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
-                )
-              : Stack(
-                  children: [
-                    if (_isIdentifying)
-                      Container(
-                        color: Colors.black45,
-                        child: const Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              CircularProgressIndicator(color: Colors.white),
-                              SizedBox(height: 8),
-                              Text('正在辨識樹種...', style: TextStyle(color: Colors.white)),
-                            ],
+        AspectRatio(
+          aspectRatio: 16 / 9,
+          child: GestureDetector(
+            onTap: _isAutoPilotRunning ? null : _takePhoto,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade400),
+                image: _mainImage != null
+                    ? DecorationImage(
+                        image: FileImage(_mainImage!),
+                        fit: BoxFit.cover,
+                      )
+                    : null,
+              ),
+              child: _mainImage == null
+                  ? Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.auto_awesome, size: 48, color: Colors.teal.shade400),
+                        const SizedBox(height: 8),
+                        const Text('點擊拍照 — 一鍵自動量測',
+                            style: TextStyle(fontWeight: FontWeight.bold)),
+                        const Text(
+                          '自動 DBH + 樹種辨識 + 填入表單',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+                    )
+                  : Stack(
+                      children: [
+                        if (_isAutoPilotRunning)
+                          Container(
+                            color: Colors.black54,
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const CircularProgressIndicator(color: Colors.white),
+                                  const SizedBox(height: 8),
+                                  Text(_autoPilotStatus,
+                                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                ],
+                              ),
+                            ),
+                          ),
+                        Positioned(
+                          bottom: 8,
+                          right: 8,
+                          child: IconButton(
+                            onPressed: _isAutoPilotRunning ? null : _takePhoto,
+                            icon: const Icon(Icons.refresh, color: Colors.white),
+                            tooltip: '重拍',
+                            style: IconButton.styleFrom(
+                              backgroundColor: Colors.black54,
+                            ),
                           ),
                         ),
-                      ),
-                    Positioned(
-                      bottom: 8,
-                      right: 8,
-                      child: IconButton(
-                        onPressed: _takePhoto,
-                        icon: const Icon(Icons.refresh, color: Colors.white),
-                        tooltip: '重拍',
-                        style: IconButton.styleFrom(
-                          backgroundColor: Colors.black54,
-                        ),
-                      ),
+                        // AutoPilot 結果指標
+                        if (!_isAutoPilotRunning && (_dbhReady || _speciesReady))
+                          Positioned(
+                            top: 8,
+                            left: 8,
+                            child: Row(
+                              children: [
+                                if (_dbhReady)
+                                  _buildBadge('DBH', Colors.green),
+                                if (_dbhReady) const SizedBox(width: 4),
+                                if (_speciesReady)
+                                  _buildBadge('樹種', Colors.green),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
-                  ],
-                ),
+            ),
+          ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildBadge(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.85),
+        borderRadius: BorderRadius.circular(12),
       ),
+      child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
     );
   }
 

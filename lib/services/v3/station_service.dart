@@ -4,19 +4,14 @@ import 'package:latlong2/latlong.dart';
 /// V3 測站位置計算服務
 ///
 /// 功能：
-/// 1. 根據樹木座標、距離、方位角，反推測站（測量員）位置
-/// 2. 計算兩點間距離與方位角（驗證用）
+/// 1. 根據測站座標、距離、方位角，正向推算樹木位置
+/// 2. 根據樹木座標、距離、方位角，反推測站位置（保留向後相容）
+/// 3. 計算兩點間距離與方位角（驗證用）
 ///
-/// 數學原理：
-/// 使用大圓距離公式 (Haversine / Spherical Law of Cosines) 計算目標點座標。
-///
-/// 情境：
-/// VLGEO2 設備測量時，會記錄：
-/// - 樹木位置 (Tree GPS) - 已知
-/// - 水平距離 (Horizontal Distance)
-/// - 方位角 (Azimuth, Station -> Tree)
-///
-/// 我們需要計算 Station (測量員) 的位置。
+/// 重要修正 (2026-02):
+/// VLGEO2 CSV 的 LAT/LON 是「操作員（儀器）的 GPS 位置」，不是樹木位置。
+/// SD/HD/AZ/PITCH 是「從儀器指向目標」的向量。
+/// 因此需要「正向推算」：測站(GPS) + HD + AZ -> 樹木位置
 class StationService {
   static final StationService _instance = StationService._internal();
   factory StationService() => _instance;
@@ -26,7 +21,32 @@ class StationService {
   static const double earthRadius = 6371000.0;
   static const Distance _distanceCalculator = Distance();
 
-  /// 計算測站位置
+  /// 正向推算樹木位置（主要方法）
+  ///
+  /// VLGEO2 的 GPS 座標是操作員位置，HD/AZ 是從操作員指向樹木的向量。
+  /// 因此：樹木位置 = 操作員位置 + offset(HD, AZ)
+  ///
+  /// [stationLat] 測站（操作員/儀器）緯度 = VLGEO2 GPS LAT
+  /// [stationLng] 測站（操作員/儀器）經度 = VLGEO2 GPS LON
+  /// [distanceMeters] 水平距離 HD (公尺)
+  /// [azimuthDegrees] 方位角 AZ (度, 0-360, 測站指向樹木)
+  ///
+  /// 返回：樹木位置 LatLng
+  LatLng calculateTreePosition({
+    required double stationLat,
+    required double stationLng,
+    required double distanceMeters,
+    required double azimuthDegrees,
+  }) {
+    const Distance distance = Distance();
+    return distance.offset(
+      LatLng(stationLat, stationLng),
+      distanceMeters,
+      azimuthDegrees,
+    );
+  }
+
+  /// 反推測站位置（保留向後相容）
   ///
   /// [treeLat] 樹木緯度
   /// [treeLng] 樹木經度
@@ -40,14 +60,8 @@ class StationService {
     required double distanceMeters,
     required double azimuthDegrees,
   }) {
-    // 1. 計算反向方位角 (樹木 -> 測站)
-    // 如果測站看樹木是 Azimuth，那樹木看測站就是 (Azimuth + 180) % 360
     final double reverseAzimuth = (azimuthDegrees + 180) % 360;
-
-    // 2. 使用 latlong2 的 offset 功能計算目標點
-    // 從樹木位置，沿著反向方位角，移動指定距離
-    final Distance distance = const Distance();
-    
+    const Distance distance = Distance();
     return distance.offset(
       LatLng(treeLat, treeLng),
       distanceMeters,

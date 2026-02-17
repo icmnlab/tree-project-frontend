@@ -54,14 +54,38 @@ class AuthService {
   }
 
   // 獲取使用者可訪問的專案列表
+  // [Phase B] 優先讀取 projects 陣列，fallback 到 associated_projects 字串
   static Future<List<String>> getAccessibleProjects() async {
     final userInfo = await getUserInfo();
-    if (userInfo != null && userInfo['associated_projects'] != null) {
+    if (userInfo == null) return [];
+
+    // 優先讀取新的 projects 陣列
+    if (userInfo['projects'] != null && userInfo['projects'] is List) {
+      final projects = userInfo['projects'] as List;
+      return projects
+          .map((p) => p is Map ? (p['code']?.toString() ?? '') : p.toString())
+          .where((e) => e.isNotEmpty)
+          .toList();
+    }
+
+    // Fallback: 從 associated_projects 逗號分隔字串讀取
+    if (userInfo['associated_projects'] != null) {
       return (userInfo['associated_projects'] as String)
           .split(',')
           .map((e) => e.trim())
           .where((e) => e.isNotEmpty)
           .toList();
+    }
+    return [];
+  }
+
+  // [Phase B 新增] 獲取使用者可訪問的專案完整資訊
+  static Future<List<Map<String, dynamic>>> getAccessibleProjectDetails() async {
+    final userInfo = await getUserInfo();
+    if (userInfo == null) return [];
+
+    if (userInfo['projects'] != null && userInfo['projects'] is List) {
+      return List<Map<String, dynamic>>.from(userInfo['projects']);
     }
     return [];
   }

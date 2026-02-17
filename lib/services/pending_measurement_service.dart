@@ -49,10 +49,12 @@ class PendingMeasurementService {
         if (lat == 0 && lon == 0) continue;
         if (horizontalDistance <= 0) continue;
         
-        // 計算測站位置 (使用 StationService)
-        final stationPos = _stationService.calculateStationPosition(
-          treeLat: lat,
-          treeLng: lon,
+        // [修正 2026-02] VLGEO2 的 GPS 座標是操作員（儀器）位置，不是樹木位置。
+        // HD/AZ 是「從儀器指向目標」的向量。
+        // 正確做法：正向推算樹木位置 = 操作員GPS + offset(HD, AZ)
+        final treePos = _stationService.calculateTreePosition(
+          stationLat: lat,     // GPS = 操作員（測站）位置
+          stationLng: lon,     // GPS = 操作員（測站）位置
           distanceMeters: horizontalDistance,
           azimuthDegrees: azimuth,
         );
@@ -65,10 +67,10 @@ class PendingMeasurementService {
           projectCode: projectCode,
           projectName: projectName,
           treeHeight: height,
-          treeLatitude: lat,
-          treeLongitude: lon,
-          stationLatitude: stationPos.latitude,
-          stationLongitude: stationPos.longitude,
+          treeLatitude: treePos.latitude,      // 正向推算的樹木位置
+          treeLongitude: treePos.longitude,    // 正向推算的樹木位置
+          stationLatitude: lat,                // GPS 直接就是測站位置
+          stationLongitude: lon,               // GPS 直接就是測站位置
           horizontalDistance: horizontalDistance,
           slopeDistance: slopeDistance,
           azimuth: azimuth,
