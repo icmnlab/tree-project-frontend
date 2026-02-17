@@ -1386,10 +1386,13 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
   /// ML 服務設定對話框
   Future<void> _showMlServiceSettings() async {
     final config = AppConfig();
-    final controller = TextEditingController(
+    final urlController = TextEditingController(
       text: config.useSelfHostedMl
           ? config.mlServiceUrl.replaceAll('/api/v1', '')
           : '',
+    );
+    final apiKeyController = TextEditingController(
+      text: config.mlApiKey ?? '',
     );
     bool useSelfHosted = config.useSelfHostedMl;
 
@@ -1420,7 +1423,7 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
                       },
                     ),
                     const SizedBox(height: 8),
-                    // URL 輸入框
+                    // URL 輸入框 + API Key
                     if (useSelfHosted) ...[
                       const Text(
                         'ngrok URL:',
@@ -1431,7 +1434,7 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
                       ),
                       const SizedBox(height: 4),
                       TextField(
-                        controller: controller,
+                        controller: urlController,
                         decoration: const InputDecoration(
                           hintText: 'https://xxxx.ngrok-free.app',
                           hintStyle: TextStyle(fontSize: 13),
@@ -1445,10 +1448,34 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
                         style: const TextStyle(fontSize: 13),
                         keyboardType: TextInputType.url,
                       ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'API Key (認證金鑰):',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      TextField(
+                        controller: apiKeyController,
+                        decoration: const InputDecoration(
+                          hintText: '輸入 ML_API_KEY',
+                          hintStyle: TextStyle(fontSize: 13),
+                          border: OutlineInputBorder(),
+                          isDense: true,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                        ),
+                        style: const TextStyle(fontSize: 13),
+                        obscureText: true,
+                      ),
                       const SizedBox(height: 8),
                       const Text(
                         '在 MacBook 上啟動 ML Service 後，\n'
-                        '用 ngrok 產生的 URL 貼在這裡',
+                        '用 ngrok 產生的 URL 和 ML_API_KEY 填在這裡',
                         style: TextStyle(
                           fontSize: 11,
                           color: Colors.grey,
@@ -1466,7 +1493,7 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
                 FilledButton(
                   onPressed: () async {
                     if (useSelfHosted) {
-                      final url = controller.text.trim();
+                      final url = urlController.text.trim();
                       if (url.isEmpty) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('請輸入 ngrok URL')),
@@ -1474,8 +1501,14 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
                         return;
                       }
                       await config.setSelfHostedMlUrl(url);
+                      await config.setMlApiKey(
+                        apiKeyController.text.trim().isNotEmpty
+                            ? apiKeyController.text.trim()
+                            : null,
+                      );
                     } else {
                       await config.setSelfHostedMlUrl(null);
+                      await config.setMlApiKey(null);
                     }
                     if (ctx.mounted) Navigator.pop(ctx);
                     // 重新檢查服務連線
@@ -1502,7 +1535,8 @@ class _PureVisionDbhPageState extends State<PureVisionDbhPage>
         );
       },
     );
-    controller.dispose();
+    urlController.dispose();
+    apiKeyController.dispose();
   }
 
   Widget _buildInstructionChip(String text, {String? subtitle}) {

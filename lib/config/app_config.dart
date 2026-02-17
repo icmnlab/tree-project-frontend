@@ -12,6 +12,12 @@ class AppConfig {
   /// 自架 ML Service 的 URL（null = 使用 Render）
   String? _selfHostedMlUrl;
 
+  /// ML Service API Key (用於自架時的認證)
+  String? _mlApiKey;
+
+  /// 取得 ML API Key
+  String? get mlApiKey => _mlApiKey;
+
   /// 是否使用自架 ML Service
   bool get useSelfHostedMl => _selfHostedMlUrl != null && _selfHostedMlUrl!.isNotEmpty;
 
@@ -35,6 +41,7 @@ class AppConfig {
 
     // 載入自架 ML Service URL
     _selfHostedMlUrl = prefs.getString('self_hosted_ml_url');
+    _mlApiKey = prefs.getString('ml_api_key');
 
     _setEnvironment(initialEnv);
   }
@@ -78,6 +85,18 @@ class AppConfig {
     }
     // 重新套用設定
     _setEnvironment(environment);
+  }
+
+  /// 設定 ML API Key（用於自架 ML Service 的認證）
+  Future<void> setMlApiKey(String? key) async {
+    final prefs = await SharedPreferences.getInstance();
+    if (key != null && key.isNotEmpty) {
+      _mlApiKey = key.trim();
+      await prefs.setString('ml_api_key', _mlApiKey!);
+    } else {
+      _mlApiKey = null;
+      await prefs.remove('ml_api_key');
+    }
   }
 
   /// 取得目前 ML Service 來源描述

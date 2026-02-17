@@ -18,6 +18,15 @@ class PureVisionDbhService {
 
   String get _baseUrl => AppConfig().mlServiceUrl;
 
+  /// 取得 ML API Key 認證 headers
+  Map<String, String> get _authHeaders {
+    final apiKey = AppConfig().mlApiKey;
+    if (apiKey != null && apiKey.isNotEmpty) {
+      return {'X-ML-API-Key': apiKey};
+    }
+    return {};
+  }
+
   /// 檢查 ML Service 是否可用
   Future<bool> isServiceAvailable() async {
     try {
@@ -61,6 +70,9 @@ class PureVisionDbhService {
     try {
       final uri = Uri.parse('$_baseUrl/measure-dbh');
       final request = http.MultipartRequest('POST', uri);
+
+      // 添加 ML API Key 認證
+      request.headers.addAll(_authHeaders);
 
       // 添加圖片
       request.files.add(
@@ -131,6 +143,8 @@ class PureVisionDbhService {
   }) async {
     final uri = Uri.parse('$_baseUrl/debug/depth-at-point');
     final request = http.MultipartRequest('POST', uri);
+    // 添加 ML API Key 認證
+    request.headers.addAll(_authHeaders);
     request.files.add(
       await http.MultipartFile.fromPath('image', imageFile.path),
     );
@@ -166,6 +180,9 @@ class PureVisionDbhService {
     try {
       final uri = Uri.parse('$_baseUrl/auto-measure-dbh');
       final request = http.MultipartRequest('POST', uri);
+
+      // 添加 ML API Key 認證
+      request.headers.addAll(_authHeaders);
 
       request.files.add(
         await http.MultipartFile.fromPath('image', imageFile.path),
