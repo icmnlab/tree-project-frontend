@@ -40,7 +40,9 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   Position? _userPosition;
   StreamSubscription<Position>? _positionSubscription;
   StreamSubscription<MagnetometerEvent>? _magnetometerSubscription;
+  StreamSubscription<AccelerometerEvent>? _accelerometerSubscription;
   double? _currentHeading; // 用戶朝向（磁北基準）
+  AccelerometerEvent? _lastAccelEvent; // 用於傾斜補償
   
   // 導航狀態
   NavigationState _navState = NavigationState.selectingTask;
@@ -63,6 +65,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   void dispose() {
     _positionSubscription?.cancel();
     _magnetometerSubscription?.cancel();
+    _accelerometerSubscription?.cancel();
     _arrowAnimController.dispose();
     super.dispose();
   }
@@ -127,13 +130,39 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
         }
       });
       
-      // 使用磁力計提供靜止時的方向
+      // 加速度計（用於傾斜補償）
+      _accelerometerSubscription = accelerometerEventStream()?.listen((event) {
+        _lastAccelEvent = event;
+      });
+      
+      // 磁力計 + 傾斜補償
       _magnetometerSubscription = magnetometerEventStream()?.listen((event) {
         if (!mounted) return;
-        // 用 atan2 從磁力計 x,y 計算磁北方向
-        final heading = (math.atan2(-event.x, event.y) * 180 / math.pi + 360) % 360;
+        
+        double heading;
+        final accel = _lastAccelEvent;
+        
+        if (accel != null) {
+          // 傾斜補償：用加速度計修正磁力計讀數
+          final ax = accel.x, ay = accel.y, az = accel.z;
+          final norm = math.sqrt(ax * ax + ay * ay + az * az);
+          if (norm > 0.1) {
+            final pitch = math.asin(-ax / norm);
+            final roll = math.asin(ay / norm);
+            // 補償後的磁力分量
+            final compX = event.x * math.cos(pitch) + event.z * math.sin(pitch);
+            final compY = event.x * math.sin(roll) * math.sin(pitch) 
+                        + event.y * math.cos(roll) 
+                        - event.z * math.sin(roll) * math.cos(pitch);
+            heading = (math.atan2(-compX, compY) * 180 / math.pi + 360) % 360;
+          } else {
+            heading = (math.atan2(-event.x, event.y) * 180 / math.pi + 360) % 360;
+          }
+        } else {
+          heading = (math.atan2(-event.x, event.y) * 180 / math.pi + 360) % 360;
+        }
+        
         setState(() {
-          // 靜止時用磁力計，移動時 GPS heading 更準
           if (_userPosition == null || _userPosition!.speed <= 0.3) {
             _currentHeading = heading;
           }
@@ -609,11 +638,20 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   
   // === 事件處理 ===
   
-  void _startTask(PendingTreeMeasurement task) {
+  void _startTask(PendingTreeMeasurement task) async {
     setState(() {
       _currentTask = task;
       _navState = NavigationState.navigatingToStation;
     });
+    
+    // 標記為進行中（讓其他用戶看到此樹正在被處理）
+    if (task.id != null) {
+      try {
+        await _service.updateMeasurement(task.id!, {'status': 'in_progress'});
+      } catch (e) {
+        debugPrint('[PendingTask] 設定 in_progress 失敗: $e');
+      }
+    }
   }
   
   void _arrivedAtStation() {

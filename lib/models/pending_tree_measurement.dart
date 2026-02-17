@@ -297,7 +297,8 @@ enum MeasurementStatus {
   inProgress('in_progress', '進行中'),
   completed('completed', '已完成'),
   skipped('skipped', '已跳過'),
-  failed('failed', '測量失敗');
+  failed('failed', '測量失敗'),
+  transferred('transferred', '已轉移');
   
   final String value;
   final String label;

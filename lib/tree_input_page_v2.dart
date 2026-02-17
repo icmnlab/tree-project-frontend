@@ -215,13 +215,16 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
     }
   }
 
+  bool _cleanupPerformed = false;
+  
   // 清理臨時新增的專案區位、專案和樹種
   Future<void> _performCleanup() async {
+    if (_cleanupPerformed) return;
     if (_createdAreaIds.isEmpty && _createdProjectCodes.isEmpty && _createdSpeciesIds.isEmpty) return;
+    _cleanupPerformed = true;
     
     debugPrint('[TreeInputPageV2] 執行清理工作...');
     
-    // 清理新增的專案區位
     for (var id in _createdAreaIds) {
       try {
         await _projectAreaService.deleteProjectArea(id);
@@ -231,7 +234,6 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
       }
     }
     
-    // 清理新增的專案
     for (var code in _createdProjectCodes) {
       try {
         await _projectService.deleteProject(code);
@@ -241,16 +243,18 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
       }
     }
     
-    // 清理新增的樹種 - 使用 cleanup API（因為後端沒有直接刪除樹種的 API）
     if (_createdSpeciesIds.isNotEmpty) {
       try {
-        await _treeService.cleanupTemporaryData(); // 這會觸發後端清理未使用的樹種
+        await _treeService.cleanupTemporaryData();
         debugPrint('[TreeInputPageV2] 已觸發清理未使用的樹種');
       } catch (e) {
         debugPrint('[TreeInputPageV2] 清理樹種失敗: $e');
       }
     }
     
+    _createdAreaIds.clear();
+    _createdProjectCodes.clear();
+    _createdSpeciesIds.clear();
     debugPrint('[TreeInputPageV2] 清理工作完成');
   }
 
@@ -352,17 +356,18 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
     });
 
     try {
-      // 準備 V2 單筆提交數據
+      // 準備 V2 提交數據
+      // 編輯模式：project_code 直接傳（不做 int parse 避免破壞關聯）
+      // 新增模式：沿用原邏輯（後端 create controller 會處理）
+      final rawProjectCode = projectCodeController.text;
+      final projectCode = _isEditing
+          ? rawProjectCode
+          : (int.tryParse(rawProjectCode.replaceAll('PRJ-', '')) ?? 0).toString();
+      
       final treeData = {
         "project_area": projectAreaController.text,
-        "project_code":
-            (int.tryParse(projectCodeController.text.replaceAll('PRJ-', '')) ??
-                    0)
-                .toString(),
+        "project_code": projectCode,
         "project_name": projectNameController.text,
-
-        // ID 由後端生成，無需傳送 (新增時)
-        // 若是編輯，則需要傳 ID (但目前 V2 只用於新增)
 
         "species_id": treeIdController.text,
         "species_name": treeNameController.text,
@@ -370,15 +375,14 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
         "y_coord": double.tryParse(yCoordController.text) ?? 0,
 
         "status": statusController.text,
-        "note": noteController.text.isEmpty ? '無' : noteController.text,
+        "note": noteController.text.isEmpty ? null : noteController.text,
         "tree_remark":
-            treeRemarkController.text.isEmpty ? '無' : treeRemarkController.text,
+            treeRemarkController.text.isEmpty ? null : treeRemarkController.text,
 
         "tree_height_m": double.tryParse(treeHeightController.text) ?? 0,
         "dbh_cm": double.tryParse(dbhController.text) ?? 0,
 
-        "survey_notes": surveyRemarkController.text, // 注意後端 Controller 參數映射
-        "survey_remark": surveyRemarkController.text, // 為了保險，兩個名字都傳
+        "survey_notes": surveyRemarkController.text,
 
         "survey_time": surveyTime.toIso8601String(),
 

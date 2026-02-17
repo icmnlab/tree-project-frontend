@@ -437,13 +437,18 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
         );
       }
 
-      // 2. 更新測量結果
+      // 2. 更新測量結果（含樹木狀態）
+      final combinedNotes = [
+        if (_selectedStatus != '正常') '樹況: $_selectedStatus',
+        if (_notesController.text.isNotEmpty) _notesController.text,
+      ].join(' | ');
+      
       await _pendingService.updateMeasurement(
         id: widget.task.id!,
         dbhCm: dbh,
-        confidence: _measurementConfidence ?? 1.0, // 如果是手動輸入，預設信心度 1.0 (或視為人工確認)
+        confidence: _measurementConfidence ?? 1.0,
         method: _measurementMethod ?? 'manual_input',
-        notes: _notesController.text,
+        notes: combinedNotes.isEmpty ? _selectedStatus : combinedNotes,
         speciesName: _speciesController.text,
       );
 

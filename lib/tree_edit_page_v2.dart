@@ -105,6 +105,12 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
 
   // Tree ID is final in edit mode
   late final String _treeId;
+  
+  // 清理追蹤：記錄編輯過程中新增的臨時資料
+  final List<int> _createdAreaIds = [];
+  final List<String> _createdProjectCodes = [];
+  bool _hasSubmitted = false;
+  bool _cleanupPerformed = false;
 
   @override
   void initState() {
@@ -254,6 +260,10 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
     projectTreeController.dispose();
     treeIdController.dispose();
     treeNameController.dispose();
+    // 若未提交且有新增臨時資料，執行清理
+    if (!_hasSubmitted && (_createdAreaIds.isNotEmpty || _createdProjectCodes.isNotEmpty)) {
+      _performCleanup();
+    }
     xCoordController.dispose();
     yCoordController.dispose();
     statusController.dispose();
@@ -265,6 +275,32 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
     carbonstorageController.dispose();
     annualcarbonController.dispose();
     super.dispose();
+  }
+
+  Future<void> _performCleanup() async {
+    if (_cleanupPerformed) return;
+    if (_createdAreaIds.isEmpty && _createdProjectCodes.isEmpty) return;
+    _cleanupPerformed = true;
+    
+    final projectAreaService = ProjectAreaService();
+    final projectService = ProjectService();
+    
+    for (var id in _createdAreaIds) {
+      try {
+        await projectAreaService.deleteProjectArea(id);
+      } catch (e) {
+        debugPrint('[EditV2] 清理專案區位失敗 (ID: $id): $e');
+      }
+    }
+    for (var code in _createdProjectCodes) {
+      try {
+        await projectService.deleteProject(code);
+      } catch (e) {
+        debugPrint('[EditV2] 清理專案失敗 (Code: $code): $e');
+      }
+    }
+    _createdAreaIds.clear();
+    _createdProjectCodes.clear();
   }
 
   Future<void> submitUpdateData() async {
@@ -347,10 +383,11 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
 
       if (response['success'] == true) {
         logDebug('Update successful, response: $response');
+        _hasSubmitted = true;
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('更新成功 (V2)!')),
+          const SnackBar(content: Text('更新成功!')),
         );
-        Navigator.pop(context, true); // Return true to indicate success
+        Navigator.pop(context, true);
       } else {
         String errorMsg = response['message'] ?? '伺服器錯誤';
         logDebug('Update failed: $errorMsg');
@@ -415,11 +452,51 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
   // For brevity, only the core logic is shown here. Assume they exist and are functional.
   // ...
 
+  Future<bool> _onWillPop() async {
+    // 如果已提交或沒有新增臨時資料，直接允許離開
+    if (_hasSubmitted || (_createdAreaIds.isEmpty && _createdProjectCodes.isEmpty)) {
+      return true;
+    }
+    
+    final shouldLeave = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('確定要離開嗎？'),
+        content: const Text('尚未儲存的變更將遺失，且本次新增的臨時專案/區位將被刪除。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('繼續編輯'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('放棄變更', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+    
+    if (shouldLeave == true) {
+      await _performCleanup();
+      return true;
+    }
+    return false;
+  }
+  
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final shouldPop = await _onWillPop();
+        if (shouldPop && mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
       appBar: AppBar(
-        title: const Text('編輯樹木 (V2)'),
+        title: const Text('編輯樹木'),
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -529,6 +606,7 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
               ),
             ),
       ),
+    ), // PopScope closing
     );
   }
 
@@ -1007,16 +1085,21 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
       };
       final response = await _projectAreaService.addProjectArea(requestData);
       if (response['success'] == true) {
+        // 記錄新增的區位 ID 供清理追蹤
+        final newAreaId = response['data']?['id'] ?? response['id'];
+        if (newAreaId != null) _createdAreaIds.add(newAreaId);
+        
         await _loadProjectAreas();
         projectAreaController.text = areaName;
-        // Reset project info as area changed
         projectNameController.clear();
         projectCodeController.clear();
         _updateFilteredProjects(areaName);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('專案區位新增成功')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('專案區位新增成功')),
+          );
+        }
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1146,15 +1229,20 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
           projectName, projectAreaController.text);
       if (response['success'] == true) {
         final newProject = response['project'];
+        final newCode = newProject['code']?.toString();
+        if (newCode != null) _createdProjectCodes.add(newCode);
+        
         setState(() {
           projectNameController.text = newProject['name'];
-          projectCodeController.text = newProject['code'];
+          projectCodeController.text = newCode ?? '';
         });
         await _updateFilteredProjects(projectAreaController.text);
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('專案 "$projectName" 新增成功')),
-        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('專案 "$projectName" 新增成功')),
+          );
+        }
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
