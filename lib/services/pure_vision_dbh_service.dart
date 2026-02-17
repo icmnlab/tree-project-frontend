@@ -163,10 +163,36 @@ class PureVisionDbhService {
     return json.decode(response.body);
   }
 
+  /// 取得 ML Service 設定（可用模式、模型資訊等）
+  ///
+  /// 呼叫 ML Service 的 /api/v1/config 端點
+  /// 回傳 [MlServiceConfig] 包含可用的精度模式、模型名稱等
+  Future<MlServiceConfig?> fetchMlConfig() async {
+    try {
+      final uri = Uri.parse('$_baseUrl/config');
+      final response = await http
+          .get(uri, headers: _authHeaders)
+          .timeout(const Duration(seconds: 10));
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return MlServiceConfig.fromJson(data);
+      }
+      debugPrint('[PureVisionDbhService] Config fetch failed: ${response.statusCode}');
+      return null;
+    } catch (e) {
+      debugPrint('[PureVisionDbhService] Config fetch error: $e');
+      return null;
+    }
+  }
+
   /// 全自動 DBH 測量 — 不需要手動框選樹幹
   ///
   /// 拍照 → AI 自動偵測樹幹 → 自動計算 DBH
   /// 類似 Tesla 純視覺：對準拍攝，AI 做所有事
+  ///
+  /// [mode] 精度模式：'fast'(~1.5s), 'balanced'(~3-6s), 'accurate'(~5-10s)
+  ///        預設 null 時由 ML Service 決定（通常為 balanced）
+  /// [tapX], [tapY] 使用者點擊的樹幹位置（SAM 分割 prompt，Phase 2+）
   Future<AutoMeasureResult> autoMeasureDbh({
     required File imageFile,
     double? focalLengthMm,
@@ -174,6 +200,9 @@ class PureVisionDbhService {
     double? fovDegrees,
     String? phoneMake,
     String? phoneModel,
+    String? mode,
+    int? tapX,
+    int? tapY,
     bool returnVisualization = true,
     bool returnDetectionVisualization = true,
   }) async {
@@ -205,8 +234,19 @@ class PureVisionDbhService {
       if (phoneModel != null) {
         request.fields['phone_model'] = phoneModel;
       }
+      // 精度模式 (Phase 1+)
+      if (mode != null) {
+        request.fields['mode'] = mode;
+      }
+      // SAM 分割觸碰點 (Phase 2+)
+      if (tapX != null) {
+        request.fields['tap_x'] = tapX.toString();
+      }
+      if (tapY != null) {
+        request.fields['tap_y'] = tapY.toString();
+      }
 
-      debugPrint('[PureVisionDbhService] Auto-measure request to $uri');
+      debugPrint('[PureVisionDbhService] Auto-measure request to $uri${mode != null ? " (mode: $mode)" : ""}');
       final streamedResponse = await request.send().timeout(
         const Duration(seconds: 120),
       );
@@ -489,4 +529,103 @@ class PureVisionException implements Exception {
 
   @override
   String toString() => 'PureVisionException: $message';
+}
+
+/// ML Service 設定資訊
+///
+/// 從 /api/v1/config 端點取得，用於：
+/// - 顯示目前使用的模型
+/// - 列出可用的精度模式
+/// - 顯示預估處理時間
+class MlServiceConfig {
+  final String activeDepthModelKey;
+  final String activeDepthModelName;
+  final double activeDepthModelParamsM;
+  final String activeDepthModelLicense;
+  final String activeSegmentationKey;
+  final String activeSegmentationName;
+  final bool onnxEnabled;
+  final bool samEnabled;
+  final Map<String, MlAccuracyMode> availableModes;
+
+  MlServiceConfig({
+    required this.activeDepthModelKey,
+    required this.activeDepthModelName,
+    required this.activeDepthModelParamsM,
+    required this.activeDepthModelLicense,
+    required this.activeSegmentationKey,
+    required this.activeSegmentationName,
+    required this.onnxEnabled,
+    required this.samEnabled,
+    required this.availableModes,
+  });
+
+  factory MlServiceConfig.fromJson(Map<String, dynamic> json) {
+    final depth = json['active_depth_model'] as Map<String, dynamic>? ?? {};
+    final seg = json['active_segmentation'] as Map<String, dynamic>? ?? {};
+    final modesRaw = json['available_modes'] as Map<String, dynamic>? ?? {};
+
+    final modes = <String, MlAccuracyMode>{};
+    modesRaw.forEach((key, value) {
+      if (value is Map<String, dynamic>) {
+        modes[key] = MlAccuracyMode.fromJson(key, value);
+      }
+    });
+
+    return MlServiceConfig(
+      activeDepthModelKey: depth['key'] as String? ?? 'unknown',
+      activeDepthModelName: depth['name'] as String? ?? 'Unknown',
+      activeDepthModelParamsM: (depth['params_m'] as num?)?.toDouble() ?? 0,
+      activeDepthModelLicense: depth['license'] as String? ?? '',
+      activeSegmentationKey: seg['key'] as String? ?? 'unknown',
+      activeSegmentationName: seg['name'] as String? ?? 'Unknown',
+      onnxEnabled: json['onnx_enabled'] == true,
+      samEnabled: json['sam_enabled'] == true,
+      availableModes: modes,
+    );
+  }
+}
+
+/// ML 精度模式資訊
+class MlAccuracyMode {
+  final String key;
+  final String description;
+  final String depthModel;
+  final String segmentation;
+  final double estimatedTimeS;
+  final bool multiRow;
+  final bool subpixel;
+  final bool ellipseFit;
+
+  MlAccuracyMode({
+    required this.key,
+    required this.description,
+    required this.depthModel,
+    required this.segmentation,
+    required this.estimatedTimeS,
+    required this.multiRow,
+    required this.subpixel,
+    required this.ellipseFit,
+  });
+
+  factory MlAccuracyMode.fromJson(String key, Map<String, dynamic> json) {
+    final features = json['features'] as Map<String, dynamic>? ?? {};
+    return MlAccuracyMode(
+      key: key,
+      description: json['description'] as String? ?? '',
+      depthModel: json['depth_model'] as String? ?? '',
+      segmentation: json['segmentation'] as String? ?? '',
+      estimatedTimeS: (json['estimated_time_s'] as num?)?.toDouble() ?? 0,
+      multiRow: features['multi_row'] == true,
+      subpixel: features['subpixel'] == true,
+      ellipseFit: features['ellipse_fit'] == true,
+    );
+  }
+
+  /// 預估時間的中文描述
+  String get estimatedTimeLabel {
+    if (estimatedTimeS < 2) return '~${estimatedTimeS.toStringAsFixed(1)}秒 (快速)';
+    if (estimatedTimeS < 8) return '~${estimatedTimeS.toStringAsFixed(0)}秒 (適中)';
+    return '~${estimatedTimeS.toStringAsFixed(0)}秒 (較慢)';
+  }
 }
