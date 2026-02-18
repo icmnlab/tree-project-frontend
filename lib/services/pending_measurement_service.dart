@@ -49,6 +49,11 @@ class PendingMeasurementService {
         if (lat == 0 && lon == 0) continue;
         if (horizontalDistance <= 0) continue;
         
+        // [診斷] 輸出原始數據，用於現場除錯
+        debugPrint('━━━ 記錄 ID=${record['id']} ━━━');
+        debugPrint('  測站 GPS: ($lat, $lon)  HDOP=${metadata['hdop'] ?? 'N/A'}');
+        debugPrint('  HD=${horizontalDistance}m  SD=${slopeDistance}m  AZ=${azimuth}°  Pitch=${pitch}°');
+        
         // [修正 2026-02] VLGEO2 的 GPS 座標是操作員（儀器）位置，不是樹木位置。
         // HD/AZ 是「從儀器指向目標」的向量。
         // 正確做法：正向推算樹木位置 = 操作員GPS + offset(HD, AZ)
@@ -58,6 +63,17 @@ class PendingMeasurementService {
           distanceMeters: horizontalDistance,
           azimuthDegrees: azimuth,
         );
+        
+        // [診斷] 驗證計算：反算距離應與 HD 一致
+        final verifyDist = _stationService.getDistance(
+          lat1: lat, lon1: lon,
+          lat2: treePos.latitude, lon2: treePos.longitude,
+        );
+        debugPrint('  計算樹位: (${treePos.latitude.toStringAsFixed(7)}, ${treePos.longitude.toStringAsFixed(7)})');
+        debugPrint('  驗證距離: ${verifyDist.toStringAsFixed(2)}m (應≈${horizontalDistance}m)');
+        if ((verifyDist - horizontalDistance).abs() > 1.0) {
+          debugPrint('  ⚠️ 警告: 驗證距離與 HD 差異 > 1m!');
+        }
         
         // 創建待測量記錄
         final pending = PendingTreeMeasurement(
