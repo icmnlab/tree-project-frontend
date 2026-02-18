@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'services/carbon_calculation_service.dart';
 import '../services/api_service.dart';
 import 'tree_edit_page_v2.dart';
-import '../services/tree_service.dart'; // [V2] 引入 TreeService
-import 'services/auth_service.dart'; // 角色權限
+import '../services/tree_service.dart';
+import 'services/auth_service.dart';
+import 'services/v3/tree_image_service.dart';
 import 'constants/colors.dart';
 
 class TreeSurveyDetailPage extends StatefulWidget {
@@ -19,14 +21,31 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
   late Map<String, dynamic> _treeData;
   bool _canEdit = false;
   bool _canDelete = false;
+  List<TreeImage> _treeImages = [];
+  final TreeImageService _imageService = TreeImageService();
+
+  /// Bilingual field accessor — tries English key first, then Chinese
+  String _f(String enKey, String zhKey) {
+    final v = _treeData[enKey] ?? _treeData[zhKey];
+    return v?.toString() ?? '無';
+  }
 
   @override
   void initState() {
     super.initState();
-    // 觸發一次性的背景清理任務
     ApiService.triggerCleanup();
     _treeData = Map<String, dynamic>.from(widget.treeData);
     _loadPermissions();
+    _loadImages();
+  }
+
+  Future<void> _loadImages() async {
+    final treeId = (_treeData['id'] ?? _treeData['系統樹木'])?.toString();
+    if (treeId == null) return;
+    try {
+      final images = await _imageService.getTreeImages(treeId);
+      if (mounted) setState(() => _treeImages = images);
+    } catch (_) {}
   }
 
   Future<void> _loadPermissions() async {
@@ -129,13 +148,11 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    // 獲取專案樹木編號
-    String projectTreeId = _treeData['專案樹木']?.toString() ?? '未知';
+    String projectTreeId = _f('project_tree_id', '專案樹木');
 
-    // 獲取樹木數據
-    final species = _treeData['樹種名稱'] ?? '其他';
-    final height = double.tryParse(_treeData['樹高（公尺）'].toString()) ?? 5.0;
-    final dbh = double.tryParse(_treeData['胸徑（公分）'].toString()) ?? 15.0;
+    final species = _f('species_name', '樹種名稱');
+    final height = double.tryParse(_f('tree_height_m', '樹高（公尺）')) ?? 5.0;
+    final dbh = double.tryParse(_f('dbh_cm', '胸徑（公分）')) ?? 15.0;
 
     // 估算樹齡
     int estimatedAge = 10; // 預設值
@@ -174,7 +191,7 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
           ),
         ),
         title: Text(
-          '${_treeData['樹種名稱']?.toString() ?? '未知樹種'} ($projectTreeId)',
+          '${species == '無' ? '未知樹種' : species} ($projectTreeId)',
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
@@ -212,58 +229,58 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+            // 照片區塊
+            if (_treeImages.isNotEmpty)
+              _buildPhotoGallery(),
+            if (_treeImages.isNotEmpty)
+              const SizedBox(height: 16),
+            
             _buildInfoCard('基本資訊', [
-              _buildInfoRow('專案區位', _treeData['專案區位']?.toString() ?? '無'),
-              _buildInfoRow('專案代碼', _treeData['專案代碼']?.toString() ?? '無'),
-              _buildInfoRow('專案名稱', _treeData['專案名稱']?.toString() ?? '無'),
+              _buildInfoRow('專案區位', _f('project_area', '專案區位')),
+              _buildInfoRow('專案代碼', _f('project_code', '專案代碼')),
+              _buildInfoRow('專案名稱', _f('project_name', '專案名稱')),
             ]),
             const SizedBox(height: 16),
             _buildInfoCard('樹木編號', [
-              _buildInfoRow('系統樹木', _treeData['系統樹木']?.toString() ?? '無'),
-              _buildInfoRow('專案樹木', _treeData['專案樹木']?.toString() ?? '無',
+              _buildInfoRow('系統樹木', _f('system_tree_id', '系統樹木')),
+              _buildInfoRow('專案樹木', _f('project_tree_id', '專案樹木'),
                   isHighlighted: true),
             ]),
             const SizedBox(height: 16),
             _buildInfoCard('樹種資訊', [
-              _buildInfoRow('樹種編號', _treeData['樹種編號']?.toString() ?? '無'),
-              _buildInfoRow('樹種名稱', _treeData['樹種名稱']?.toString() ?? '無'),
+              _buildInfoRow('樹種編號', _f('species_id', '樹種編號')),
+              _buildInfoRow('樹種名稱', _f('species_name', '樹種名稱')),
             ]),
             const SizedBox(height: 16),
             _buildInfoCard('位置資訊', [
-              _buildInfoRow('X坐標', _treeData['X坐標']?.toString() ?? '無'),
-              _buildInfoRow('Y坐標', _treeData['Y坐標']?.toString() ?? '無'),
+              _buildInfoRow('X坐標', _f('x_coord', 'X坐標')),
+              _buildInfoRow('Y坐標', _f('y_coord', 'Y坐標')),
             ]),
             const SizedBox(height: 16),
             _buildInfoCard('生長資訊', [
-              _buildInfoRow(
-                  '樹高', '${_treeData['樹高（公尺）']?.toString() ?? '無'} 公尺'),
-              _buildInfoRow(
-                  '胸徑', '${_treeData['胸徑（公分）']?.toString() ?? '無'} 公分'),
-              _buildInfoRow('狀況', _treeData['狀況']?.toString() ?? '無'),
+              _buildInfoRow('樹高', '${_f('tree_height_m', '樹高（公尺）')} 公尺'),
+              _buildInfoRow('胸徑', '${_f('dbh_cm', '胸徑（公分）')} 公分'),
+              _buildInfoRow('狀況', _f('status', '狀況')),
             ]),
             const SizedBox(height: 16),
             _buildInfoCard('碳存量資訊', [
-              _buildInfoRow(
-                  '碳儲存量', '${_treeData['碳儲存量']?.toString() ?? '無'} kg'),
-              _buildInfoRow('推估年碳吸存量',
-                  '${_treeData['推估年碳吸存量']?.toString() ?? '無'} kg/yr'),
+              _buildInfoRow('碳儲存量', '${_f('carbon_storage', '碳儲存量')} kg'),
+              _buildInfoRow('推估年碳吸存量', '${_f('carbon_sequestration_per_year', '推估年碳吸存量')} kg/yr'),
             ]),
             const SizedBox(height: 16),
             _buildInfoCard('碳吸收資訊', [
-              _buildInfoRow(
-                  '碳儲存量', '${carbonStorage.toStringAsFixed(2)} 公斤CO₂e'),
-              _buildInfoRow('年碳吸收量',
-                  '${annualSequestration.toStringAsFixed(2)} 公斤CO₂e/年'),
+              _buildInfoRow('碳儲存量', '${carbonStorage.toStringAsFixed(2)} 公斤CO2e'),
+              _buildInfoRow('年碳吸收量', '${annualSequestration.toStringAsFixed(2)} 公斤CO2e/年'),
             ]),
             const SizedBox(height: 16),
             _buildInfoCard('備註資訊', [
-              _buildInfoRow('註記', _treeData['註記']?.toString() ?? '無'),
-              _buildInfoRow('樹木備註', _treeData['樹木備註']?.toString() ?? '無'),
-              _buildInfoRow('調查備註', _treeData['調查備註']?.toString() ?? '無'),
+              _buildInfoRow('註記', _f('note', '註記')),
+              _buildInfoRow('樹木備註', _f('tree_remark', '樹木備註')),
+              _buildInfoRow('調查備註', _f('survey_notes', '調查備註')),
             ]),
             const SizedBox(height: 16),
             _buildInfoCard('調查資訊', [
-              _buildInfoRow('調查時間', _treeData['調查時間']?.toString() ?? '無'),
+              _buildInfoRow('調查時間', _f('survey_time', '調查時間')),
             ]),
           ],
           ),
@@ -384,6 +401,85 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
             const SizedBox(height: 12),
             ...children,
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPhotoGallery() {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.forestGreen.withOpacity(0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.forestGreen.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(Icons.photo_library_rounded, color: AppColors.forestGreen, size: 22),
+                ),
+                const SizedBox(width: 14),
+                Text('樹木照片 (${_treeImages.length})',
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: AppColors.neutral900)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 120,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: _treeImages.length,
+                itemBuilder: (context, index) {
+                  final img = _treeImages[index];
+                  final file = File(img.localPath);
+                  return Padding(
+                    padding: EdgeInsets.only(right: index < _treeImages.length - 1 ? 8 : 0),
+                    child: GestureDetector(
+                      onTap: () => _showFullImage(file),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: file.existsSync()
+                            ? Image.file(file, width: 120, height: 120, fit: BoxFit.cover)
+                            : Container(
+                                width: 120, height: 120,
+                                color: Colors.grey.shade200,
+                                child: const Icon(Icons.broken_image, color: Colors.grey),
+                              ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showFullImage(File imageFile) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        child: InteractiveViewer(
+          child: Image.file(imageFile),
         ),
       ),
     );

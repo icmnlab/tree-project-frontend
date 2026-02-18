@@ -1445,10 +1445,9 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
           children: [
             _buildTreeSpeciesSelector(),
             const SizedBox(height: 16),
-            _buildTextField(treeIdController, '樹種編號',
-                (v) => v!.isEmpty ? 'Required' : null),
+            _buildTextField(treeIdController, '樹種編號', null),
             _buildTextField(treeNameController, '樹種名稱',
-                (v) => v!.isEmpty ? 'Required' : null),
+                (v) => v!.isEmpty ? '請輸入樹種名稱' : null),
           ],
         ),
         isActive: _currentStep >= 1,

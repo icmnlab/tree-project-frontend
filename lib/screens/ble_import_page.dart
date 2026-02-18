@@ -1105,23 +1105,38 @@ class _BleImportPageState extends State<BleImportPage> {
         loadingDialogShown = true;
       }
 
-      // 嘗試根據第一棵樹的 GPS 座標自動匹配專案
+      // Majority vote: check ALL trees with GPS to find the most common project match
       String? autoProjectArea;
       String? autoProjectCode;
       String? autoProjectName;
       try {
-        final firstTree = filteredData.first;
-        final lat = double.tryParse(firstTree['latitude']?.toString() ?? '');
-        final lon = double.tryParse(firstTree['longitude']?.toString() ?? '');
-        if (lat != null && lon != null && lat != 0 && lon != 0) {
-          final boundaryService = ProjectBoundaryService();
-          await boundaryService.getAllBoundaries(); // 確保快取已載入
-          final matchResult = boundaryService.findProjectByCoordinate(lat: lat, lng: lon);
-          if (matchResult.matched) {
-            autoProjectName = matchResult.projectName;
-            autoProjectCode = matchResult.projectCode;
-            debugPrint('[BLE] 自動匹配專案: $autoProjectName ($autoProjectCode)');
+        final boundaryService = ProjectBoundaryService();
+        await boundaryService.getAllBoundaries();
+        
+        final votes = <String, int>{};
+        final projectInfo = <String, Map<String, String?>>{};
+        
+        for (final tree in filteredData) {
+          final lat = double.tryParse(tree['latitude']?.toString() ?? '');
+          final lon = double.tryParse(tree['longitude']?.toString() ?? '');
+          if (lat == null || lon == null || lat == 0 || lon == 0) continue;
+          
+          final match = boundaryService.findProjectByCoordinate(lat: lat, lng: lon);
+          if (match.matched && match.projectName != null) {
+            final key = match.projectName!;
+            votes[key] = (votes[key] ?? 0) + 1;
+            projectInfo[key] = {
+              'name': match.projectName,
+              'code': match.projectCode,
+            };
           }
+        }
+        
+        if (votes.isNotEmpty) {
+          final winner = votes.entries.reduce((a, b) => a.value > b.value ? a : b).key;
+          autoProjectName = projectInfo[winner]?['name'];
+          autoProjectCode = projectInfo[winner]?['code'];
+          debugPrint('[BLE] 自動匹配專案 (majority vote ${votes[winner]}/${filteredData.length}): $autoProjectName');
         }
       } catch (e) {
         debugPrint('[BLE] 專案自動匹配失敗（不影響儲存）: $e');
