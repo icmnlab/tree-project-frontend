@@ -55,41 +55,47 @@ class BlePacketDecoder {
   ///
   /// Returns: 有效的數據 bytes
   static List<int> decodePacket(List<int> packetData) {
-    final int pktLen = packetData.length;
+    try {
+      final int pktLen = packetData.length;
 
-    if (pktLen == 20) {
-      // 20-byte 封包：檢查是否以 44 xx 00 開頭
-      if (pktLen >= 3 &&
-          packetData[0] == 0x44 &&
-          packetData[2] == 0x00) {
-        // 標記封包：跳過前 3 bytes
-        _marker44xxCount++;
-        _bytesDropped += 3;
-        debugPrint(
-            '[BLE DECODER] 標記封包 44 ${packetData[1].toRadixString(16).padLeft(2, '0').toUpperCase()} 00 - 跳過前 3 bytes');
-        return packetData.sublist(3);
-      } else {
-        // 正常封包：保留全部
-        _normal20Count++;
-        return packetData;
-      }
-    } else if (pktLen == 5) {
-      // 5-byte 殘留封包：只保留前 3 bytes
-      _residual5Count++;
-      _bytesDropped += 2;
-      debugPrint(
-          '[BLE DECODER] 殘留封包 (5 bytes) - 只保留前 3 bytes');
-      return packetData.sublist(0, 3);
-    } else {
-      // 其他長度封包：過濾並保留 ASCII
-      _otherCount++;
-      List<int> filtered = [];
-      for (int b in packetData) {
-        if ((b >= 0x20 && b <= 0x7E) || b == 0x0D || b == 0x0A) {
-          filtered.add(b);
+      if (pktLen == 20) {
+        // 20-byte 封包：檢查是否以 44 xx 00 開頭
+        if (pktLen >= 3 &&
+            packetData[0] == 0x44 &&
+            packetData[1] <= 0x0F &&
+            packetData[2] == 0x00) {
+          // 標記封包：跳過前 3 bytes
+          _marker44xxCount++;
+          _bytesDropped += 3;
+          debugPrint(
+              '[BLE DECODER] 標記封包 44 ${packetData[1].toRadixString(16).padLeft(2, '0').toUpperCase()} 00 - 跳過前 3 bytes');
+          return packetData.sublist(3);
+        } else {
+          // 正常封包：保留全部
+          _normal20Count++;
+          return packetData;
         }
+      } else if (pktLen == 5) {
+        // 5-byte 殘留封包：只保留前 3 bytes
+        _residual5Count++;
+        _bytesDropped += 2;
+        debugPrint(
+            '[BLE DECODER] 殘留封包 (5 bytes) - 只保留前 3 bytes');
+        return packetData.sublist(0, 3);
+      } else {
+        // 其他長度封包：過濾並保留 ASCII
+        _otherCount++;
+        List<int> filtered = [];
+        for (int b in packetData) {
+          if ((b >= 0x20 && b <= 0x7E) || b == 0x0D || b == 0x0A) {
+            filtered.add(b);
+          }
+        }
+        return filtered;
       }
-      return filtered;
+    } catch (e) {
+      debugPrint('[BlePacketDecoder] Error decoding packet: $e');
+      return packetData;
     }
   }
 

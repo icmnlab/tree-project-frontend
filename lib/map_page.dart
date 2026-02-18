@@ -4,6 +4,7 @@ import 'dart:math';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart';
 import 'services/api_service.dart';
+import 'utils/location_helper.dart';
 import 'services/v3/project_boundary_service.dart';
 import 'screens/v3/project_boundary_draw_page.dart';
 import 'constants/colors.dart';
@@ -641,12 +642,12 @@ class _MapPageState extends State<MapPage> {
     if (!_hasLocationPermission) return;
     
     try {
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-      _safeSetState(() {
-        _currentPosition = position;
-      });
+      final position = await getHighAccuracyPosition();
+      if (position != null) {
+        _safeSetState(() {
+          _currentPosition = position;
+        });
+      }
     } catch (e) {
       debugPrint('Error getting location: $e');
     }

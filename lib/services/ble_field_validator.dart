@@ -19,7 +19,7 @@ class BleFieldValidator {
   /// - TYPE 欄位：只接受 1P/3P/3D/DME
   /// - 保留欄位：TYPE [2], N/S [13], E/W [15], UTM ZONE [32]
   static List<String> applyContextAwareFiltering(List<String> fields) {
-    if (fields.length < 33) return fields;
+    if (fields.length < 29) return fields;
 
     List<String> cleaned = List<String>.from(fields);
 

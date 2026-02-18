@@ -259,7 +259,7 @@ class PendingMeasurementService {
   /// 跳過某棵樹的測量
   Future<void> skipMeasurement(int id, {String? reason}) async {
     try {
-      await http.patch(
+      final response = await http.patch(
         Uri.parse('$_baseUrl/api/pending-measurements/$id'),
         headers: {
           'Content-Type': 'application/json',
@@ -270,6 +270,10 @@ class PendingMeasurementService {
           'measurement_notes': reason ?? '使用者跳過',
         }),
       );
+
+      if (response.statusCode != 200) {
+        throw Exception('跳過測量失敗: ${response.statusCode}');
+      }
     } catch (e) {
       debugPrint('跳過測量失敗: $e');
       rethrow;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'dart:math';
 import 'dart:convert';
+import 'utils/location_helper.dart';
 
 // Import services
 import 'services/tree_service.dart';
@@ -1069,13 +1069,7 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
 
   Future<void> _addProjectArea(String areaName) async {
     try {
-      Position? position;
-      try {
-        position = await Geolocator.getCurrentPosition(
-            desiredAccuracy: LocationAccuracy.high);
-      } catch (e) {
-        // Ignore
-      }
+      final position = await getHighAccuracyPosition();
       final requestData = {
         'area_name': areaName,
         'description': areaName + '專案區位',

@@ -173,10 +173,10 @@ class DataFilterService {
       final missingFields = _checkMissingFields(record);
       
       if (missingFields.isNotEmpty) {
-        // 標記不完整原因
-        record['_incomplete'] = true;
-        record['_missing_fields'] = missingFields;
-        incompleteRecords.add(record);
+        final taggedRecord = Map<String, dynamic>.from(record);
+        taggedRecord['_incomplete'] = true;
+        taggedRecord['_missing_fields'] = missingFields;
+        incompleteRecords.add(taggedRecord);
         
         // 統計缺失欄位
         for (final field in missingFields) {
@@ -238,10 +238,11 @@ class DataFilterService {
       if (conflictingFields.isEmpty) {
         // 完全相同的重複記錄，保留最後一筆
         for (int i = 0; i < group.length - 1; i++) {
-          group[i]['_duplicate'] = true;
-          group[i]['_duplicate_type'] = 'exact';
-          group[i]['_kept_record_id'] = group.last['id'];
-          duplicateRecords.add(group[i]);
+          final taggedRecord = Map<String, dynamic>.from(group[i]);
+          taggedRecord['_duplicate'] = true;
+          taggedRecord['_duplicate_type'] = 'exact';
+          taggedRecord['_kept_record_id'] = group.last['id'];
+          duplicateRecords.add(taggedRecord);
         }
         validRecords.add(group.last);
       } else {
@@ -268,19 +269,21 @@ class DataFilterService {
           // 將非保留的記錄標記為重複
           for (final record in group) {
             if (record != keptRecord) {
-              record['_duplicate'] = true;
-              record['_duplicate_type'] = 'conflict_resolved';
-              record['_kept_record_id'] = keptRecord['id'];
-              record['_conflicting_fields'] = conflictingFields.keys.toList();
-              duplicateRecords.add(record);
+              final taggedRecord = Map<String, dynamic>.from(record);
+              taggedRecord['_duplicate'] = true;
+              taggedRecord['_duplicate_type'] = 'conflict_resolved';
+              taggedRecord['_kept_record_id'] = keptRecord['id'];
+              taggedRecord['_conflicting_fields'] = conflictingFields.keys.toList();
+              duplicateRecords.add(taggedRecord);
             }
           }
           validRecords.add(keptRecord);
         } else {
           // 需要人工審核，暫不加入有效列表
           for (final record in group) {
-            record['_needs_review'] = true;
-            record['_conflicting_fields'] = conflictingFields.keys.toList();
+            final taggedRecord = Map<String, dynamic>.from(record);
+            taggedRecord['_needs_review'] = true;
+            taggedRecord['_conflicting_fields'] = conflictingFields.keys.toList();
           }
         }
       }
@@ -310,11 +313,11 @@ class DataFilterService {
           final conflictingFields = _detectConflictsBetweenTwo(record, existingRecord);
           
           if (conflictingFields.isEmpty) {
-            // 完全相同，視為重複
-            record['_exists_in_database'] = true;
-            record['_duplicate'] = true;
-            record['_duplicate_type'] = 'exists_in_db';
-            duplicateRecords.add(record);
+            final taggedRecord = Map<String, dynamic>.from(record);
+            taggedRecord['_exists_in_database'] = true;
+            taggedRecord['_duplicate'] = true;
+            taggedRecord['_duplicate_type'] = 'exists_in_db';
+            duplicateRecords.add(taggedRecord);
             duplicateGroups.add('已存在於資料庫: ${record['id']}');
           } else {
             // 座標相同但數據不同，記錄衝突
@@ -333,13 +336,15 @@ class DataFilterService {
             
             // 根據選項決定是保留新資料還是跳過
             if (options.preferNewData) {
-              record['_updates_existing'] = true;
-              record['_existing_record_id'] = existingRecord['id'];
-              newValidRecords.add(record);
+              final taggedRecord = Map<String, dynamic>.from(record);
+              taggedRecord['_updates_existing'] = true;
+              taggedRecord['_existing_record_id'] = existingRecord['id'];
+              newValidRecords.add(taggedRecord);
             } else {
-              record['_exists_in_database'] = true;
-              record['_has_conflict'] = true;
-              duplicateRecords.add(record);
+              final taggedRecord = Map<String, dynamic>.from(record);
+              taggedRecord['_exists_in_database'] = true;
+              taggedRecord['_has_conflict'] = true;
+              duplicateRecords.add(taggedRecord);
             }
           }
         } else {

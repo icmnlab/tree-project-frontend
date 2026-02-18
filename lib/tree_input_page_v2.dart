@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:math';
 import 'dart:convert';
+import 'utils/location_helper.dart';
 
 // Import services
 import 'services/tree_service.dart';
@@ -472,9 +473,14 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
         return;
       }
 
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
+      final position = await getHighAccuracyPosition();
+      if (position == null) {
+        setState(() {
+          _isLoading = false;
+          _locationError = '無法獲取位置';
+        });
+        return;
+      }
 
       if (!mounted) return;
 
@@ -1006,10 +1012,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
         
         // 如果沒有最後位置，則嘗試獲取當前位置，但設定超時
         if (position == null) {
-          position = await Geolocator.getCurrentPosition(
-            desiredAccuracy: LocationAccuracy.high,
-            timeLimit: const Duration(seconds: 3), // 3秒超時
-          );
+          position = await getHighAccuracyPosition(timeout: const Duration(seconds: 3));
         }
       } catch (e) {
         logDebug('獲取位置失敗 (非致命): $e');

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import '../services/project_area_service.dart';
+import '../utils/location_helper.dart';
 import '../services/project_service.dart';
 import '../services/species_service.dart';
 import '../services/tree_service.dart';
@@ -1261,13 +1261,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
   Future<void> _addProjectArea(String areaName) async {
     setState(() => _isLoading = true);
     try {
-      Position? position;
-      try {
-        position = await Geolocator.getCurrentPosition(
-            desiredAccuracy: LocationAccuracy.high);
-      } catch (e) {
-        print('獲取位置失敗: $e');
-      }
+      final position = await getHighAccuracyPosition();
 
       final requestData = {
         'area_name': areaName,

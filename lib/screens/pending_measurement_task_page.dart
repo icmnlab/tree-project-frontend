@@ -5,7 +5,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import '../models/pending_tree_measurement.dart';
 import '../services/pending_measurement_service.dart';
-import 'v3/integrated_tree_form_page.dart'; // V3 整合表單
+import '../utils/location_helper.dart';
+import 'v3/integrated_tree_form_page.dart';
 
 /// 待測量任務頁面
 /// 
@@ -35,6 +36,8 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   String? _error;
   List<PendingTreeMeasurement> _pendingTrees = [];
   PendingTreeMeasurement? _currentTask;
+  bool _isProcessing = false;
+  bool _abandoned = false;
   
   // Session 管理
   String? _activeSessionId;
@@ -48,8 +51,9 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   StreamSubscription<Position>? _positionSubscription;
   StreamSubscription<MagnetometerEvent>? _magnetometerSubscription;
   StreamSubscription<AccelerometerEvent>? _accelerometerSubscription;
-  double? _currentHeading; // 用戶朝向（磁北基準）
-  AccelerometerEvent? _lastAccelEvent; // 用於傾斜補償
+  double? _currentHeading;
+  AccelerometerEvent? _lastAccelEvent;
+  int _lastHeadingUpdateMs = 0;
   
   // 導航狀態
   NavigationState _navState = NavigationState.selectingTask;
@@ -100,54 +104,41 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     });
     
     try {
-      Position? position;
-      try {
-        position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.medium,
-        ).timeout(const Duration(seconds: 5));
-      } catch (e) {
-        debugPrint('[PendingTask] GPS 定位失敗（不影響任務列表）: $e');
-      }
-      
-      final pendingTrees = await _service.getPendingTrees(
-        sessionId: _activeSessionId,
-        status: MeasurementStatus.pending,
-        userLat: position?.latitude,
-        userLon: position?.longitude,
-        sortByDistance: position != null,
+      final position = await getHighAccuracyPosition(
+        timeout: const Duration(seconds: 5),
       );
       
-      final inProgressTrees = await _service.getPendingTrees(
-        sessionId: _activeSessionId,
-        status: MeasurementStatus.inProgress,
-        userLat: position?.latitude,
-        userLon: position?.longitude,
-        sortByDistance: position != null,
-      );
+      final results = await Future.wait([
+        _service.getPendingTrees(
+          sessionId: _activeSessionId,
+          status: MeasurementStatus.pending,
+          userLat: position?.latitude,
+          userLon: position?.longitude,
+          sortByDistance: position != null,
+        ),
+        _service.getPendingTrees(
+          sessionId: _activeSessionId,
+          status: MeasurementStatus.inProgress,
+          userLat: position?.latitude,
+          userLon: position?.longitude,
+          sortByDistance: position != null,
+        ),
+        _service.getSessions(),
+      ]);
+      
+      final pendingTrees = results[0] as List<PendingTreeMeasurement>;
+      final inProgressTrees = results[1] as List<PendingTreeMeasurement>;
+      final freshSessions = results[2] as List<MeasurementSession>;
       
       final allTrees = [...inProgressTrees, ...pendingTrees];
+      _sessions = freshSessions;
       
-      // Compute progress from session stats if available
       if (_activeSessionId != null) {
-        try {
-          final session = _sessions.isNotEmpty
-              ? _sessions.firstWhere((s) => s.sessionId == _activeSessionId,
-                  orElse: () => _sessions.first)
-              : null;
-          if (session != null) {
-            _totalTasksInSession = session.totalTrees;
-            _completedCount = session.completedTrees;
-          }
-        } catch (_) {}
-        // Refresh sessions for accurate counts
-        try {
-          _sessions = await _service.getSessions();
-          final updated = _sessions.where((s) => s.sessionId == _activeSessionId).toList();
-          if (updated.isNotEmpty) {
-            _totalTasksInSession = updated.first.totalTrees;
-            _completedCount = updated.first.completedTrees;
-          }
-        } catch (_) {}
+        final updated = _sessions.where((s) => s.sessionId == _activeSessionId).toList();
+        if (updated.isNotEmpty) {
+          _totalTasksInSession = updated.first.totalTrees;
+          _completedCount = updated.first.completedTrees;
+        }
       }
       
       if (!mounted) return;
@@ -165,20 +156,23 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     }
   }
   
-  void _startLocationTracking() async {
+  Future<void> _startLocationTracking() async {
     try {
-      // 檢查權限
       final permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
-        await Geolocator.requestPermission();
+        final newPerm = await Geolocator.requestPermission();
+        if (newPerm == LocationPermission.denied || newPerm == LocationPermission.deniedForever) {
+          debugPrint('[GPS] Permission denied');
+          return;
+        }
+      }
+      if (permission == LocationPermission.deniedForever) {
+        debugPrint('[GPS] Permission permanently denied');
+        return;
       }
       
-      // 開始追蹤位置（含方向）
       _positionSubscription = Geolocator.getPositionStream(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          distanceFilter: 1,
-        ),
+        locationSettings: buildLocationSettings(distanceFilter: 3),
       ).listen((position) {
         if (mounted) {
           setState(() {
@@ -187,32 +181,30 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
               _currentHeading = position.heading;
             }
           });
-          
-          // [Phase 3] GPS 接近目標時自動推進流程
           _checkProximityAutoAdvance(position);
         }
       });
       
-      // 加速度計（用於傾斜補償）
       _accelerometerSubscription = accelerometerEventStream()?.listen((event) {
         _lastAccelEvent = event;
       });
       
-      // 磁力計 + 傾斜補償
       _magnetometerSubscription = magnetometerEventStream()?.listen((event) {
         if (!mounted) return;
+        
+        final now = DateTime.now().millisecondsSinceEpoch;
+        if (now - _lastHeadingUpdateMs < 100) return;
+        _lastHeadingUpdateMs = now;
         
         double heading;
         final accel = _lastAccelEvent;
         
         if (accel != null) {
-          // 傾斜補償：用加速度計修正磁力計讀數
           final ax = accel.x, ay = accel.y, az = accel.z;
           final norm = math.sqrt(ax * ax + ay * ay + az * az);
           if (norm > 0.1) {
             final pitch = math.asin(-ax / norm);
             final roll = math.asin(ay / norm);
-            // 補償後的磁力分量
             final compX = event.x * math.cos(pitch) + event.z * math.sin(pitch);
             final compY = event.x * math.sin(roll) * math.sin(pitch) 
                         + event.y * math.cos(roll) 
@@ -225,15 +217,15 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
           heading = (math.atan2(-event.x, event.y) * 180 / math.pi + 360) % 360;
         }
         
-        setState(() {
-          if (_userPosition == null || _userPosition!.speed <= 0.3) {
+        if (_userPosition == null || _userPosition!.speed <= 0.3) {
+          setState(() {
             _currentHeading = heading;
-          }
-        });
+          });
+        }
       });
       
     } catch (e) {
-      debugPrint('位置追蹤失敗: $e');
+      debugPrint('[GPS] 位置追蹤失敗: $e');
     }
   }
   
@@ -243,8 +235,8 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     // 不再自動推進，完全由使用者手動確認「已到達」
   }
 
-  /// Revert current task to pending and return to task list
   Future<void> _abandonCurrentTask() async {
+    _abandoned = true;
     if (_currentTask?.id != null) {
       try {
         await _service.updateTaskStatus(
@@ -254,9 +246,11 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
         debugPrint('[PendingTask] 恢復 pending 狀態失敗: $e');
       }
     }
+    if (!mounted) return;
     setState(() {
       _navState = NavigationState.selectingTask;
       _currentTask = null;
+      _isProcessing = false;
     });
     _loadTasks();
   }
@@ -1077,13 +1071,16 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   
   // === 事件處理 ===
   
-  void _startTask(PendingTreeMeasurement task) async {
+  Future<void> _startTask(PendingTreeMeasurement task) async {
+    if (_isProcessing) return;
+    _isProcessing = true;
+    _abandoned = false;
+    
     setState(() {
       _currentTask = task;
       _navState = NavigationState.navigatingToStation;
     });
     
-    // 標記為進行中（使用正確的狀態更新）
     if (task.id != null) {
       try {
         await _service.updateTaskStatus(task.id!, MeasurementStatus.inProgress);
@@ -1091,6 +1088,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
         debugPrint('[PendingTask] 設定 in_progress 失敗: $e');
       }
     }
+    if (mounted) _isProcessing = false;
   }
   
   void _arrivedAtStation() {
@@ -1099,30 +1097,37 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     });
   }
   
-  void _startMeasurement() async {
+  Future<void> _startMeasurement() async {
+    if (_isProcessing || _currentTask == null) return;
+    _isProcessing = true;
+    
     setState(() => _navState = NavigationState.measuring);
+    
+    final taskRef = _currentTask!;
     
     final success = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (context) => IntegratedTreeFormPage(
-          task: _currentTask!,
+          task: taskRef,
         ),
       ),
     );
     
+    _isProcessing = false;
+    if (!mounted || _abandoned) return;
+    
     if (success == true) {
-      await _loadTasks(); // Progress counts refresh from backend
+      await _loadTasks();
+      if (!mounted) return;
       
       if (_pendingTrees.isNotEmpty) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('完成 $_completedCount/$_totalTasksInSession — 自動跳轉下一棵'),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('完成 $_completedCount/$_totalTasksInSession — 自動跳轉下一棵'),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
         _startTask(_pendingTrees.first);
       } else {
         setState(() {
@@ -1132,16 +1137,16 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
         _showBatchTransferDialog();
       }
     } else {
-      // User cancelled/backed out — revert status back to pending
-      if (_currentTask?.id != null) {
+      if (taskRef.id != null) {
         try {
           await _service.updateTaskStatus(
-            _currentTask!.id!, MeasurementStatus.pending,
+            taskRef.id!, MeasurementStatus.pending,
           );
         } catch (e) {
           debugPrint('[PendingTask] 恢復 pending 狀態失敗: $e');
         }
       }
+      if (!mounted) return;
       setState(() {
         _navState = NavigationState.selectingTask;
         _currentTask = null;
@@ -1187,7 +1192,8 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   }
   
   Future<void> _executeBatchTransfer() async {
-    // Use _activeSessionId, or infer from current task
+    if (_isTransferring) return;
+    
     final sid = _activeSessionId
         ?? _currentTask?.sessionId
         ?? (_pendingTrees.isNotEmpty ? _pendingTrees.first.sessionId : null);
@@ -1223,23 +1229,29 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     );
   }
   
-  void _skipCurrentTask() async {
-    if (_currentTask?.id != null) {
-      try {
-        await _service.skipMeasurement(_currentTask!.id!);
-        await _loadTasks();
-        
-        if (_pendingTrees.isNotEmpty) {
-          _startTask(_pendingTrees.first);
-        } else {
-          setState(() {
-            _navState = NavigationState.selectingTask;
-            _currentTask = null;
-          });
-        }
-      } catch (e) {
-        debugPrint('跳過失敗: $e');
+  Future<void> _skipCurrentTask() async {
+    if (_isProcessing || _currentTask?.id == null) return;
+    _isProcessing = true;
+    
+    try {
+      await _service.skipMeasurement(_currentTask!.id!);
+      if (!mounted) return;
+      await _loadTasks();
+      if (!mounted) return;
+      
+      if (_pendingTrees.isNotEmpty) {
+        _isProcessing = false;
+        _startTask(_pendingTrees.first);
+      } else {
+        setState(() {
+          _navState = NavigationState.selectingTask;
+          _currentTask = null;
+        });
+        _isProcessing = false;
       }
+    } catch (e) {
+      debugPrint('跳過失敗: $e');
+      _isProcessing = false;
     }
   }
   

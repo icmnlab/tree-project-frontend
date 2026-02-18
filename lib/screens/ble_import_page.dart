@@ -20,9 +20,11 @@ class BleImportPage extends StatefulWidget {
 }
 
 class _BleImportPageState extends State<BleImportPage> {
+  static final _csvCleanRegex = RegExp(r'[^0-9A-Z\.\;\-\r\n\$\#]');
+  static final _recordDelimiterRegex = RegExp(r'\$;');
+
   // 狀態變數
   bool _isScanning = false;
-  // V2 批次匯入模式（V1 已退役）
   List<ScanResult> _scanResults = [];
   BluetoothDevice? _connectedDevice;
   bool _isConnecting = false;
@@ -30,25 +32,29 @@ class _BleImportPageState extends State<BleImportPage> {
 
   // 數據緩衝區
   final StringBuffer _dataBuffer = StringBuffer();
-  final List<String> _hexLog = []; // [UX] 用於顯示即時 Hex 數據流
+  final List<String> _hexLog = [];
   List<String> _receivedCsvLines = [];
-  bool _isTransmissionSuccess = false; // [FIX] 追蹤傳輸是否成功
-  int _estimatedRecordCount = 0; // [v14.0] 即時記錄數統計
+  bool _isTransmissionSuccess = false;
+  int _estimatedRecordCount = 0;
 
   // 關鍵 UUID (Nordic UART Service)
   final String _serviceUuid = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
   final String _txCharacteristicUuid =
-      "6E400003-B5A3-F393-E0A9-E50E24DCCA9E"; // 接收數據 (Notify)
+      "6E400003-B5A3-F393-E0A9-E50E24DCCA9E";
 
-  // [FIX] EOT 訊號: 0x5A (Z), 0xBF, 0xFB
   final List<int> _eotSignal = [0x5A, 0xBF, 0xFB];
-  // final String _rxCharacteristicUuid = "6E400002-B5A3-F393-E0A9-E50E24DCCA9E"; // 發送指令 (Write) - 這次不需要
 
   StreamSubscription? _scanSubscription;
+  StreamSubscription? _isScanningSubscription;
   StreamSubscription? _connectionSubscription;
   StreamSubscription? _dataSubscription;
   Timer? _timeoutTimer;
-  final ScrollController _logScrollController = ScrollController(); // [UX] 自動捲動
+  Timer? _uiUpdateTimer;
+  final ScrollController _logScrollController = ScrollController();
+
+  // UI 節流：收集 pending 更新，由 timer 批次 flush
+  bool _uiDirty = false;
+  final List<String> _pendingHexEntries = [];
 
   @override
   void initState() {
@@ -58,12 +64,11 @@ class _BleImportPageState extends State<BleImportPage> {
 
   @override
   void dispose() {
-    // 確保在頁面銷毀前停止掃描並斷開連接
-    // [FIX] 避免在 dispose 中呼叫 setState
     FlutterBluePlus.stopScan();
     _scanSubscription?.cancel();
+    _isScanningSubscription?.cancel();
+    _uiUpdateTimer?.cancel();
 
-    // 使用 unawaited 確保不會阻塞 UI 銷毀，但會執行斷線
     if (_connectedDevice != null) {
       _connectedDevice!.disconnect();
     }
@@ -113,8 +118,11 @@ class _BleImportPageState extends State<BleImportPage> {
     );
   }
 
-  // [FIX] 強制重置所有狀態，防止重入崩潰
   void _resetState() {
+    _uiUpdateTimer?.cancel();
+    _uiUpdateTimer = null;
+    _pendingHexEntries.clear();
+    _uiDirty = false;
     if (mounted) {
       setState(() {
         _dataBuffer.clear();
@@ -125,7 +133,7 @@ class _BleImportPageState extends State<BleImportPage> {
         _isConnecting = false;
         _scanResults.clear();
         _isScanning = false;
-        _estimatedRecordCount = 0; // [v14.0] 重置記錄數統計
+        _estimatedRecordCount = 0;
       });
     }
   }
@@ -294,10 +302,9 @@ class _BleImportPageState extends State<BleImportPage> {
         });
       });
 
-      // 監聽掃描結束
-      FlutterBluePlus.isScanning.listen((isScanning) {
-        if (!mounted) return; // [FIX] 確保 Widget 還在掛載中
-
+      _isScanningSubscription?.cancel();
+      _isScanningSubscription = FlutterBluePlus.isScanning.listen((isScanning) {
+        if (!mounted) return;
         setState(() {
           _isScanning = isScanning;
         });
@@ -317,6 +324,8 @@ class _BleImportPageState extends State<BleImportPage> {
   void _stopScan() {
     FlutterBluePlus.stopScan();
     _scanSubscription?.cancel();
+    _isScanningSubscription?.cancel();
+    _isScanningSubscription = null;
     if (mounted) {
       setState(() => _isScanning = false);
     }
@@ -452,10 +461,23 @@ class _BleImportPageState extends State<BleImportPage> {
           });
         }
 
-        // 監聯數據流
-        _dataSubscription = txCharacteristic.lastValueStream.listen((value) {
-          _processReceivedData(value);
-        });
+        _dataSubscription = txCharacteristic.lastValueStream.listen(
+          (value) {
+            _processReceivedData(value);
+          },
+          onError: (error) {
+            debugPrint('[BLE] Data stream error: $error');
+            if (mounted && _isReceiving) {
+              _onTransferComplete();
+            }
+          },
+        );
+
+        _uiUpdateTimer?.cancel();
+        _uiUpdateTimer = Timer.periodic(
+          const Duration(milliseconds: 100),
+          (_) => _flushUiUpdates(),
+        );
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -475,102 +497,76 @@ class _BleImportPageState extends State<BleImportPage> {
     }
   }
 
-  // 5. 數據處理 (Task 5: 緩衝區優化與拼接)
   void _processReceivedData(List<int> data) {
-    // [DEBUG] 輸出原始 HEX 數據，以診斷亂碼問題
-    // 將 List<int> 轉換為 HEX 字串 (e.g., "5A BF FB")
-    final hexString = data
-        .map((b) => b.toRadixString(16).padLeft(2, '0').toUpperCase())
-        .join(' ');
-    print('[BLE RAW] len=${data.length} $hexString');
+    try {
+      final hexString = data
+          .map((b) => b.toRadixString(16).padLeft(2, '0').toUpperCase())
+          .join(' ');
 
-    // [UX] 更新 Hex Log (只保留最後 50 行以節省資源)
-    // [FIX] 檢查 mounted 再調用 setState
-    if (mounted) {
-      setState(() {
-        _hexLog.add('(${data.length}) $hexString');
-        if (_hexLog.length > 50) {
+      _pendingHexEntries.add('(${data.length}) $hexString');
+
+      if (data.length == 3 &&
+          data[0] == _eotSignal[0] &&
+          data[1] == _eotSignal[1] &&
+          data[2] == _eotSignal[2]) {
+        debugPrint('[BLE] EOT signal received');
+        _isTransmissionSuccess = true;
+        _timeoutTimer?.cancel();
+        BlePacketDecoder.printStats();
+        _flushUiUpdates();
+        _handleSuccess();
+        return;
+      }
+
+      List<int> decodedData = BlePacketDecoder.decodePacket(data);
+
+      String rawChunk;
+      try {
+        rawChunk = utf8.decode(decodedData);
+      } catch (e) {
+        rawChunk = String.fromCharCodes(decodedData);
+      }
+
+      String cleanChunk = rawChunk.replaceAll(_csvCleanRegex, '');
+
+      _dataBuffer.write(cleanChunk);
+
+      final newRecords = _recordDelimiterRegex.allMatches(cleanChunk).length;
+      if (newRecords > 0) {
+        _estimatedRecordCount += newRecords;
+        _uiDirty = true;
+      }
+
+      if (!_isTransmissionSuccess) {
+        _resetTimeoutTimer();
+      }
+    } catch (e) {
+      debugPrint('[BLE] Packet processing error: $e');
+    }
+  }
+
+  void _flushUiUpdates() {
+    if (!mounted) return;
+    if (!_uiDirty && _pendingHexEntries.isEmpty) return;
+
+    setState(() {
+      if (_pendingHexEntries.isNotEmpty) {
+        _hexLog.addAll(_pendingHexEntries);
+        _pendingHexEntries.clear();
+        while (_hexLog.length > 50) {
           _hexLog.removeAt(0);
         }
-      });
-    }
-    // 自動捲動到底部
-    if (_logScrollController.hasClients) {
-      _logScrollController
-          .jumpTo(_logScrollController.position.maxScrollExtent);
-    }
+      }
+      _uiDirty = false;
+    });
 
-    // [FIX] 檢查是否為傳輸結束訊號
-    // 先進行簡單的 listEquals 檢查 (雖然 listEquals 需要 collection 包，這裡手動比對比較快)
-    if (data.length == 3 &&
-        data[0] == _eotSignal[0] &&
-        data[1] == _eotSignal[1] &&
-        data[2] == _eotSignal[2]) {
-      // 偵測到 EOT 訊號
-      print('偵測到 EOT 訊號，傳輸成功。');
-      _isTransmissionSuccess = true;
-      // 停止超時檢測 (因為已經明確結束)
-      _timeoutTimer?.cancel();
-      // 列印封包解碼統計
-      BlePacketDecoder.printStats();
-      // 觸發成功處理邏輯
-      _handleSuccess();
-      return;
-    }
-
-    // [v14.0] 使用協議級封包解碼器
-    // 基於 VLGEO2 BLE 協議深度分析：
-    // - 正常封包 (20 bytes): 保留全部
-    // - 殘留封包 (5 bytes): 只保留前 3 bytes (後 2 bytes 是雜訊)
-    // - 標記封包 (20 bytes, 以 44 xx 00 開頭): 跳過前 3 bytes
-    List<int> decodedData = BlePacketDecoder.decodePacket(data);
-
-    // 1. 解碼 - 使用解碼後的 byte 陣列
-    String rawChunk;
-    try {
-      rawChunk = utf8.decode(decodedData);
-    } catch (e) {
-      rawChunk = String.fromCharCodes(decodedData);
-    }
-
-    // 2. 字串級白名單過濾 (最後一道防線)
-    // VLGEO CSV 實際使用的字元 (基於 DATA_2.CSV 分析)：
-    // - 數字: 0-9
-    // - 分隔符: ; (分號)
-    // - 數值符號: . (小數點), - (負號)
-    // - 標記符號: $ (資料行), # (設定行)
-    // - 座標方向: N, S, E, W
-    // - 測量類型: P, Q, R, D, M
-    // - Header 關鍵字: MARK, STATUS, TYPE, SET... (都是大寫英文字母)
-    // - 換行: \r\n
-    // [CRITICAL] 移除小寫字母、括號、斜線等非標準字元
-    String cleanChunk =
-        rawChunk.replaceAll(RegExp(r'[^0-9A-Z\.\;\-\r\n\$\#]'), '');
-
-    // [DEBUG] 如果清洗後內容有變，印出差異
-    if (rawChunk != cleanChunk) {
-      print('[BLE CLEANED] "$rawChunk" -> "$cleanChunk"');
-    }
-
-    // 3. 寫入緩衝區
-    _dataBuffer.write(cleanChunk);
-
-    // [v14.0] 即時統計記錄數 (以 '$;' 開頭的行數)
-    // 這是一個簡單的估算，實際數量以最終解析為準
-    String bufferContent = _dataBuffer.toString();
-    int recordCount = RegExp(r'\$;').allMatches(bufferContent).length;
-    if (recordCount != _estimatedRecordCount && mounted) {
-      setState(() {
-        _estimatedRecordCount = recordCount;
-      });
-    }
-
-    // 4. 超時檢測 (Silence Timeout)
-    // 如果 3000 毫秒內沒有收到新數據，假設傳輸結束
-    // [FIX] 僅當未成功時才依賴超時
-    if (!_isTransmissionSuccess) {
-      _resetTimeoutTimer();
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_logScrollController.hasClients) {
+        _logScrollController.jumpTo(
+          _logScrollController.position.maxScrollExtent,
+        );
+      }
+    });
   }
 
   void _resetTimeoutTimer() {
@@ -580,17 +576,17 @@ class _BleImportPageState extends State<BleImportPage> {
         Timer(const Duration(milliseconds: 3000), _onTransferComplete);
   }
 
-  // [FIX] 專門處理 EOT 成功情況
-  void _handleSuccess() {
+  Future<void> _handleSuccess() async {
     if (!mounted) return;
 
-    // 觸發斷線 (優雅斷開)
-    // 注意：這裡呼叫 _disconnect，但我們需要確保它不會清除數據
-    _disconnect();
+    _uiUpdateTimer?.cancel();
+    _uiUpdateTimer = null;
 
-    // 處理接收到的數據以供顯示
+    await _disconnect();
+
     _parseAndShowData();
 
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('傳輸完成 (EOT)'),
@@ -645,16 +641,19 @@ class _BleImportPageState extends State<BleImportPage> {
   void _handleFailure() {
     if (!mounted) return;
 
-    // 斷開連接
+    _uiUpdateTimer?.cancel();
+    _uiUpdateTimer = null;
+    _pendingHexEntries.clear();
+
     _disconnect();
 
-    // 清除數據 (回到掃描前的初始狀態)
     setState(() {
       _dataBuffer.clear();
       _receivedCsvLines.clear();
       _hexLog.clear();
       _isReceiving = false;
       _isTransmissionSuccess = false;
+      _estimatedRecordCount = 0;
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1105,7 +1104,8 @@ class _BleImportPageState extends State<BleImportPage> {
         loadingDialogShown = true;
       }
 
-      // Majority vote: check ALL trees with GPS to find the most common project match
+      if (!mounted) return;
+
       String? autoProjectArea;
       String? autoProjectCode;
       String? autoProjectName;
@@ -1136,6 +1136,7 @@ class _BleImportPageState extends State<BleImportPage> {
           final winner = votes.entries.reduce((a, b) => a.value > b.value ? a : b).key;
           autoProjectName = projectInfo[winner]?['name'];
           autoProjectCode = projectInfo[winner]?['code'];
+          autoProjectArea = autoProjectName;
           debugPrint('[BLE] 自動匹配專案 (majority vote ${votes[winner]}/${filteredData.length}): $autoProjectName');
         }
       } catch (e) {
@@ -1162,6 +1163,7 @@ class _BleImportPageState extends State<BleImportPage> {
         final count = result['count'] ?? filteredData.length;
         final sessionId = result['sessionId'] as String?;
         
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('成功儲存 $count 棵樹到待測量任務'),
@@ -1186,6 +1188,7 @@ class _BleImportPageState extends State<BleImportPage> {
         // 重置狀態
         _resetState();
       } else {
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('儲存失敗: ${result['message'] ?? '未知錯誤'}'),

@@ -109,9 +109,39 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
     }
     
     try {
-      final permission = await Geolocator.checkPermission();
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.deniedForever) {
+        debugPrint('[GPS] Permission permanently denied');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('定位權限被永久拒絕，請到設定中開啟'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 5),
+              action: SnackBarAction(
+                label: '開啟設定',
+                textColor: Colors.white,
+                onPressed: () => Geolocator.openAppSettings(),
+              ),
+            ),
+          );
+        }
+        setState(() {
+          _phoneToTreeDistance = instrumentHD;
+          _distanceSource = 'instrument';
+        });
+        return;
+      }
       if (permission == LocationPermission.denied) {
-        await Geolocator.requestPermission();
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied || permission == LocationPermission.deniedForever) {
+          debugPrint('[GPS] Permission denied after request');
+          setState(() {
+            _phoneToTreeDistance = instrumentHD;
+            _distanceSource = 'instrument';
+          });
+          return;
+        }
       }
       
       final position = await Geolocator.getCurrentPosition(
@@ -147,8 +177,16 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       );
       
       // 保護 3: GPS 與儀器 HD 嚴重不一致（差距 > 100%）
+      if (instrumentHD <= 0) {
+        debugPrint('[GPS] instrumentHD<=0, using GPS distance directly: ${gpsDist.toStringAsFixed(1)}m');
+        setState(() {
+          _phoneToTreeDistance = gpsDist;
+          _distanceSource = 'gps';
+        });
+        return;
+      }
       final deviation = (gpsDist - instrumentHD).abs();
-      final deviationPct = instrumentHD > 0 ? deviation / instrumentHD : double.infinity;
+      final deviationPct = deviation / instrumentHD;
       
       if (deviationPct > 1.0) {
         debugPrint('[GPS] GPS(${gpsDist.toStringAsFixed(1)}m) 與儀器HD(${instrumentHD.toStringAsFixed(1)}m) 差距 ${(deviationPct * 100).toStringAsFixed(0)}%，優先用儀器 HD');
@@ -190,6 +228,13 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
           _phoneToTreeDistance = instrumentHD;
           _distanceSource = 'instrument';
         });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('GPS 不可用，使用儀器距離 ${instrumentHD.toStringAsFixed(1)}m'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
     }
   }
@@ -247,6 +292,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
   /// [Phase 1] AutoPilot 一鍵量測
   /// 同時觸發 DBH 測量和樹種辨識（並行），自動填入結果
   Future<void> _runAutoPilot(File image) async {
+    if (_isAutoPilotRunning) return;
     setState(() {
       _isAutoPilotRunning = true;
       _autoPilotStatus = 'AI 分析中...';
@@ -311,7 +357,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
   /// 自動 DBH 量測（附帶 EXIF 焦距提取）
   Future<void> _autoMeasureDbh(File image) async {
     try {
-      setState(() => _autoPilotStatus = '測量 DBH 中...');
+      setState(() => _autoPilotStatus = '深度估計中...');
       
       final service = PureVisionDbhService();
       final available = await service.isServiceAvailable();
@@ -333,6 +379,8 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
 
       // Extract EXIF for better focal length accuracy
       final exif = await _extractExif(image);
+
+      if (mounted) setState(() => _autoPilotStatus = '偵測樹幹中...');
 
       final result = await service.autoMeasureDbh(
         imageFile: image,
@@ -360,11 +408,25 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       }
     } catch (e) {
       debugPrint('[AutoPilot] DBH 自動量測失敗: $e');
+      if (mounted) {
+        setState(() => _autoPilotStatus = 'DBH 量測失敗');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('DBH 自動量測失敗，請重拍或手動輸入'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
-  /// Multi-shot: take another photo and send all to fusion endpoint
   Future<void> _takeMultiShotPhoto() async {
+    if (_isAutoPilotRunning) return;
+    if (_capturedImages.length >= 5) {
+      _showError('最多拍攝 5 張照片');
+      return;
+    }
     try {
       final File? image = await _imageService.captureImage();
       if (image == null) return;
@@ -378,8 +440,9 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       _capturedImages.add(image);
 
       final service = PureVisionDbhService();
+      final imagesCopy = List<File>.from(_capturedImages);
       final result = await service.autoMeasureDbhMulti(
-        imageFiles: _capturedImages,
+        imageFiles: imagesCopy,
         referenceDistanceM: _phoneToTreeDistance,
         instrumentDistanceM: widget.task.horizontalDistance,
         focalLengthMm: _lastExif['focalMm'] as double?,
@@ -531,6 +594,15 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       }
     } catch (e) {
       debugPrint('樹種辨識錯誤: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('樹種辨識失敗，請手動選擇'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 
@@ -683,6 +755,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
   }
 
   Future<void> _submitForm() async {
+    if (_isLoading) return;
     if (_dbhController.text.isEmpty) {
       _showError('請輸入胸徑 (DBH)');
       return;

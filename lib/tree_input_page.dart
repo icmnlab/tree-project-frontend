@@ -4,6 +4,7 @@ import 'constants/colors.dart';
 import 'dart:convert';
 import 'package:geolocator/geolocator.dart';
 import 'package:file_picker/file_picker.dart';
+import 'utils/location_helper.dart';
 // import 'package:dio/dio.dart'; // Re-adding for commented out code
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
@@ -13,6 +14,9 @@ import 'dart:async';
 // Import services
 import 'services/tree_service.dart';
 import 'services/project_service.dart';
+import 'services/project_area_service.dart';
+import 'services/location_service.dart';
+import 'services/species_service.dart';
 
 /// 生成安全的備用 ID（用時間戳避免碰撞，比隨機數安全）
 int _generateSafeFallbackId() {
@@ -20,9 +24,6 @@ int _generateSafeFallbackId() {
   // 用時分秒毫秒組成 6 位數字，比 4 位隨機數碰撞機率低很多
   return (now.hour * 100000) + (now.minute * 1000) + (now.second * 10) + (now.millisecond ~/ 100) + 100000;
 }
-import 'services/project_area_service.dart';
-import 'services/location_service.dart';
-import 'services/species_service.dart';
 
 // 定義日誌函數，方便後續替換 print
 void logDebug(String message) {
@@ -650,9 +651,14 @@ class _TreeInputPageState extends State<TreeInputPage> {
       }
 
       // 獲取當前位置
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
+      final position = await getHighAccuracyPosition();
+      if (position == null) {
+        setState(() {
+          _isLoading = false;
+          _locationError = '無法獲取位置';
+        });
+        return;
+      }
 
       // 確保在更新狀態前檢查 widget 是否仍掛載
       if (!mounted) return;
@@ -1620,14 +1626,11 @@ class _TreeInputPageState extends State<TreeInputPage> {
       logDebug('嘗試新增專案區位: $areaName');
 
       // 獲取當前位置
-      Position? position;
-      try {
-        position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
-        );
+      final position = await getHighAccuracyPosition();
+      if (position != null) {
         logDebug('獲取到當前位置: ${position.latitude}, ${position.longitude}');
-      } catch (e) {
-        logDebug('獲取位置失敗: $e');
+      } else {
+        logDebug('獲取位置失敗');
       }
 
       // 準備請求資料

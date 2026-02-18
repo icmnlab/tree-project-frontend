@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import '../../utils/location_helper.dart';
 import '../../services/tree_service.dart';
 import '../../services/project_service.dart';
 import '../../services/species_service.dart';
@@ -153,22 +154,19 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
   Future<void> _getCurrentLocation() async {
     setState(() => _isLoading = true);
     try {
-      final permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        await Geolocator.requestPermission();
+      final position = await getHighAccuracyPosition();
+      
+      if (position != null) {
+        setState(() {
+          _currentLocation = LatLng(position.latitude, position.longitude);
+          _isLoading = false;
+        });
+        
+        // 自動匹配專案
+        _autoMatchProject();
+      } else {
+        setState(() => _isLoading = false);
       }
-      
-      final position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-      
-      setState(() {
-        _currentLocation = LatLng(position.latitude, position.longitude);
-        _isLoading = false;
-      });
-      
-      // 自動匹配專案
-      _autoMatchProject();
       
     } catch (e) {
       setState(() => _isLoading = false);
@@ -324,10 +322,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
       try {
         position = await Geolocator.getLastKnownPosition();
         if (position == null) {
-          position = await Geolocator.getCurrentPosition(
-            desiredAccuracy: LocationAccuracy.high,
-            timeLimit: const Duration(seconds: 3),
-          );
+          position = await getHighAccuracyPosition(timeout: const Duration(seconds: 3));
         }
       } catch (e) {
         debugPrint('獲取位置失敗 (非致命): $e');
