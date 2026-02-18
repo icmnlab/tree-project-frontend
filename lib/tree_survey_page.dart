@@ -39,8 +39,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
   }
 
   Future<void> _loadPermissions() async {
-    final authService = AuthService();
-    final canEdit = await authService.canEditTrees();
+    final canEdit = await AuthService.canEditTrees();
     if (mounted) {
       setState(() => _canEdit = canEdit);
     }

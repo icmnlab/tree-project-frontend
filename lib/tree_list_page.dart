@@ -67,9 +67,8 @@ class _TreeListPageState extends State<TreeListPage> {
   }
 
   Future<void> _loadPermissions() async {
-    final authService = AuthService();
-    final canEdit = await authService.canEditTrees();
-    final canDelete = await authService.canDeleteTrees();
+    final canEdit = await AuthService.canEditTrees();
+    final canDelete = await AuthService.canDeleteTrees();
     if (mounted) {
       setState(() {
         _canEdit = canEdit;
