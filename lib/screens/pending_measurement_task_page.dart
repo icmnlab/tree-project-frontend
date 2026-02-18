@@ -211,9 +211,34 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     // 不再自動推進，完全由使用者手動確認「已到達」
   }
 
+  /// Revert current task to pending and return to task list
+  Future<void> _abandonCurrentTask() async {
+    if (_currentTask?.id != null) {
+      try {
+        await _service.updateTaskStatus(
+          _currentTask!.id!, MeasurementStatus.pending,
+        );
+      } catch (e) {
+        debugPrint('[PendingTask] 恢復 pending 狀態失敗: $e');
+      }
+    }
+    setState(() {
+      _navState = NavigationState.selectingTask;
+      _currentTask = null;
+    });
+    _loadTasks();
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: _navState == NavigationState.selectingTask,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop && _navState != NavigationState.selectingTask) {
+          _abandonCurrentTask();
+        }
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: Text(_getAppBarTitle()),
         backgroundColor: Colors.teal,
@@ -223,10 +248,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
             IconButton(
               icon: const Icon(Icons.list),
               tooltip: '返回列表',
-              onPressed: () => setState(() {
-                _navState = NavigationState.selectingTask;
-                _currentTask = null;
-              }),
+              onPressed: _abandonCurrentTask,
             ),
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -235,6 +257,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
         ],
       ),
       body: _buildBody(),
+    ),
     );
   }
   
@@ -863,7 +886,6 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     );
     
     if (success == true) {
-      // [Phase 3] 更新進度
       setState(() => _completedCount++);
       
       await _loadTasks();
@@ -878,10 +900,8 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
             ),
           );
         }
-        // 自動跳到下一棵最近的樹
         _startTask(_pendingTrees.first);
       } else {
-        // [Phase 3] 全部完成，提示 batch transfer
         setState(() {
           _navState = NavigationState.selectingTask;
           _currentTask = null;
@@ -889,7 +909,21 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
         _showBatchTransferDialog();
       }
     } else {
-      setState(() => _navState = NavigationState.pointingToTree);
+      // User cancelled/backed out — revert status back to pending
+      if (_currentTask?.id != null) {
+        try {
+          await _service.updateTaskStatus(
+            _currentTask!.id!, MeasurementStatus.pending,
+          );
+        } catch (e) {
+          debugPrint('[PendingTask] 恢復 pending 狀態失敗: $e');
+        }
+      }
+      setState(() {
+        _navState = NavigationState.selectingTask;
+        _currentTask = null;
+      });
+      await _loadTasks();
     }
   }
   
