@@ -19,9 +19,13 @@ import 'config/global_keys.dart';
 import 'services/api_service.dart';
 import 'services/carbon_sink_service.dart';
 import 'services/v3/ml_data_sync_service.dart';
+import 'services/network_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 初始化網路連線監聽
+  await NetworkService().init();
 
   // 設置系統 UI 樣式
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(

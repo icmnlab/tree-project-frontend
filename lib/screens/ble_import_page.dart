@@ -8,6 +8,7 @@ import '../services/ble_packet_decoder.dart'; // 引入封包解碼器
 import '../services/pending_measurement_service.dart'; // 待測量服務
 import '../services/v3/data_filter_service.dart'; // V3 數據過濾服務
 import '../services/v3/project_boundary_service.dart'; // 專案邊界服務（自動匹配專案）
+import '../widgets/network_aware_widgets.dart'; // 網路感知元件
 import 'manual_input_page_v2.dart'; // V2 批次匯入
 import 'pending_measurement_task_page.dart'; // 引入待測量任務頁面
 
@@ -943,16 +944,19 @@ class _BleImportPageState extends State<BleImportPage> {
               Row(
                 children: [
                   Expanded(
-                    child: OutlinedButton.icon(
-                      icon: const Icon(Icons.camera_alt, size: 18),
-                      label: const Text('儲存到待測量 (DBH 測量)'),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.purple,
-                        side: const BorderSide(color: Colors.purple),
+                    child: NetworkGuard(
+                      message: '儲存到待測量需要網路連線',
+                      child: OutlinedButton.icon(
+                        icon: const Icon(Icons.camera_alt, size: 18),
+                        label: const Text('儲存到待測量 (DBH 測量)'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: Colors.purple,
+                          side: const BorderSide(color: Colors.purple),
+                        ),
+                        onPressed: _receivedCsvLines.isNotEmpty
+                            ? () => _showSaveToPendingDialog()
+                            : null,
                       ),
-                      onPressed: _receivedCsvLines.isNotEmpty
-                          ? () => _showSaveToPendingDialog()
-                          : null,
                     ),
                   ),
                 ],

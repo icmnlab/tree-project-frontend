@@ -203,6 +203,17 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       final available = await service.isServiceAvailable();
       if (!available) {
         debugPrint('[AutoPilot] ML Service 不可用，跳過自動 DBH');
+        if (mounted) {
+          setState(() => _autoPilotStatus = 'ML 服務無法連線');
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('⚠️ ML 量測服務無法連線，DBH 需手動輸入\n'
+                  '請確認 ngrok 隧道與 ML Service 是否運行中'),
+              duration: Duration(seconds: 5),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
         return;
       }
 

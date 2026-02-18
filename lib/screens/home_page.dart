@@ -9,6 +9,7 @@ import 'pending_measurement_task_page.dart';
 import 'v3_services_page.dart';
 import '../constants/colors.dart';
 import '../themes/app_theme.dart';
+import '../widgets/network_aware_widgets.dart';
 
 /// 首頁 - 極簡現代化設計 v2.0
 /// 
@@ -56,7 +57,12 @@ class _HomePageState extends State<HomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.neutral100,
-      body: _pages[_selectedIndex],
+      body: Column(
+        children: [
+          const NetworkAwareBanner(),
+          Expanded(child: _pages[_selectedIndex]),
+        ],
+      ),
       bottomNavigationBar: _buildBottomNavBar(),
       extendBody: true,
     );
@@ -196,48 +202,67 @@ class _DashboardPageState extends State<DashboardPage> {
               childAspectRatio: 1.05,
             ),
             delegate: SliverChildListDelegate([
-              FeatureCard(
-                title: '樹木調查',
-                subtitle: '新增與編輯',
-                icon: Icons.nature_rounded,
-                color: AppColors.primary,
-                onTap: () => Navigator.pushNamed(context, '/tree-survey'),
+              NetworkGuard(
+                message: '樹木調查需要網路連線',
+                child: FeatureCard(
+                  title: '樹木調查',
+                  subtitle: '新增與編輯',
+                  icon: Icons.nature_rounded,
+                  color: AppColors.primary,
+                  onTap: () => Navigator.pushNamed(context, '/tree-survey'),
+                ),
               ),
-              FeatureCard(
-                title: '統計圖表',
-                subtitle: '數據視覺化',
-                icon: Icons.bar_chart_rounded,
-                color: AppColors.tipcTeal,
-                onTap: () => Navigator.pushNamed(context, '/statistics'),
+              NetworkGuard(
+                message: '統計圖表需要網路連線',
+                child: FeatureCard(
+                  title: '統計圖表',
+                  subtitle: '數據視覺化',
+                  icon: Icons.bar_chart_rounded,
+                  color: AppColors.tipcTeal,
+                  onTap: () => Navigator.pushNamed(context, '/statistics'),
+                ),
               ),
-              FeatureCard(
-                title: '樹木地圖',
-                subtitle: '位置分佈',
-                icon: Icons.map_rounded,
-                color: AppColors.chartOrange,
-                onTap: () => Navigator.pushNamed(context, '/map'),
+              NetworkGuard(
+                message: '地圖功能需要網路連線',
+                child: FeatureCard(
+                  title: '樹木地圖',
+                  subtitle: '位置分佈',
+                  icon: Icons.map_rounded,
+                  color: AppColors.chartOrange,
+                  onTap: () => Navigator.pushNamed(context, '/map'),
+                ),
               ),
-              FeatureCard(
-                title: 'AI 助理',
-                subtitle: '智慧問答',
-                icon: Icons.psychology_rounded,
-                color: AppColors.tipcPurple,
-                onTap: () => Navigator.pushNamed(context, '/ai-chat'),
+              NetworkGuard(
+                message: 'AI 助理需要網路連線',
+                child: FeatureCard(
+                  title: 'AI 助理',
+                  subtitle: '智慧問答',
+                  icon: Icons.psychology_rounded,
+                  color: AppColors.tipcPurple,
+                  onTap: () => Navigator.pushNamed(context, '/ai-chat'),
+                ),
               ),
-              FeatureCard(
-                title: '永續報告',
-                subtitle: '碳匯分析',
-                icon: Icons.eco_rounded,
-                color: AppColors.accent,
-                onTap: () => Navigator.pushNamed(context, '/ai-sustainability-report'),
+              NetworkGuard(
+                message: '永續報告需要網路連線',
+                child: FeatureCard(
+                  title: '永續報告',
+                  subtitle: '碳匯分析',
+                  icon: Icons.eco_rounded,
+                  color: AppColors.accent,
+                  onTap: () => Navigator.pushNamed(context, '/ai-sustainability-report'),
+                ),
               ),
-              FeatureCard(
-                title: '縣市專案',
-                subtitle: '區域管理',
-                icon: Icons.location_city_rounded,
-                color: AppColors.primaryDark,
-                onTap: () => Navigator.pushNamed(context, '/cities'),
+              NetworkGuard(
+                message: '縣市專案需要網路連線',
+                child: FeatureCard(
+                  title: '縣市專案',
+                  subtitle: '區域管理',
+                  icon: Icons.location_city_rounded,
+                  color: AppColors.primaryDark,
+                  onTap: () => Navigator.pushNamed(context, '/cities'),
+                ),
               ),
+              // 藍牙匯入不需要網路（BLE 掃描是本地操作）
               FeatureCard(
                 title: '藍牙匯入',
                 subtitle: '儀器同步',
@@ -248,34 +273,43 @@ class _DashboardPageState extends State<DashboardPage> {
                   MaterialPageRoute(builder: (context) => const BleImportPage()),
                 ),
               ),
-              FeatureCard(
-                title: '待測量任務',
-                subtitle: '現場測量',
-                icon: Icons.assignment_rounded,
-                color: Colors.deepOrange,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const PendingMeasurementTaskPage()),
+              NetworkGuard(
+                message: '待測量任務需要網路連線',
+                child: FeatureCard(
+                  title: '待測量任務',
+                  subtitle: '現場測量',
+                  icon: Icons.assignment_rounded,
+                  color: Colors.deepOrange,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const PendingMeasurementTaskPage()),
+                  ),
                 ),
               ),
-              FeatureCard(
-                title: '樹種辨識',
-                subtitle: '拍照識別',
-                icon: Icons.camera_enhance_rounded,
-                color: AppColors.accentLight,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const SpeciesIdentificationPage()),
+              NetworkGuard(
+                message: '樹種辨識需要網路連線',
+                child: FeatureCard(
+                  title: '樹種辨識',
+                  subtitle: '拍照識別',
+                  icon: Icons.camera_enhance_rounded,
+                  color: AppColors.accentLight,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const SpeciesIdentificationPage()),
+                  ),
                 ),
               ),
-              FeatureCard(
-                title: '進階服務',
-                subtitle: 'V3 功能管理',
-                icon: Icons.settings_suggest_rounded,
-                color: Colors.deepPurple,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const V3ServicesPage()),
+              NetworkGuard(
+                message: '進階服務需要網路連線',
+                child: FeatureCard(
+                  title: '進階服務',
+                  subtitle: 'V3 功能管理',
+                  icon: Icons.settings_suggest_rounded,
+                  color: Colors.deepPurple,
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const V3ServicesPage()),
+                  ),
                 ),
               ),
             ]),

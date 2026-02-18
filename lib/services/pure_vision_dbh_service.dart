@@ -28,20 +28,35 @@ class PureVisionDbhService {
   }
 
   /// 檢查 ML Service 是否可用
+  /// 增加重試機制，避免 ngrok 或冷啟動導致誤判
   Future<bool> isServiceAvailable() async {
-    try {
-      final response = await http
-          .get(Uri.parse('$_baseUrl/health'))
-          .timeout(const Duration(seconds: 5));
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        return data['status'] == 'ok';
+    final url = '$_baseUrl/health';
+    debugPrint('[PureVisionDbhService] 檢查 ML Service: $url');
+
+    // 嘗試兩次，第一次 10 秒，第二次 15 秒
+    for (int attempt = 1; attempt <= 2; attempt++) {
+      try {
+        final timeout = attempt == 1 ? 10 : 15;
+        final response = await http
+            .get(Uri.parse(url))
+            .timeout(Duration(seconds: timeout));
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          if (data['status'] == 'ok') {
+            debugPrint('[PureVisionDbhService] ML Service 可用 (attempt $attempt)');
+            return true;
+          }
+        }
+        debugPrint('[PureVisionDbhService] 非預期回應: ${response.statusCode}');
+      } catch (e) {
+        debugPrint('[PureVisionDbhService] attempt $attempt 失敗: $e');
+        if (attempt < 2) {
+          await Future.delayed(const Duration(seconds: 2));
+        }
       }
-      return false;
-    } catch (e) {
-      debugPrint('[PureVisionDbhService] Service not available: $e');
-      return false;
     }
+    debugPrint('[PureVisionDbhService] ML Service 不可用 (URL: $url)');
+    return false;
   }
 
   /// 執行 DBH 測量
