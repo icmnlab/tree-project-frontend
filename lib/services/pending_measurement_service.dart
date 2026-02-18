@@ -322,6 +322,31 @@ class PendingMeasurementService {
     }
   }
   
+  /// 更新整個 session 的專案資訊
+  Future<void> updateSessionProject({
+    required String sessionId,
+    required String projectArea,
+    String? projectCode,
+    String? projectName,
+  }) async {
+    final trees = await getPendingTrees(sessionId: sessionId);
+    for (final tree in trees) {
+      if (tree.id == null) continue;
+      await http.patch(
+        Uri.parse('$_baseUrl/api/pending-measurements/${tree.id}'),
+        headers: {
+          'Content-Type': 'application/json',
+          ...ApiService.getAuthHeaders(),
+        },
+        body: jsonEncode({
+          'project_area': projectArea,
+          'project_code': projectCode,
+          'project_name': projectName,
+        }),
+      );
+    }
+  }
+
   /// 獲取最近的待測量樹木
   Future<PendingTreeMeasurement?> getNearestPendingTree({
     required double userLat,

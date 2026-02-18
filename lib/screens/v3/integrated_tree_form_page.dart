@@ -781,13 +781,68 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
     );
   }
 
+  bool get _hasUnsavedData =>
+      _mainImage != null || _measuredDbh != null || _dbhController.text.isNotEmpty;
+
+  Future<bool> _confirmExit() async {
+    if (!_hasUnsavedData) return true;
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('有未儲存的測量結果'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_measuredDbh != null)
+              Text('DBH: ${_measuredDbh!.toStringAsFixed(1)} cm'),
+            if (_speciesController.text.isNotEmpty)
+              Text('樹種: ${_speciesController.text}'),
+            const SizedBox(height: 8),
+            const Text('確定要離開嗎？未儲存的資料會遺失。'),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop('stay'),
+            child: const Text('繼續測量'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop('discard'),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('放棄'),
+          ),
+        ],
+      ),
+    );
+    return result == 'discard';
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        final shouldLeave = await _confirmExit();
+        if (shouldLeave && mounted) {
+          Navigator.of(context).pop(false);
+        }
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('V3 樹木測量'),
         backgroundColor: Colors.teal,
         foregroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () async {
+            final shouldLeave = await _confirmExit();
+            if (shouldLeave && mounted) {
+              Navigator.of(context).pop(false);
+            }
+          },
+        ),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -849,6 +904,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
                 ],
               ),
             ),
+    ),
     );
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
 import '../tree_survey_page.dart';
@@ -117,7 +118,7 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-/// 儀表板頁面 - 極簡現代化設計
+/// 儀表板頁面 - 分類式設計 + 可自定義排序
 class DashboardPage extends StatefulWidget {
   const DashboardPage({super.key});
 
@@ -127,11 +128,34 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage> {
   String? _userName;
+  bool _isEditMode = false;
+  List<String> _cardOrder = [];
+  
+  static const _prefsKey = 'dashboard_card_order';
+
+  // All available cards — order controlled by _cardOrder
+  static const _allCards = [
+    // 現場作業
+    {'id': 'ble', 'title': '藍牙匯入', 'subtitle': '儀器同步', 'icon': 'bluetooth', 'category': 'field', 'needsNetwork': false},
+    {'id': 'pending', 'title': '待測量任務', 'subtitle': '現場測量', 'icon': 'assignment', 'category': 'field', 'needsNetwork': true},
+    // 數據管理
+    {'id': 'survey', 'title': '樹木調查', 'subtitle': '新增與編輯', 'icon': 'nature', 'category': 'data', 'needsNetwork': true},
+    {'id': 'map', 'title': '樹木地圖', 'subtitle': '位置分佈', 'icon': 'map', 'category': 'data', 'needsNetwork': true},
+    {'id': 'cities', 'title': '專案管理', 'subtitle': '區域管理', 'icon': 'location_city', 'category': 'data', 'needsNetwork': true},
+    // 分析報告
+    {'id': 'stats', 'title': '統計圖表', 'subtitle': '數據視覺化', 'icon': 'bar_chart', 'category': 'analysis', 'needsNetwork': true},
+    {'id': 'report', 'title': '碳匯報告', 'subtitle': '永續分析', 'icon': 'eco', 'category': 'analysis', 'needsNetwork': true},
+    // 更多
+    {'id': 'species', 'title': '樹種辨識', 'subtitle': '拍照識別', 'icon': 'camera_enhance', 'category': 'more', 'needsNetwork': true},
+    {'id': 'ai', 'title': 'AI 助理', 'subtitle': '智慧問答', 'icon': 'psychology', 'category': 'more', 'needsNetwork': true},
+    {'id': 'v3', 'title': '系統設定', 'subtitle': '校準與同步', 'icon': 'settings_suggest', 'category': 'more', 'needsNetwork': true},
+  ];
 
   @override
   void initState() {
     super.initState();
     _loadUserInfo();
+    _loadCardOrder();
   }
 
   Future<void> _loadUserInfo() async {
@@ -142,179 +166,212 @@ class _DashboardPageState extends State<DashboardPage> {
       });
     }
   }
+  
+  Future<void> _loadCardOrder() async {
+    final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getStringList(_prefsKey);
+    final defaultOrder = _allCards.map((c) => c['id'] as String).toList();
+    setState(() {
+      _cardOrder = saved ?? defaultOrder;
+      // Ensure all cards are present (handles new cards added in updates)
+      for (final card in _allCards) {
+        if (!_cardOrder.contains(card['id'])) {
+          _cardOrder.add(card['id'] as String);
+        }
+      }
+    });
+  }
+  
+  Future<void> _saveCardOrder() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setStringList(_prefsKey, _cardOrder);
+  }
+
+  IconData _getIcon(String name) {
+    switch (name) {
+      case 'bluetooth': return Icons.bluetooth_rounded;
+      case 'assignment': return Icons.assignment_rounded;
+      case 'nature': return Icons.nature_rounded;
+      case 'map': return Icons.map_rounded;
+      case 'location_city': return Icons.location_city_rounded;
+      case 'bar_chart': return Icons.bar_chart_rounded;
+      case 'eco': return Icons.eco_rounded;
+      case 'camera_enhance': return Icons.camera_enhance_rounded;
+      case 'psychology': return Icons.psychology_rounded;
+      case 'settings_suggest': return Icons.settings_suggest_rounded;
+      default: return Icons.widgets_rounded;
+    }
+  }
+  
+  Color _getColor(String id) {
+    switch (id) {
+      case 'ble': return AppColors.tipcRed;
+      case 'pending': return Colors.deepOrange;
+      case 'survey': return AppColors.primary;
+      case 'map': return AppColors.chartOrange;
+      case 'cities': return AppColors.primaryDark;
+      case 'stats': return AppColors.tipcTeal;
+      case 'report': return AppColors.accent;
+      case 'species': return AppColors.accentLight;
+      case 'ai': return AppColors.tipcPurple;
+      case 'v3': return Colors.deepPurple;
+      default: return Colors.grey;
+    }
+  }
+  
+  void _onCardTap(String id) {
+    switch (id) {
+      case 'survey': Navigator.pushNamed(context, '/tree-survey'); break;
+      case 'stats': Navigator.pushNamed(context, '/statistics'); break;
+      case 'map': Navigator.pushNamed(context, '/map'); break;
+      case 'ai': Navigator.pushNamed(context, '/ai-chat'); break;
+      case 'report': Navigator.pushNamed(context, '/ai-sustainability-report'); break;
+      case 'cities': Navigator.pushNamed(context, '/cities'); break;
+      case 'ble': Navigator.push(context, MaterialPageRoute(builder: (_) => const BleImportPage())); break;
+      case 'pending': Navigator.push(context, MaterialPageRoute(builder: (_) => const PendingMeasurementTaskPage())); break;
+      case 'species': Navigator.push(context, MaterialPageRoute(builder: (_) => const SpeciesIdentificationPage())); break;
+      case 'v3': Navigator.push(context, MaterialPageRoute(builder: (_) => const V3ServicesPage())); break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final categoryLabels = {
+      'field': '現場作業',
+      'data': '數據管理',
+      'analysis': '分析報告',
+      'more': '更多工具',
+    };
+    
+    // Build ordered card list grouped by category
+    final orderedCards = <Map<String, dynamic>>[];
+    for (final id in _cardOrder) {
+      final card = _allCards.where((c) => c['id'] == id).firstOrNull;
+      if (card != null) orderedCards.add(card);
+    }
+    
+    // Group by category preserving order
+    final categories = <String>[];
+    for (final card in orderedCards) {
+      final cat = card['category'] as String;
+      if (!categories.contains(cat)) categories.add(cat);
+    }
+
     return CustomScrollView(
       slivers: [
-        // 自定義 AppBar
-        SliverToBoxAdapter(
-          child: _buildHeader(),
-        ),
+        SliverToBoxAdapter(child: _buildHeader()),
         
-        // 功能區塊標題
         SliverToBoxAdapter(
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
             child: Row(
               children: [
-                Text(
-                  '功能中心',
-                  style: AppTheme.headlineSmall.copyWith(
-                    color: AppColors.neutral900,
-                  ),
-                ),
+                Text('功能中心', style: AppTheme.headlineSmall.copyWith(color: AppColors.neutral900)),
                 const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: AppColors.accent.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(AppTheme.radiusFull),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.eco_rounded, size: 14, color: AppColors.accent),
-                      const SizedBox(width: 4),
-                      Text(
-                        '永續管理',
-                        style: AppTheme.labelMedium.copyWith(
-                          color: AppColors.accent,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
+                IconButton(
+                  icon: Icon(_isEditMode ? Icons.check : Icons.tune, size: 20),
+                  tooltip: _isEditMode ? '完成排序' : '自定義排序',
+                  onPressed: () {
+                    if (_isEditMode) _saveCardOrder();
+                    setState(() => _isEditMode = !_isEditMode);
+                  },
                 ),
               ],
             ),
           ),
         ),
         
-        // 功能卡片網格
-        SliverPadding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
-          sliver: SliverGrid(
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              mainAxisSpacing: 12,
-              crossAxisSpacing: 12,
-              childAspectRatio: 1.05,
+        ...categories.expand((cat) {
+          final cardsInCat = orderedCards.where((c) => c['category'] == cat).toList();
+          return [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 6),
+                child: Text(
+                  categoryLabels[cat] ?? cat,
+                  style: AppTheme.labelLarge.copyWith(color: AppColors.neutral500),
+                ),
+              ),
             ),
-            delegate: SliverChildListDelegate([
-              NetworkGuard(
-                message: '樹木調查需要網路連線',
-                child: FeatureCard(
-                  title: '樹木調查',
-                  subtitle: '新增與編輯',
-                  icon: Icons.nature_rounded,
-                  color: AppColors.primary,
-                  onTap: () => Navigator.pushNamed(context, '/tree-survey'),
+            SliverPadding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              sliver: SliverGrid(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  mainAxisSpacing: 10,
+                  crossAxisSpacing: 10,
+                  childAspectRatio: 1.1,
+                ),
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final card = cardsInCat[index];
+                    final id = card['id'] as String;
+                    final needsNetwork = card['needsNetwork'] as bool;
+                    
+                    Widget featureCard = FeatureCard(
+                      title: card['title'] as String,
+                      subtitle: card['subtitle'] as String?,
+                      icon: _getIcon(card['icon'] as String),
+                      color: _getColor(id),
+                      onTap: _isEditMode ? () {} : () => _onCardTap(id),
+                    );
+                    
+                    if (needsNetwork && !_isEditMode) {
+                      featureCard = NetworkGuard(
+                        message: '${card['title']} 需要網路連線',
+                        child: featureCard,
+                      );
+                    }
+                    
+                    if (_isEditMode) {
+                      return LongPressDraggable<String>(
+                        data: id,
+                        feedback: Material(
+                          elevation: 8,
+                          borderRadius: BorderRadius.circular(12),
+                          child: SizedBox(
+                            width: MediaQuery.of(context).size.width / 2 - 24,
+                            child: featureCard,
+                          ),
+                        ),
+                        childWhenDragging: Opacity(opacity: 0.3, child: featureCard),
+                        child: DragTarget<String>(
+                          onAcceptWithDetails: (details) {
+                            final draggedId = details.data;
+                            final fromIdx = _cardOrder.indexOf(draggedId);
+                            final toIdx = _cardOrder.indexOf(id);
+                            if (fromIdx != -1 && toIdx != -1) {
+                              setState(() {
+                                _cardOrder.removeAt(fromIdx);
+                                _cardOrder.insert(toIdx, draggedId);
+                              });
+                            }
+                          },
+                          builder: (context, candidateData, rejectedData) {
+                            return Container(
+                              decoration: candidateData.isNotEmpty
+                                  ? BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.teal, width: 2),
+                                    )
+                                  : null,
+                              child: featureCard,
+                            );
+                          },
+                        ),
+                      );
+                    }
+                    
+                    return featureCard;
+                  },
+                  childCount: cardsInCat.length,
                 ),
               ),
-              NetworkGuard(
-                message: '統計圖表需要網路連線',
-                child: FeatureCard(
-                  title: '統計圖表',
-                  subtitle: '數據視覺化',
-                  icon: Icons.bar_chart_rounded,
-                  color: AppColors.tipcTeal,
-                  onTap: () => Navigator.pushNamed(context, '/statistics'),
-                ),
-              ),
-              NetworkGuard(
-                message: '地圖功能需要網路連線',
-                child: FeatureCard(
-                  title: '樹木地圖',
-                  subtitle: '位置分佈',
-                  icon: Icons.map_rounded,
-                  color: AppColors.chartOrange,
-                  onTap: () => Navigator.pushNamed(context, '/map'),
-                ),
-              ),
-              NetworkGuard(
-                message: 'AI 助理需要網路連線',
-                child: FeatureCard(
-                  title: 'AI 助理',
-                  subtitle: '智慧問答',
-                  icon: Icons.psychology_rounded,
-                  color: AppColors.tipcPurple,
-                  onTap: () => Navigator.pushNamed(context, '/ai-chat'),
-                ),
-              ),
-              NetworkGuard(
-                message: '永續報告需要網路連線',
-                child: FeatureCard(
-                  title: '永續報告',
-                  subtitle: '碳匯分析',
-                  icon: Icons.eco_rounded,
-                  color: AppColors.accent,
-                  onTap: () => Navigator.pushNamed(context, '/ai-sustainability-report'),
-                ),
-              ),
-              NetworkGuard(
-                message: '縣市專案需要網路連線',
-                child: FeatureCard(
-                  title: '縣市專案',
-                  subtitle: '區域管理',
-                  icon: Icons.location_city_rounded,
-                  color: AppColors.primaryDark,
-                  onTap: () => Navigator.pushNamed(context, '/cities'),
-                ),
-              ),
-              // 藍牙匯入不需要網路（BLE 掃描是本地操作）
-              FeatureCard(
-                title: '藍牙匯入',
-                subtitle: '儀器同步',
-                icon: Icons.bluetooth_rounded,
-                color: AppColors.tipcRed,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const BleImportPage()),
-                ),
-              ),
-              NetworkGuard(
-                message: '待測量任務需要網路連線',
-                child: FeatureCard(
-                  title: '待測量任務',
-                  subtitle: '現場測量',
-                  icon: Icons.assignment_rounded,
-                  color: Colors.deepOrange,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const PendingMeasurementTaskPage()),
-                  ),
-                ),
-              ),
-              NetworkGuard(
-                message: '樹種辨識需要網路連線',
-                child: FeatureCard(
-                  title: '樹種辨識',
-                  subtitle: '拍照識別',
-                  icon: Icons.camera_enhance_rounded,
-                  color: AppColors.accentLight,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const SpeciesIdentificationPage()),
-                  ),
-                ),
-              ),
-              NetworkGuard(
-                message: '進階服務需要網路連線',
-                child: FeatureCard(
-                  title: '進階服務',
-                  subtitle: 'V3 功能管理',
-                  icon: Icons.settings_suggest_rounded,
-                  color: Colors.deepPurple,
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const V3ServicesPage()),
-                  ),
-                ),
-              ),
-            ]),
-          ),
-        ),
+            ),
+          ];
+        }),
+        
+        const SliverPadding(padding: EdgeInsets.only(bottom: 100)),
       ],
     );
   }

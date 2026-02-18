@@ -36,7 +36,9 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   List<PendingTreeMeasurement> _pendingTrees = [];
   PendingTreeMeasurement? _currentTask;
   
-  // [Phase 3] 連續測量進度
+  // Session 管理
+  String? _activeSessionId;
+  List<MeasurementSession> _sessions = [];
   int _totalTasksInSession = 0;
   int _completedCount = 0;
   bool _isTransferring = false;
@@ -58,12 +60,27 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   @override
   void initState() {
     super.initState();
+    _activeSessionId = widget.sessionId;
     _arrowAnimController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
-    _loadTasks();
+    _initLoad();
     _startLocationTracking();
+  }
+  
+  Future<void> _initLoad() async {
+    if (_activeSessionId == null) {
+      try {
+        _sessions = await _service.getSessions();
+        if (_sessions.length == 1) {
+          _activeSessionId = _sessions.first.sessionId;
+        }
+      } catch (e) {
+        debugPrint('[PendingTask] 載入 sessions 失敗: $e');
+      }
+    }
+    await _loadTasks();
   }
   
   @override
@@ -83,7 +100,6 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     });
     
     try {
-      // 獲取用戶位置（可選，不阻塞任務載入）
       Position? position;
       try {
         position = await Geolocator.getCurrentPosition(
@@ -91,12 +107,10 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
         ).timeout(const Duration(seconds: 5));
       } catch (e) {
         debugPrint('[PendingTask] GPS 定位失敗（不影響任務列表）: $e');
-        // GPS 失敗不影響任務載入
       }
       
-      // 載入待測量任務（同時包含 pending 和 in_progress）
       final pendingTrees = await _service.getPendingTrees(
-        sessionId: widget.sessionId,
+        sessionId: _activeSessionId,
         status: MeasurementStatus.pending,
         userLat: position?.latitude,
         userLon: position?.longitude,
@@ -104,25 +118,43 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
       );
       
       final inProgressTrees = await _service.getPendingTrees(
-        sessionId: widget.sessionId,
+        sessionId: _activeSessionId,
         status: MeasurementStatus.inProgress,
         userLat: position?.latitude,
         userLon: position?.longitude,
         sortByDistance: position != null,
       );
       
-      // 合併：in_progress 排在前面
       final allTrees = [...inProgressTrees, ...pendingTrees];
+      
+      // Compute progress from session stats if available
+      if (_activeSessionId != null) {
+        try {
+          final session = _sessions.isNotEmpty
+              ? _sessions.firstWhere((s) => s.sessionId == _activeSessionId,
+                  orElse: () => _sessions.first)
+              : null;
+          if (session != null) {
+            _totalTasksInSession = session.totalTrees;
+            _completedCount = session.completedTrees;
+          }
+        } catch (_) {}
+        // Refresh sessions for accurate counts
+        try {
+          _sessions = await _service.getSessions();
+          final updated = _sessions.where((s) => s.sessionId == _activeSessionId).toList();
+          if (updated.isNotEmpty) {
+            _totalTasksInSession = updated.first.totalTrees;
+            _completedCount = updated.first.completedTrees;
+          }
+        } catch (_) {}
+      }
       
       if (!mounted) return;
       setState(() {
         _pendingTrees = allTrees;
         _userPosition = position;
         _isLoading = false;
-        // [Phase 3] 第一次載入時記錄總數
-        if (_totalTasksInSession == 0 && allTrees.isNotEmpty) {
-          _totalTasksInSession = allTrees.length;
-        }
       });
     } catch (e) {
       if (!mounted) return;
@@ -312,6 +344,11 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   
   /// 任務列表
   Widget _buildTaskList() {
+    // No session selected and multiple sessions exist — show picker
+    if (_activeSessionId == null && _sessions.length > 1) {
+      return _buildSessionPicker();
+    }
+    
     if (_pendingTrees.isEmpty) {
       return Center(
         child: Column(
@@ -320,13 +357,36 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
             Icon(Icons.check_circle, size: 80, color: Colors.green.shade300),
             const SizedBox(height: 16),
             const Text(
-              '太棒了！所有任務已完成',
+              '所有任務已完成',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 8),
             Text(
               '目前沒有待測量的樹木',
               style: TextStyle(color: Colors.grey.shade600),
+            ),
+            if (_completedCount > 0) ...[
+              const SizedBox(height: 16),
+              ElevatedButton.icon(
+                onPressed: _isTransferring ? null : _executeBatchTransfer,
+                icon: const Icon(Icons.upload),
+                label: const Text('轉移到正式資料庫'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal,
+                  foregroundColor: Colors.white,
+                ),
+              ),
+            ],
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: () {
+                setState(() {
+                  _activeSessionId = null;
+                });
+                _initLoad();
+              },
+              icon: const Icon(Icons.swap_horiz),
+              label: const Text('切換批次'),
             ),
           ],
         ),
@@ -335,8 +395,8 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     
     return Column(
       children: [
-        // [Phase 3] 進度條
-        if (_completedCount > 0 && _totalTasksInSession > 0)
+        // 進度條（從後端 session stats 計算）
+        if (_totalTasksInSession > 0)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: Column(
@@ -346,7 +406,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
                   children: [
                     Text('完成進度 $_completedCount/$_totalTasksInSession',
                         style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                    Text('${(_completedCount / _totalTasksInSession * 100).toStringAsFixed(0)}%',
+                    Text('${(_totalTasksInSession > 0 ? (_completedCount / _totalTasksInSession * 100) : 0).toStringAsFixed(0)}%',
                         style: TextStyle(fontSize: 12, color: Colors.teal.shade700, fontWeight: FontWeight.bold)),
                   ],
                 ),
@@ -354,7 +414,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
                 ClipRRect(
                   borderRadius: BorderRadius.circular(4),
                   child: LinearProgressIndicator(
-                    value: _completedCount / _totalTasksInSession,
+                    value: _totalTasksInSession > 0 ? _completedCount / _totalTasksInSession : 0,
                     minHeight: 6,
                     backgroundColor: Colors.grey.shade200,
                     valueColor: AlwaysStoppedAnimation<Color>(Colors.teal.shade400),
@@ -363,6 +423,9 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
               ],
             ),
           ),
+        
+        // 專案資訊提示（如果未指定）
+        _buildProjectInfoBanner(),
         
         // 統計卡片
         _buildStatsCard(),
@@ -378,8 +441,8 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
           ),
         ),
         
-        // [Phase 3] Batch transfer 按鈕（有已完成的任務時顯示）
-        if (_completedCount > 0 && widget.sessionId != null)
+        // Batch transfer 按鈕
+        if (_completedCount > 0 && _activeSessionId != null)
           Padding(
             padding: const EdgeInsets.all(12),
             child: ElevatedButton.icon(
@@ -396,6 +459,168 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
             ),
           ),
       ],
+    );
+  }
+  
+  Widget _buildSessionPicker() {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Text('選擇測量批次', style: TextStyle(
+          fontSize: 20, fontWeight: FontWeight.bold, color: Colors.teal.shade700,
+        )),
+        const SizedBox(height: 4),
+        Text('您有多個測量批次，請選擇要操作的批次', style: TextStyle(color: Colors.grey.shade600)),
+        const SizedBox(height: 16),
+        ..._sessions.map((session) {
+          final progress = session.totalTrees > 0
+              ? session.completedTrees / session.totalTrees
+              : 0.0;
+          return Card(
+            margin: const EdgeInsets.only(bottom: 10),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () {
+                setState(() => _activeSessionId = session.sessionId);
+                _loadTasks();
+              },
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.folder_open, color: Colors.teal.shade600),
+                        const SizedBox(width: 8),
+                        Expanded(child: Text(
+                          session.projectArea ?? session.sessionId,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                        )),
+                        Text('${session.completedTrees}/${session.totalTrees}',
+                            style: TextStyle(color: Colors.teal.shade700, fontWeight: FontWeight.bold)),
+                      ],
+                    ),
+                    if (session.projectCode != null) ...[
+                      const SizedBox(height: 4),
+                      Text(session.projectCode!, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                    ],
+                    const SizedBox(height: 8),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 4,
+                        backgroundColor: Colors.grey.shade200,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          session.isComplete ? Colors.green : Colors.teal.shade400,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }),
+      ],
+    );
+  }
+  
+  Widget _buildProjectInfoBanner() {
+    if (_pendingTrees.isEmpty) return const SizedBox.shrink();
+    final firstTree = _pendingTrees.first;
+    final hasProject = firstTree.projectArea != null && firstTree.projectArea!.isNotEmpty;
+    
+    if (hasProject) return const SizedBox.shrink();
+    
+    return Container(
+      margin: const EdgeInsets.fromLTRB(12, 4, 12, 0),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.orange.shade300),
+      ),
+      child: InkWell(
+        onTap: _showProjectSelectionSheet,
+        child: Row(
+          children: [
+            Icon(Icons.warning_amber, size: 18, color: Colors.orange.shade700),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                '尚未指定專案區位 — 點此選擇',
+                style: TextStyle(fontSize: 13, color: Colors.orange.shade800, fontWeight: FontWeight.w500),
+              ),
+            ),
+            Icon(Icons.arrow_forward_ios, size: 14, color: Colors.orange.shade600),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  void _showProjectSelectionSheet() {
+    final controller = TextEditingController();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          left: 16, right: 16, top: 16,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('指定專案區位', style: TextStyle(
+              fontSize: 18, fontWeight: FontWeight.bold, color: Colors.teal.shade700,
+            )),
+            const SizedBox(height: 8),
+            const Text('將套用到此批次的所有樹木'),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: '專案區位名稱',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.location_on),
+              ),
+              autofocus: true,
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () async {
+                  final name = controller.text.trim();
+                  if (name.isEmpty || _activeSessionId == null) return;
+                  Navigator.of(ctx).pop();
+                  try {
+                    await _service.updateSessionProject(
+                      sessionId: _activeSessionId!,
+                      projectArea: name,
+                    );
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('已設定專案區位: $name'), backgroundColor: Colors.green),
+                      );
+                    }
+                    _loadTasks();
+                  } catch (e) {
+                    _showError('設定失敗: $e');
+                  }
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.teal, foregroundColor: Colors.white),
+                child: const Text('確定'),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
     );
   }
   
@@ -886,9 +1111,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     );
     
     if (success == true) {
-      setState(() => _completedCount++);
-      
-      await _loadTasks();
+      await _loadTasks(); // Progress counts refresh from backend
       
       if (_pendingTrees.isNotEmpty) {
         if (mounted) {
@@ -963,16 +1186,20 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     );
   }
   
-  /// [Phase 3] 執行 batch transfer
   Future<void> _executeBatchTransfer() async {
-    if (widget.sessionId == null) {
-      _showError('缺少 session ID');
+    // Use _activeSessionId, or infer from current task
+    final sid = _activeSessionId
+        ?? _currentTask?.sessionId
+        ?? (_pendingTrees.isNotEmpty ? _pendingTrees.first.sessionId : null);
+    
+    if (sid == null) {
+      _showError('缺少 session ID，無法轉移');
       return;
     }
     
     setState(() => _isTransferring = true);
     try {
-      final result = await _service.transferToTreeSurvey(sessionId: widget.sessionId!);
+      final result = await _service.transferToTreeSurvey(sessionId: sid);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -981,6 +1208,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
           ),
         );
       }
+      await _loadTasks();
     } catch (e) {
       _showError('轉移失敗: $e');
     } finally {
