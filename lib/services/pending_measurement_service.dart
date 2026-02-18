@@ -44,38 +44,45 @@ class PendingMeasurementService {
         final double azimuth = (metadata['azimuth'] as num?)?.toDouble() ?? 0;
         final double pitch = (metadata['pitch'] as num?)?.toDouble() ?? 0;
         final double? altitude = (metadata['altitude'] as num?)?.toDouble();
-        
-        // 跳過無效數據
-        if (lat == 0 && lon == 0) continue;
-        if (horizontalDistance <= 0) continue;
+        final bool hasGps = metadata['has_gps'] as bool? ?? (lat != 0 || lon != 0);
+        final String? measurementType = (record['type'] as String?)?.toUpperCase();
         
         // [診斷] 輸出原始數據，用於現場除錯
-        debugPrint('━━━ 記錄 ID=${record['id']} ━━━');
-        debugPrint('  測站 GPS: ($lat, $lon)  HDOP=${metadata['hdop'] ?? 'N/A'}');
+        debugPrint('━━━ 記錄 ID=${record['id']} (${measurementType ?? 'N/A'}) ━━━');
+        debugPrint('  測站 GPS: ($lat, $lon)  HDOP=${metadata['hdop'] ?? 'N/A'}  hasGps=$hasGps');
         debugPrint('  HD=${horizontalDistance}m  SD=${slopeDistance}m  AZ=${azimuth}°  Pitch=${pitch}°');
         
-        // [修正 2026-02] VLGEO2 的 GPS 座標是操作員（儀器）位置，不是樹木位置。
-        // HD/AZ 是「從儀器指向目標」的向量。
-        // 正確做法：正向推算樹木位置 = 操作員GPS + offset(HD, AZ)
-        final treePos = _stationService.calculateTreePosition(
-          stationLat: lat,     // GPS = 操作員（測站）位置
-          stationLng: lon,     // GPS = 操作員（測站）位置
-          distanceMeters: horizontalDistance,
-          azimuthDegrees: azimuth,
-        );
+        double treeLat = 0;
+        double treeLon = 0;
         
-        // [診斷] 驗證計算：反算距離應與 HD 一致
-        final verifyDist = _stationService.getDistance(
-          lat1: lat, lon1: lon,
-          lat2: treePos.latitude, lon2: treePos.longitude,
-        );
-        debugPrint('  計算樹位: (${treePos.latitude.toStringAsFixed(7)}, ${treePos.longitude.toStringAsFixed(7)})');
-        debugPrint('  驗證距離: ${verifyDist.toStringAsFixed(2)}m (應≈${horizontalDistance}m)');
-        if ((verifyDist - horizontalDistance).abs() > 1.0) {
-          debugPrint('  ⚠️ 警告: 驗證距離與 HD 差異 > 1m!');
+        if (hasGps && horizontalDistance > 0) {
+          // [修正 2026-02] VLGEO2 的 GPS 座標是操作員（儀器）位置，不是樹木位置。
+          // HD/AZ 是「從儀器指向目標」的向量。
+          // 正確做法：正向推算樹木位置 = 操作員GPS + offset(HD, AZ)
+          final treePos = _stationService.calculateTreePosition(
+            stationLat: lat,     // GPS = 操作員（測站）位置
+            stationLng: lon,     // GPS = 操作員（測站）位置
+            distanceMeters: horizontalDistance,
+            azimuthDegrees: azimuth,
+          );
+          treeLat = treePos.latitude;
+          treeLon = treePos.longitude;
+          
+          // [診斷] 驗證計算：反算距離應與 HD 一致
+          final verifyDist = _stationService.getDistance(
+            lat1: lat, lon1: lon,
+            lat2: treeLat, lon2: treeLon,
+          );
+          debugPrint('  計算樹位: (${treeLat.toStringAsFixed(7)}, ${treeLon.toStringAsFixed(7)})');
+          debugPrint('  驗證距離: ${verifyDist.toStringAsFixed(2)}m (應≈${horizontalDistance}m)');
+          if ((verifyDist - horizontalDistance).abs() > 1.0) {
+            debugPrint('  ⚠️ 警告: 驗證距離與 HD 差異 > 1m!');
+          }
+        } else {
+          debugPrint('  ⚠️ 無GPS座標 - 僅記錄儀器測量數據 (HD/AZ/H)');
         }
         
-        // 創建待測量記錄
+        // 創建待測量記錄（所有記錄均保留，無GPS的以 0 填入座標）
         final pending = PendingTreeMeasurement(
           sessionId: sessionId,
           originalRecordId: record['id']?.toString(),
@@ -83,15 +90,17 @@ class PendingMeasurementService {
           projectCode: projectCode,
           projectName: projectName,
           treeHeight: height,
-          treeLatitude: treePos.latitude,      // 正向推算的樹木位置
-          treeLongitude: treePos.longitude,    // 正向推算的樹木位置
-          stationLatitude: lat,                // GPS 直接就是測站位置
-          stationLongitude: lon,               // GPS 直接就是測站位置
+          treeLatitude: treeLat,               // 有GPS時正向推算，無GPS時為0
+          treeLongitude: treeLon,              // 有GPS時正向推算，無GPS時為0
+          stationLatitude: lat,                // GPS 直接就是測站位置，無GPS時為0
+          stationLongitude: lon,               // GPS 直接就是測站位置，無GPS時為0
           horizontalDistance: horizontalDistance,
           slopeDistance: slopeDistance,
           azimuth: azimuth,
           pitch: pitch,
           altitude: altitude,
+          measurementType: measurementType,
+          hasGps: hasGps,
           status: MeasurementStatus.pending,
           createdAt: DateTime.now(),
           priority: _calculatePriority(horizontalDistance),
@@ -272,6 +281,25 @@ class PendingMeasurementService {
       );
     } catch (e) {
       debugPrint('跳過測量失敗: $e');
+      rethrow;
+    }
+  }
+  
+  /// 更新任務狀態（不改變其他欄位）
+  Future<void> updateTaskStatus(int id, MeasurementStatus status) async {
+    try {
+      await http.patch(
+        Uri.parse('$_baseUrl/api/pending-measurements/$id'),
+        headers: {
+          'Content-Type': 'application/json',
+          ...ApiService.getAuthHeaders(),
+        },
+        body: jsonEncode({
+          'status': status.value,
+        }),
+      );
+    } catch (e) {
+      debugPrint('更新任務狀態失敗: $e');
       rethrow;
     }
   }

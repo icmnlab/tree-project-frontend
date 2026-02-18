@@ -102,55 +102,62 @@ class BleDataProcessor {
         String type = fields[_idxType].trim();
         record['type'] = type;
 
-        // --- [Strict Filter 3] GPS 必須完整且有效 ---
+        // --- GPS 解析（允許無 GPS 記錄通過）---
         String latStr = fields[_idxLat].trim();
         String ns = fields[_idxNS].trim().toUpperCase();
         String lonStr = fields[_idxLon].trim();
         String ew = fields[_idxEW].trim().toUpperCase();
 
-        if (latStr.isEmpty || lonStr.isEmpty) continue; // 缺失 GPS
+        bool hasGps = false;
+        double lat = 0.0;
+        double lon = 0.0;
 
-        double lat = double.tryParse(latStr) ?? 0.0;
-        double lon = double.tryParse(lonStr) ?? 0.0;
-
-        if (lat == 0.0 && lon == 0.0) continue; // 無效座標 (0,0)
-
-        // 絕對值處理並應用方向
-        lat = lat.abs();
-        lon = lon.abs();
-        if (ns == 'S') lat = -lat;
-        if (ew == 'W') lon = -lon;
+        if (latStr.isNotEmpty && lonStr.isNotEmpty) {
+          lat = double.tryParse(latStr) ?? 0.0;
+          lon = double.tryParse(lonStr) ?? 0.0;
+          if (lat != 0.0 || lon != 0.0) {
+            hasGps = true;
+            // 絕對值處理並應用方向
+            lat = lat.abs();
+            lon = lon.abs();
+            if (ns == 'S') lat = -lat;
+            if (ew == 'W') lon = -lon;
+          }
+        }
 
         record['lat'] = lat;
         record['lon'] = lon;
+        metadata['has_gps'] = hasGps;
 
-        // --- [Strict Filter 4] 關鍵測量數據 (H, HD, SD, Pitch, Az) 必須存在 ---
+        // --- 測量數據解析（允許部分欄位為空）---
+        // HD 和 AZ 是定位樹木的最低要求，若兩者皆空則跳過
 
-        // 樹高 (H)
+        // 樹高 (H) - 允許為 0 或空
         String hStr = fields[_idxH].trim();
-        if (hStr.isEmpty) continue;
-        record['height'] =
-            double.tryParse(hStr); // 這裡若 parse 失敗會是 null，後續可再擋，但通常不為空字串就有值
+        record['height'] = hStr.isNotEmpty ? double.tryParse(hStr) : 0.0;
 
         // 水平距離 (HD)
         String hdStr = fields[_idxHD].trim();
-        if (hdStr.isEmpty) continue;
-        metadata['horizontal_distance'] = double.tryParse(hdStr);
+        metadata['horizontal_distance'] = hdStr.isNotEmpty ? double.tryParse(hdStr) : 0.0;
 
         // 斜距 (SD)
         String sdStr = fields[_idxSD].trim();
-        if (sdStr.isEmpty) continue;
-        metadata['slope_distance'] = double.tryParse(sdStr);
+        metadata['slope_distance'] = sdStr.isNotEmpty ? double.tryParse(sdStr) : 0.0;
 
         // 俯仰角 (Pitch)
         String pitchStr = fields[_idxPitch].trim();
-        if (pitchStr.isEmpty) continue;
-        metadata['pitch'] = double.tryParse(pitchStr);
+        metadata['pitch'] = pitchStr.isNotEmpty ? double.tryParse(pitchStr) : 0.0;
 
         // 方位角 (Azimuth)
         String azStr = fields[_idxAz].trim();
-        if (azStr.isEmpty) continue;
-        metadata['azimuth'] = double.tryParse(azStr);
+        metadata['azimuth'] = azStr.isNotEmpty ? double.tryParse(azStr) : 0.0;
+
+        // 如果 HD 和 AZ 都是 0 且沒有 GPS，這條記錄無法定位，仍保留但記錄警告
+        final hd = metadata['horizontal_distance'] as double? ?? 0.0;
+        final az = metadata['azimuth'] as double? ?? 0.0;
+        if (hd == 0.0 && az == 0.0 && !hasGps) {
+          debugPrint('[BLE] ID=$id: HD=0, AZ=0, 無GPS - 記錄保留但無法定位');
+        }
 
         // [V2 COMPAT] 加入儀器類型到 metadata，供後端 tree_measurement_raw 使用
         // 這樣 V2 batch_import 可以正確寫入 instrument_type 欄位
@@ -159,8 +166,10 @@ class BleDataProcessor {
         }
 
         // [V2 COMPAT] 保存原始 GPS 座標到 metadata，供後端備份
-        metadata['raw_lat'] = lat;
-        metadata['raw_lon'] = lon;
+        if (hasGps) {
+          metadata['raw_lat'] = lat;
+          metadata['raw_lon'] = lon;
+        }
 
         // 胸徑 (DIA) - VLGEO2 不具備胸徑測量功能，此欄位永遠為空
         // 需要使用者手動輸入或透過其他儀器測量

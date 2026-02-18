@@ -1142,6 +1142,7 @@ class _BleImportPageState extends State<BleImportPage> {
 
       if (result['success'] == true) {
         final count = result['count'] ?? filteredData.length;
+        final sessionId = result['sessionId'] as String?;
         
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1154,7 +1155,9 @@ class _BleImportPageState extends State<BleImportPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => const PendingMeasurementTaskPage(),
+                    builder: (context) => PendingMeasurementTaskPage(
+                      sessionId: sessionId,
+                    ),
                   ),
                 );
               },

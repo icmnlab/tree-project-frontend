@@ -36,6 +36,24 @@ class PendingTreeMeasurement {
   final double pitch;               // 俯仰角 (度)
   final double? altitude;           // 海拔 (m)
   
+  // 測量類型 & GPS 可用性
+  final String? measurementType;    // VLGEO2 TYPE: 1P, 3P, 3D, DME
+  final bool hasGps;                // 是否有 GPS 座標
+  
+  /// 是否有有效 GPS 座標 (非 0,0)
+  bool get hasGpsPosition => hasGps && (stationLatitude != 0 || stationLongitude != 0);
+  
+  /// 測量類型的中文描述
+  String get measurementTypeLabel {
+    switch (measurementType?.toUpperCase()) {
+      case '1P': return '單點雷射';
+      case '3P': return '三點雷射';
+      case '3D': return '3D向量雷射';
+      case 'DME': return '超聲波測距';
+      default: return measurementType ?? '未知';
+    }
+  }
+  
   // 狀態資訊
   final MeasurementStatus status;
   final DateTime createdAt;
@@ -68,6 +86,8 @@ class PendingTreeMeasurement {
     required this.azimuth,
     required this.pitch,
     this.altitude,
+    this.measurementType,
+    this.hasGps = true,
     required this.status,
     required this.createdAt,
     this.completedAt,
@@ -201,6 +221,8 @@ class PendingTreeMeasurement {
       azimuth: (json['azimuth'] as num).toDouble(),
       pitch: (json['pitch'] as num).toDouble(),
       altitude: json['altitude'] != null ? (json['altitude'] as num).toDouble() : null,
+      measurementType: json['measurement_type'] as String?,
+      hasGps: json['has_gps'] as bool? ?? true,
       status: MeasurementStatus.fromString(json['status'] as String? ?? 'pending'),
       createdAt: DateTime.parse(json['created_at'] as String),
       completedAt: json['completed_at'] != null 
@@ -240,6 +262,8 @@ class PendingTreeMeasurement {
       'azimuth': azimuth,
       'pitch': pitch,
       if (altitude != null) 'altitude': altitude,
+      if (measurementType != null) 'measurement_type': measurementType,
+      'has_gps': hasGps,
       'status': status.value,
       'created_at': createdAt.toIso8601String(),
       if (completedAt != null) 'completed_at': completedAt!.toIso8601String(),
@@ -272,6 +296,8 @@ class PendingTreeMeasurement {
     double? azimuth,
     double? pitch,
     double? altitude,
+    String? measurementType,
+    bool? hasGps,
     MeasurementStatus? status,
     DateTime? createdAt,
     DateTime? completedAt,
@@ -301,6 +327,8 @@ class PendingTreeMeasurement {
       azimuth: azimuth ?? this.azimuth,
       pitch: pitch ?? this.pitch,
       altitude: altitude ?? this.altitude,
+      measurementType: measurementType ?? this.measurementType,
+      hasGps: hasGps ?? this.hasGps,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       completedAt: completedAt ?? this.completedAt,
