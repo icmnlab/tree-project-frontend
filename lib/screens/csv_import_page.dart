@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import '../services/api_service.dart';
 import '../constants/colors.dart';
 
@@ -65,10 +66,23 @@ class _CsvImportPageState extends State<CsvImportPage> {
         'file',
         file.bytes!,
         filename: file.name,
+        contentType: MediaType('text', 'csv'),
       ));
 
       final streamedResponse = await request.send();
       final responseBody = await streamedResponse.stream.bytesToString();
+
+      if (streamedResponse.statusCode != 200) {
+        // 嘗試解析 JSON 錯誤訊息
+        try {
+          final errData = jsonDecode(responseBody) as Map<String, dynamic>;
+          setState(() => _errorMessage = errData['message'] ?? '伺服器錯誤 (${streamedResponse.statusCode})');
+        } catch (_) {
+          setState(() => _errorMessage = '伺服器錯誤 (${streamedResponse.statusCode}): $responseBody');
+        }
+        return;
+      }
+
       final data = jsonDecode(responseBody) as Map<String, dynamic>;
 
       if (data['success'] == true) {
