@@ -210,6 +210,8 @@ class PureVisionDbhService {
   /// [tapX], [tapY] 使用者點擊的樹幹位置（SAM 分割 prompt，Phase 2+）
   /// [referenceDistanceM] 已知的參考距離（公尺），用於校正深度估計
   ///        例如手機 GPS 到樹的距離，ML Service 可用此校正 Depth Anything 的相對深度
+  /// [instrumentDistanceM] 儀器水平距離 HD（公尺），作為備用參考距離
+  /// [distanceSource] 距離來源：'gps'|'instrument'|'none'，讓 ML Service 選擇最佳策略
   Future<AutoMeasureResult> autoMeasureDbh({
     required File imageFile,
     double? focalLengthMm,
@@ -221,6 +223,8 @@ class PureVisionDbhService {
     int? tapX,
     int? tapY,
     double? referenceDistanceM,
+    double? instrumentDistanceM,
+    String? distanceSource,
     bool returnVisualization = true,
     bool returnDetectionVisualization = true,
   }) async {
@@ -258,6 +262,13 @@ class PureVisionDbhService {
       if (referenceDistanceM != null && referenceDistanceM > 0) {
         request.fields['reference_distance'] = referenceDistanceM.toString();
       }
+      // 儀器水平距離（ML Service 用於交叉驗證與 fallback）
+      if (instrumentDistanceM != null && instrumentDistanceM > 0) {
+        request.fields['instrument_distance'] = instrumentDistanceM.toString();
+      }
+      if (distanceSource != null) {
+        request.fields['distance_source'] = distanceSource;
+      }
       // SAM 分割觸碰點 (Phase 2+)
       if (tapX != null) {
         request.fields['tap_x'] = tapX.toString();
@@ -284,6 +295,72 @@ class PureVisionDbhService {
       throw PureVisionException('無法連接 ML 服務，請確認服務已啟動');
     } on TimeoutException {
       throw PureVisionException('請求逾時，伺服器可能正在喚醒，請稍後再試');
+    } on http.ClientException catch (e) {
+      throw PureVisionException('網路錯誤: $e');
+    }
+  }
+
+  /// Multi-photo DBH measurement for higher accuracy
+  ///
+  /// Sends 2-3 photos to the backend, which runs depth estimation on each
+  /// and takes the median DBH for noise reduction.
+  Future<AutoMeasureResult> autoMeasureDbhMulti({
+    required List<File> imageFiles,
+    double? focalLengthMm,
+    double? focalLength35mm,
+    double? fovDegrees,
+    String? phoneMake,
+    String? phoneModel,
+    double? referenceDistanceM,
+    double? instrumentDistanceM,
+    String? mode,
+  }) async {
+    try {
+      final uri = Uri.parse('$_baseUrl/auto-measure-dbh-multi');
+      final request = http.MultipartRequest('POST', uri);
+      request.headers.addAll(_authHeaders);
+
+      for (final file in imageFiles) {
+        request.files.add(
+          await http.MultipartFile.fromPath('images', file.path),
+        );
+      }
+
+      request.fields['fov_degrees'] = (fovDegrees ?? 70.0).toString();
+      if (focalLengthMm != null) {
+        request.fields['focal_length_mm'] = focalLengthMm.toString();
+      }
+      if (focalLength35mm != null) {
+        request.fields['focal_length_35mm'] = focalLength35mm.toString();
+      }
+      if (phoneMake != null) request.fields['phone_make'] = phoneMake;
+      if (phoneModel != null) request.fields['phone_model'] = phoneModel;
+      if (referenceDistanceM != null && referenceDistanceM > 0) {
+        request.fields['reference_distance'] = referenceDistanceM.toString();
+      }
+      if (instrumentDistanceM != null && instrumentDistanceM > 0) {
+        request.fields['instrument_distance'] = instrumentDistanceM.toString();
+      }
+      if (mode != null) request.fields['mode'] = mode;
+
+      debugPrint('[PureVisionDbhService] Multi-shot request (${imageFiles.length} images)');
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 300),
+      );
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode != 200) {
+        throw PureVisionException(
+          'API 錯誤 (${response.statusCode}): ${response.body}',
+        );
+      }
+
+      final data = json.decode(response.body);
+      return AutoMeasureResult.fromJson(data);
+    } on SocketException {
+      throw PureVisionException('無法連接 ML 服務');
+    } on TimeoutException {
+      throw PureVisionException('多照片分析逾時');
     } on http.ClientException catch (e) {
       throw PureVisionException('網路錯誤: $e');
     }

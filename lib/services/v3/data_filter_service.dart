@@ -132,11 +132,9 @@ class DataFilterService {
   static const int coordinatePrecision = 6;
 
   /// 必要欄位列表（BLE VLGEO2 數據）
+  /// BleDataProcessor 已在上游做了 GPS/HD/AZ 檢查，這裡只需確認 id 存在
   static const List<String> requiredFields = [
     'id',
-    'lat',
-    'lon',
-    'height',
   ];
 
   /// 用於衝突檢測的比較欄位
@@ -378,23 +376,12 @@ class DataFilterService {
   /// 檢查缺失欄位
   static List<String> _checkMissingFields(Map<String, dynamic> record) {
     final missing = <String>[];
-    final metadata = record['metadata'] as Map<String, dynamic>? ?? {};
-    final bool hasGps = metadata['has_gps'] as bool? ?? true;
     
     for (final field in requiredFields) {
       if (!record.containsKey(field) || record[field] == null) {
-        // 無GPS記錄允許 lat/lon 缺失
-        if ((field == 'lat' || field == 'lon') && !hasGps) continue;
         missing.add(field);
       } else if (record[field] is String && (record[field] as String).isEmpty) {
         missing.add(field);
-      } else if (record[field] is num && record[field] == 0) {
-        // 無GPS記錄：lat=0/lon=0 不算缺失
-        if ((field == 'lat' || field == 'lon') && !hasGps) continue;
-        // 0 值對於經緯度可能是無效的（赤道/本初子午線除外）
-        if (field == 'lat' || field == 'lon') {
-          missing.add(field);
-        }
       }
     }
     
@@ -414,15 +401,14 @@ class DataFilterService {
     final lat = _parseDouble(record['lat']);
     final lon = _parseDouble(record['lon']);
     
-    // 無GPS記錄：用 ID 作為唯一鍵（每條記錄獨立一組）
-    final metadata = record['metadata'] as Map<String, dynamic>? ?? {};
-    final bool hasGps = metadata['has_gps'] as bool? ?? true;
-    if (!hasGps || lat == null || lon == null) {
-      final id = record['id']?.toString() ?? record.hashCode.toString();
-      return 'noGps_$id';
+    if (lat == null || lon == null) return null;
+
+    // 無 GPS 記錄用 ID 作為唯一鍵（避免所有 0,0 被歸為同一組）
+    if (lat == 0.0 && lon == 0.0) {
+      final id = record['id']?.toString() ?? '';
+      return 'no_gps_$id';
     }
     
-    // 使用固定精度，確保比對一致性
     final latKey = lat.toStringAsFixed(coordinatePrecision);
     final lonKey = lon.toStringAsFixed(coordinatePrecision);
     

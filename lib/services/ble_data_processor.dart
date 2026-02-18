@@ -13,6 +13,7 @@ class BleDataProcessor {
   static const int _idxAlt = 16; // Altitude
   static const int _idxDate = 18;
   static const int _idxTime = 19;
+  static const int _idxSeq = 20; // SEQ (測量序號)
   static const int _idxSD = 23; // Slope Distance
   static const int _idxHD = 24; // Horizontal Distance
   static const int _idxH = 25; // Height
@@ -102,62 +103,60 @@ class BleDataProcessor {
         String type = fields[_idxType].trim();
         record['type'] = type;
 
-        // --- GPS 解析（允許無 GPS 記錄通過）---
+        // --- [Strict Filter 3] GPS 解析（允許無 GPS）---
         String latStr = fields[_idxLat].trim();
         String ns = fields[_idxNS].trim().toUpperCase();
         String lonStr = fields[_idxLon].trim();
         String ew = fields[_idxEW].trim().toUpperCase();
 
-        bool hasGps = false;
         double lat = 0.0;
         double lon = 0.0;
+        bool hasGps = false;
 
         if (latStr.isNotEmpty && lonStr.isNotEmpty) {
           lat = double.tryParse(latStr) ?? 0.0;
           lon = double.tryParse(lonStr) ?? 0.0;
           if (lat != 0.0 || lon != 0.0) {
             hasGps = true;
-            // 絕對值處理並應用方向
-            lat = lat.abs();
-            lon = lon.abs();
-            if (ns == 'S') lat = -lat;
-            if (ew == 'W') lon = -lon;
           }
+        }
+
+        if (hasGps) {
+          lat = lat.abs();
+          lon = lon.abs();
+          if (ns == 'S') lat = -lat;
+          if (ew == 'W') lon = -lon;
         }
 
         record['lat'] = lat;
         record['lon'] = lon;
-        metadata['has_gps'] = hasGps;
+        record['hasGps'] = hasGps;
 
-        // --- 測量數據解析（允許部分欄位為空）---
-        // HD 和 AZ 是定位樹木的最低要求，若兩者皆空則跳過
-
-        // 樹高 (H) - 允許為 0 或空
-        String hStr = fields[_idxH].trim();
-        record['height'] = hStr.isNotEmpty ? double.tryParse(hStr) : 0.0;
-
-        // 水平距離 (HD)
+        // --- [Strict Filter 4] 只要有 HD（或 SD）+ AZ 就保留 ---
         String hdStr = fields[_idxHD].trim();
-        metadata['horizontal_distance'] = hdStr.isNotEmpty ? double.tryParse(hdStr) : 0.0;
-
-        // 斜距 (SD)
         String sdStr = fields[_idxSD].trim();
-        metadata['slope_distance'] = sdStr.isNotEmpty ? double.tryParse(sdStr) : 0.0;
-
-        // 俯仰角 (Pitch)
-        String pitchStr = fields[_idxPitch].trim();
-        metadata['pitch'] = pitchStr.isNotEmpty ? double.tryParse(pitchStr) : 0.0;
-
-        // 方位角 (Azimuth)
         String azStr = fields[_idxAz].trim();
-        metadata['azimuth'] = azStr.isNotEmpty ? double.tryParse(azStr) : 0.0;
 
-        // 如果 HD 和 AZ 都是 0 且沒有 GPS，這條記錄無法定位，仍保留但記錄警告
-        final hd = metadata['horizontal_distance'] as double? ?? 0.0;
-        final az = metadata['azimuth'] as double? ?? 0.0;
-        if (hd == 0.0 && az == 0.0 && !hasGps) {
-          debugPrint('[BLE] ID=$id: HD=0, AZ=0, 無GPS - 記錄保留但無法定位');
-        }
+        double? hd = hdStr.isNotEmpty ? double.tryParse(hdStr) : null;
+        double? sd = sdStr.isNotEmpty ? double.tryParse(sdStr) : null;
+        double? az = azStr.isNotEmpty ? double.tryParse(azStr) : null;
+
+        if ((hd == null && sd == null) || az == null) continue;
+
+        metadata['horizontal_distance'] = hd ?? sd;
+        metadata['slope_distance'] = sd;
+        metadata['azimuth'] = az;
+
+        String hStr = fields[_idxH].trim();
+        record['height'] = hStr.isNotEmpty ? double.tryParse(hStr) : null;
+
+        String pitchStr = fields[_idxPitch].trim();
+        metadata['pitch'] = pitchStr.isNotEmpty ? double.tryParse(pitchStr) : null;
+
+        // SEQ 欄位
+        String seqStr = fields[_idxSeq].trim();
+        int seq = int.tryParse(seqStr) ?? 1;
+        record['seq'] = seq;
 
         // [V2 COMPAT] 加入儀器類型到 metadata，供後端 tree_measurement_raw 使用
         // 這樣 V2 batch_import 可以正確寫入 instrument_type 欄位
@@ -166,10 +165,8 @@ class BleDataProcessor {
         }
 
         // [V2 COMPAT] 保存原始 GPS 座標到 metadata，供後端備份
-        if (hasGps) {
-          metadata['raw_lat'] = lat;
-          metadata['raw_lon'] = lon;
-        }
+        metadata['raw_lat'] = lat;
+        metadata['raw_lon'] = lon;
 
         // 胸徑 (DIA) - VLGEO2 不具備胸徑測量功能，此欄位永遠為空
         // 需要使用者手動輸入或透過其他儀器測量
@@ -229,6 +226,81 @@ class BleDataProcessor {
     }
 
     return parsedResults;
+  }
+
+  /// 合併多 SEQ 記錄（順序無關）
+  ///
+  /// 3P 合併：同 ID 且 HD/AZ 相同 -> 淨樹高 = max(H) - min(H)
+  /// 1P 合併：同 ID 但 HD/AZ 不同 -> 取最後一個 SEQ
+  static List<Map<String, dynamic>> mergeMultiSeqRecords(
+    List<Map<String, dynamic>> records,
+  ) {
+    final Map<String, List<Map<String, dynamic>>> groupById = {};
+    for (final r in records) {
+      final id = r['id']?.toString() ?? '';
+      groupById.putIfAbsent(id, () => []).add(r);
+    }
+
+    final List<Map<String, dynamic>> merged = [];
+
+    for (final entry in groupById.entries) {
+      final group = entry.value;
+      if (group.length == 1) {
+        merged.add(group.first);
+        continue;
+      }
+
+      final type = group.first['type']?.toString() ?? '';
+      final meta0 = group.first['metadata'] as Map<String, dynamic>? ?? {};
+      final hd0 = meta0['horizontal_distance'];
+      final az0 = meta0['azimuth'];
+
+      bool allSameHdAz = group.every((r) {
+        final m = r['metadata'] as Map<String, dynamic>? ?? {};
+        return m['horizontal_distance'] == hd0 && m['azimuth'] == az0;
+      });
+
+      if (type == '3P' && allSameHdAz) {
+        // 3P 三點測高合併：淨樹高 = max(H) - min(H)
+        final hValues = group
+            .map((r) => (r['height'] as num?)?.toDouble())
+            .whereType<double>()
+            .toList();
+
+        if (hValues.length >= 2) {
+          final maxH = hValues.reduce((a, b) => a > b ? a : b);
+          final minH = hValues.reduce((a, b) => a < b ? a : b);
+          final netHeight = maxH - minH;
+
+          final base = Map<String, dynamic>.from(group.first);
+          base['height'] = netHeight;
+          final baseMeta = Map<String, dynamic>.from(
+              base['metadata'] as Map<String, dynamic>? ?? {});
+          baseMeta['raw_h_values'] = hValues;
+          baseMeta['merge_method'] = '3P_max_min';
+          base['metadata'] = baseMeta;
+          base['seq'] = 1;
+
+          debugPrint('[SEQ MERGE] 3P ID=${entry.key}: '
+              'H values=$hValues -> net=$netHeight');
+          merged.add(base);
+        } else {
+          merged.add(group.last);
+        }
+      } else {
+        // 1P 或 HD/AZ 不同：取最後一個 SEQ
+        group.sort((a, b) =>
+            ((a['seq'] as int?) ?? 1).compareTo((b['seq'] as int?) ?? 1));
+        final last = group.last;
+
+        debugPrint('[SEQ MERGE] ${type} ID=${entry.key}: '
+            '${group.length} SEQ, keep last SEQ=${last['seq']}');
+        merged.add(last);
+      }
+    }
+
+    debugPrint('[SEQ MERGE] ${records.length} records -> ${merged.length} merged');
+    return merged;
   }
 
   /// 處理緩衝區中的亂碼 (如果有的話)

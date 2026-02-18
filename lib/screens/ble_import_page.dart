@@ -1059,6 +1059,9 @@ class _BleImportPageState extends State<BleImportPage> {
         return;
       }
 
+      // 合併多 SEQ 記錄（3P 計算淨樹高、1P 取最後 SEQ）
+      parsedData = BleDataProcessor.mergeMultiSeqRecords(parsedData);
+
       // V3: 應用數據過濾（不完整資料 + 重複資料）
       final filterResult = DataFilterService.filterBleData(
         parsedData,

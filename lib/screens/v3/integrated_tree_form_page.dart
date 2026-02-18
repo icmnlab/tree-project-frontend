@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:exif/exif.dart';
 import '../../models/pending_tree_measurement.dart';
 import '../../services/pending_measurement_service.dart';
 import '../../services/species_identification_service.dart';
@@ -52,6 +53,8 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
   
   // [Phase 0.5] 手機 GPS 定位
   double? _phoneToTreeDistance;
+  double? _gpsAccuracyM;
+  String _distanceSource = 'none'; // 'gps', 'instrument', 'none'
   
   // 樹種資料
   List<Map<String, dynamic>> _allSpecies = [];
@@ -73,6 +76,11 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
   bool _dbhReady = false;
   bool _speciesReady = false;
 
+  // Multi-shot: stored images for precision boost
+  final List<File> _capturedImages = [];
+  Map<String, dynamic> _lastExif = {};
+  bool _showMultiShotHint = false;
+
   @override
   void initState() {
     super.initState();
@@ -81,8 +89,25 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
     _acquirePhoneGps();
   }
   
-  /// [Phase 0.5] 取得手機 GPS 位置，計算到推算樹木位置的距離
+  /// 取得手機 GPS 位置，智慧選擇最佳參考距離
+  ///
+  /// 三層保護機制：
+  /// 1. 無 GPS 座標（treeLat/Lon=0）→ fallback 到儀器 HD
+  /// 2. GPS 精度太差（accuracy > 20m）→ fallback 到儀器 HD
+  /// 3. GPS 距離與儀器 HD 差距 > 100% → 警告，優先用儀器 HD
   Future<void> _acquirePhoneGps() async {
+    final instrumentHD = widget.task.horizontalDistance;
+    
+    // 保護 1: 無樹木 GPS 座標時，直接用儀器 HD
+    if (widget.task.treeLatitude == 0 && widget.task.treeLongitude == 0) {
+      debugPrint('[GPS] 樹木無 GPS 座標，使用儀器 HD=${instrumentHD}m');
+      setState(() {
+        _phoneToTreeDistance = instrumentHD;
+        _distanceSource = 'instrument';
+      });
+      return;
+    }
+    
     try {
       final permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
@@ -91,30 +116,81 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
-      );
+      ).timeout(const Duration(seconds: 10));
       
       if (!mounted) return;
       
-      final dist = Geolocator.distanceBetween(
+      _gpsAccuracyM = position.accuracy;
+      
+      // 保護 2: GPS 精度太差，改用儀器 HD
+      if (position.accuracy > 20) {
+        debugPrint('[GPS] 精度太差 (${position.accuracy.toStringAsFixed(0)}m)，使用儀器 HD');
+        setState(() {
+          _phoneToTreeDistance = instrumentHD;
+          _distanceSource = 'instrument';
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('GPS 精度不足 (±${position.accuracy.toStringAsFixed(0)}m)，改用儀器距離 ${instrumentHD.toStringAsFixed(1)}m'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+        return;
+      }
+      
+      final gpsDist = Geolocator.distanceBetween(
         position.latitude, position.longitude,
         widget.task.treeLatitude, widget.task.treeLongitude,
       );
       
+      // 保護 3: GPS 與儀器 HD 嚴重不一致（差距 > 100%）
+      final deviation = (gpsDist - instrumentHD).abs();
+      final deviationPct = instrumentHD > 0 ? deviation / instrumentHD : double.infinity;
+      
+      if (deviationPct > 1.0) {
+        debugPrint('[GPS] GPS(${gpsDist.toStringAsFixed(1)}m) 與儀器HD(${instrumentHD.toStringAsFixed(1)}m) 差距 ${(deviationPct * 100).toStringAsFixed(0)}%，優先用儀器 HD');
+        setState(() {
+          _phoneToTreeDistance = instrumentHD;
+          _distanceSource = 'instrument';
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('GPS 距離 (${gpsDist.toStringAsFixed(0)}m) 與儀器 (${instrumentHD.toStringAsFixed(1)}m) 差異過大，採用儀器距離'),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+        return;
+      }
+      
+      // GPS 品質合格，使用 GPS 距離
       setState(() {
-        _phoneToTreeDistance = dist;
+        _phoneToTreeDistance = gpsDist;
+        _distanceSource = 'gps';
       });
       
-      if (dist > 15) {
+      if (gpsDist > 15 && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('您距離目標樹木約 ${dist.toStringAsFixed(0)}m，請確認是否在正確位置'),
+            content: Text('距離目標樹木約 ${gpsDist.toStringAsFixed(0)}m，請確認是否在正確位置'),
             backgroundColor: Colors.orange,
             duration: const Duration(seconds: 4),
           ),
         );
       }
     } catch (e) {
-      debugPrint('[GPS] 定位失敗: $e');
+      debugPrint('[GPS] 定位失敗: $e — fallback 到儀器 HD');
+      if (mounted) {
+        setState(() {
+          _phoneToTreeDistance = instrumentHD;
+          _distanceSource = 'instrument';
+        });
+      }
     }
   }
   
@@ -157,6 +233,8 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       if (image != null) {
         setState(() {
           _mainImage = image;
+          _capturedImages.clear();
+          _showMultiShotHint = false;
         });
         // [Phase 1] 拍照後自動啟動 AutoPilot
         _runAutoPilot(image);
@@ -194,7 +272,43 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
     }
   }
 
-  /// [Phase 1] 自動 DBH 量測（不需進入 PureVisionDbhPage）
+  /// Extract EXIF focal length and phone info from image file
+  Future<Map<String, dynamic>> _extractExif(File imageFile) async {
+    final exifInfo = <String, dynamic>{};
+    try {
+      final bytes = await imageFile.readAsBytes();
+      final exifData = await readExifFromBytes(bytes);
+
+      final focalTag = exifData['EXIF FocalLength'];
+      if (focalTag != null) {
+        final ratio = focalTag.values;
+        if (ratio is IfdRatios && ratio.ratios.isNotEmpty) {
+          final r = ratio.ratios.first;
+          exifInfo['focalMm'] = r.denominator != 0 ? r.numerator.toDouble() / r.denominator.toDouble() : null;
+        } else {
+          exifInfo['focalMm'] = double.tryParse(focalTag.printable.replaceAll(' ', ''));
+        }
+      }
+
+      final focal35Tag = exifData['EXIF FocalLengthIn35mmFilm'];
+      if (focal35Tag != null) {
+        exifInfo['focal35'] = double.tryParse(focal35Tag.printable.replaceAll(' ', ''));
+      }
+
+      final makeTag = exifData['Image Make'];
+      if (makeTag != null) exifInfo['make'] = makeTag.printable.trim();
+
+      final modelTag = exifData['Image Model'];
+      if (modelTag != null) exifInfo['model'] = modelTag.printable.trim();
+
+      debugPrint('[EXIF] ${exifInfo}');
+    } catch (e) {
+      debugPrint('[EXIF] Read failed: $e');
+    }
+    return exifInfo;
+  }
+
+  /// 自動 DBH 量測（附帶 EXIF 焦距提取）
   Future<void> _autoMeasureDbh(File image) async {
     try {
       setState(() => _autoPilotStatus = '測量 DBH 中...');
@@ -207,7 +321,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
           setState(() => _autoPilotStatus = 'ML 服務無法連線');
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('⚠️ ML 量測服務無法連線，DBH 需手動輸入\n'
+              content: Text('ML 量測服務無法連線，DBH 需手動輸入\n'
                   '請確認 ngrok 隧道與 ML Service 是否運行中'),
               duration: Duration(seconds: 5),
               backgroundColor: Colors.orange,
@@ -217,22 +331,90 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
         return;
       }
 
+      // Extract EXIF for better focal length accuracy
+      final exif = await _extractExif(image);
+
       final result = await service.autoMeasureDbh(
         imageFile: image,
         referenceDistanceM: _phoneToTreeDistance,
+        instrumentDistanceM: widget.task.horizontalDistance,
+        distanceSource: _distanceSource,
+        focalLengthMm: exif['focalMm'] as double?,
+        focalLength35mm: exif['focal35'] as double?,
+        phoneMake: exif['make'] as String?,
+        phoneModel: exif['model'] as String?,
       );
 
       if (result.success && result.dbhCm != null && mounted) {
+        final conf = result.confidence ?? 0;
         setState(() {
           _measuredDbh = result.dbhCm;
           _measurementConfidence = result.confidence;
           _measurementMethod = 'autopilot_vision';
           _dbhController.text = result.dbhCm!.toStringAsFixed(1);
-          _dbhReady = (result.confidence ?? 0) >= 0.6;
+          _dbhReady = conf >= 0.6;
+          _capturedImages.add(image);
+          _lastExif = exif;
+          _showMultiShotHint = conf < 0.7 && _capturedImages.length < 3;
         });
       }
     } catch (e) {
       debugPrint('[AutoPilot] DBH 自動量測失敗: $e');
+    }
+  }
+
+  /// Multi-shot: take another photo and send all to fusion endpoint
+  Future<void> _takeMultiShotPhoto() async {
+    try {
+      final File? image = await _imageService.captureImage();
+      if (image == null) return;
+
+      setState(() {
+        _isAutoPilotRunning = true;
+        _autoPilotStatus = '多照片融合分析中...';
+        _showMultiShotHint = false;
+      });
+
+      _capturedImages.add(image);
+
+      final service = PureVisionDbhService();
+      final result = await service.autoMeasureDbhMulti(
+        imageFiles: _capturedImages,
+        referenceDistanceM: _phoneToTreeDistance,
+        instrumentDistanceM: widget.task.horizontalDistance,
+        focalLengthMm: _lastExif['focalMm'] as double?,
+        focalLength35mm: _lastExif['focal35'] as double?,
+        phoneMake: _lastExif['make'] as String?,
+        phoneModel: _lastExif['model'] as String?,
+      );
+
+      if (result.success && result.dbhCm != null && mounted) {
+        setState(() {
+          _mainImage = image;
+          _measuredDbh = result.dbhCm;
+          _measurementConfidence = result.confidence;
+          _measurementMethod = 'multi_shot_fusion';
+          _dbhController.text = result.dbhCm!.toStringAsFixed(1);
+          _dbhReady = (result.confidence ?? 0) >= 0.6;
+          _isAutoPilotRunning = false;
+          _autoPilotStatus = '多照片融合完成 (${_capturedImages.length}張)';
+        });
+      } else {
+        if (mounted) {
+          setState(() {
+            _isAutoPilotRunning = false;
+            _autoPilotStatus = '融合失敗，使用單張結果';
+          });
+        }
+      }
+    } catch (e) {
+      debugPrint('[MultiShot] 失敗: $e');
+      if (mounted) {
+        setState(() {
+          _isAutoPilotRunning = false;
+          _autoPilotStatus = '融合失敗';
+        });
+      }
     }
   }
 
@@ -615,6 +797,39 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _buildPhotoSection(),
+                  if (_showMultiShotHint)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Material(
+                        color: Colors.amber.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        child: InkWell(
+                          onTap: _isAutoPilotRunning ? null : _takeMultiShotPhoto,
+                          borderRadius: BorderRadius.circular(12),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                            child: Row(
+                              children: [
+                                Icon(Icons.add_a_photo, color: Colors.amber.shade800),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text('再拍一張可提高精度',
+                                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.amber.shade900)),
+                                      Text('目前信心度 ${((_measurementConfidence ?? 0) * 100).toStringAsFixed(0)}%，多張照片融合可降低誤差',
+                                          style: TextStyle(fontSize: 12, color: Colors.amber.shade700)),
+                                    ],
+                                  ),
+                                ),
+                                Icon(Icons.arrow_forward_ios, size: 16, color: Colors.amber.shade600),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   const SizedBox(height: 24),
                   _buildInfoCard(),
                   const SizedBox(height: 24),
@@ -640,31 +855,34 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
   Widget _buildPhotoSection() {
     return Column(
       children: [
-        // [Phase 0.5] GPS 距離提示
         if (_phoneToTreeDistance != null)
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             margin: const EdgeInsets.only(bottom: 8),
             decoration: BoxDecoration(
-              color: _phoneToTreeDistance! <= 10 ? Colors.green.shade50 : Colors.orange.shade50,
+              color: _distanceSource == 'gps' ? Colors.green.shade50 : Colors.blue.shade50,
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: _phoneToTreeDistance! <= 10 ? Colors.green.shade300 : Colors.orange.shade300,
+                color: _distanceSource == 'gps' ? Colors.green.shade300 : Colors.blue.shade300,
               ),
             ),
             child: Row(
               children: [
                 Icon(
-                  _phoneToTreeDistance! <= 10 ? Icons.gps_fixed : Icons.gps_not_fixed,
+                  _distanceSource == 'gps' ? Icons.gps_fixed : Icons.straighten,
                   size: 16,
-                  color: _phoneToTreeDistance! <= 10 ? Colors.green.shade700 : Colors.orange.shade700,
+                  color: _distanceSource == 'gps' ? Colors.green.shade700 : Colors.blue.shade700,
                 ),
                 const SizedBox(width: 6),
-                Text(
-                  '距目標樹木約 ${_phoneToTreeDistance!.toStringAsFixed(1)}m',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: _phoneToTreeDistance! <= 10 ? Colors.green.shade800 : Colors.orange.shade800,
+                Expanded(
+                  child: Text(
+                    _distanceSource == 'gps'
+                        ? '距目標 ${_phoneToTreeDistance!.toStringAsFixed(1)}m (GPS${_gpsAccuracyM != null ? " ±${_gpsAccuracyM!.toStringAsFixed(0)}m" : ""})'
+                        : '參考距離 ${_phoneToTreeDistance!.toStringAsFixed(1)}m (儀器 HD)',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: _distanceSource == 'gps' ? Colors.green.shade800 : Colors.blue.shade800,
+                    ),
                   ),
                 ),
               ],

@@ -205,27 +205,10 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     }
   }
   
-  /// [Phase 3] 當 GPS 接近目標樹木時，自動推進導航狀態
+  /// GPS 接近時不自動推進，改為純手動確認
+  /// GPS 室內誤差大（15m+），自動推進會導致誤觸發
   void _checkProximityAutoAdvance(Position position) {
-    if (_currentTask == null) return;
-    
-    final task = _currentTask!;
-    
-    // 計算到樹木的距離
-    final distToTree = Geolocator.distanceBetween(
-      position.latitude, position.longitude,
-      task.treeLatitude, task.treeLongitude,
-    );
-    
-    // 導航到測站時：到達 5m 內自動切換到「對準樹木」
-    if (_navState == NavigationState.navigatingToStation && distToTree < 8) {
-      _arrivedAtStation();
-    }
-    
-    // 對準樹木時：到達 5m 內自動觸發測量
-    if (_navState == NavigationState.pointingToTree && distToTree < 5) {
-      _startMeasurement();
-    }
+    // 不再自動推進，完全由使用者手動確認「已到達」
   }
 
   @override
@@ -444,13 +427,35 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   Widget _buildTaskCard(PendingTreeMeasurement task, int index) {
     final hdDistance = task.horizontalDistance;
     final statusLabel = task.status == MeasurementStatus.inProgress ? ' ▶ 進行中' : '';
-    final hasGps = task.hasGpsPosition;
+    
+    final typeLabel = task.measurementType ?? '';
+
+    Color typeBg = Colors.grey.shade100;
+    Color typeFg = Colors.grey.shade700;
+    Color typeBorder = Colors.grey.shade400;
+    if (typeLabel == '1P') {
+      typeBg = Colors.green.shade50;
+      typeFg = Colors.green.shade700;
+      typeBorder = Colors.green.shade300;
+    } else if (typeLabel == 'DME') {
+      typeBg = Colors.blue.shade50;
+      typeFg = Colors.blue.shade700;
+      typeBorder = Colors.blue.shade300;
+    } else if (typeLabel == '3P') {
+      typeBg = Colors.orange.shade50;
+      typeFg = Colors.orange.shade700;
+      typeBorder = Colors.orange.shade300;
+    } else if (typeLabel == '3D') {
+      typeBg = Colors.purple.shade50;
+      typeFg = Colors.purple.shade700;
+      typeBorder = Colors.purple.shade300;
+    }
     
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
       color: task.status == MeasurementStatus.inProgress 
           ? Colors.teal.shade50 
-          : (!hasGps ? Colors.orange.shade50 : null),
+          : null,
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: _getPriorityColor(task.priority ?? 3),
@@ -460,10 +465,26 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
         title: Row(
           children: [
             Text('ID: ${task.originalRecordId ?? "未知"}'),
-            const SizedBox(width: 6),
-            // 測量類型標籤
-            _buildTypeBadge(task.measurementType),
-            const SizedBox(width: 4),
+            const SizedBox(width: 8),
+            if (typeLabel.isNotEmpty) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: typeBg,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: typeBorder),
+                ),
+                child: Text(
+                  typeLabel,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: typeFg,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+            ],
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
@@ -478,10 +499,6 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
                 ),
               ),
             ),
-            if (!hasGps) ...[
-              const SizedBox(width: 4),
-              Icon(Icons.gps_off, size: 14, color: Colors.orange.shade700),
-            ],
             if (statusLabel.isNotEmpty) ...[
               const SizedBox(width: 4),
               Text(statusLabel, style: TextStyle(fontSize: 11, color: Colors.teal.shade700, fontWeight: FontWeight.bold)),
@@ -494,58 +511,20 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
             if (task.speciesName != null)
               Text('樹種: ${task.speciesName}'),
             Text(
-              'HD: ${hdDistance.toStringAsFixed(1)}m  AZ: ${task.azimuth.toStringAsFixed(0)}°${!hasGps ? '  (無GPS)' : ''}',
+              'HD: ${hdDistance.toStringAsFixed(1)}m  AZ: ${task.azimuth.toStringAsFixed(0)}°',
               style: TextStyle(
-                color: !hasGps ? Colors.orange.shade700 : (hdDistance < 50 ? Colors.green : Colors.orange),
+                color: hdDistance < 50 ? Colors.green : Colors.orange,
                 fontWeight: FontWeight.w500,
               ),
             ),
           ],
         ),
         trailing: IconButton(
-          icon: Icon(
-            hasGps ? Icons.navigation : Icons.play_arrow,
-            color: hasGps ? Colors.teal : Colors.orange,
-          ),
+          icon: const Icon(Icons.navigation, color: Colors.teal),
           onPressed: () => _startTask(task),
         ),
         onTap: () => _startTask(task),
       ),
-    );
-  }
-  
-  /// 測量類型標籤 Widget
-  Widget _buildTypeBadge(String? type) {
-    Color bgColor;
-    String label;
-    switch (type?.toUpperCase()) {
-      case '1P':
-        bgColor = Colors.green.shade100;
-        label = '1P';
-        break;
-      case '3P':
-        bgColor = Colors.green.shade200;
-        label = '3P';
-        break;
-      case '3D':
-        bgColor = Colors.purple.shade100;
-        label = '3D';
-        break;
-      case 'DME':
-        bgColor = Colors.blue.shade100;
-        label = 'DME';
-        break;
-      default:
-        bgColor = Colors.grey.shade200;
-        label = type ?? '?';
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(label, style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
     );
   }
   
@@ -568,27 +547,20 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     final task = _currentTask!;
     final userPos = _userPosition;
     
-    // GPS 距離（僅供參考，室內不準）
+    // GPS 距離僅供參考
     final gpsDistance = userPos != null
         ? task.distanceToStation(userPos.latitude, userPos.longitude)
         : null;
     
-    // 優先使用 GPS 導航（如果有位置）
+    // 方向：用儀器 AZ 作為目標方位，搭配手機 heading 計算相對轉向
     double? relativeAngle;
-    if (userPos != null && _currentHeading != null) {
-      final bearing = _calculateBearing(
-        userPos.latitude, userPos.longitude,
-        task.stationLatitude, task.stationLongitude,
-      );
-      relativeAngle = (bearing - _currentHeading! + 360) % 360;
+    if (_currentHeading != null) {
+      relativeAngle = (task.azimuth - _currentHeading! + 360) % 360;
     }
-    
-    // 判斷是否已接近測站（GPS 距離可信時）
-    final isNearStation = gpsDistance != null && gpsDistance < 10;
     
     return Column(
       children: [
-        // 測量資訊卡
+        // 儀器量測資訊卡
         Container(
           margin: const EdgeInsets.all(16),
           padding: const EdgeInsets.all(16),
@@ -616,7 +588,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
                   _infoChip('HD', '${task.horizontalDistance.toStringAsFixed(1)}m'),
                   _infoChip('AZ', '${task.azimuth.toStringAsFixed(0)}°'),
                   _infoChip('樹高', '${task.treeHeight.toStringAsFixed(1)}m'),
-                  if (task.measurementType != null)
+                  if (task.measurementType != null && task.measurementType!.isNotEmpty)
                     _infoChip('類型', task.measurementType!),
                 ],
               ),
@@ -624,41 +596,39 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
           ),
         ),
         
-        // 距離和方向顯示
+        // 主要距離顯示（儀器 HD）+ 方向
         Expanded(
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
+                Text(
+                  '${task.horizontalDistance.toStringAsFixed(1)}m',
+                  style: const TextStyle(
+                    fontSize: 72,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.teal,
+                  ),
+                ),
+                const Text(
+                  '儀器量測距離 (HD)',
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+                ),
                 if (gpsDistance != null) ...[
-                  // GPS 距離（到測站）
+                  const SizedBox(height: 4),
                   Text(
-                    gpsDistance < 1000 
-                        ? '${gpsDistance.toStringAsFixed(0)}m'
-                        : '${(gpsDistance / 1000).toStringAsFixed(1)}km',
-                    style: TextStyle(
-                      fontSize: 72,
-                      fontWeight: FontWeight.bold,
-                      color: isNearStation ? Colors.green : Colors.teal,
-                    ),
+                    'GPS 參考距離: ${gpsDistance.toStringAsFixed(0)}m（室內誤差大）',
+                    style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
                   ),
-                  Text(
-                    '到測站 GPS 距離（室內誤差較大）',
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-                  ),
-                ] else ...[
-                  Icon(Icons.gps_off, size: 48, color: Colors.grey.shade400),
-                  const SizedBox(height: 8),
-                  Text('GPS 定位中...', style: TextStyle(color: Colors.grey.shade600)),
                 ],
                 
                 const SizedBox(height: 24),
                 
-                // 方向箭頭
+                // 方向箭頭（用儀器 AZ + 手機 heading）
                 if (relativeAngle != null) ...[
                   Transform.rotate(
                     angle: relativeAngle * math.pi / 180,
-                    child: Icon(
+                    child: const Icon(
                       Icons.navigation,
                       size: 100,
                       color: Colors.teal,
@@ -666,20 +636,23 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    _getDirectionText(relativeAngle),
+                    '${_getDirectionText(relativeAngle)}  (AZ ${task.azimuth.toStringAsFixed(0)}°)',
                     style: const TextStyle(fontSize: 18),
                   ),
                 ] else ...[
                   Icon(Icons.explore_off, size: 64, color: Colors.grey.shade400),
                   const SizedBox(height: 8),
-                  Text('等待方向感應器...', style: TextStyle(color: Colors.grey.shade600)),
+                  Text(
+                    '目標方位: AZ ${task.azimuth.toStringAsFixed(0)}°（等待羅盤...）',
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
                 ],
               ],
             ),
           ),
         ),
         
-        // 底部按鈕（不阻塞：隨時允許手動確認已到達）
+        // 底部按鈕
         Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -857,24 +830,6 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   // === 事件處理 ===
   
   void _startTask(PendingTreeMeasurement task) async {
-    // 無GPS記錄直接跳到測量階段，不需要導航
-    if (!task.hasGpsPosition) {
-      setState(() {
-        _currentTask = task;
-        _navState = NavigationState.measuring;
-      });
-      if (task.id != null) {
-        try {
-          await _service.updateTaskStatus(task.id!, MeasurementStatus.inProgress);
-        } catch (e) {
-          debugPrint('[PendingTask] 設定 in_progress 失敗: $e');
-        }
-      }
-      // 直接開始測量
-      _startMeasurement();
-      return;
-    }
-    
     setState(() {
       _currentTask = task;
       _navState = NavigationState.navigatingToStation;
@@ -1026,18 +981,6 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     }
   }
   
-  double _calculateBearing(double lat1, double lon1, double lat2, double lon2) {
-    double dLon = (lon2 - lon1) * math.pi / 180;
-    double lat1Rad = lat1 * math.pi / 180;
-    double lat2Rad = lat2 * math.pi / 180;
-    
-    double x = math.sin(dLon) * math.cos(lat2Rad);
-    double y = math.cos(lat1Rad) * math.sin(lat2Rad) -
-        math.sin(lat1Rad) * math.cos(lat2Rad) * math.cos(dLon);
-    
-    double bearing = math.atan2(x, y);
-    return (bearing * 180 / math.pi + 360) % 360;
-  }
 }
 
 /// 導航狀態

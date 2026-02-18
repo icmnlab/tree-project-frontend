@@ -1,72 +1,56 @@
 import 'dart:math' as math;
 
 /// 待測量樹木數據模型
-/// 
+///
 /// 用於存儲 VLGEO2 匯入但尚未完成 DBH 測量的樹木資料
 /// 支援兩階段測量流程：
 /// 1. 第一階段：VLGEO2 測量員使用設備測量樹木位置
 /// 2. 第二階段：DBH 測量員使用 AR 功能測量胸徑
 class PendingTreeMeasurement {
-  final int? id;                    // 資料庫 ID
-  final String? sessionId;          // 測量批次 ID
-  final String? originalRecordId;   // VLGEO2 原始記錄 ID
-  
+  final int? id; // 資料庫 ID
+  final String? sessionId; // 測量批次 ID
+  final String? originalRecordId; // VLGEO2 原始記錄 ID
+
   // 專案資訊
   final String? projectArea;
   final String? projectCode;
   final String? projectName;
-  
+
   // 樹木基本資料 (來自 VLGEO2)
-  final String? speciesName;        // 樹種名稱 (可能待確認)
-  final double treeHeight;          // 樹高 (公尺)
-  final double? dbhCm;              // 胸徑 (待測量)
-  
+  final String? speciesName; // 樹種名稱 (可能待確認)
+  final double treeHeight; // 樹高 (公尺)
+  final double? dbhCm; // 胸徑 (待測量)
+
   // 樹木位置 (計算得出)
-  final double treeLatitude;        // 樹木緯度
-  final double treeLongitude;       // 樹木經度
-  
+  final double treeLatitude; // 樹木緯度
+  final double treeLongitude; // 樹木經度
+
   // 測站位置 (從 VLGEO2 數據反推)
-  final double stationLatitude;     // 測站緯度
-  final double stationLongitude;    // 測站經度
-  
+  final double stationLatitude; // 測站緯度
+  final double stationLongitude; // 測站經度
+
   // VLGEO2 測量數據 (用於反推計算)
-  final double horizontalDistance;  // 水平距離 (m)
-  final double slopeDistance;       // 斜距 (m)
-  final double azimuth;             // 方位角 (度)
-  final double pitch;               // 俯仰角 (度)
-  final double? altitude;           // 海拔 (m)
-  
-  // 測量類型 & GPS 可用性
-  final String? measurementType;    // VLGEO2 TYPE: 1P, 3P, 3D, DME
-  final bool hasGps;                // 是否有 GPS 座標
-  
-  /// 是否有有效 GPS 座標 (非 0,0)
-  bool get hasGpsPosition => hasGps && (stationLatitude != 0 || stationLongitude != 0);
-  
-  /// 測量類型的中文描述
-  String get measurementTypeLabel {
-    switch (measurementType?.toUpperCase()) {
-      case '1P': return '單點雷射';
-      case '3P': return '三點雷射';
-      case '3D': return '3D向量雷射';
-      case 'DME': return '超聲波測距';
-      default: return measurementType ?? '未知';
-    }
-  }
-  
+  final double horizontalDistance; // 水平距離 (m)
+  final double slopeDistance; // 斜距 (m)
+  final double azimuth; // 方位角 (度)
+  final double pitch; // 俯仰角 (度)
+  final double? altitude; // 海拔 (m)
+
   // 狀態資訊
   final MeasurementStatus status;
   final DateTime createdAt;
   final DateTime? completedAt;
-  final String? assignedTo;         // 指派給哪位測量員
-  final int? priority;              // 優先級 (1-5)
-  
+  final String? assignedTo; // 指派給哪位測量員
+  final int? priority; // 優先級 (1-5)
+
+  final String? measurementType; // 測量類型 (1P, 3P, 3D, DME)
+
   // DBH 測量結果 (第二階段填入)
-  final double? measuredDbhCm;      // 測量的 DBH
+  final double? measuredDbhCm; // 測量的 DBH
   final double? measurementConfidence; // 測量信心度
-  final String? measurementMethod;  // 測量方法
-  final String? measurementNotes;   // 測量備註
-  
+  final String? measurementMethod; // 測量方法
+  final String? measurementNotes; // 測量備註
+
   const PendingTreeMeasurement({
     this.id,
     this.sessionId,
@@ -86,64 +70,55 @@ class PendingTreeMeasurement {
     required this.azimuth,
     required this.pitch,
     this.altitude,
-    this.measurementType,
-    this.hasGps = true,
     required this.status,
     required this.createdAt,
     this.completedAt,
     this.assignedTo,
     this.priority,
+    this.measurementType,
     this.measuredDbhCm,
     this.measurementConfidence,
     this.measurementMethod,
     this.measurementNotes,
   });
-  
+
   /// 計算目前使用者到測站的距離 (公尺)
   double distanceToStation(double userLat, double userLon) {
-    return _haversineDistance(userLat, userLon, stationLatitude, stationLongitude);
+    return _haversineDistance(
+        userLat, userLon, stationLatitude, stationLongitude);
   }
-  
-  /// 計算測站到樹木的方位角 (度)
+
+  /// 測站到樹木的方位角 (度)
+  /// 直接使用儀器 AZ 值，因為這是最可靠的（GPS 反算有精度損失）
   double bearingToTree() {
-    return _calculateBearing(stationLatitude, stationLongitude, treeLatitude, treeLongitude);
+    return azimuth;
   }
-  
+
   /// Haversine 公式計算兩點間距離
-  static double _haversineDistance(double lat1, double lon1, double lat2, double lon2) {
+  static double _haversineDistance(
+      double lat1, double lon1, double lat2, double lon2) {
     const double R = 6371000; // 地球半徑 (公尺)
-    
+
     double dLat = _toRadians(lat2 - lat1);
     double dLon = _toRadians(lon2 - lon1);
-    
+
     double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
-        math.cos(_toRadians(lat1)) * math.cos(_toRadians(lat2)) *
-        math.sin(dLon / 2) * math.sin(dLon / 2);
-    
+        math.cos(_toRadians(lat1)) *
+            math.cos(_toRadians(lat2)) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+
     double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
-    
+
     return R * c;
   }
-  
+
   /// 計算從點 A 到點 B 的方位角
-  static double _calculateBearing(double lat1, double lon1, double lat2, double lon2) {
-    double dLon = _toRadians(lon2 - lon1);
-    double lat1Rad = _toRadians(lat1);
-    double lat2Rad = _toRadians(lat2);
-    
-    double x = math.sin(dLon) * math.cos(lat2Rad);
-    double y = math.cos(lat1Rad) * math.sin(lat2Rad) -
-        math.sin(lat1Rad) * math.cos(lat2Rad) * math.cos(dLon);
-    
-    double bearing = math.atan2(x, y);
-    return (_toDegrees(bearing) + 360) % 360;
-  }
-  
   static double _toRadians(double degrees) => degrees * math.pi / 180;
   static double _toDegrees(double radians) => radians * 180 / math.pi;
-  
+
   /// 從 VLGEO2 數據正向推算樹木位置
-  /// 
+  ///
   /// [修正 2026-02] VLGEO2 的 GPS 座標是操作員位置，不是樹木位置。
   /// 公式：樹木位置 = 操作員GPS + offset(HD, AZ)
   static ({double lat, double lon}) calculateTreePositionFromStation({
@@ -153,27 +128,32 @@ class PendingTreeMeasurement {
     required double azimuth,
   }) {
     const double R = 6371000;
-    
+
     double azimuthRad = _toRadians(azimuth);
     double stationLatRad = _toRadians(stationLat);
     double stationLonRad = _toRadians(stationLon);
     double angularDistance = horizontalDistance / R;
-    
+
     double treeLatRad = math.asin(
-      math.sin(stationLatRad) * math.cos(angularDistance) +
-      math.cos(stationLatRad) * math.sin(angularDistance) * math.cos(azimuthRad)
-    );
-    
-    double treeLonRad = stationLonRad + math.atan2(
-      math.sin(azimuthRad) * math.sin(angularDistance) * math.cos(stationLatRad),
-      math.cos(angularDistance) - math.sin(stationLatRad) * math.sin(treeLatRad)
-    );
-    
+        math.sin(stationLatRad) * math.cos(angularDistance) +
+            math.cos(stationLatRad) *
+                math.sin(angularDistance) *
+                math.cos(azimuthRad));
+
+    double treeLonRad = stationLonRad +
+        math.atan2(
+            math.sin(azimuthRad) *
+                math.sin(angularDistance) *
+                math.cos(stationLatRad),
+            math.cos(angularDistance) -
+                math.sin(stationLatRad) * math.sin(treeLatRad));
+
     return (lat: _toDegrees(treeLatRad), lon: _toDegrees(treeLonRad));
   }
 
   /// [向後相容] 反推測站位置
-  @Deprecated('Use calculateTreePositionFromStation instead. GPS coords are station, not tree.')
+  @Deprecated(
+      'Use calculateTreePositionFromStation instead. GPS coords are station, not tree.')
   static ({double lat, double lon}) calculateStationPosition({
     required double treeLat,
     required double treeLon,
@@ -186,20 +166,24 @@ class PendingTreeMeasurement {
     double treeLatRad = _toRadians(treeLat);
     double treeLonRad = _toRadians(treeLon);
     double angularDistance = horizontalDistance / R;
-    
+
     double stationLatRad = math.asin(
-      math.sin(treeLatRad) * math.cos(angularDistance) +
-      math.cos(treeLatRad) * math.sin(angularDistance) * math.cos(azimuthRad)
-    );
-    
-    double stationLonRad = treeLonRad + math.atan2(
-      math.sin(azimuthRad) * math.sin(angularDistance) * math.cos(treeLatRad),
-      math.cos(angularDistance) - math.sin(treeLatRad) * math.sin(stationLatRad)
-    );
-    
+        math.sin(treeLatRad) * math.cos(angularDistance) +
+            math.cos(treeLatRad) *
+                math.sin(angularDistance) *
+                math.cos(azimuthRad));
+
+    double stationLonRad = treeLonRad +
+        math.atan2(
+            math.sin(azimuthRad) *
+                math.sin(angularDistance) *
+                math.cos(treeLatRad),
+            math.cos(angularDistance) -
+                math.sin(treeLatRad) * math.sin(stationLatRad));
+
     return (lat: _toDegrees(stationLatRad), lon: _toDegrees(stationLonRad));
   }
-  
+
   /// 從 JSON 創建
   factory PendingTreeMeasurement.fromJson(Map<String, dynamic> json) {
     return PendingTreeMeasurement(
@@ -220,27 +204,29 @@ class PendingTreeMeasurement {
       slopeDistance: (json['slope_distance'] as num).toDouble(),
       azimuth: (json['azimuth'] as num).toDouble(),
       pitch: (json['pitch'] as num).toDouble(),
-      altitude: json['altitude'] != null ? (json['altitude'] as num).toDouble() : null,
-      measurementType: json['measurement_type'] as String?,
-      hasGps: json['has_gps'] as bool? ?? true,
-      status: MeasurementStatus.fromString(json['status'] as String? ?? 'pending'),
+      altitude: json['altitude'] != null
+          ? (json['altitude'] as num).toDouble()
+          : null,
+      status:
+          MeasurementStatus.fromString(json['status'] as String? ?? 'pending'),
       createdAt: DateTime.parse(json['created_at'] as String),
-      completedAt: json['completed_at'] != null 
-          ? DateTime.parse(json['completed_at'] as String) 
+      completedAt: json['completed_at'] != null
+          ? DateTime.parse(json['completed_at'] as String)
           : null,
       assignedTo: json['assigned_to'] as String?,
       priority: json['priority'] as int?,
-      measuredDbhCm: json['measured_dbh_cm'] != null 
-          ? (json['measured_dbh_cm'] as num).toDouble() 
+      measurementType: json['measurement_type'] as String?,
+      measuredDbhCm: json['measured_dbh_cm'] != null
+          ? (json['measured_dbh_cm'] as num).toDouble()
           : null,
-      measurementConfidence: json['measurement_confidence'] != null 
-          ? (json['measurement_confidence'] as num).toDouble() 
+      measurementConfidence: json['measurement_confidence'] != null
+          ? (json['measurement_confidence'] as num).toDouble()
           : null,
       measurementMethod: json['measurement_method'] as String?,
       measurementNotes: json['measurement_notes'] as String?,
     );
   }
-  
+
   /// 轉換為 JSON
   Map<String, dynamic> toJson() {
     return {
@@ -262,20 +248,20 @@ class PendingTreeMeasurement {
       'azimuth': azimuth,
       'pitch': pitch,
       if (altitude != null) 'altitude': altitude,
-      if (measurementType != null) 'measurement_type': measurementType,
-      'has_gps': hasGps,
       'status': status.value,
       'created_at': createdAt.toIso8601String(),
       if (completedAt != null) 'completed_at': completedAt!.toIso8601String(),
       if (assignedTo != null) 'assigned_to': assignedTo,
       if (priority != null) 'priority': priority,
+      if (measurementType != null) 'measurement_type': measurementType,
       if (measuredDbhCm != null) 'measured_dbh_cm': measuredDbhCm,
-      if (measurementConfidence != null) 'measurement_confidence': measurementConfidence,
+      if (measurementConfidence != null)
+        'measurement_confidence': measurementConfidence,
       if (measurementMethod != null) 'measurement_method': measurementMethod,
       if (measurementNotes != null) 'measurement_notes': measurementNotes,
     };
   }
-  
+
   /// 複製並更新部分欄位
   PendingTreeMeasurement copyWith({
     int? id,
@@ -296,13 +282,12 @@ class PendingTreeMeasurement {
     double? azimuth,
     double? pitch,
     double? altitude,
-    String? measurementType,
-    bool? hasGps,
     MeasurementStatus? status,
     DateTime? createdAt,
     DateTime? completedAt,
     String? assignedTo,
     int? priority,
+    String? measurementType,
     double? measuredDbhCm,
     double? measurementConfidence,
     String? measurementMethod,
@@ -327,15 +312,15 @@ class PendingTreeMeasurement {
       azimuth: azimuth ?? this.azimuth,
       pitch: pitch ?? this.pitch,
       altitude: altitude ?? this.altitude,
-      measurementType: measurementType ?? this.measurementType,
-      hasGps: hasGps ?? this.hasGps,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       completedAt: completedAt ?? this.completedAt,
       assignedTo: assignedTo ?? this.assignedTo,
       priority: priority ?? this.priority,
+      measurementType: measurementType ?? this.measurementType,
       measuredDbhCm: measuredDbhCm ?? this.measuredDbhCm,
-      measurementConfidence: measurementConfidence ?? this.measurementConfidence,
+      measurementConfidence:
+          measurementConfidence ?? this.measurementConfidence,
       measurementMethod: measurementMethod ?? this.measurementMethod,
       measurementNotes: measurementNotes ?? this.measurementNotes,
     );
@@ -350,12 +335,12 @@ enum MeasurementStatus {
   skipped('skipped', '已跳過'),
   failed('failed', '測量失敗'),
   transferred('transferred', '已轉移');
-  
+
   final String value;
   final String label;
-  
+
   const MeasurementStatus(this.value, this.label);
-  
+
   static MeasurementStatus fromString(String value) {
     return MeasurementStatus.values.firstWhere(
       (e) => e.value == value,
@@ -375,7 +360,7 @@ class MeasurementSession {
   final int completedTrees;
   final String? projectArea;
   final String? projectCode;
-  
+
   const MeasurementSession({
     required this.sessionId,
     this.name,
@@ -387,13 +372,12 @@ class MeasurementSession {
     this.projectArea,
     this.projectCode,
   });
-  
-  double get progressPercent => totalTrees > 0 
-      ? (completedTrees / totalTrees * 100) 
-      : 0;
-  
+
+  double get progressPercent =>
+      totalTrees > 0 ? (completedTrees / totalTrees * 100) : 0;
+
   bool get isComplete => completedTrees >= totalTrees;
-  
+
   factory MeasurementSession.fromJson(Map<String, dynamic> json) {
     return MeasurementSession(
       sessionId: json['session_id'] as String,
@@ -407,7 +391,7 @@ class MeasurementSession {
       projectCode: json['project_code'] as String?,
     );
   }
-  
+
   Map<String, dynamic> toJson() {
     return {
       'session_id': sessionId,
