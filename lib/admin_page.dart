@@ -1435,18 +1435,6 @@ class _AdminPageState extends State<AdminPage> {
                     label: Text('資料匯出'),
                   ),
                   NavigationRailDestination(
-                    icon: Icon(Icons.backup),
-                    label: Text('資料備份'),
-                  ),
-                  NavigationRailDestination(
-                    icon: Icon(Icons.key),
-                    label: Text('API 密鑰'),
-                  ),
-                  NavigationRailDestination(
-                    icon: Icon(Icons.settings),
-                    label: Text('系統設定'),
-                  ),
-                  NavigationRailDestination(
                     icon: Icon(Icons.build),
                     label: Text('管理員專區'),
                   ),
@@ -1475,18 +1463,12 @@ class _AdminPageState extends State<AdminPage> {
                     : _selectedIndex == 1
                         ? _buildExportOptions()
                         : _selectedIndex == 2
-                            ? _buildBackupOptions()
+                            ? _buildAdminZone()
                             : _selectedIndex == 3
-                                ? _buildApiKeyOptions()
+                                ? _buildProjectManagement()
                                 : _selectedIndex == 4
-                                    ? _buildSystemSettings()
-                                    : _selectedIndex == 5
-                                        ? _buildAdminZone()
-                                        : _selectedIndex == 6
-                                            ? _buildProjectManagement()
-                                            : _selectedIndex == 7
-                                                ? const ProjectBoundaryDrawPage()
-                                                : const CsvImportPage(),
+                                    ? const ProjectBoundaryDrawPage()
+                                    : const CsvImportPage(),
               ),
             ),
           ],

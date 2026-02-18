@@ -23,15 +23,23 @@ class _CsvImportPageState extends State<CsvImportPage> {
 
   // ===================== 上傳並預覽 =====================
   Future<void> _pickAndPreview() async {
+    // 使用 FileType.any 避免 Android 上 CSV MIME type 不被辨識的問題
     final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['csv'],
+      type: FileType.any,
       withData: true,
     );
 
     if (result == null || result.files.isEmpty) return;
 
     final file = result.files.first;
+
+    // 手動驗證副檔名
+    final ext = file.name.split('.').last.toLowerCase();
+    if (ext != 'csv') {
+      setState(() => _errorMessage = '請選擇 CSV 檔案（目前選擇的是 .$ext）');
+      return;
+    }
+
     if (file.bytes == null) {
       setState(() => _errorMessage = '無法讀取檔案');
       return;
