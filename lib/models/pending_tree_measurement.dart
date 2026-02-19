@@ -184,46 +184,60 @@ class PendingTreeMeasurement {
     return (lat: _toDegrees(stationLatRad), lon: _toDegrees(stationLonRad));
   }
 
-  /// 從 JSON 創建
+  static int? _toInt(dynamic v) {
+    if (v == null) return null;
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    if (v is String) return int.tryParse(v);
+    return null;
+  }
+
+  static double _toDouble(dynamic v, [double fallback = 0.0]) {
+    if (v == null) return fallback;
+    if (v is num) return v.toDouble();
+    if (v is String) return double.tryParse(v) ?? fallback;
+    return fallback;
+  }
+
+  static double? _toDoubleOrNull(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v.toDouble();
+    if (v is String) return double.tryParse(v);
+    return null;
+  }
+
   factory PendingTreeMeasurement.fromJson(Map<String, dynamic> json) {
     return PendingTreeMeasurement(
-      id: json['id'] as int?,
-      sessionId: json['session_id'] as String?,
-      originalRecordId: json['original_record_id'] as String?,
-      projectArea: json['project_area'] as String?,
-      projectCode: json['project_code'] as String?,
-      projectName: json['project_name'] as String?,
-      speciesName: json['species_name'] as String?,
-      treeHeight: (json['tree_height'] as num?)?.toDouble() ?? 0.0,
-      dbhCm: (json['dbh_cm'] as num?)?.toDouble(),
-      treeLatitude: (json['tree_latitude'] as num?)?.toDouble() ?? 0.0,
-      treeLongitude: (json['tree_longitude'] as num?)?.toDouble() ?? 0.0,
-      stationLatitude: (json['station_latitude'] as num?)?.toDouble() ?? 0.0,
-      stationLongitude: (json['station_longitude'] as num?)?.toDouble() ?? 0.0,
-      horizontalDistance: (json['horizontal_distance'] as num?)?.toDouble() ?? 0.0,
-      slopeDistance: (json['slope_distance'] as num?)?.toDouble() ?? 0.0,
-      azimuth: (json['azimuth'] as num?)?.toDouble() ?? 0.0,
-      pitch: (json['pitch'] as num?)?.toDouble() ?? 0.0,
-      altitude: json['altitude'] != null
-          ? (json['altitude'] as num).toDouble()
-          : null,
-      status:
-          MeasurementStatus.fromString(json['status'] as String? ?? 'pending'),
-      createdAt: DateTime.parse(json['created_at'] as String),
+      id: _toInt(json['id']),
+      sessionId: json['session_id']?.toString(),
+      originalRecordId: json['original_record_id']?.toString(),
+      projectArea: json['project_area']?.toString(),
+      projectCode: json['project_code']?.toString(),
+      projectName: json['project_name']?.toString(),
+      speciesName: json['species_name']?.toString(),
+      treeHeight: _toDouble(json['tree_height']),
+      dbhCm: _toDoubleOrNull(json['dbh_cm']),
+      treeLatitude: _toDouble(json['tree_latitude']),
+      treeLongitude: _toDouble(json['tree_longitude']),
+      stationLatitude: _toDouble(json['station_latitude']),
+      stationLongitude: _toDouble(json['station_longitude']),
+      horizontalDistance: _toDouble(json['horizontal_distance']),
+      slopeDistance: _toDouble(json['slope_distance']),
+      azimuth: _toDouble(json['azimuth']),
+      pitch: _toDouble(json['pitch']),
+      altitude: _toDoubleOrNull(json['altitude']),
+      status: MeasurementStatus.fromString(json['status']?.toString() ?? 'pending'),
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.now(),
       completedAt: json['completed_at'] != null
-          ? DateTime.parse(json['completed_at'] as String)
+          ? DateTime.tryParse(json['completed_at'].toString())
           : null,
-      assignedTo: json['assigned_to'] as String?,
-      priority: json['priority'] as int?,
-      measurementType: json['measurement_type'] as String?,
-      measuredDbhCm: json['measured_dbh_cm'] != null
-          ? (json['measured_dbh_cm'] as num).toDouble()
-          : null,
-      measurementConfidence: json['measurement_confidence'] != null
-          ? (json['measurement_confidence'] as num).toDouble()
-          : null,
-      measurementMethod: json['measurement_method'] as String?,
-      measurementNotes: json['measurement_notes'] as String?,
+      assignedTo: json['assigned_to']?.toString(),
+      priority: _toInt(json['priority']),
+      measurementType: json['measurement_type']?.toString(),
+      measuredDbhCm: _toDoubleOrNull(json['measured_dbh_cm']),
+      measurementConfidence: _toDoubleOrNull(json['measurement_confidence']),
+      measurementMethod: json['measurement_method']?.toString(),
+      measurementNotes: json['measurement_notes']?.toString(),
     );
   }
 
@@ -380,16 +394,24 @@ class MeasurementSession {
 
   factory MeasurementSession.fromJson(Map<String, dynamic> json) {
     return MeasurementSession(
-      sessionId: json['session_id'] as String,
-      name: json['name'] as String?,
-      description: json['description'] as String?,
-      createdBy: json['created_by'] as String,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      totalTrees: json['total_trees'] as int,
-      completedTrees: json['completed_trees'] as int,
-      projectArea: json['project_area'] as String?,
-      projectCode: json['project_code'] as String?,
+      sessionId: json['session_id']?.toString() ?? '',
+      name: json['name']?.toString(),
+      description: json['description']?.toString(),
+      createdBy: json['created_by']?.toString() ?? '',
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.now(),
+      totalTrees: _jsonToInt(json['total_trees']),
+      completedTrees: _jsonToInt(json['completed_trees']),
+      projectArea: json['project_area']?.toString(),
+      projectCode: json['project_code']?.toString(),
     );
+  }
+
+  static int _jsonToInt(dynamic v) {
+    if (v == null) return 0;
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    if (v is String) return int.tryParse(v) ?? 0;
+    return 0;
   }
 
   Map<String, dynamic> toJson() {

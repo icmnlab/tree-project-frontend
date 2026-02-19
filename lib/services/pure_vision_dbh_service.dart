@@ -403,6 +403,21 @@ class PureVisionDbhResult {
     this.visualizationBytes,
   });
 
+  static double _n(dynamic v, [double fallback = 0.0]) {
+    if (v == null) return fallback;
+    if (v is num) return v.toDouble();
+    if (v is String) return double.tryParse(v) ?? fallback;
+    return fallback;
+  }
+
+  static int _i(dynamic v, [int fallback = 0]) {
+    if (v == null) return fallback;
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    if (v is String) return int.tryParse(v) ?? fallback;
+    return fallback;
+  }
+
   factory PureVisionDbhResult.fromJson(Map<String, dynamic> json) {
     Uint8List? vizBytes;
     if (json['visualization_base64'] != null) {
@@ -414,14 +429,14 @@ class PureVisionDbhResult {
     final notesList = json['notes'];
 
     return PureVisionDbhResult(
-      dbhCm: (json['dbh_cm'] as num).toDouble(),
-      confidence: (json['confidence'] as num).toDouble(),
-      trunkDepthM: (json['trunk_depth_m'] as num).toDouble(),
-      trunkPixelWidth: (json['trunk_pixel_width'] as num).toDouble(),
-      chordLengthM: (json['chord_length_m'] as num).toDouble(),
-      focalLengthPx: (json['focal_length_px'] as num?)?.toDouble() ?? 0,
-      measurementRow: json['measurement_row'] as int,
-      method: json['method'] as String,
+      dbhCm: _n(json['dbh_cm']),
+      confidence: _n(json['confidence']),
+      trunkDepthM: _n(json['trunk_depth_m']),
+      trunkPixelWidth: _n(json['trunk_pixel_width']),
+      chordLengthM: _n(json['chord_length_m']),
+      focalLengthPx: _n(json['focal_length_px']),
+      measurementRow: _i(json['measurement_row']),
+      method: json['method']?.toString() ?? 'unknown',
       notes: notesList is List
           ? notesList.map((e) => e.toString()).toList()
           : <String>[],
@@ -529,10 +544,10 @@ class AutoMeasureResult {
     if (json['detected_bbox'] != null) {
       final b = json['detected_bbox'];
       bbox = {
-        'x1': (b['x1'] as num).toInt(),
-        'y1': (b['y1'] as num).toInt(),
-        'x2': (b['x2'] as num).toInt(),
-        'y2': (b['y2'] as num).toInt(),
+        'x1': PureVisionDbhResult._i(b['x1']),
+        'y1': PureVisionDbhResult._i(b['y1']),
+        'x2': PureVisionDbhResult._i(b['x2']),
+        'y2': PureVisionDbhResult._i(b['y2']),
       };
     }
 
@@ -545,13 +560,13 @@ class AutoMeasureResult {
       trunkPixelWidth: (json['trunk_pixel_width'] as num?)?.toDouble(),
       chordLengthM: (json['chord_length_m'] as num?)?.toDouble(),
       focalLengthPx: (json['focal_length_px'] as num?)?.toDouble(),
-      measurementRow: json['measurement_row'] as int?,
-      method: json['method'] as String?,
+      measurementRow: json['measurement_row'] != null ? PureVisionDbhResult._i(json['measurement_row']) : null,
+      method: json['method']?.toString(),
       notes: notesList is List
           ? notesList.map((e) => e.toString()).toList()
           : <String>[],
-      distanceStatus: json['distance_status'] as String? ?? 'unknown',
-      distanceMessage: json['distance_message'] as String? ?? '',
+      distanceStatus: json['distance_status']?.toString() ?? 'unknown',
+      distanceMessage: json['distance_message']?.toString() ?? '',
       detectedBbox: bbox,
       detectionConfidence: (json['detection_confidence'] as num?)?.toDouble() ?? 0,
       allTrunks: trunksList.map((t) => DetectedTrunkInfo.fromJson(t)).toList(),
@@ -561,7 +576,7 @@ class AutoMeasureResult {
       totalMs: (timing['total_ms'] as num?)?.toDouble() ?? 0,
       visualizationBytes: vizBytes,
       detectionVisualizationBytes: detVizBytes,
-      errorMessage: json['message'] as String?,
+      errorMessage: json['message']?.toString(),
     );
   }
 
@@ -613,8 +628,8 @@ class DetectedTrunkInfo {
       },
       confidence: (json['confidence'] as num?)?.toDouble() ?? 0,
       depthM: (json['depth_m'] as num?)?.toDouble() ?? 0,
-      distanceStatus: json['distance_status'] as String? ?? 'unknown',
-      distanceMessage: json['distance_message'] as String? ?? '',
+      distanceStatus: json['distance_status']?.toString() ?? 'unknown',
+      distanceMessage: json['distance_message']?.toString() ?? '',
     );
   }
 }
