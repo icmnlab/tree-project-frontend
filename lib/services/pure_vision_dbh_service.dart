@@ -20,11 +20,14 @@ class PureVisionDbhService {
 
   /// 取得 ML API Key 認證 headers
   Map<String, String> get _authHeaders {
+    final headers = <String, String>{
+      'ngrok-skip-browser-warning': 'true',
+    };
     final apiKey = AppConfig().mlApiKey;
     if (apiKey != null && apiKey.isNotEmpty) {
-      return {'X-ML-API-Key': apiKey};
+      headers['X-ML-API-Key'] = apiKey;
     }
-    return {};
+    return headers;
   }
 
   /// 檢查 ML Service 是否可用
@@ -38,7 +41,7 @@ class PureVisionDbhService {
       try {
         final timeout = attempt == 1 ? 10 : 15;
         final response = await http
-            .get(Uri.parse(url))
+            .get(Uri.parse(url), headers: _authHeaders)
             .timeout(Duration(seconds: timeout));
         if (response.statusCode == 200) {
           final data = json.decode(response.body);

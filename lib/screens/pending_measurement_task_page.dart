@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import '../models/pending_tree_measurement.dart';
@@ -57,6 +58,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   
   // 導航狀態
   NavigationState _navState = NavigationState.selectingTask;
+  bool _hasVibratedArrival = false;
   
   // 動畫
   late AnimationController _arrowAnimController;
@@ -780,7 +782,6 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     }
   }
   
-  /// 導航視圖 - 引導到測站位置
   Widget _buildNavigationView() {
     if (_currentTask == null) {
       return const Center(child: CircularProgressIndicator());
@@ -789,112 +790,80 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     final task = _currentTask!;
     final userPos = _userPosition;
     
-    // GPS 距離僅供參考
     final gpsDistance = userPos != null
         ? task.distanceToStation(userPos.latitude, userPos.longitude)
         : null;
     
-    // 方向：用儀器 AZ 作為目標方位，搭配手機 heading 計算相對轉向
+    // Bearing from user to station
+    double? bearingToStation;
     double? relativeAngle;
-    if (_currentHeading != null) {
-      relativeAngle = (task.azimuth - _currentHeading! + 360) % 360;
+    if (userPos != null && task.stationLatitude != 0 && task.stationLongitude != 0) {
+      bearingToStation = Geolocator.bearingBetween(
+        userPos.latitude, userPos.longitude,
+        task.stationLatitude, task.stationLongitude,
+      );
+      if (_currentHeading != null) {
+        relativeAngle = (bearingToStation - _currentHeading! + 360) % 360;
+      }
+    }
+    
+    final isClose = gpsDistance != null && gpsDistance < 5;
+    final hasArrived = gpsDistance != null && gpsDistance < 2;
+    
+    if (hasArrived && !_hasVibratedArrival) {
+      _hasVibratedArrival = true;
+      HapticFeedback.heavyImpact();
     }
     
     return Column(
       children: [
-        // 儀器量測資訊卡
+        // Info card
         Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.all(16),
+          margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           decoration: BoxDecoration(
             color: Colors.teal.shade50,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.teal.shade200),
           ),
-          child: Column(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              Row(
-                children: [
-                  Icon(Icons.straighten, color: Colors.teal.shade700),
-                  const SizedBox(width: 8),
-                  Text('儀器量測資料', style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.teal.shade700,
-                  )),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _infoChip('HD', '${task.horizontalDistance.toStringAsFixed(1)}m'),
-                  _infoChip('AZ', '${task.azimuth.toStringAsFixed(0)}°'),
-                  _infoChip('樹高', '${task.treeHeight.toStringAsFixed(1)}m'),
-                  if (task.measurementType != null && task.measurementType!.isNotEmpty)
-                    _infoChip('類型', task.measurementType!),
-                ],
-              ),
+              _infoChip('HD', '${task.horizontalDistance.toStringAsFixed(1)}m'),
+              _infoChip('AZ', '${task.azimuth.toStringAsFixed(0)}°'),
+              _infoChip('樹高', '${task.treeHeight.toStringAsFixed(1)}m'),
+              if (task.measurementType != null && task.measurementType!.isNotEmpty)
+                _infoChip('類型', task.measurementType!),
             ],
           ),
         ),
         
-        // 主要距離顯示（儀器 HD）+ 方向
         Expanded(
           child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text(
-                  '${task.horizontalDistance.toStringAsFixed(1)}m',
-                  style: const TextStyle(
-                    fontSize: 72,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.teal,
-                  ),
-                ),
-                const Text(
-                  '儀器量測距離 (HD)',
-                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
-                ),
-                if (gpsDistance != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    'GPS 參考距離: ${gpsDistance.toStringAsFixed(0)}m（室內誤差大）',
-                    style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
-                  ),
-                ],
-                
-                const SizedBox(height: 24),
-                
-                // 方向箭頭（用儀器 AZ + 手機 heading）
-                if (relativeAngle != null) ...[
-                  Transform.rotate(
-                    angle: relativeAngle * math.pi / 180,
-                    child: const Icon(
-                      Icons.navigation,
-                      size: 100,
-                      color: Colors.teal,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${_getDirectionText(relativeAngle)}  (AZ ${task.azimuth.toStringAsFixed(0)}°)',
-                    style: const TextStyle(fontSize: 18),
-                  ),
-                ] else ...[
-                  Icon(Icons.explore_off, size: 64, color: Colors.grey.shade400),
-                  const SizedBox(height: 8),
-                  Text(
-                    '目標方位: AZ ${task.azimuth.toStringAsFixed(0)}°（等待羅盤...）',
-                    style: TextStyle(color: Colors.grey.shade600),
-                  ),
-                ],
-              ],
-            ),
+            child: isClose
+                ? _buildPreciseStakeoutView(gpsDistance, relativeAngle, hasArrived)
+                : _buildDistanceArrowView(gpsDistance, relativeAngle, bearingToStation, task),
           ),
         ),
         
-        // 底部按鈕
+        // Arrival banner
+        if (hasArrived)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            color: Colors.green.shade400,
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 8),
+                Text('已到達測站!', style: TextStyle(
+                  color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold,
+                )),
+              ],
+            ),
+          ),
+        
         Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
@@ -911,10 +880,10 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
                 flex: 2,
                 child: ElevatedButton.icon(
                   onPressed: _arrivedAtStation,
-                  icon: const Icon(Icons.check),
-                  label: const Text('已到達測站'),
+                  icon: Icon(hasArrived ? Icons.arrow_forward : Icons.check),
+                  label: Text(hasArrived ? '確認，開始找樹' : '已到達測站'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
+                    backgroundColor: hasArrived ? Colors.green : Colors.teal,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
@@ -923,6 +892,118 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
             ],
           ),
         ),
+      ],
+    );
+  }
+
+  Widget _buildDistanceArrowView(double? gpsDistance, double? relativeAngle, double? bearing, PendingTreeMeasurement task) {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // GPS distance
+        if (gpsDistance != null) ...[
+          Text(
+            '${gpsDistance.toStringAsFixed(0)}m',
+            style: TextStyle(
+              fontSize: 72,
+              fontWeight: FontWeight.bold,
+              color: gpsDistance < 10 ? Colors.orange : Colors.teal,
+            ),
+          ),
+          Text('GPS 距測站', style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+        ] else ...[
+          Icon(Icons.gps_off, size: 48, color: Colors.grey.shade400),
+          const SizedBox(height: 8),
+          Text('等待 GPS 定位...', style: TextStyle(color: Colors.grey.shade600)),
+        ],
+        
+        const SizedBox(height: 24),
+        
+        if (relativeAngle != null) ...[
+          Transform.rotate(
+            angle: relativeAngle * math.pi / 180,
+            child: Icon(
+              Icons.navigation,
+              size: 100,
+              color: Colors.teal.shade600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _getDirectionText(relativeAngle),
+            style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w600),
+          ),
+          Text(
+            '方位 ${bearing?.toStringAsFixed(0) ?? "--"}°',
+            style: TextStyle(fontSize: 13, color: Colors.grey.shade500),
+          ),
+        ] else ...[
+          Icon(Icons.explore_off, size: 64, color: Colors.grey.shade400),
+          const SizedBox(height: 8),
+          Text('等待羅盤...', style: TextStyle(color: Colors.grey.shade600)),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildPreciseStakeoutView(double distance, double? relativeAngle, bool arrived) {
+    final radarSize = 200.0;
+    final centerX = radarSize / 2;
+    final centerY = radarSize / 2;
+    
+    double dotX = centerX;
+    double dotY = centerY;
+    if (relativeAngle != null && distance > 0) {
+      final maxPixelDist = radarSize / 2 - 16;
+      final pixelDist = math.min(distance / 5.0 * maxPixelDist, maxPixelDist);
+      final rad = (relativeAngle - 90) * math.pi / 180;
+      dotX = centerX + pixelDist * math.cos(rad);
+      dotY = centerY + pixelDist * math.sin(rad);
+    }
+    
+    final bgColor = arrived ? Colors.green.shade50 : Colors.orange.shade50;
+    final ringColor = arrived ? Colors.green : Colors.orange;
+    final dotColor = arrived ? Colors.green.shade700 : Colors.blue;
+    
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          arrived ? '到達!' : '接近中...',
+          style: TextStyle(
+            fontSize: 22, fontWeight: FontWeight.bold,
+            color: arrived ? Colors.green.shade700 : Colors.orange.shade700,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          '${distance.toStringAsFixed(1)}m',
+          style: TextStyle(
+            fontSize: 48, fontWeight: FontWeight.bold,
+            color: arrived ? Colors.green : Colors.orange,
+          ),
+        ),
+        const SizedBox(height: 16),
+        
+        // Radar circle
+        SizedBox(
+          width: radarSize,
+          height: radarSize,
+          child: CustomPaint(
+            painter: _StakeoutRadarPainter(
+              bgColor: bgColor,
+              ringColor: ringColor,
+              dotColor: dotColor,
+              dotX: dotX,
+              dotY: dotY,
+              centerX: centerX,
+              centerY: centerY,
+            ),
+          ),
+        ),
+        
+        const SizedBox(height: 8),
+        Text('十字=測站, 藍點=你的位置', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
       ],
     );
   }
@@ -951,101 +1032,123 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     );
   }
   
-  /// 對準樹木視圖
   Widget _buildPointingView() {
     if (_currentTask == null) {
       return const Center(child: CircularProgressIndicator());
     }
     
     final task = _currentTask!;
-    final bearingToTree = task.bearingToTree();
+    final targetAz = task.azimuth;
     final heading = _currentHeading ?? 0;
-    final relativeAngle = (bearingToTree - heading + 360) % 360;
-    
-    // 判斷是否對準 (±15度)
-    final isAligned = relativeAngle < 15 || relativeAngle > 345;
+    final relativeAngle = (targetAz - heading + 360) % 360;
+    final offsetDeg = relativeAngle > 180 ? 360 - relativeAngle : relativeAngle;
+    final isAligned = offsetDeg < 20;
     
     return Column(
       children: [
-        // 樹木資訊卡
+        // Tree info + instruction
         Container(
-          margin: const EdgeInsets.all(16),
+          margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: Colors.green.shade50,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.green.shade200),
           ),
-          child: Row(
+          child: Column(
             children: [
-              Icon(Icons.park, size: 48, color: Colors.green.shade700),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '目標樹木',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green.shade700,
-                      ),
+              Row(
+                children: [
+                  Icon(Icons.park, size: 36, color: Colors.green.shade700),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('找到目標樹木', style: TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 16,
+                          color: Colors.green.shade700,
+                        )),
+                        Text('樹在 AZ ${targetAz.toStringAsFixed(0)}° 方向，距離約 ${task.horizontalDistance.toStringAsFixed(1)}m'),
+                      ],
                     ),
-                    Text('樹高: ${task.treeHeight.toStringAsFixed(1)} m'),
-                    Text('距離: ${task.horizontalDistance.toStringAsFixed(1)} m'),
-                    Text('方位: ${bearingToTree.toStringAsFixed(0)}°'),
-                  ],
-                ),
+                  ),
+                ],
+              ),
+              const Divider(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _infoChip('水平距離', '${task.horizontalDistance.toStringAsFixed(1)}m'),
+                  _infoChip('方位角', '${targetAz.toStringAsFixed(0)}°'),
+                  _infoChip('樹高', '${task.treeHeight.toStringAsFixed(1)}m'),
+                ],
               ),
             ],
           ),
         ),
         
-        // 指向箭頭
+        // Direction arrow + alignment feedback
         Expanded(
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
-                  isAligned ? '✓ 已對準' : '請轉向目標樹木',
+                  isAligned ? '已對準目標方向!' : '轉向 AZ ${targetAz.toStringAsFixed(0)}° 方向',
                   style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 20, fontWeight: FontWeight.bold,
                     color: isAligned ? Colors.green : Colors.orange,
                   ),
                 ),
-                const SizedBox(height: 24),
-                Transform.rotate(
-                  angle: relativeAngle * math.pi / 180,
-                  child: Icon(
-                    Icons.arrow_upward,
-                    size: 150,
-                    color: isAligned ? Colors.green : Colors.orange,
-                  ),
-                ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 4),
                 Text(
-                  '偏移: ${relativeAngle > 180 ? (360 - relativeAngle).toStringAsFixed(0) : relativeAngle.toStringAsFixed(0)}°',
+                  '偏移 ${offsetDeg.toStringAsFixed(0)}°  ${relativeAngle <= 180 ? "→ 右轉" : "← 左轉"}',
                   style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.grey.shade600,
+                    fontSize: 14,
+                    color: isAligned ? Colors.green.shade600 : Colors.orange.shade700,
                   ),
                 ),
+                const SizedBox(height: 20),
+                
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  padding: EdgeInsets.all(isAligned ? 20 : 8),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: isAligned
+                        ? Colors.green.withOpacity(0.1)
+                        : Colors.transparent,
+                  ),
+                  child: Transform.rotate(
+                    angle: relativeAngle * math.pi / 180,
+                    child: Icon(
+                      Icons.navigation,
+                      size: 120,
+                      color: isAligned ? Colors.green : Colors.orange,
+                    ),
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                if (!isAligned)
+                  Text(
+                    '面向此方向後即可拍照測量',
+                    style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                  ),
               ],
             ),
           ),
         ),
         
-        // 底部按鈕
         Padding(
           padding: const EdgeInsets.all(16),
           child: ElevatedButton.icon(
-            onPressed: isAligned ? _startMeasurement : null,
+            onPressed: _startMeasurement,
             icon: const Icon(Icons.camera_alt),
-            label: Text(isAligned ? '開始測量 DBH' : '請先對準樹木'),
+            label: const Text('開始拍照測量 DBH'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.teal,
+              backgroundColor: isAligned ? Colors.green : Colors.teal,
               foregroundColor: Colors.white,
               minimumSize: const Size(double.infinity, 56),
             ),
@@ -1075,6 +1178,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     if (_isProcessing) return;
     _isProcessing = true;
     _abandoned = false;
+    _hasVibratedArrival = false;
     
     setState(() {
       _currentTask = task;
@@ -1259,8 +1363,62 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
 
 /// 導航狀態
 enum NavigationState {
-  selectingTask,       // 選擇任務
-  navigatingToStation, // 導航到測站
-  pointingToTree,      // 對準樹木
-  measuring,           // 測量中
+  selectingTask,
+  navigatingToStation,
+  pointingToTree,
+  measuring,
+}
+
+class _StakeoutRadarPainter extends CustomPainter {
+  final Color bgColor;
+  final Color ringColor;
+  final Color dotColor;
+  final double dotX;
+  final double dotY;
+  final double centerX;
+  final double centerY;
+
+  _StakeoutRadarPainter({
+    required this.bgColor,
+    required this.ringColor,
+    required this.dotColor,
+    required this.dotX,
+    required this.dotY,
+    required this.centerX,
+    required this.centerY,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final bgPaint = Paint()..color = bgColor..style = PaintingStyle.fill;
+    final ringPaint = Paint()
+      ..color = ringColor.withOpacity(0.3)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+    final crossPaint = Paint()
+      ..color = ringColor.withOpacity(0.5)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1;
+    final dotPaint = Paint()..color = dotColor..style = PaintingStyle.fill;
+
+    final r = size.width / 2;
+    final center = Offset(centerX, centerY);
+
+    canvas.drawCircle(center, r, bgPaint);
+    canvas.drawCircle(center, r * 0.33, ringPaint);
+    canvas.drawCircle(center, r * 0.66, ringPaint);
+    canvas.drawCircle(center, r, ringPaint);
+
+    canvas.drawLine(Offset(0, centerY), Offset(size.width, centerY), crossPaint);
+    canvas.drawLine(Offset(centerX, 0), Offset(centerX, size.height), crossPaint);
+
+    canvas.drawCircle(Offset(dotX, dotY), 10, dotPaint);
+    canvas.drawCircle(Offset(dotX, dotY), 10, Paint()
+      ..color = Colors.white..style = PaintingStyle.stroke..strokeWidth = 2);
+  }
+
+  @override
+  bool shouldRepaint(covariant _StakeoutRadarPainter old) {
+    return old.dotX != dotX || old.dotY != dotY || old.bgColor != bgColor;
+  }
 }

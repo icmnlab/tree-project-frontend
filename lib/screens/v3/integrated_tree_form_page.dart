@@ -1034,16 +1034,43 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
                     : null,
               ),
               child: _mainImage == null
-                  ? Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                  ? Stack(
                       children: [
-                        Icon(Icons.auto_awesome, size: 48, color: Colors.teal.shade400),
-                        const SizedBox(height: 8),
-                        const Text('點擊拍照 — 一鍵自動量測',
-                            style: TextStyle(fontWeight: FontWeight.bold)),
-                        const Text(
-                          '自動 DBH + 樹種辨識 + 填入表單',
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        // Vertical guide line
+                        Center(
+                          child: Container(
+                            width: 1.5,
+                            height: double.infinity,
+                            color: Colors.teal.withOpacity(0.2),
+                          ),
+                        ),
+                        Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.auto_awesome, size: 48, color: Colors.teal.shade400),
+                              const SizedBox(height: 8),
+                              const Text('點擊拍照 — 一鍵自動量測',
+                                  style: TextStyle(fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 4),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.teal.shade50,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '距樹幹 1-3m，將樹幹置於畫面中央',
+                                  style: TextStyle(fontSize: 12, color: Colors.teal.shade700),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              const Text(
+                                '自動 DBH + 樹種辨識 + 填入表單',
+                                style: TextStyle(fontSize: 11, color: Colors.grey),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     )
