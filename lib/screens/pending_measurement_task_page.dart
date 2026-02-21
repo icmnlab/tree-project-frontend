@@ -646,10 +646,20 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
                 ),
                 if (_pendingTrees.isNotEmpty) ...[
                   const SizedBox(height: 4),
-                  Text(
-                    '最近: HD ${_pendingTrees.first.horizontalDistance.toStringAsFixed(1)}m',
-                    style: const TextStyle(color: Colors.white70),
-                  ),
+                  () {
+                    final withDia = _pendingTrees.where((t) => t.hasInstrumentDbh).length;
+                    final needDbh = _pendingTrees.where((t) => t.needsDbhMeasurement).length;
+                    if (withDia > 0) {
+                      return Text(
+                        '$withDia 棵已有 Remote Dia ・ $needDbh 棵需補測',
+                        style: const TextStyle(color: Colors.white70, fontSize: 12),
+                      );
+                    }
+                    return Text(
+                      '最近: HD ${_pendingTrees.first.horizontalDistance.toStringAsFixed(1)}m',
+                      style: const TextStyle(color: Colors.white70),
+                    );
+                  }(),
                 ],
               ],
             ),
@@ -761,6 +771,42 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
                 fontWeight: FontWeight.w500,
               ),
             ),
+            if (task.hasInstrumentDbh)
+              Container(
+                margin: const EdgeInsets.only(top: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Text(
+                  'Remote Dia: ${task.instrumentDbhCm!.toStringAsFixed(1)} cm',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.blue.shade700,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              )
+            else if (task.needsDbhMeasurement)
+              Container(
+                margin: const EdgeInsets.only(top: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: Colors.amber.shade300),
+                ),
+                child: Text(
+                  '需補測 DBH',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.amber.shade800,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
           ],
         ),
         trailing: IconButton(

@@ -168,12 +168,17 @@ class BleDataProcessor {
         metadata['raw_lat'] = lat;
         metadata['raw_lon'] = lon;
 
-        // 胸徑 (DIA) - VLGEO2 不具備胸徑測量功能，此欄位永遠為空
-        // 需要使用者手動輸入或透過其他儀器測量
+        // 胸徑 (DIA) - Remote Diameter 功能
+        // Settings → REMOTE DIAMETER 啟用後，儀器可遠距測量直徑（精度 10m@1.2cm）
+        // 未啟用時此欄位為空，需透過影像 DBH 或手動輸入補測
         if (fields.length > _idxDia) {
           String diaStr = fields[_idxDia].trim();
           if (diaStr.isNotEmpty) {
-            record['dbh'] = double.tryParse(diaStr);
+            double? dia = double.tryParse(diaStr);
+            if (dia != null && dia > 0) {
+              record['dbh'] = dia;
+              metadata['dbh_source'] = 'remote_diameter';
+            }
           }
         }
 

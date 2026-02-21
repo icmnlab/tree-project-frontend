@@ -8,6 +8,7 @@ import 'ble_import_page.dart';
 import 'species_identification_page.dart';
 import 'pending_measurement_task_page.dart';
 import 'v3_services_page.dart';
+import 'scanner_page.dart';
 import '../constants/colors.dart';
 import '../themes/app_theme.dart';
 import '../widgets/network_aware_widgets.dart';
@@ -146,6 +147,7 @@ class _DashboardPageState extends State<DashboardPage> {
     {'id': 'stats', 'title': '統計圖表', 'subtitle': '數據視覺化', 'icon': 'bar_chart', 'category': 'analysis', 'needsNetwork': true},
     {'id': 'report', 'title': '碳匯報告', 'subtitle': '永續分析', 'icon': 'eco', 'category': 'analysis', 'needsNetwork': true},
     // 更多
+    {'id': 'test_scan', 'title': '掃描測試 (Demo)', 'subtitle': '快速體驗 DBH', 'icon': 'camera', 'category': 'more', 'needsNetwork': true},
     {'id': 'species', 'title': '樹種辨識', 'subtitle': '拍照識別', 'icon': 'camera_enhance', 'category': 'more', 'needsNetwork': true},
     {'id': 'ai', 'title': 'AI 助理', 'subtitle': '智慧問答', 'icon': 'psychology', 'category': 'more', 'needsNetwork': true},
     {'id': 'v3', 'title': '系統設定', 'subtitle': '校準與同步', 'icon': 'settings_suggest', 'category': 'more', 'needsNetwork': true},
@@ -197,6 +199,7 @@ class _DashboardPageState extends State<DashboardPage> {
       case 'bar_chart': return Icons.bar_chart_rounded;
       case 'eco': return Icons.eco_rounded;
       case 'camera_enhance': return Icons.camera_enhance_rounded;
+      case 'camera': return Icons.camera_rounded;
       case 'psychology': return Icons.psychology_rounded;
       case 'settings_suggest': return Icons.settings_suggest_rounded;
       default: return Icons.widgets_rounded;
@@ -213,6 +216,7 @@ class _DashboardPageState extends State<DashboardPage> {
       case 'stats': return AppColors.tipcTeal;
       case 'report': return AppColors.accent;
       case 'species': return AppColors.accentLight;
+      case 'test_scan': return Colors.tealAccent.shade700;
       case 'ai': return AppColors.tipcPurple;
       case 'v3': return Colors.deepPurple;
       default: return Colors.grey;
@@ -229,6 +233,7 @@ class _DashboardPageState extends State<DashboardPage> {
       case 'cities': Navigator.pushNamed(context, '/cities'); break;
       case 'ble': Navigator.push(context, MaterialPageRoute(builder: (_) => const BleImportPage())); break;
       case 'pending': Navigator.push(context, MaterialPageRoute(builder: (_) => const PendingMeasurementTaskPage())); break;
+      case 'test_scan': Navigator.push(context, MaterialPageRoute(builder: (_) => const ScannerPage())); break;
       case 'species': Navigator.push(context, MaterialPageRoute(builder: (_) => const SpeciesIdentificationPage())); break;
       case 'v3': Navigator.push(context, MaterialPageRoute(builder: (_) => const V3ServicesPage())); break;
     }

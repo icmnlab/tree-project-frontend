@@ -11,6 +11,7 @@ import '../../services/v3/tree_image_service.dart';
 import '../../services/v3/ml_data_collector.dart';
 import '../../services/ar_measurement_service.dart';
 import '../pure_vision_dbh_page.dart';
+import '../scanner_page.dart';
 
 /// V3 整合式樹木測量表單
 /// 
@@ -602,6 +603,43 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
             duration: const Duration(seconds: 3),
           ),
         );
+      }
+    }
+  }
+
+  /// 即時掃描模式 — WebSocket 串流 + mask 疊加 + Lock 擷取
+  Future<void> _startScanMode() async {
+    final result = await Navigator.of(context).push<MeasurementResult>(
+      MaterialPageRoute(
+        builder: (context) => ScannerPage(
+          initialDbh: double.tryParse(_dbhController.text),
+        ),
+      ),
+    );
+
+    if (result != null) {
+      setState(() {
+        _measuredDbh = result.diameterCm;
+        _measurementConfidence = result.confidenceScore;
+        _measurementMethod = 'scan_mode';
+        _dbhController.text = result.diameterCm.toStringAsFixed(1);
+        _dbhReady = true;
+
+        if (result.notes != null && result.notes!.isNotEmpty) {
+          if (_notesController.text.isNotEmpty) {
+            _notesController.text += '\n${result.notes}';
+          } else {
+            _notesController.text = result.notes!;
+          }
+        }
+      });
+
+      if (_speciesController.text.isEmpty && result.capturedImagePath != null) {
+        final imageFile = File(result.capturedImagePath!);
+        if (await imageFile.exists()) {
+          setState(() => _mainImage ??= imageFile);
+          _identifySpecies(imageFile);
+        }
       }
     }
   }
@@ -1263,13 +1301,13 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
                 ),
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
             ElevatedButton(
               onPressed: _startDBHMeasurement,
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.teal.shade50,
                 foregroundColor: Colors.teal,
-                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
                 side: BorderSide(color: Colors.teal.shade200),
               ),
               child: const Column(
@@ -1277,6 +1315,23 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
                   Icon(Icons.camera_alt),
                   SizedBox(height: 4),
                   Text('DBH 測量'),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            ElevatedButton(
+              onPressed: _startScanMode,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal.shade50,
+                foregroundColor: Colors.teal,
+                padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+                side: BorderSide(color: Colors.teal.shade200),
+              ),
+              child: const Column(
+                children: [
+                  Icon(Icons.document_scanner),
+                  SizedBox(height: 4),
+                  Text('Scan Mode'),
                 ],
               ),
             ),

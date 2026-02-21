@@ -45,6 +45,8 @@ class PendingMeasurementService {
         final double? altitude = (metadata['altitude'] as num?)?.toDouble();
         final String type = record['type'] as String? ?? '';
         final bool hasGps = record['hasGps'] as bool? ?? (lat != 0 || lon != 0);
+        final double? bleDia = (record['dbh'] as num?)?.toDouble();
+        final String? dbhSource = metadata['dbh_source'] as String?;
         
         if (horizontalDistance <= 0) continue;
         
@@ -82,6 +84,9 @@ class PendingMeasurementService {
           projectCode: projectCode,
           projectName: projectName,
           treeHeight: height,
+          dbhCm: bleDia,
+          instrumentDbhCm: (dbhSource == 'remote_diameter') ? bleDia : null,
+          dbhSource: dbhSource,
           treeLatitude: treeLat,
           treeLongitude: treeLon,
           stationLatitude: lat,
@@ -96,6 +101,10 @@ class PendingMeasurementService {
           createdAt: DateTime.now(),
           priority: _calculatePriority(horizontalDistance),
         );
+        
+        if (bleDia != null && bleDia > 0) {
+          debugPrint('  Remote Diameter: ${bleDia.toStringAsFixed(1)} cm');
+        }
         
         pendingMeasurements.add(pending);
         

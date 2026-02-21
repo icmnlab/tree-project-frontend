@@ -68,6 +68,8 @@ dependencies:
   sensors_plus: ^5.0.1  # V3: 手機傾斜度感測（相機高度輔助）
   camera: ^0.11.3
   exif: ^3.3.0  # EXIF 焦距提取 (純 Dart，無原生依賴)
+  web_socket_channel: ^3.0.1  # WebSocket for scan mode
+  image: 4.3.0  # Image resize for scan streaming
 
 dev_dependencies:
   flutter_test:

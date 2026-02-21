@@ -41,6 +41,25 @@ class ApiService {
     return headers;
   }
 
+  // Fetch ML Service Config from Backend
+  static Future<void> fetchMlServiceConfig() async {
+    try {
+      final response = await get('ml-service/status');
+      if (response['success'] == true && response['configured'] == true) {
+        final String? url = response['ml_service_url'];
+        final String? apiKey = response['ml_api_key'];
+        
+        if (url != null) {
+          await AppConfig().setSelfHostedMlUrl(url);
+          await AppConfig().setMlApiKey(apiKey);
+          print('[ApiService] Successfully updated ML config from backend: $url');
+        }
+      }
+    } catch (e) {
+      print('[ApiService] Failed to fetch ML config: $e');
+    }
+  }
+
   // HTTP GET 請求
   static Future<Map<String, dynamic>> get(String endpoint) async {
     try {
@@ -139,6 +158,12 @@ class ApiService {
         'success': false,
         'message': '認證失效，請重新登入',
       };
+    }
+
+    // 當我們看到成功登入/有新 token，就去抓取最新的 ML 網址
+    if (response.request?.url.path.endsWith('/login') == true && response.statusCode == 200) {
+      // 在背景更新，不卡住登入流程
+      Future.microtask(() => ApiService.fetchMlServiceConfig());
     }
 
     if (response.statusCode >= 200 && response.statusCode < 300) {

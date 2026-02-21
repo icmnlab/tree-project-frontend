@@ -15,13 +15,10 @@ class AppConfig {
   /// ML Service API Key (用於自架時的認證)
   String? _mlApiKey;
 
-  /// 取得 ML API Key
-  String? get mlApiKey => _mlApiKey;
+    /// 是否使用自架 ML Service
+    bool get useSelfHostedMl => _selfHostedMlUrl != null && _selfHostedMlUrl!.isNotEmpty;
 
-  /// 是否使用自架 ML Service
-  bool get useSelfHostedMl => _selfHostedMlUrl != null && _selfHostedMlUrl!.isNotEmpty;
-
-  static final AppConfig _instance = AppConfig._internal();
+    static final AppConfig _instance = AppConfig._internal();
 
   factory AppConfig() {
     return _instance;
@@ -58,13 +55,16 @@ class AppConfig {
         break;
     }
 
-    // ML Service URL: 優先使用自架，否則用 Render
+    // ML Service URL: 優先使用從 API 取得的自架 URL，否則用 Render
     if (_selfHostedMlUrl != null && _selfHostedMlUrl!.isNotEmpty) {
       mlServiceUrl = _selfHostedMlUrl!;
     } else {
       mlServiceUrl = 'https://tree-app-ml-service.onrender.com/api/v1';
     }
   }
+
+  /// 取得 ML API Key
+  String? get mlApiKey => _mlApiKey;
 
   /// 設定自架 ML Service URL
   /// 傳入 ngrok URL (例如 https://xxxx.ngrok-free.app)

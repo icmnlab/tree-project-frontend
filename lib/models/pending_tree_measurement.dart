@@ -19,7 +19,9 @@ class PendingTreeMeasurement {
   // 樹木基本資料 (來自 VLGEO2)
   final String? speciesName; // 樹種名稱 (可能待確認)
   final double treeHeight; // 樹高 (公尺)
-  final double? dbhCm; // 胸徑 (待測量)
+  final double? dbhCm; // 胸徑 (待測量或 Remote Diameter)
+  final double? instrumentDbhCm; // 儀器 Remote Diameter 測量值 (cm)
+  final String? dbhSource; // DBH 來源: 'remote_diameter', 'vision', 'manual'
 
   // 樹木位置 (計算得出)
   final double treeLatitude; // 樹木緯度
@@ -61,6 +63,8 @@ class PendingTreeMeasurement {
     this.speciesName,
     required this.treeHeight,
     this.dbhCm,
+    this.instrumentDbhCm,
+    this.dbhSource,
     required this.treeLatitude,
     required this.treeLongitude,
     required this.stationLatitude,
@@ -217,6 +221,8 @@ class PendingTreeMeasurement {
       speciesName: json['species_name']?.toString(),
       treeHeight: _toDouble(json['tree_height']),
       dbhCm: _toDoubleOrNull(json['dbh_cm']),
+      instrumentDbhCm: _toDoubleOrNull(json['instrument_dbh_cm']),
+      dbhSource: json['dbh_source']?.toString(),
       treeLatitude: _toDouble(json['tree_latitude']),
       treeLongitude: _toDouble(json['tree_longitude']),
       stationLatitude: _toDouble(json['station_latitude']),
@@ -253,6 +259,8 @@ class PendingTreeMeasurement {
       if (speciesName != null) 'species_name': speciesName,
       'tree_height': treeHeight,
       if (dbhCm != null) 'dbh_cm': dbhCm,
+      if (instrumentDbhCm != null) 'instrument_dbh_cm': instrumentDbhCm,
+      if (dbhSource != null) 'dbh_source': dbhSource,
       'tree_latitude': treeLatitude,
       'tree_longitude': treeLongitude,
       'station_latitude': stationLatitude,
@@ -277,6 +285,20 @@ class PendingTreeMeasurement {
   }
 
   /// 複製並更新部分欄位
+  /// 是否已有儀器 Remote Diameter 數據
+  bool get hasInstrumentDbh =>
+      instrumentDbhCm != null && instrumentDbhCm! > 0;
+
+  /// 是否需要 DBH 補測（沒有任何 DBH 來源）
+  bool get needsDbhMeasurement =>
+      !hasInstrumentDbh && (measuredDbhCm == null || measuredDbhCm == 0);
+
+  /// 最佳可用 DBH 值（優先: 影像/手動測量 > 儀器 Remote Diameter）
+  double? get bestAvailableDbh =>
+      (measuredDbhCm != null && measuredDbhCm! > 0)
+          ? measuredDbhCm
+          : instrumentDbhCm;
+
   PendingTreeMeasurement copyWith({
     int? id,
     String? sessionId,
@@ -287,6 +309,8 @@ class PendingTreeMeasurement {
     String? speciesName,
     double? treeHeight,
     double? dbhCm,
+    double? instrumentDbhCm,
+    String? dbhSource,
     double? treeLatitude,
     double? treeLongitude,
     double? stationLatitude,
@@ -317,6 +341,8 @@ class PendingTreeMeasurement {
       speciesName: speciesName ?? this.speciesName,
       treeHeight: treeHeight ?? this.treeHeight,
       dbhCm: dbhCm ?? this.dbhCm,
+      instrumentDbhCm: instrumentDbhCm ?? this.instrumentDbhCm,
+      dbhSource: dbhSource ?? this.dbhSource,
       treeLatitude: treeLatitude ?? this.treeLatitude,
       treeLongitude: treeLongitude ?? this.treeLongitude,
       stationLatitude: stationLatitude ?? this.stationLatitude,
