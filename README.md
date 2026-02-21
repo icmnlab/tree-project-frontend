@@ -11,6 +11,37 @@
 
 ## 📦 版本紀錄
 
+### v18.4.0 (2026-02-22) - App Stabilization & ML Precision Upgrade 🚀
+
+#### 🚀 測量與精準度升級
+- **ML Precision Upgrade** - 提升測量精度與使用者體驗
+  - 支援 EXIF 焦距提取與 GPS 保護機制
+  - 實作多相片融合 UI (Multi-shot fusion)
+- **Stakeout 導航與拍照指南**
+  - 新增 Stakeout 導航功能，協助尋找目標樹木
+  - 引入拍照指南 (Photo Guide) 輔助使用者拍攝高品質照片
+
+#### 🔧 系統穩定性與 UX 優化
+- **App Stabilization** - 全面提升應用程式穩定度
+  - 引入中英雙語 Key 支援 (bilingual keys) 與相簿畫廊 (Photo Gallery)
+  - V2 測量表單：放寬 `species_id` 限制（改為非必填）
+  - BLE 匯入：支援多數決專案匹配 (Majority vote project matching)
+- **Dashboard 與任務流程優化**
+  - Dashboard UX 重大翻新：將任務分類為三大區塊並支援拖曳排序
+  - PopScope 退出確認：防止測量表單意外關閉
+  - 支援多 Session 選擇器與未分配任務的專案區位指派流程
+  - 進度條改為由後端統計數據驅動
+- **BLE Measurement Pipeline**
+  - 解決 Race conditions 問題，提升效能與資料穩健性
+  - 整合 Fused Location 提升定位精準度
+- **Type Cast Safety**
+  - 強化所有 `fromJson` 方法中的 String/int/double 型別轉換安全性
+
+#### 🛠️ 其他修復
+- 修復 ngrok header 阻擋問題，確保 API 正常連線
+
+---
+
 ### v18.3.2 (2025-12-14) - 專案管理邏輯修正與清理機制完善 🔧
 
 #### 🔧 修復與改進
