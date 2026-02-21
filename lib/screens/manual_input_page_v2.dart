@@ -5,7 +5,7 @@ import '../services/project_service.dart';
 import '../services/species_service.dart';
 import '../services/tree_service.dart';
 import '../services/v3/project_boundary_service.dart'; // V3: 專案邊界自動匹配
-import 'pure_vision_dbh_page.dart';
+import 'scanner_page.dart';
 import '../services/ar_measurement_service.dart'; // For MeasurementResult
 
 /// ManualInputPageV2
@@ -1036,7 +1036,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
                   Navigator.pop(context);
                   final result = await Navigator.of(context).push<MeasurementResult>(
                     MaterialPageRoute(
-                      builder: (_) => const PureVisionDbhPage(),
+                      builder: (_) => const ScannerPage(),
                     ),
                   );
                   if (result != null) {

@@ -5,7 +5,7 @@ import 'utils/location_helper.dart';
 
 // Import services
 import 'services/tree_service.dart';
-import 'screens/pure_vision_dbh_page.dart';
+import 'screens/scanner_page.dart';
 import 'services/ar_measurement_service.dart'; // For MeasurementResult
 import 'services/project_service.dart';
 import 'services/project_area_service.dart';
@@ -671,7 +671,7 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
   Future<void> _openDBHMeasurement() async {
     final result = await Navigator.of(context).push<MeasurementResult>(
       MaterialPageRoute(
-        builder: (_) => const PureVisionDbhPage(),
+        builder: (_) => const ScannerPage(),
       ),
     );
 

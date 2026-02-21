@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show Rect;
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 
@@ -228,6 +229,7 @@ class PureVisionDbhService {
     double? referenceDistanceM,
     double? instrumentDistanceM,
     String? distanceSource,
+    Rect? localBbox, // [Edge AI] The local tracking bounding box from ML Kit
     bool returnVisualization = true,
     bool returnDetectionVisualization = true,
   }) async {
@@ -260,6 +262,16 @@ class PureVisionDbhService {
       }
       if (mode != null) {
         request.fields['mode'] = mode;
+      }
+      // [Edge AI] Pass local bbox coordinates so server skips auto-detection
+      if (localBbox != null) {
+        request.fields['bbox_x1'] = localBbox.left.round().toString();
+        request.fields['bbox_y1'] = localBbox.top.round().toString();
+        request.fields['bbox_x2'] = localBbox.right.round().toString();
+        request.fields['bbox_y2'] = localBbox.bottom.round().toString();
+        
+        // ML Kit might return a bounding box that slightly exceeds image bounds
+        // Backend handles out-of-bounds, but let's be safe
       }
       // [Phase 2] 參考距離校正
       if (referenceDistanceM != null && referenceDistanceM > 0) {

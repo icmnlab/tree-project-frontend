@@ -29,6 +29,10 @@ android {
         jvmTarget = JavaVersion.VERSION_11.toString()
     }
 
+    androidResources {
+        noCompress += "tflite"
+    }
+    
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.sustainable.treeai"
@@ -57,6 +61,7 @@ android {
         release {
             // Signing with the release keys
             signingConfig = signingConfigs.getByName("release")
+            Files(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }

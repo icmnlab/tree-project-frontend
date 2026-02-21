@@ -10,7 +10,7 @@ import '../../services/species_identification_service.dart';
 import '../../services/v3/project_boundary_service.dart';
 import '../../services/v3/tree_image_service.dart';
 import '../../services/v3/ml_data_collector.dart'; // ML Data Collector
-import '../pure_vision_dbh_page.dart'; // For DBH measurement
+import '../scanner_page.dart'; // For DBH measurement
 import '../../services/ar_measurement_service.dart'; // For MeasurementResult
 import '../../services/project_area_service.dart'; // 新增專案區位服務
 
@@ -1020,8 +1020,8 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
         final results = result['results'] as List? ?? [];
         if (results.isNotEmpty) {
           final bestMatch = results.first;
-          final speciesName = bestMatch['species']['scientificNameWithoutAuthor'];
-          final commonNames = bestMatch['species']['commonNames'] as List?;
+          final speciesName = bestMatch['species'] != null ? bestMatch['species']['scientificNameWithoutAuthor'] : bestMatch['scientificNameWithoutAuthor'];
+          final commonNames = bestMatch['species'] != null ? bestMatch['species']['commonNames'] as List? : bestMatch['commonNames'] as List?;
           final score = (bestMatch['score'] * 100).toStringAsFixed(1);
           
           String displayName = speciesName;
@@ -1148,7 +1148,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
   Future<void> _startDBHMeasurement() async {
     final result = await Navigator.of(context).push<MeasurementResult>(
       MaterialPageRoute(
-        builder: (context) => PureVisionDbhPage(
+        builder: (context) => ScannerPage(
           initialDbh: double.tryParse(_dbhController.text),
           speciesName: _speciesController.text,
         ),
@@ -1182,8 +1182,8 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
         final results = result['results'] as List? ?? [];
         if (results.isNotEmpty) {
           final bestMatch = results.first;
-          final speciesName = bestMatch['species']['scientificNameWithoutAuthor'];
-          final commonNames = bestMatch['species']['commonNames'] as List?;
+          final speciesName = bestMatch['species'] != null ? bestMatch['species']['scientificNameWithoutAuthor'] : bestMatch['scientificNameWithoutAuthor'];
+          final commonNames = bestMatch['species'] != null ? bestMatch['species']['commonNames'] as List? : bestMatch['commonNames'] as List?;
           final score = (bestMatch['score'] * 100).toStringAsFixed(1);
           String displayName = speciesName;
           if (commonNames != null && commonNames.isNotEmpty) displayName = commonNames.first;
