@@ -1002,7 +1002,6 @@ class _ScannerPageState extends State<ScannerPage>
                     color: (_serviceAvailable && !_isLandscapeHeld) ? Colors.white : Colors.grey,
                   ),
                 ),
-                ),
               ),
             ),
           ),

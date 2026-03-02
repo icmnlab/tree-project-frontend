@@ -112,7 +112,7 @@ class TfliteObjectTrackingService {
     final inT = interp.getInputTensor(0);
     final inShape = inT.shape; // e.g. [1, 640, 640, 3]
     _inputSize = inShape[1];
-    _inputIsFloat = (inT.type == TfLiteType.float32);
+    _inputIsFloat = (inT.type == TensorType.float32);
 
     // ── Output 0: detections ──
     final detShape = interp.getOutputTensor(0).shape;
