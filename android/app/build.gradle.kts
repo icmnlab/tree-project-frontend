@@ -71,10 +71,7 @@ flutter {
 }
 
 dependencies {
-    // 強制覆蓋 tflite_flutter 內建的 TFLite 2.11.0 → 2.16.1
-    // 解決模型 op 版本不相容導致 allocateTensors 失敗的問題
-    // (模型使用 CONV_2D v5, RANGE v3 等，2.11.0 可能不完整支援)
-    implementation("org.tensorflow:tensorflow-lite:2.16.1")
-    // GPU delegate (匹配版本；即使未啟用也需與主 runtime 一致避免衝突)
-    implementation("org.tensorflow:tensorflow-lite-gpu:2.16.1")
+    // tflite_flutter 0.12.1 自帶 LiteRT 1.4.0 (≈TFLite 2.18+)
+    // 已修復 MaxPool2D padding bug (GitHub Issue #258)
+    // 不再需要手動覆蓋 TFLite 版本
 }
