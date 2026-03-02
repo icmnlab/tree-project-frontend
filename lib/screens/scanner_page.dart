@@ -100,6 +100,12 @@ class _ScannerPageState extends State<ScannerPage>
 
   Future<void> _initializeTflite() async {
     await _tfliteTracker.initialize();
+    if (!_tfliteTracker.isInitialized) {
+      debugPrint('[Scanner] TFLite 初始化失敗，自動切換至 ML Kit');
+      if (mounted) {
+        setState(() { _useTflite = false; });
+      }
+    }
   }
 
   void _initializeDetector() {

@@ -42,7 +42,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        
+
         // 從 gradle.properties 讀取 Google Maps API Key（安全方式，不會提交到 Git）
         val googleMapsApiKey = project.findProperty("GOOGLE_MAPS_API_KEY") as String? ?: ""
         manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = googleMapsApiKey
@@ -68,4 +68,13 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // 強制覆蓋 tflite_flutter 內建的 TFLite 2.11.0 → 2.16.1
+    // 解決模型 op 版本不相容導致 allocateTensors 失敗的問題
+    // (模型使用 CONV_2D v5, RANGE v3 等，2.11.0 可能不完整支援)
+    implementation("org.tensorflow:tensorflow-lite:2.16.1")
+    // GPU delegate (匹配版本；即使未啟用也需與主 runtime 一致避免衝突)
+    implementation("org.tensorflow:tensorflow-lite-gpu:2.16.1")
 }

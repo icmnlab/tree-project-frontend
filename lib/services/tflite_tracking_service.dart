@@ -38,12 +38,13 @@ class _RawDet {
 // YOLOv8n-seg 樹幹偵測服務
 // ================================================================
 
-/// 使用 Colab 訓練的 YOLOv8n-seg (tree_trunk) TFLite INT8 模型
+/// 使用 Colab 訓練的 YOLOv8n-seg (tree_trunk) TFLite FLOAT32 模型
 /// 進行即時邊緣推論，取代原 SSD MobileNet COCO 通用偵測。
 class TfliteObjectTrackingService {
   Interpreter? _interpreter;
   List<String>? _labels;
   bool _isInitialized = false;
+  bool get isInitialized => _isInitialized;
 
   // ── 模型幾何 (initialize 時從 tensor shape 偵測) ──
   int _inputSize = 640;
@@ -98,52 +99,76 @@ class TfliteObjectTrackingService {
           'input=$_inputSize  dets=$_numDets  ch=$_detChannels  '
           'classes=$_numClasses  outputs=$_numOutputs  '
           'transposed=$_detTransposed  float=$_inputIsFloat');
-    } catch (e) {
+    } catch (e, st) {
       debugPrint('[TFLite] 初始化失敗: $e');
+      debugPrint('[TFLite] StackTrace: $st');
     }
   }
 
   /// 多策略載入 TFLite 模型
   ///
-  /// Mi A1 等較舊裝置 Interpreter.fromAsset 可能出現
-  /// "Bad state: failed precondition"（臨時檔案複製失敗）。
-  /// 改用 rootBundle.load → fromBuffer 直接從記憶體載入更可靠。
+  /// 自動偵測裝置能力，依次嘗試：
+  ///  1. GPU delegate（高階裝置可加速 5-10x）
+  ///  2. 多執行緒 CPU（依 CPU 核心數動態分配）
+  ///  3. 單執行緒 CPU（最大相容性 fallback）
+  ///
+  /// 所有策略都使用 fromBuffer（比 fromAsset 更可靠）。
   Future<Interpreter> _loadInterpreter() async {
     const modelPath = 'assets/ml/tree_trunk_seg.tflite';
 
-    // 策略 1: fromBuffer + InterpreterOptions（最可靠）
+    // 先載入並驗證模型檔案
+    final modelData = await rootBundle.load(modelPath);
+    final buffer = modelData.buffer.asUint8List(
+      modelData.offsetInBytes,
+      modelData.lengthInBytes,
+    );
+    debugPrint('[TFLite] 模型大小: ${buffer.length} bytes  '
+        'magic: ${buffer.length >= 8 ? String.fromCharCodes(buffer.sublist(4, 8)) : "?"}');
+
+    // 動態決定最佳 thread 數（CPU 核心數的一半，至少 1，最多 4）
+    final int cpuCores = Platform.numberOfProcessors;
+    final int optimalThreads = (cpuCores ~/ 2).clamp(1, 4);
+    debugPrint('[TFLite] CPU 核心: $cpuCores → threads=$optimalThreads');
+
+    // 策略 1: GPU delegate（高階裝置：Adreno 6xx+, Mali-G7x+ 等）
+    if (Platform.isAndroid) {
+      try {
+        final gpuDelegate = GpuDelegateV2();
+        final options = InterpreterOptions()
+          ..threads = optimalThreads
+          ..addDelegate(gpuDelegate);
+        final interp = Interpreter.fromBuffer(buffer, options: options);
+        debugPrint('[TFLite] ✓ GPU delegate 載入成功 (threads=$optimalThreads)');
+        return interp;
+      } catch (e) {
+        debugPrint('[TFLite] GPU delegate 不支援，fallback CPU: $e');
+      }
+    }
+
+    // 策略 2: 多執行緒 CPU（最常見路徑）
     try {
-      final modelData = await rootBundle.load(modelPath);
-      final buffer = modelData.buffer.asUint8List(
-        modelData.offsetInBytes,
-        modelData.lengthInBytes,
-      );
-      final options = InterpreterOptions()..threads = 2;
+      final options = InterpreterOptions()..threads = optimalThreads;
       final interp = Interpreter.fromBuffer(buffer, options: options);
-      debugPrint('[TFLite] 載入成功 (fromBuffer + options)');
+      debugPrint('[TFLite] ✓ CPU 載入成功 (threads=$optimalThreads)');
       return interp;
     } catch (e1) {
-      debugPrint('[TFLite] fromBuffer+options 失敗: $e1');
+      debugPrint('[TFLite] CPU threads=$optimalThreads 失敗: $e1');
     }
 
-    // 策略 2: fromBuffer 不帶選項
+    // 策略 3: 單執行緒 CPU（最大相容性）
     try {
-      final modelData = await rootBundle.load(modelPath);
-      final buffer = modelData.buffer.asUint8List(
-        modelData.offsetInBytes,
-        modelData.lengthInBytes,
-      );
-      final interp = Interpreter.fromBuffer(buffer);
-      debugPrint('[TFLite] 載入成功 (fromBuffer)');
+      final options = InterpreterOptions()..threads = 1;
+      final interp = Interpreter.fromBuffer(buffer, options: options);
+      debugPrint('[TFLite] ✓ CPU 單執行緒載入成功');
       return interp;
     } catch (e2) {
-      debugPrint('[TFLite] fromBuffer 失敗: $e2');
+      debugPrint('[TFLite] CPU 單執行緒失敗: $e2');
     }
 
-    // 策略 3: 原始 fromAsset（某些新裝置可能更好）
+    // 策略 4: fromAsset（最後手段）
     debugPrint('[TFLite] 嘗試 fromAsset...');
     final interp = await Interpreter.fromAsset(modelPath);
-    debugPrint('[TFLite] 載入成功 (fromAsset)');
+    debugPrint('[TFLite] ✓ fromAsset 載入成功');
     return interp;
   }
 
@@ -541,10 +566,10 @@ class TfliteObjectTrackingService {
   double _detVal(Object det, int channel, int detIdx) {
     if (_detTransposed) {
       // [1, ch, dets]
-      return (det as List)[0][channel][detIdx] as double;
+      return ((det as List)[0][channel][detIdx] as num).toDouble();
     } else {
       // [1, dets, ch]
-      return (det as List)[0][detIdx][channel] as double;
+      return ((det as List)[0][detIdx][channel] as num).toDouble();
     }
   }
 
