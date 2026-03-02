@@ -81,8 +81,7 @@ class TfliteObjectTrackingService {
   Future<void> initialize() async {
     if (_isInitialized) return;
     try {
-      _interpreter =
-          await Interpreter.fromAsset('assets/ml/tree_trunk_seg.tflite');
+      _interpreter = await _loadInterpreter();
 
       // 標籤
       final raw =
@@ -102,6 +101,50 @@ class TfliteObjectTrackingService {
     } catch (e) {
       debugPrint('[TFLite] 初始化失敗: $e');
     }
+  }
+
+  /// 多策略載入 TFLite 模型
+  ///
+  /// Mi A1 等較舊裝置 Interpreter.fromAsset 可能出現
+  /// "Bad state: failed precondition"（臨時檔案複製失敗）。
+  /// 改用 rootBundle.load → fromBuffer 直接從記憶體載入更可靠。
+  Future<Interpreter> _loadInterpreter() async {
+    const modelPath = 'assets/ml/tree_trunk_seg.tflite';
+
+    // 策略 1: fromBuffer + InterpreterOptions（最可靠）
+    try {
+      final modelData = await rootBundle.load(modelPath);
+      final buffer = modelData.buffer.asUint8List(
+        modelData.offsetInBytes,
+        modelData.lengthInBytes,
+      );
+      final options = InterpreterOptions()..threads = 2;
+      final interp = Interpreter.fromBuffer(buffer, options: options);
+      debugPrint('[TFLite] 載入成功 (fromBuffer + options)');
+      return interp;
+    } catch (e1) {
+      debugPrint('[TFLite] fromBuffer+options 失敗: $e1');
+    }
+
+    // 策略 2: fromBuffer 不帶選項
+    try {
+      final modelData = await rootBundle.load(modelPath);
+      final buffer = modelData.buffer.asUint8List(
+        modelData.offsetInBytes,
+        modelData.lengthInBytes,
+      );
+      final interp = Interpreter.fromBuffer(buffer);
+      debugPrint('[TFLite] 載入成功 (fromBuffer)');
+      return interp;
+    } catch (e2) {
+      debugPrint('[TFLite] fromBuffer 失敗: $e2');
+    }
+
+    // 策略 3: 原始 fromAsset（某些新裝置可能更好）
+    debugPrint('[TFLite] 嘗試 fromAsset...');
+    final interp = await Interpreter.fromAsset(modelPath);
+    debugPrint('[TFLite] 載入成功 (fromAsset)');
+    return interp;
   }
 
   /// 讀取模型 tensor shape 並設定內部參數

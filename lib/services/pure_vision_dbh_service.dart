@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Rect;
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import '../config/app_config.dart';
 
 /// 純視覺 DBH 測量服務
@@ -233,14 +234,76 @@ class PureVisionDbhService {
     bool returnVisualization = true,
     bool returnDetectionVisualization = true,
   }) async {
+    // ngrok 免費版連線不穩，加重試邏輯
+    const maxRetries = 2;
+    Exception? lastError;
+
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        final result = await _doAutoMeasureRequest(
+          imageFile: imageFile,
+          focalLengthMm: focalLengthMm,
+          focalLength35mm: focalLength35mm,
+          fovDegrees: fovDegrees,
+          phoneMake: phoneMake,
+          phoneModel: phoneModel,
+          mode: mode,
+          tapX: tapX,
+          tapY: tapY,
+          referenceDistanceM: referenceDistanceM,
+          instrumentDistanceM: instrumentDistanceM,
+          distanceSource: distanceSource,
+          localBbox: localBbox,
+          returnVisualization: returnVisualization,
+          returnDetectionVisualization: returnDetectionVisualization,
+          attempt: attempt,
+        );
+        return result;
+      } on PureVisionException {
+        rethrow; // 伺服器明確回傳的錯誤，不重試
+      } catch (e) {
+        lastError = e is Exception ? e : Exception(e.toString());
+        debugPrint('[PureVisionDbhService] attempt $attempt 失敗: $e');
+        if (attempt < maxRetries) {
+          await Future.delayed(Duration(seconds: attempt * 2));
+        }
+      }
+    }
+    throw PureVisionException('連線不穩定，已重試 $maxRetries 次: $lastError');
+  }
+
+  /// 實際發送 auto-measure-dbh 請求
+  Future<AutoMeasureResult> _doAutoMeasureRequest({
+    required File imageFile,
+    double? focalLengthMm,
+    double? focalLength35mm,
+    double? fovDegrees,
+    String? phoneMake,
+    String? phoneModel,
+    String? mode,
+    int? tapX,
+    int? tapY,
+    double? referenceDistanceM,
+    double? instrumentDistanceM,
+    String? distanceSource,
+    Rect? localBbox,
+    bool returnVisualization = true,
+    bool returnDetectionVisualization = true,
+    int attempt = 1,
+  }) async {
     try {
       final uri = Uri.parse('$_baseUrl/auto-measure-dbh');
       final request = http.MultipartRequest('POST', uri);
 
       request.headers.addAll(_authHeaders);
 
+      // 明確設定 content type，避免 ngrok 或伺服器誤判
       request.files.add(
-        await http.MultipartFile.fromPath('image', imageFile.path),
+        await http.MultipartFile.fromPath(
+          'image',
+          imageFile.path,
+          contentType: _guessImageMediaType(imageFile.path),
+        ),
       );
 
       request.fields['fov_degrees'] = (fovDegrees ?? 70.0).toString();
@@ -269,9 +332,6 @@ class PureVisionDbhService {
         request.fields['bbox_y1'] = localBbox.top.round().toString();
         request.fields['bbox_x2'] = localBbox.right.round().toString();
         request.fields['bbox_y2'] = localBbox.bottom.round().toString();
-        
-        // ML Kit might return a bounding box that slightly exceeds image bounds
-        // Backend handles out-of-bounds, but let's be safe
       }
       // [Phase 2] 參考距離校正
       if (referenceDistanceM != null && referenceDistanceM > 0) {
@@ -292,13 +352,18 @@ class PureVisionDbhService {
         request.fields['tap_y'] = tapY.toString();
       }
 
-      debugPrint('[PureVisionDbhService] Auto-measure request to $uri${mode != null ? " (mode: $mode)" : ""}');
+      debugPrint('[PureVisionDbhService] Auto-measure request to $uri'
+          '${mode != null ? " (mode: $mode)" : ""}'
+          ' [attempt $attempt]');
       final streamedResponse = await request.send().timeout(
         const Duration(seconds: 120),
       );
       final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode != 200) {
+        // 伺服器明確回傳的錯誤，拋 PureVisionException 不重試
+        debugPrint('[PureVisionDbhService] 伺服器回傳 ${response.statusCode}: '
+            '${response.body.length > 200 ? response.body.substring(0, 200) : response.body}');
         throw PureVisionException(
           'API 錯誤 (${response.statusCode}): ${response.body}',
         );
@@ -306,12 +371,11 @@ class PureVisionDbhService {
 
       final data = json.decode(response.body);
       return AutoMeasureResult.fromJson(data);
-    } on SocketException {
-      throw PureVisionException('無法連接 ML 服務，請確認服務已啟動');
-    } on TimeoutException {
-      throw PureVisionException('請求逾時，伺服器可能正在喚醒，請稍後再試');
-    } on http.ClientException catch (e) {
-      throw PureVisionException('網路錯誤: $e');
+    } on PureVisionException {
+      rethrow; // 伺服器錯誤，由上層 retry 決定是否重試
+    } catch (e) {
+      // SocketException / TimeoutException / ClientException → 交由 retry 邏輯處理
+      rethrow;
     }
   }
 
@@ -378,6 +442,25 @@ class PureVisionDbhService {
       throw PureVisionException('多照片分析逾時');
     } on http.ClientException catch (e) {
       throw PureVisionException('網路錯誤: $e');
+    }
+  }
+
+  /// 根據檔案副檔名猜測 MIME type
+  MediaType _guessImageMediaType(String path) {
+    final ext = path.split('.').last.toLowerCase();
+    switch (ext) {
+      case 'jpg':
+      case 'jpeg':
+        return MediaType('image', 'jpeg');
+      case 'png':
+        return MediaType('image', 'png');
+      case 'webp':
+        return MediaType('image', 'webp');
+      case 'heic':
+      case 'heif':
+        return MediaType('image', 'heic');
+      default:
+        return MediaType('image', 'jpeg'); // 預設 JPEG
     }
   }
 }

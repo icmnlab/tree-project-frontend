@@ -123,7 +123,9 @@ class _ScannerPageState extends State<ScannerPage>
       DeviceOrientation.landscapeRight,
     ]);
     try {
-      _cameraController?.stopImageStream();
+      if (_cameraController?.value.isStreamingImages == true) {
+        _cameraController?.stopImageStream();
+      }
     } catch (_) {}
     _cameraController?.dispose();
     _objectDetector?.close();
@@ -399,7 +401,9 @@ class _ScannerPageState extends State<ScannerPage>
     try {
       // Bug fix: 停止影像串流再拍照，避免某些 Android 裝置崩潰
       try {
-        await _cameraController!.stopImageStream();
+        if (_cameraController!.value.isStreamingImages) {
+          await _cameraController!.stopImageStream();
+        }
       } catch (_) {
         // 可能已經停止了，忽略
       }
