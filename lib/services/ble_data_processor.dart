@@ -5,12 +5,20 @@ import 'ble_field_validator.dart';
 class BleDataProcessor {
   // CSV 欄位索引 (基於 DATA_2.CSV)
   static const int _idxType = 2;
+  static const int _idxProd = 3;  // PROD (Product Code)
+  static const int _idxVer = 4;   // VER (Firmware Version)
+  static const int _idxSnr = 5;   // SNR (Serial Number)
   static const int _idxId = 6;
+  static const int _idxTrph = 8;  // TRPH (胸高, 通常 1.3m)
+  static const int _idxRefh = 9;  // REFH (參考高)
+  static const int _idxPoff = 10; // P.OFF (棱鏡偏移)
+  static const int _idxDecl = 11; // DECL (磁偏角)
   static const int _idxLat = 12;
   static const int _idxNS = 13;
   static const int _idxLon = 14;
   static const int _idxEW = 15;
   static const int _idxAlt = 16; // Altitude
+  static const int _idxHdop = 17; // HDOP (GPS 品質指標)
   static const int _idxDate = 18;
   static const int _idxTime = 19;
   static const int _idxSeq = 20; // SEQ (測量序號)
@@ -20,6 +28,10 @@ class BleDataProcessor {
   static const int _idxDia = 26; // Diameter
   static const int _idxPitch = 27; // Pitch/Inclination
   static const int _idxAz = 28; // Azimuth
+  static const int _idxX = 29; // X(m) - UTM Easting
+  static const int _idxY = 30; // Y(m) - UTM Northing
+  static const int _idxZ = 31; // Z(m) - UTM Elevation
+  static const int _idxUtmZone = 32; // UTM ZONE
 
   /// 解析完整的 CSV 數據字串
   static List<Map<String, dynamic>> parseCsvData(String csvData) {
@@ -168,6 +180,50 @@ class BleDataProcessor {
         metadata['raw_lat'] = lat;
         metadata['raw_lon'] = lon;
 
+        // [v19.0] HDOP - GPS 精度指標 (值越小精度越高，一般 <2 為良好)
+        if (fields.length > _idxHdop) {
+          String hdopStr = fields[_idxHdop].trim();
+          if (hdopStr.isNotEmpty) {
+            metadata['hdop'] = double.tryParse(hdopStr);
+          }
+        }
+
+        // [v19.0] 儀器設備資訊 (PROD, VER, SNR)
+        if (fields.length > _idxSnr) {
+          String snrStr = fields[_idxSnr].trim();
+          if (snrStr.isNotEmpty) metadata['device_sn'] = snrStr;
+        }
+        if (fields.length > _idxProd) {
+          String prodStr = fields[_idxProd].trim();
+          if (prodStr.isNotEmpty) metadata['product_code'] = prodStr;
+        }
+        if (fields.length > _idxVer) {
+          String verStr = fields[_idxVer].trim();
+          if (verStr.isNotEmpty) metadata['firmware_version'] = verStr;
+        }
+
+        // [v19.0] 儀器校準參數 (TRPH, REFH, P.OFF, DECL)
+        // TRPH: 胸高 (通常 1.3m，林業標準)
+        // REFH: 儀器參考高度
+        // P.OFF: 棱鏡偏移量
+        // DECL: 磁偏角
+        if (fields.length > _idxTrph) {
+          String trphStr = fields[_idxTrph].trim();
+          if (trphStr.isNotEmpty) metadata['trph'] = double.tryParse(trphStr);
+        }
+        if (fields.length > _idxRefh) {
+          String refhStr = fields[_idxRefh].trim();
+          if (refhStr.isNotEmpty) metadata['ref_height'] = double.tryParse(refhStr);
+        }
+        if (fields.length > _idxPoff) {
+          String poffStr = fields[_idxPoff].trim();
+          if (poffStr.isNotEmpty) metadata['prism_offset'] = double.tryParse(poffStr);
+        }
+        if (fields.length > _idxDecl) {
+          String declStr = fields[_idxDecl].trim();
+          if (declStr.isNotEmpty) metadata['declination'] = double.tryParse(declStr);
+        }
+
         // 胸徑 (DIA) - Remote Diameter 功能
         // Settings → REMOTE DIAMETER 啟用後，儀器可遠距測量直徑（精度 10m@1.2cm）
         // 未啟用時此欄位為空，需透過影像 DBH 或手動輸入補測
@@ -182,13 +238,24 @@ class BleDataProcessor {
           }
         }
 
-        // 海拔 (Altitude) - 通常有 GPS 就有海拔，但也許可以寬容？
-        // 根據 "完整性" 原則，我們也檢查它
+        // 海拔 (Altitude)
         if (fields.length > _idxAlt) {
           String altStr = fields[_idxAlt].trim();
           if (altStr.isNotEmpty) {
             metadata['altitude'] = double.tryParse(altStr);
           }
+        }
+
+        // [v19.0] UTM 座標 (X, Y, Z, UTM ZONE) - 可作為 GPS 交叉驗證
+        if (fields.length > _idxUtmZone) {
+          String xStr = fields[_idxX].trim();
+          String yStr = fields[_idxY].trim();
+          String zStr = fields[_idxZ].trim();
+          String utmZone = fields[_idxUtmZone].trim();
+          if (xStr.isNotEmpty) metadata['utm_x'] = double.tryParse(xStr);
+          if (yStr.isNotEmpty) metadata['utm_y'] = double.tryParse(yStr);
+          if (zStr.isNotEmpty) metadata['utm_z'] = double.tryParse(zStr);
+          if (utmZone.isNotEmpty) metadata['utm_zone'] = utmZone;
         }
 
         if (metadata.isNotEmpty) {

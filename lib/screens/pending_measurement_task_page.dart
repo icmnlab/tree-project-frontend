@@ -6,6 +6,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import '../models/pending_tree_measurement.dart';
 import '../services/pending_measurement_service.dart';
+import '../services/v3/tree_image_service.dart';
 import '../utils/location_helper.dart';
 import 'v3/integrated_tree_form_page.dart';
 
@@ -60,6 +61,11 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   NavigationState _navState = NavigationState.selectingTask;
   bool _hasVibratedArrival = false;
   
+  // 羅盤平滑化
+  double? _smoothedHeading;
+  double? _magneticFieldStrength; // 磁力計強度，用於判斷是否需要校準
+  bool _showCalibrationHint = false;
+  
   // 動畫
   late AnimationController _arrowAnimController;
   
@@ -91,6 +97,12 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   
   @override
   void dispose() {
+    // 確保離開頁面時不會遺留 in_progress 狀態的任務
+    final taskId = _currentTask?.id;
+    if (taskId != null && _navState != NavigationState.selectingTask) {
+      _service.updateTaskStatus(taskId, MeasurementStatus.pending)
+          .catchError((_) {});
+    }
     _positionSubscription?.cancel();
     _magnetometerSubscription?.cancel();
     _accelerometerSubscription?.cancel();
@@ -106,8 +118,9 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     });
     
     try {
-      final position = await getHighAccuracyPosition(
-        timeout: const Duration(seconds: 5),
+      // 使用較短超時+接受快取位置，避免 GPS 不可用時每次等待 5 秒凍結 UI
+      final position = _userPosition ?? await getHighAccuracyPosition(
+        timeout: const Duration(seconds: 3),
       );
       
       final results = await Future.wait([
@@ -183,7 +196,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
               _currentHeading = position.heading;
             }
           });
-          _checkProximityAutoAdvance(position);
+          // proximity check removed — user manually confirms arrival
         }
       });
       
@@ -194,6 +207,15 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
       _magnetometerSubscription = magnetometerEventStream()?.listen((event) {
         if (!mounted) return;
         
+        // 磁力計強度檢測（判斷羅盤是否需要校準）
+        final magnitude = math.sqrt(event.x * event.x + event.y * event.y + event.z * event.z);
+        _magneticFieldStrength = magnitude;
+        // 地球磁場約 25–65 µT，<15 µT 或 >100 µT 表示可能未校準或受干擾
+        final needsCal = magnitude < 15 || magnitude > 100;
+        if (needsCal != _showCalibrationHint) {
+          setState(() => _showCalibrationHint = needsCal);
+        }
+
         final now = DateTime.now().millisecondsSinceEpoch;
         if (now - _lastHeadingUpdateMs < 100) return;
         _lastHeadingUpdateMs = now;
@@ -220,8 +242,18 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
         }
         
         if (_userPosition == null || _userPosition!.speed <= 0.3) {
+          // 低通濾波平滑化羅盤方向，避免箭頭劇烈抖動
+          if (_smoothedHeading == null) {
+            _smoothedHeading = heading;
+          } else {
+            // 處理 0°↔360° 跨界
+            double diff = heading - _smoothedHeading!;
+            if (diff > 180) diff -= 360;
+            if (diff < -180) diff += 360;
+            _smoothedHeading = (_smoothedHeading! + diff * 0.15) % 360;
+          }
           setState(() {
-            _currentHeading = heading;
+            _currentHeading = _smoothedHeading;
           });
         }
       });
@@ -231,29 +263,26 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     }
   }
   
-  /// GPS 接近時不自動推進，改為純手動確認
-  /// GPS 室內誤差大（15m+），自動推進會導致誤觸發
-  void _checkProximityAutoAdvance(Position position) {
-    // 不再自動推進，完全由使用者手動確認「已到達」
-  }
+  // GPS 接近時不自動推進 — 由使用者手動確認「已到達」
 
   Future<void> _abandonCurrentTask() async {
     _abandoned = true;
-    if (_currentTask?.id != null) {
-      try {
-        await _service.updateTaskStatus(
-          _currentTask!.id!, MeasurementStatus.pending,
-        );
-      } catch (e) {
-        debugPrint('[PendingTask] 恢復 pending 狀態失敗: $e');
-      }
-    }
+    final taskId = _currentTask?.id;
+    // 先重置 UI 狀態，再做網路請求，避免使用者重複觸發
     if (!mounted) return;
     setState(() {
       _navState = NavigationState.selectingTask;
       _currentTask = null;
       _isProcessing = false;
     });
+    // 背景恢復 pending 狀態
+    if (taskId != null) {
+      try {
+        await _service.updateTaskStatus(taskId, MeasurementStatus.pending);
+      } catch (e) {
+        debugPrint('[PendingTask] 恢復 pending 狀態失敗: $e');
+      }
+    }
     _loadTasks();
   }
 
@@ -853,8 +882,9 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
       }
     }
     
-    final isClose = gpsDistance != null && gpsDistance < 5;
-    final hasArrived = gpsDistance != null && gpsDistance < 2;
+    // 港口附近 GPS 精度約 5-10m，設 10m 進精確模式，5m 顯示到達
+    final isClose = gpsDistance != null && gpsDistance < 10;
+    final hasArrived = gpsDistance != null && gpsDistance < 5;
     
     if (hasArrived && !_hasVibratedArrival) {
       _hasVibratedArrival = true;
@@ -863,6 +893,30 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     
     return Column(
       children: [
+        // 羅盤校準警告
+        if (_showCalibrationHint)
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.amber.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.amber.shade400),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.warning_amber, size: 20, color: Colors.amber.shade800),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '羅盤可能需要校準 — 請拿起手機畫 8 字形',
+                    style: TextStyle(fontSize: 12, color: Colors.amber.shade900, fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        
         // Info card
         Container(
           margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -883,6 +937,39 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
             ],
           ),
         ),
+
+        // GPS 精度指示器
+        if (userPos != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  userPos.accuracy < 10 ? Icons.gps_fixed : Icons.gps_not_fixed,
+                  size: 14,
+                  color: userPos.accuracy < 10 
+                      ? Colors.green.shade600 
+                      : userPos.accuracy < 20 
+                          ? Colors.orange.shade600 
+                          : Colors.red.shade600,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'GPS 精度 ±${userPos.accuracy.toStringAsFixed(0)}m',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: userPos.accuracy < 10 
+                        ? Colors.green.shade700 
+                        : userPos.accuracy < 20 
+                            ? Colors.orange.shade700 
+                            : Colors.red.shade700,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
         
         Expanded(
           child: Center(
@@ -1092,6 +1179,30 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     
     return Column(
       children: [
+        // 羅盤校準警告（在此頁面特別重要，因為要靠羅盤找方向）
+        if (_showCalibrationHint)
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.amber.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.amber.shade400),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.warning_amber, size: 20, color: Colors.amber.shade800),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '羅盤精度不足 — 請遠離金屬物品，拿起手機畫 8 字形校準',
+                    style: TextStyle(fontSize: 12, color: Colors.amber.shade900, fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        
         // Tree info + instruction
         Container(
           margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -1226,10 +1337,25 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     _abandoned = false;
     _hasVibratedArrival = false;
     
+    // 無 GPS 座標（stationLat/Lon 為 0）→ 跳過導航，直接進入測量
+    final bool hasStationGps = task.stationLatitude != 0 || task.stationLongitude != 0;
+    
     setState(() {
       _currentTask = task;
-      _navState = NavigationState.navigatingToStation;
+      _navState = hasStationGps
+          ? NavigationState.navigatingToStation
+          : NavigationState.pointingToTree;  // 跳過導航，直接對準樹木方向
     });
+    
+    if (!hasStationGps && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('此紀錄無 GPS 座標，跳過導航。請依方位角找到目標樹木。'),
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
     
     if (task.id != null) {
       try {
@@ -1255,16 +1381,28 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     
     final taskRef = _currentTask!;
     
-    final success = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (context) => IntegratedTreeFormPage(
-          task: taskRef,
+    bool? success;
+    try {
+      success = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (context) => IntegratedTreeFormPage(
+            task: taskRef,
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      debugPrint('[PendingTask] IntegratedTreeFormPage 異常: $e');
+    }
     
     _isProcessing = false;
-    if (!mounted || _abandoned) return;
+    if (!mounted || _abandoned) {
+      // 頁面已被銷毀或放棄 — 確保任務不會永遠卡在 in_progress
+      if (taskRef.id != null && success != true) {
+        _service.updateTaskStatus(taskRef.id!, MeasurementStatus.pending)
+            .catchError((_) {});
+      }
+      return;
+    }
     
     if (success == true) {
       await _loadTasks();
@@ -1287,6 +1425,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
         _showBatchTransferDialog();
       }
     } else {
+      // 使用者取消或測量失敗 — 恢復 pending
       if (taskRef.id != null) {
         try {
           await _service.updateTaskStatus(
@@ -1355,7 +1494,42 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     
     setState(() => _isTransferring = true);
     try {
+      // 轉移前先同步未上傳的照片到後端
+      final imageService = TreeImageService();
+      final syncResult = await imageService.syncAllPendingImages();
+      if (syncResult['failed'] > 0 && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('照片同步: ${syncResult['success']} 成功, ${syncResult['failed']} 失敗 (將後續重試)'),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      } else if ((syncResult['success'] as int) > 0 && mounted) {
+        debugPrint('[Transfer] 照片同步完成: ${syncResult['success']} 張');
+      }
+
       final result = await _service.transferToTreeSurvey(sessionId: sid);
+
+      // 轉移成功後，重新映射本地照片索引 (pending_id → tree_survey_id)
+      try {
+        final idMapping = result['id_mapping'] as List<dynamic>?;
+        if (idMapping != null) {
+          for (final m in idMapping) {
+            if (m is! Map) continue; // 安全檢查：跳過非 Map 項目
+            final pendingId = m['pending_id']?.toString();
+            final surveyId = m['tree_survey_id']?.toString();
+            if (pendingId != null && surveyId != null) {
+              await imageService.remapTreeId(pendingId, surveyId);
+            }
+          }
+          // 清理已同步的本地檔案，釋放裝置空間
+          await imageService.cleanupSyncedImages();
+        }
+      } catch (mapErr) {
+        debugPrint('[Transfer] 照片重新映射失敗（不影響資料轉移）: $mapErr');
+      }
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1402,6 +1576,9 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     } catch (e) {
       debugPrint('跳過失敗: $e');
       _isProcessing = false;
+      if (mounted) {
+        _showError('跳過失敗: $e');
+      }
     }
   }
   

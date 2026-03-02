@@ -106,8 +106,10 @@ class BleFieldValidator {
     }
 
     // 1. 空欄位白名單檢查 (v13.5)
-    // field[8-11, 33] 通常為空，若有值但異常短且為純數字，視為雜訊
-    final emptyWhitelist = [8, 9, 10, 11, 33];
+    // [v19.0 FIX] 移除索引 8-11 (TRPH, REFH, P.OFF, DECL) 的清空邏輯
+    // 這些在 '$' 數據行中通常為空，但在 '#;SET' 行中有實際值（儀器校準參數）
+    // 索引 33 以後的尾端雜訊仍清空
+    final emptyWhitelist = [33];
     for (int idx in emptyWhitelist) {
       if (idx < validated.length) {
         String val = validated[idx].trim();

@@ -1,11 +1,12 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:math' show atan, max, min;
+import 'dart:math' show atan, min;
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/services.dart';
 import 'package:exif/exif.dart';
 import 'package:google_mlkit_object_detection/google_mlkit_object_detection.dart';
+import 'package:sensors_plus/sensors_plus.dart';
 import '../services/pure_vision_dbh_service.dart';
 import '../services/ar_measurement_service.dart';
 import '../services/tflite_tracking_service.dart';
@@ -70,21 +71,31 @@ class _ScannerPageState extends State<ScannerPage>
   // ML Kit Object Detection
   ObjectDetector? _objectDetector;
   bool _isDetecting = false;
-  List<DetectedObject> _detectedObjects = [];
   Rect? _trackedBbox; // Current tracked bbox from ML Kit
 
-  // TFLite YOLO/MobileNet Tracking
+  // TFLite YOLOv8n-seg 樹幹偵測
   final TfliteObjectTrackingService _tfliteTracker = TfliteObjectTrackingService();
-  bool _useTflite = false; // Toggle between ML Kit and TFLite
+  bool _useTflite = true; // true = YOLOv8n-seg 樹幹偵測, false = ML Kit 通用偵測
+  double? _trackedConfidence; // 最新偵測信心度
+  String? _trackedLabel; // 最新偵測標籤
+
+  // 方向感測器：偵測手機是否橫拿
+  StreamSubscription? _accelSubscription;
+  bool _isLandscapeHeld = false; // true = 手機橫拿，應提示使用者
   
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // 強制鎖定螢幕方向為直向
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+    ]);
     _initializeDetector();
     _initializeTflite();
     _initializeCamera();
     _checkService();
+    _startOrientationMonitor();
   }
 
   Future<void> _initializeTflite() async {
@@ -103,7 +114,17 @@ class _ScannerPageState extends State<ScannerPage>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _cameraController?.stopImageStream();
+    _accelSubscription?.cancel();
+    // 恢復允許所有方向
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,
+      DeviceOrientation.portraitDown,
+      DeviceOrientation.landscapeLeft,
+      DeviceOrientation.landscapeRight,
+    ]);
+    try {
+      _cameraController?.stopImageStream();
+    } catch (_) {}
     _cameraController?.dispose();
     _objectDetector?.close();
     _tfliteTracker.dispose();
@@ -113,9 +134,14 @@ class _ScannerPageState extends State<ScannerPage>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final ctrl = _cameraController;
-    if (ctrl == null || !ctrl.value.isInitialized) return;
     if (state == AppLifecycleState.inactive) {
-      ctrl.dispose();
+      // 清理相機資源；guard 避免已 dispose 的 controller
+      try {
+        ctrl?.dispose();
+      } catch (_) {}
+      _cameraController = null;
+      _isCameraInitialized = false;
+      _isDetecting = false;
     } else if (state == AppLifecycleState.resumed &&
         _step == _PageStep.camera) {
       _initializeCamera();
@@ -125,6 +151,28 @@ class _ScannerPageState extends State<ScannerPage>
   Future<void> _checkService() async {
     _serviceAvailable = await _service.isServiceAvailable();
     if (mounted) setState(() {});
+  }
+
+  /// 重新啟動影像串流（從結果頁或 bbox 頁返回相機時呼叫）
+  void _restartImageStream() {
+    final ctrl = _cameraController;
+    if (ctrl == null || !ctrl.value.isInitialized) {
+      // Controller 已經不可用，需要重新初始化
+      _initializeCamera();
+      return;
+    }
+    // 嘗試重啟影像串流
+    try {
+      final cameras = ctrl.description;
+      ctrl.startImageStream((CameraImage image) {
+        if (_isDetecting || !_isAutoMode || _step != _PageStep.camera) return;
+        _isDetecting = true;
+        _processCameraImage(image, cameras);
+      });
+    } catch (e) {
+      debugPrint('[ScannerPage] 重啟串流失敗，重新初始化相機: $e');
+      _initializeCamera();
+    }
   }
 
   Future<void> _initializeCamera() async {
@@ -150,6 +198,13 @@ class _ScannerPageState extends State<ScannerPage>
       await _cameraController!
           .lockCaptureOrientation(DeviceOrientation.portraitUp);
 
+      // 記錄相機解析度，供除錯使用
+      final ps = _cameraController!.value.previewSize;
+      if (ps != null) {
+        debugPrint('[ScannerPage] 相機預覽解析度: ${ps.width}x${ps.height}'
+            ' (sensor orientation: ${camera.sensorOrientation}°)');
+      }
+
       // 開始影像流進行物件追蹤
       _cameraController!.startImageStream((CameraImage image) {
         if (_isDetecting || !_isAutoMode || _step != _PageStep.camera) return;
@@ -165,10 +220,28 @@ class _ScannerPageState extends State<ScannerPage>
     }
   }
 
+  /// 加速度計偵測手機是否被橫向持握。
+  /// 利用重力方向判斷：手機直立時 y 軸重力 ≈ ±9.8，橫拿時 x 軸重力 ≈ ±9.8。
+  /// 當 |x| > |y| 且差距明顯時視為橫拿。
+  void _startOrientationMonitor() {
+    _accelSubscription = accelerometerEventStream(
+      samplingPeriod: const Duration(milliseconds: 500),
+    ).listen((event) {
+      // x: 左右傾斜, y: 前後傾斜, z: 上下
+      final ax = event.x.abs();
+      final ay = event.y.abs();
+      // 手機橫拿: |x| 明顯大於 |y| (至少 2.0 m/s² 的差距避免誤判)
+      final landscape = ax > ay && (ax - ay) > 2.0;
+      if (landscape != _isLandscapeHeld && mounted) {
+        setState(() => _isLandscapeHeld = landscape);
+      }
+    });
+  }
+
   Future<void> _processCameraImage(
       CameraImage image, CameraDescription camera) async {
-    if (_isDetecting) return;
-    
+    // Note: _isDetecting is set to true by the caller (startImageStream callback)
+    // so we do NOT check it here again — the caller already ensures single-entry.
     try {
       if (_useTflite) {
         // --- 引擎 B: TFLite (YOLO/MobileNet SSD) ---
@@ -188,11 +261,17 @@ class _ScannerPageState extends State<ScannerPage>
               
               if (bestBbox.rect.width > 20 && bestBbox.rect.height > 20) {
                  _trackedBbox = bestBbox.rect;
+                 _trackedConfidence = bestBbox.confidence;
+                 _trackedLabel = bestBbox.label;
               } else {
                  _trackedBbox = null;
+                 _trackedConfidence = null;
+                 _trackedLabel = null;
               }
             } else {
               _trackedBbox = null;
+              _trackedConfidence = null;
+              _trackedLabel = null;
             }
           });
         }
@@ -206,7 +285,6 @@ class _ScannerPageState extends State<ScannerPage>
 
         if (mounted && _step == _PageStep.camera) {
           setState(() {
-            _detectedObjects = objects;
             if (objects.isNotEmpty) {
               final obj = objects.first;
               if (obj.boundingBox.width > 20 && obj.boundingBox.height > 20) {
@@ -304,7 +382,28 @@ class _ScannerPageState extends State<ScannerPage>
       return;
     }
 
+    // 防止橫向拍攝
+    if (_isLandscapeHeld) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('請將手機直立拿著拍攝，橫向拍攝會影響測量精度'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
     try {
+      // Bug fix: 停止影像串流再拍照，避免某些 Android 裝置崩潰
+      try {
+        await _cameraController!.stopImageStream();
+      } catch (_) {
+        // 可能已經停止了，忽略
+      }
+
       final xFile = await _cameraController!.takePicture();
       final file = File(xFile.path);
 
@@ -365,17 +464,61 @@ class _ScannerPageState extends State<ScannerPage>
           final previewSize = _cameraController!.value.previewSize!;
           final double imgW = _imageSize!.width;
           final double imgH = _imageSize!.height;
-          final double prevW = min(previewSize.width, previewSize.height);
-          final double prevH = max(previewSize.width, previewSize.height);
 
-          final double sX = imgW / prevW;
-          final double sY = imgH / prevH;
+          // ─── 座標系統說明 ───
+          //
+          // _trackedBbox 的座標空間取決於使用的偵測引擎：
+          //
+          //  ① TFLite (YOLOv8n-seg):
+          //     _fillInputBuffer 已在採樣時旋轉影像為直向，
+          //     processCameraImage 的輸出座標在「直向 portrait」空間：
+          //       X ∈ [0, portraitW]  (portraitW = sensorH = previewSize.height)
+          //       Y ∈ [0, portraitH]  (portraitH = sensorW = previewSize.width)
+          //
+          //  ② ML Kit:
+          //     ML Kit 接收 InputImageRotation，內部旋轉後辨識，
+          //     回傳座標也在「直向 portrait」空間（同上）。
+          //
+          // 拍攝的照片 (decoded) 經 EXIF 旋轉後也是直向 (imgW < imgH)。
+          //
+          // 因此 portrait → photo 只需要等比縮放，不需要旋轉映射。
 
+          final bool isPortraitImage = imgH > imgW;
+          final bool isSensorLandscape = previewSize.width > previewSize.height;
+
+          if (isPortraitImage && isSensorLandscape) {
+            // bbox 在直向空間 (portraitW × portraitH)
+            // 照片也是直向 (imgW × imgH)
+            // 直接等比縮放
+            final double portraitW = previewSize.height.toDouble(); // sensorH
+            final double portraitH = previewSize.width.toDouble();  // sensorW
+            final double sX = imgW / portraitW;
+            final double sY = imgH / portraitH;
+
+            mappedBbox = Rect.fromLTRB(
+              _trackedBbox!.left * sX,
+              _trackedBbox!.top * sY,
+              _trackedBbox!.right * sX,
+              _trackedBbox!.bottom * sY,
+            );
+          } else {
+            // 無旋轉（iOS 或特殊裝置）：直接縮放
+            final double sX = imgW / previewSize.width;
+            final double sY = imgH / previewSize.height;
+            mappedBbox = Rect.fromLTRB(
+              _trackedBbox!.left * sX,
+              _trackedBbox!.top * sY,
+              _trackedBbox!.right * sX,
+              _trackedBbox!.bottom * sY,
+            );
+          }
+
+          // 確保不超出圖片範圍
           mappedBbox = Rect.fromLTRB(
-            _trackedBbox!.left * sX,
-            _trackedBbox!.top * sY,
-            _trackedBbox!.right * sX,
-            _trackedBbox!.bottom * sY,
+            mappedBbox.left.clamp(0, imgW),
+            mappedBbox.top.clamp(0, imgH),
+            mappedBbox.right.clamp(0, imgW),
+            mappedBbox.bottom.clamp(0, imgH),
           );
         }
 
@@ -470,7 +613,7 @@ class _ScannerPageState extends State<ScannerPage>
         fovDegrees: fovDeg,
         phoneMake: _phoneMake,
         phoneModel: _phoneModel,
-        returnVisualization: false,
+        returnVisualization: true,
       );
 
       if (mounted) {
@@ -543,8 +686,8 @@ class _ScannerPageState extends State<ScannerPage>
         phoneMake: _phoneMake,
         phoneModel: _phoneModel,
         localBbox: localBbox, 
-        returnVisualization: false,
-        returnDetectionVisualization: false,
+        returnVisualization: true,
+        returnDetectionVisualization: true,
       );
 
       if (mounted) {
@@ -702,6 +845,8 @@ class _ScannerPageState extends State<ScannerPage>
                       painter: _LiveBboxPainter(
                         bbox: _trackedBbox!,
                         previewSize: _cameraController!.value.previewSize!,
+                        confidence: _trackedConfidence,
+                        label: _trackedLabel,
                       ),
                     ),
                   ),
@@ -746,14 +891,46 @@ class _ScannerPageState extends State<ScannerPage>
             ),
           ),
 
+        // 橫向警告
+        if (_isLandscapeHeld)
+          Positioned(
+            top: _serviceAvailable ? 60 : 110,
+            left: 16,
+            right: 16,
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade900.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orangeAccent, width: 1.5),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.screen_rotation, color: Colors.orangeAccent, size: 22),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '請將手機直立拿著拍攝\n橫向拍攝會影響測量精度',
+                      style: TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
         // 提示
         Positioned(
           bottom: 100,
           left: 0,
           right: 0,
           child: _buildInstructionChip(
-            _isAutoMode ? '🤖 AI 自動偵測模式' : '📸 手動框選模式',
-            subtitle: _isAutoMode ? '對準樹幹拍照，AI 自動辨識並量測' : '拍照後手動框選樹幹範圍',
+            _isLandscapeHeld
+                ? '⚠️ 請直立手機'
+                : (_isAutoMode ? '🤖 AI 自動偵測模式' : '📸 手動框選模式'),
+            subtitle: _isLandscapeHeld
+                ? '測量功能需要直立拍攝才能正確運作'
+                : (_isAutoMode ? '對準樹幹拍照，AI 自動辨識並量測' : '拍照後手動框選樹幹範圍'),
           ),
         ),
 
@@ -807,14 +984,14 @@ class _ScannerPageState extends State<ScannerPage>
           right: 0,
           child: Center(
             child: GestureDetector(
-              onTap: _serviceAvailable ? _capturePhoto : null,
+              onTap: (_serviceAvailable && !_isLandscapeHeld) ? _capturePhoto : null,
               child: Container(
                 width: 72,
                 height: 72,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: _serviceAvailable ? Colors.white : Colors.grey,
+                    color: (_serviceAvailable && !_isLandscapeHeld) ? Colors.white : Colors.grey,
                     width: 4,
                   ),
                 ),
@@ -822,8 +999,9 @@ class _ScannerPageState extends State<ScannerPage>
                   margin: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: _serviceAvailable ? Colors.white : Colors.grey,
+                    color: (_serviceAvailable && !_isLandscapeHeld) ? Colors.white : Colors.grey,
                   ),
+                ),
                 ),
               ),
             ),
@@ -930,6 +1108,7 @@ class _ScannerPageState extends State<ScannerPage>
                       _capturedImage = null;
                       _currentBbox = null;
                     });
+                    _restartImageStream();
                   },
                   backgroundColor: Colors.grey[700],
                   child: const Icon(Icons.camera_alt, color: Colors.white),
@@ -1015,6 +1194,7 @@ class _ScannerPageState extends State<ScannerPage>
                   }
                   _errorMessage = '已取消分析';
                 });
+                if (_isAutoMode) _restartImageStream();
               },
               icon: const Icon(Icons.cancel_outlined, color: Colors.white54, size: 18),
               label: const Text('取消', style: TextStyle(color: Colors.white54)),
@@ -1228,6 +1408,7 @@ class _ScannerPageState extends State<ScannerPage>
                         _autoResult = null;
                         _isAutoMode = true;
                       });
+                      _restartImageStream();
                     },
                     icon: const Icon(Icons.refresh),
                     label: const Text('重新測量'),
@@ -1362,6 +1543,7 @@ class _ScannerPageState extends State<ScannerPage>
                         _autoResult = null;
                         _isAutoMode = true;
                       });
+                      _restartImageStream();
                     },
                     icon: const Icon(Icons.refresh),
                     label: const Text('重新測量'),
@@ -1811,8 +1993,15 @@ class _BboxOverlayPainter extends CustomPainter {
 class _LiveBboxPainter extends CustomPainter {
   final Rect bbox;
   final Size previewSize;
+  final double? confidence;
+  final String? label;
 
-  _LiveBboxPainter({required this.bbox, required this.previewSize});
+  _LiveBboxPainter({
+    required this.bbox,
+    required this.previewSize,
+    this.confidence,
+    this.label,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -1826,15 +2015,55 @@ class _LiveBboxPainter extends CustomPainter {
       bbox.bottom * scaleY,
     );
 
-    final paint = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.0
-      ..color = Colors.greenAccent;
+    // 半透明填充
+    final fillPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = Colors.greenAccent.withOpacity(0.15);
+    canvas.drawRect(rect, fillPaint);
 
-    canvas.drawRect(rect, paint);
+    // 邊框
+    final borderPaint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 2.5
+      ..color = Colors.greenAccent;
+    canvas.drawRect(rect, borderPaint);
+
+    // 標籤 + 信心度
+    if (confidence != null) {
+      final text = '${label ?? "trunk"} ${(confidence! * 100).toStringAsFixed(0)}%';
+      final tp = TextPainter(
+        text: TextSpan(
+          text: text,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 13,
+            fontWeight: FontWeight.bold,
+            shadows: [
+              Shadow(blurRadius: 3, color: Colors.black),
+            ],
+          ),
+        ),
+        textDirection: TextDirection.ltr,
+      );
+      tp.layout();
+      // 標籤背景
+      final bgRect = Rect.fromLTWH(
+        rect.left,
+        rect.top - tp.height - 4,
+        tp.width + 8,
+        tp.height + 4,
+      );
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(bgRect, const Radius.circular(4)),
+        Paint()..color = Colors.greenAccent.withOpacity(0.85),
+      );
+      tp.paint(canvas, Offset(rect.left + 4, rect.top - tp.height - 2));
+    }
   }
 
   @override
   bool shouldRepaint(covariant _LiveBboxPainter old) =>
-      old.bbox != bbox || old.previewSize != previewSize;
+      old.bbox != bbox ||
+      old.previewSize != previewSize ||
+      old.confidence != confidence;
 }

@@ -48,9 +48,13 @@ class _BleImportPageState extends State<BleImportPage> {
   StreamSubscription? _isScanningSubscription;
   StreamSubscription? _connectionSubscription;
   StreamSubscription? _dataSubscription;
+  StreamSubscription<BluetoothAdapterState>? _adapterStateSubscription;
   Timer? _timeoutTimer;
   Timer? _uiUpdateTimer;
   final ScrollController _logScrollController = ScrollController();
+
+  // 藍牙適配器狀態
+  BluetoothAdapterState _adapterState = BluetoothAdapterState.unknown;
 
   // UI 節流：收集 pending 更新，由 timer 批次 flush
   bool _uiDirty = false;
@@ -59,12 +63,31 @@ class _BleImportPageState extends State<BleImportPage> {
   @override
   void initState() {
     super.initState();
+    _listenAdapterState();
     _checkPermissions();
+  }
+
+  /// 監聽藍牙適配器狀態（開/關/不支援）
+  void _listenAdapterState() {
+    _adapterStateSubscription = FlutterBluePlus.adapterState.listen((state) {
+      if (!mounted) return;
+      setState(() {
+        _adapterState = state;
+      });
+      // 藍牙關閉時，自動停止掃描並清理連接
+      if (state != BluetoothAdapterState.on) {
+        if (_isScanning) _stopScan();
+        if (_connectedDevice != null && !_isTransmissionSuccess) {
+          _handleFailure();
+        }
+      }
+    });
   }
 
   @override
   void dispose() {
     FlutterBluePlus.stopScan();
+    _adapterStateSubscription?.cancel();
     _scanSubscription?.cancel();
     _isScanningSubscription?.cancel();
     _uiUpdateTimer?.cancel();
@@ -661,6 +684,88 @@ class _BleImportPageState extends State<BleImportPage> {
     );
   }
 
+  /// 嘗試開啟藍牙（Android 可直接呼叫系統 API，iOS 需引導使用者）
+  Future<void> _requestTurnOnBluetooth() async {
+    try {
+      await FlutterBluePlus.turnOn();
+    } catch (e) {
+      // iOS 不支援程式開啟藍牙，顯示系統設定引導
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('請開啟藍牙'),
+            content: const Text('請前往系統設定開啟藍牙功能，以連接 VLGEO2 測量儀器。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('了解'),
+              ),
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  openAppSettings();
+                },
+                child: const Text('前往設定'),
+              ),
+            ],
+          ),
+        );
+      }
+    }
+  }
+
+  /// 藍牙關閉/不支援時顯示的全頁面引導
+  Widget _buildBluetoothOffView() {
+    final bool isUnsupported = _adapterState == BluetoothAdapterState.unavailable;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isUnsupported ? Icons.bluetooth_disabled : Icons.bluetooth_disabled,
+              size: 80,
+              color: isUnsupported ? Colors.grey : Colors.orange,
+            ),
+            const SizedBox(height: 24),
+            Text(
+              isUnsupported ? '此裝置不支援藍牙' : '藍牙尚未開啟',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: isUnsupported ? Colors.grey[700] : Colors.orange[800],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              isUnsupported
+                  ? '需要藍牙功能才能連接 VLGEO2 測量儀器。\n請使用支援藍牙的裝置。'
+                  : '請開啟藍牙以連接 VLGEO2 測量儀器並接收數據。',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 15, color: Colors.grey[600]),
+            ),
+            if (!isUnsupported) ...[
+              const SizedBox(height: 32),
+              ElevatedButton.icon(
+                onPressed: _requestTurnOnBluetooth,
+                icon: const Icon(Icons.bluetooth),
+                label: const Text('開啟藍牙'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  textStyle: const TextStyle(fontSize: 16),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -675,7 +780,9 @@ class _BleImportPageState extends State<BleImportPage> {
             )
         ],
       ),
-      body: Column(
+      body: _adapterState != BluetoothAdapterState.on
+          ? _buildBluetoothOffView()
+          : Column(
         children: [
           // 狀態指示條
           if (_isConnecting)

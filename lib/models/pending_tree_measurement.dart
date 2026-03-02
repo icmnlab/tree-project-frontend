@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math' as math;
 
 /// 待測量樹木數據模型
@@ -53,6 +54,13 @@ class PendingTreeMeasurement {
   final String? measurementMethod; // 測量方法
   final String? measurementNotes; // 測量備註
 
+  // 儀器參數 (來自 VLGEO2 擴展欄位)
+  final double? gpsHdop; // GPS HDOP 精度指標
+  final String? deviceSn; // 儀器序號
+  final double? refHeight; // 參考高度 (REFH)
+  final String? utmZone; // UTM 區域
+  final Map<String, dynamic>? rawDataSnapshot; // 原始資料快照
+
   const PendingTreeMeasurement({
     this.id,
     this.sessionId,
@@ -84,6 +92,11 @@ class PendingTreeMeasurement {
     this.measurementConfidence,
     this.measurementMethod,
     this.measurementNotes,
+    this.gpsHdop,
+    this.deviceSn,
+    this.refHeight,
+    this.utmZone,
+    this.rawDataSnapshot,
   });
 
   /// 計算目前使用者到測站的距離 (公尺)
@@ -244,6 +257,15 @@ class PendingTreeMeasurement {
       measurementConfidence: _toDoubleOrNull(json['measurement_confidence']),
       measurementMethod: json['measurement_method']?.toString(),
       measurementNotes: json['measurement_notes']?.toString(),
+      gpsHdop: _toDoubleOrNull(json['gps_hdop']),
+      deviceSn: json['device_sn']?.toString(),
+      refHeight: _toDoubleOrNull(json['ref_height']),
+      utmZone: json['utm_zone']?.toString(),
+      rawDataSnapshot: json['raw_data_snapshot'] is Map
+          ? Map<String, dynamic>.from(json['raw_data_snapshot'])
+          : (json['raw_data_snapshot'] is String
+              ? (jsonDecode(json['raw_data_snapshot']) as Map<String, dynamic>?)
+              : null),
     );
   }
 
@@ -281,6 +303,11 @@ class PendingTreeMeasurement {
         'measurement_confidence': measurementConfidence,
       if (measurementMethod != null) 'measurement_method': measurementMethod,
       if (measurementNotes != null) 'measurement_notes': measurementNotes,
+      if (gpsHdop != null) 'gps_hdop': gpsHdop,
+      if (deviceSn != null) 'device_sn': deviceSn,
+      if (refHeight != null) 'ref_height': refHeight,
+      if (utmZone != null) 'utm_zone': utmZone,
+      if (rawDataSnapshot != null) 'raw_data_snapshot': rawDataSnapshot,
     };
   }
 
@@ -330,6 +357,11 @@ class PendingTreeMeasurement {
     double? measurementConfidence,
     String? measurementMethod,
     String? measurementNotes,
+    double? gpsHdop,
+    String? deviceSn,
+    double? refHeight,
+    String? utmZone,
+    Map<String, dynamic>? rawDataSnapshot,
   }) {
     return PendingTreeMeasurement(
       id: id ?? this.id,
@@ -363,6 +395,11 @@ class PendingTreeMeasurement {
           measurementConfidence ?? this.measurementConfidence,
       measurementMethod: measurementMethod ?? this.measurementMethod,
       measurementNotes: measurementNotes ?? this.measurementNotes,
+      gpsHdop: gpsHdop ?? this.gpsHdop,
+      deviceSn: deviceSn ?? this.deviceSn,
+      refHeight: refHeight ?? this.refHeight,
+      utmZone: utmZone ?? this.utmZone,
+      rawDataSnapshot: rawDataSnapshot ?? this.rawDataSnapshot,
     );
   }
 }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -82,6 +83,9 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
   final TextEditingController _notesController = TextEditingController();
   final List<File> _photos = [];
   
+  // Bug #23: 搜尋防抖
+  Timer? _speciesSearchDebounce;
+  
   @override
   void initState() {
     super.initState();
@@ -152,11 +156,12 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
   }
 
   Future<void> _getCurrentLocation() async {
+    if (!mounted) return;
     setState(() => _isLoading = true);
     try {
       final position = await getHighAccuracyPosition();
       
-      if (position != null) {
+      if (position != null && mounted) {
         setState(() {
           _currentLocation = LatLng(position.latitude, position.longitude);
           _isLoading = false;
@@ -164,13 +169,15 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
         
         // 自動匹配專案
         _autoMatchProject();
-      } else {
+      } else if (mounted) {
         setState(() => _isLoading = false);
       }
       
     } catch (e) {
-      setState(() => _isLoading = false);
-      _showSnackBar('無法獲取位置: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _showSnackBar('無法獲取位置: $e');
+      }
     }
   }
 
@@ -180,23 +187,27 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
     // 確保邊界資料已載入
     await _boundaryService.getAllBoundaries();
     
+    if (!mounted) return;
+    
     final match = _boundaryService.findProjectByCoordinate(
       lat: _currentLocation!.latitude,
       lng: _currentLocation!.longitude,
     );
     
     if (match.matched && match.projectName != null) {
-      setState(() {
-        _selectedProjectName = match.projectName;
-        _projectController.text = match.projectName!;
-        if (match.projectCode != null) {
-          _projectCodeController.text = match.projectCode!;
-        }
-        // 自動載入該專案的區位資訊（如果有）
-        _isLocationValid = true;
-        _locationWarning = null;
-      });
-      _showSnackBar('已自動匹配專案: ${match.projectName}');
+      if (mounted) {
+        setState(() {
+          _selectedProjectName = match.projectName;
+          _projectController.text = match.projectName!;
+          if (match.projectCode != null) {
+            _projectCodeController.text = match.projectCode!;
+          }
+          // 自動載入該專案的區位資訊（如果有）
+          _isLocationValid = true;
+          _locationWarning = null;
+        });
+        _showSnackBar('已自動匹配專案: ${match.projectName}');
+      }
       
       // 嘗試載入該專案的區位資訊
       _updateFilteredProjects(_areaController.text);
@@ -237,7 +248,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
       context: context,
       builder: (context) {
         return StatefulBuilder(
-          builder: (context, setState) {
+          builder: (context, setDialogState) {
             return AlertDialog(
               title: const Text('選擇專案區位'),
               content: SizedBox(
@@ -252,7 +263,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
                         prefixIcon: Icon(Icons.search),
                       ),
                       onChanged: (value) {
-                        setState(() {
+                        setDialogState(() {
                           if (value.isEmpty) {
                             filteredAreas = List.from(_projectAreas);
                           } else {
@@ -278,14 +289,15 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
                             return ListTile(
                               title: Text(area['area_name'] ?? ''),
                               onTap: () {
-                                setState(() {
-                                  _areaController.text = area['area_name'] ?? '';
-                                  _projectController.text = '';
-                                  _projectCodeController.text = '';
-                                  _selectedProjectName = null;
-                                });
+                                // 修改 parent state — 使用 controller (跨 widget 安全)
+                                _areaController.text = area['area_name'] ?? '';
+                                _projectController.text = '';
+                                _projectCodeController.text = '';
+                                _selectedProjectName = null;
                                 _updateFilteredProjects(_areaController.text);
                                 Navigator.pop(context);
+                                // 觸發 parent rebuild
+                                if (mounted) setState(() {});
                               },
                             );
                           },
@@ -464,7 +476,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
             ),
             ElevatedButton(
               onPressed: () async {
-                if (addFormKey.currentState!.validate()) {
+                if (addFormKey.currentState?.validate() == true) {
                   Navigator.pop(context);
                   await _addProject(newProjectNameController.text);
                 }
@@ -536,11 +548,20 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
 
   @override
   void dispose() {
-    // 如果沒有提交且新增了專案區位/專案，執行清理
+    // 如果沒有提交且新增了專案區位/專案，執行清理（fire-and-forget，最佳努力）
     if (!_hasSubmitted && (_createdAreaIds.isNotEmpty || _createdProjectCodes.isNotEmpty)) {
-      _performCleanup();
+      _performCleanup(); // async but intentional fire-and-forget
     }
     
+    // Bug #20: 清理暫存照片
+    for (final photo in _photos) {
+      try {
+        if (photo.existsSync()) photo.deleteSync();
+      } catch (_) {}
+    }
+    _photos.clear();
+    
+    _speciesSearchDebounce?.cancel();
     _projectController.dispose();
     _projectCodeController.dispose();
     _areaController.dispose();
@@ -553,8 +574,10 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
         // 如果新增了專案區位/專案但還沒提交，詢問是否要清理
         if (!_hasSubmitted && (_createdAreaIds.isNotEmpty || _createdProjectCodes.isNotEmpty)) {
           final shouldPop = await showDialog<bool>(
@@ -578,11 +601,11 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
           
           if (shouldPop == true) {
             await _performCleanup();
-            return true;
+            if (mounted) Navigator.of(context).pop();
           }
-          return false;
+        } else {
+          Navigator.of(context).pop();
         }
-        return true;
       },
       child: Scaffold(
       appBar: AppBar(
@@ -710,6 +733,19 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
         _showSnackBar('請輸入胸徑 (DBH)');
         return;
       }
+      final dbhVal = double.tryParse(_dbhController.text);
+      if (dbhVal == null || dbhVal <= 0) {
+        _showSnackBar('請輸入有效的胸徑數值 (> 0)');
+        return;
+      }
+      // Bug #22: 高度選填但如填寫需驗證
+      if (_heightController.text.isNotEmpty) {
+        final heightVal = double.tryParse(_heightController.text);
+        if (heightVal == null || heightVal < 0) {
+          _showSnackBar('請輸入有效的樹高 (≥ 0)');
+          return;
+        }
+      }
     } else if (_currentStep == 3) {
       _submitForm();
       return;
@@ -835,7 +871,13 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.park),
                 ),
-                onChanged: (value) => _searchSpecies(value),
+                onChanged: (value) {
+                  _speciesSearchDebounce?.cancel();
+                  _speciesSearchDebounce = Timer(
+                    const Duration(milliseconds: 300),
+                    () => _searchSpecies(value),
+                  );
+                },
               ),
             ),
             if (_speciesSearchResults.isEmpty && _speciesController.text.isNotEmpty && 
@@ -954,15 +996,20 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
           actions: [
             TextButton(
               child: const Text('取消'),
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () {
+                nameController.dispose();
+                Navigator.of(context).pop();
+              },
             ),
             ElevatedButton(
               child: const Text('新增'),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
               onPressed: () async {
                 if (nameController.text.isNotEmpty) {
+                  final name = nameController.text;
+                  nameController.dispose();
                   Navigator.of(context).pop();
-                  await _addSpecies(nameController.text);
+                  await _addSpecies(name);
                 }
               },
             ),
@@ -1022,7 +1069,8 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
           final bestMatch = results.first;
           final speciesName = bestMatch['species'] != null ? bestMatch['species']['scientificNameWithoutAuthor'] : bestMatch['scientificNameWithoutAuthor'];
           final commonNames = bestMatch['species'] != null ? bestMatch['species']['commonNames'] as List? : bestMatch['commonNames'] as List?;
-          final score = (bestMatch['score'] * 100).toStringAsFixed(1);
+          final rawScore = bestMatch['score'];
+          final score = rawScore != null ? ((rawScore as num).toDouble() * 100).toStringAsFixed(1) : '0.0';
           
           String displayName = speciesName;
           if (commonNames != null && commonNames.isNotEmpty) {
@@ -1036,13 +1084,6 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
           
           if (localMatch != null && localMatch['id'] != null) {
             matchedId = localMatch['id'].toString();
-            if (wasAutoAdded) {
-              _allSpecies.add({
-                'id': localMatch['id'],
-                'name': localMatch['name'] ?? displayName,
-                'scientific_name': localMatch['scientificName'] ?? speciesName,
-              });
-            }
           } else {
             // Fallback: 在本地列表匹配
             try {
@@ -1074,6 +1115,15 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
             _speciesController.text = displayName;
             if (matchedId != null) {
               _speciesId = matchedId;
+            }
+            
+            // 將自動新增的樹種加入列表（在 setState 內，修復 Bug #18）
+            if (wasAutoAdded && localMatch != null) {
+              _allSpecies.add({
+                'id': localMatch['id'],
+                'name': localMatch['name'] ?? displayName,
+                'scientific_name': localMatch['scientificName'] ?? speciesName,
+              });
             }
             
             // [ML Data Collection]
@@ -1184,7 +1234,8 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
           final bestMatch = results.first;
           final speciesName = bestMatch['species'] != null ? bestMatch['species']['scientificNameWithoutAuthor'] : bestMatch['scientificNameWithoutAuthor'];
           final commonNames = bestMatch['species'] != null ? bestMatch['species']['commonNames'] as List? : bestMatch['commonNames'] as List?;
-          final score = (bestMatch['score'] * 100).toStringAsFixed(1);
+          final rawScore = bestMatch['score'];
+          final score = rawScore != null ? ((rawScore as num).toDouble() * 100).toStringAsFixed(1) : '0.0';
           String displayName = speciesName;
           if (commonNames != null && commonNames.isNotEmpty) displayName = commonNames.first;
 
@@ -1195,13 +1246,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
           
           if (localMatch != null && localMatch['id'] != null) {
             matchedId = localMatch['id'].toString();
-            if (wasAutoAdded) {
-              _allSpecies.add({
-                'id': localMatch['id'],
-                'name': localMatch['name'] ?? displayName,
-                'scientific_name': localMatch['scientificName'] ?? speciesName,
-              });
-            }
+            // Bug #19 fix: 將 _allSpecies.add 移入下方 setState
           } else {
             try {
               final match = _allSpecies.firstWhere((s) {
@@ -1228,6 +1273,14 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
           setState(() {
             _speciesController.text = displayName;
             if (matchedId != null) _speciesId = matchedId;
+            // Bug #19 fix: 將自動新增的樹種加入列表（在 setState 內）
+            if (wasAutoAdded && localMatch != null) {
+              _allSpecies.add({
+                'id': localMatch['id'],
+                'name': localMatch['name'] ?? displayName,
+                'scientific_name': localMatch['scientificName'] ?? speciesName,
+              });
+            }
             _autoIdentifiedSpeciesName = displayName;
             _autoIdentifiedSpeciesId = matchedId;
             _aiPredictions = results.cast<Map<String, dynamic>>();
@@ -1330,6 +1383,27 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
   }
 
   Future<void> _submitForm() async {
+    if (_isLoading) return; // 防止重複提交
+    
+    // 驗證必要欄位
+    if (_currentLocation == null) {
+      _showSnackBar('尚未取得 GPS 定位，無法提交');
+      return;
+    }
+    
+    final dbhValue = double.tryParse(_dbhController.text);
+    if (dbhValue == null || dbhValue <= 0) {
+      _showSnackBar('請輸入有效的胸徑 (DBH > 0)');
+      return;
+    }
+    
+    final heightValue = double.tryParse(_heightController.text);
+    // 樹高為選填但不可為負
+    if (_heightController.text.isNotEmpty && (heightValue == null || heightValue < 0)) {
+      _showSnackBar('請輸入有效的樹高');
+      return;
+    }
+    
     setState(() => _isLoading = true);
     
     try {
@@ -1342,11 +1416,11 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
         "species_name": _speciesController.text,
         "species_id": _speciesId, // Optional
         
-        "x_coord": _currentLocation?.longitude ?? 0,
-        "y_coord": _currentLocation?.latitude ?? 0,
+        "x_coord": _currentLocation!.longitude,
+        "y_coord": _currentLocation!.latitude,
         
-        "dbh_cm": double.tryParse(_dbhController.text) ?? 0,
-        "tree_height_m": double.tryParse(_heightController.text) ?? 0,
+        "dbh_cm": dbhValue,
+        "tree_height_m": heightValue ?? 0,
         
         "status": _selectedStatus,
         "note": _notesController.text,

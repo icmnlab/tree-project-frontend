@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
@@ -10,7 +11,6 @@ import '../../services/pure_vision_dbh_service.dart';
 import '../../services/v3/tree_image_service.dart';
 import '../../services/v3/ml_data_collector.dart';
 import '../../services/ar_measurement_service.dart';
-import '../scanner_page.dart';
 import '../scanner_page.dart';
 
 /// V3 整合式樹木測量表單
@@ -81,6 +81,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
   final List<File> _capturedImages = [];
   Map<String, dynamic> _lastExif = {};
   bool _showMultiShotHint = false;
+  Timer? _speciesSearchDebounce;
 
   @override
   void initState() {
@@ -266,6 +267,9 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
   
   @override
   void dispose() {
+    // 同步清理暫存照片（不使用 await，因 dispose 不能 async）
+    _cleanupTempImages();
+    _speciesSearchDebounce?.cancel();
     _dbhController.dispose();
     _heightController.dispose();
     _speciesController.dispose();
@@ -277,6 +281,8 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
     try {
       final File? image = await _imageService.captureImage();
       if (image != null) {
+        // 清理先前的暫存照片（避免累積）
+        _cleanupTempImages();
         setState(() {
           _mainImage = image;
           _capturedImages.clear();
@@ -287,6 +293,17 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       }
     } catch (e) {
       _showError('拍照失敗: $e');
+    }
+  }
+
+  /// 清理先前拍攝的暫存照片，釋放儲存空間
+  void _cleanupTempImages() {
+    for (final img in _capturedImages) {
+      try {
+        if (img.existsSync() && img.path != _mainImage?.path) {
+          img.deleteSync();
+        }
+      } catch (_) {}
     }
   }
 
@@ -358,7 +375,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
   /// 自動 DBH 量測（附帶 EXIF 焦距提取）
   Future<void> _autoMeasureDbh(File image) async {
     try {
-      setState(() => _autoPilotStatus = '深度估計中...');
+      if (mounted) setState(() => _autoPilotStatus = '深度估計中...');
       
       final service = PureVisionDbhService();
       final available = await service.isServiceAvailable();
@@ -381,7 +398,8 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       // Extract EXIF for better focal length accuracy
       final exif = await _extractExif(image);
 
-      if (mounted) setState(() => _autoPilotStatus = '偵測樹幹中...');
+      if (!mounted) return;
+      setState(() => _autoPilotStatus = '偵測樹幹中...');
 
       final result = await service.autoMeasureDbh(
         imageFile: image,
@@ -738,15 +756,20 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
           actions: [
             TextButton(
               child: const Text('取消'),
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () {
+                nameController.dispose();
+                Navigator.of(context).pop();
+              },
             ),
             ElevatedButton(
               child: const Text('新增'),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
               onPressed: () async {
                 if (nameController.text.isNotEmpty) {
+                  final name = nameController.text;
+                  nameController.dispose();
                   Navigator.of(context).pop();
-                  await _addSpecies(nameController.text);
+                  await _addSpecies(name);
                 }
               },
             ),
@@ -774,7 +797,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
         
         setState(() {
           _allSpecies.add(newSpecies);
-          _allSpecies.sort((a, b) => (a['name'] ?? '').compareTo(b['name'] ?? ''));
+          _allSpecies.sort((a, b) => (a['name'] ?? '').toString().compareTo((b['name'] ?? '').toString()));
           
           _speciesController.text = name;
           _speciesId = response['id'].toString();
@@ -799,6 +822,13 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       return;
     }
 
+    // 提前檢查 task.id — 不能為 null 才能更新後端
+    final taskId = widget.task.id;
+    if (taskId == null) {
+      _showError('任務 ID 不存在，無法提交');
+      return;
+    }
+
     setState(() => _isLoading = true);
 
     try {
@@ -810,16 +840,50 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       }
 
       // 1. 儲存照片 (如果有)
-      if (_mainImage != null && widget.task.originalRecordId != null) {
-        await _imageService.saveMeasurementImage(
-          treeId: widget.task.originalRecordId!, // 使用原始記錄ID作為關聯
-          image: _mainImage!,
-          type: TreeImageType.trunk, // 假設為主樹幹照
-          metadata: {
-            'task_id': widget.task.id,
-            'species_confidence': _speciesConfidence,
-          },
-        );
+      // 使用 task.id（DB PK）作為 treeId，確保唯一且能與 pending_tree_measurements 對應
+      final photoTreeId = widget.task.id?.toString();
+      if (_mainImage != null && photoTreeId != null) {
+        // 驗證檔案是否存在（暫存檔可能被 OS 清理）
+        if (await _mainImage!.exists()) {
+          final savedImage = await _imageService.saveMeasurementImage(
+            treeId: photoTreeId,
+            image: _mainImage!,
+            type: TreeImageType.trunk,
+            metadata: {
+              'task_id': widget.task.id,
+              'session_id': widget.task.sessionId,
+              'original_record_id': widget.task.originalRecordId,
+              'species_confidence': _speciesConfidence,
+            },
+          );
+          if (savedImage != null) {
+            // 非同步上傳到後端（不阻塞提交流程）
+            _imageService.syncImage(savedImage).then((ok) {
+              debugPrint('[Photo] 同步到後端: ${ok ? "成功" : "失敗/稍後重試"}');
+            }).catchError((e) {
+              debugPrint('[Photo] 同步異常（將在下次批次時重試）: $e');
+            });
+          } else if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('照片儲存失敗，但測量結果已提交'),
+                backgroundColor: Colors.orange,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        } else {
+          debugPrint('[Photo] 暫存檔已不存在，照片未儲存: ${_mainImage!.path}');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('照片暫存檔已過期，照片未儲存'),
+                backgroundColor: Colors.orange,
+                duration: Duration(seconds: 3),
+              ),
+            );
+          }
+        }
       }
 
       // [ML Data Collection] 收集訓練數據
@@ -862,7 +926,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       ].join(' | ');
       
       await _pendingService.updateMeasurement(
-        id: widget.task.id!,
+        id: taskId,
         dbhCm: dbh,
         confidence: _measurementConfidence ?? 1.0,
         method: _measurementMethod ?? 'manual_input',
@@ -1002,11 +1066,20 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
                   _buildMeasurementForm(),
                   const SizedBox(height: 32),
                   ElevatedButton.icon(
-                    onPressed: _submitForm,
-                    icon: const Icon(Icons.check_circle),
-                    label: const Text('完成並提交'),
+                    onPressed: _isLoading ? null : _submitForm,
+                    icon: _isLoading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Icon(Icons.check_circle),
+                    label: Text(_isLoading ? '提交中...' : '完成並提交'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal,
+                      backgroundColor: _isLoading ? Colors.grey : Colors.teal,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       textStyle: const TextStyle(fontSize: 18),
@@ -1231,7 +1304,13 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
                   border: OutlineInputBorder(),
                   prefixIcon: Icon(Icons.park),
                 ),
-                onChanged: (value) => _searchSpecies(value),
+                onChanged: (value) {
+                  _speciesSearchDebounce?.cancel();
+                  _speciesSearchDebounce = Timer(
+                    const Duration(milliseconds: 300),
+                    () => _searchSpecies(value),
+                  );
+                },
               ),
             ),
             if (_speciesSearchResults.isEmpty && _speciesController.text.isNotEmpty && 

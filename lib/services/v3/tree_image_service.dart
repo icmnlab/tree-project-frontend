@@ -13,6 +13,7 @@
 
 import 'dart:io';
 import 'dart:convert';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:image_picker/image_picker.dart';
@@ -122,6 +123,9 @@ class TreeImageService {
   Map<String, List<TreeImage>> _imageIndex = {};
   bool _isIndexLoaded = false;
 
+  // 同步互斥鎖 — 防止 fire-and-forget syncImage 與 syncAllPendingImages 並行
+  Completer<void>? _syncLock;
+
   /// 取得影像儲存根目錄
   Future<Directory> get _imageRootDir async {
     final appDir = await getApplicationDocumentsDirectory();
@@ -156,6 +160,11 @@ class TreeImageService {
       final file = await _indexFile;
       if (await file.exists()) {
         final content = await file.readAsString();
+        if (content.trim().isEmpty) {
+          _imageIndex = {};
+          _isIndexLoaded = true;
+          return;
+        }
         final Map<String, dynamic> data = json.decode(content);
         
         _imageIndex = {};
@@ -168,13 +177,36 @@ class TreeImageService {
       _isIndexLoaded = true;
       debugPrint('[TreeImageService] 索引已載入，共 ${_imageIndex.length} 棵樹');
     } catch (e) {
-      debugPrint('[TreeImageService] 載入索引失敗: $e');
-      _imageIndex = {};
+      debugPrint('[TreeImageService] 載入索引失敗（可能損毀）: $e');
+      // 嘗試從 .tmp 備份恢復
+      try {
+        final file = await _indexFile;
+        final tmpFile = File('${file.path}.tmp');
+        if (await tmpFile.exists()) {
+          debugPrint('[TreeImageService] 嘗試從暫存檔恢復索引...');
+          final content = await tmpFile.readAsString();
+          final Map<String, dynamic> data = json.decode(content);
+          _imageIndex = {};
+          data.forEach((treeId, images) {
+            _imageIndex[treeId] = (images as List)
+                .map((img) => TreeImage.fromJson(img))
+                .toList();
+          });
+          // 恢復成功，寫回主檔
+          await tmpFile.rename(file.path);
+          debugPrint('[TreeImageService] 從暫存檔恢復成功');
+        } else {
+          _imageIndex = {};
+        }
+      } catch (recoverErr) {
+        debugPrint('[TreeImageService] 暫存檔恢復也失敗: $recoverErr');
+        _imageIndex = {};
+      }
       _isIndexLoaded = true;
     }
   }
 
-  /// 儲存影像索引
+  /// 儲存影像索引（原子寫入：先寫暫存檔再重命名，避免 crash 導致損毀）
   Future<void> _saveIndex() async {
     try {
       final file = await _indexFile;
@@ -184,7 +216,13 @@ class TreeImageService {
         data[treeId] = images.map((img) => img.toJson()).toList();
       });
       
-      await file.writeAsString(json.encode(data));
+      final jsonStr = json.encode(data);
+      
+      // 寫入暫存檔，再原子性重命名
+      final tempFile = File('${file.path}.tmp');
+      await tempFile.writeAsString(jsonStr, flush: true);
+      await tempFile.rename(file.path);
+      
       debugPrint('[TreeImageService] 索引已儲存');
     } catch (e) {
       debugPrint('[TreeImageService] 儲存索引失敗: $e');
@@ -333,7 +371,25 @@ class TreeImageService {
   }
 
   /// 同步照片到雲端（如果後端支援）
+  /// 使用互斥鎖避免與 syncAllPendingImages 並行衝突
   Future<bool> syncImage(TreeImage image) async {
+    // 等待其他同步操作完成
+    while (_syncLock != null) {
+      await _syncLock!.future;
+    }
+    _syncLock = Completer<void>();
+    
+    try {
+      return await _syncImageInternal(image);
+    } finally {
+      final lock = _syncLock;
+      _syncLock = null;
+      lock?.complete();
+    }
+  }
+
+  /// 實際同步邏輯（內部，已持有鎖）
+  Future<bool> _syncImageInternal(TreeImage image) async {
     try {
       final file = File(image.localPath);
       if (!await file.exists()) {
@@ -346,6 +402,7 @@ class TreeImageService {
       final base64Image = base64Encode(bytes);
 
       // 上傳到後端
+      // source 參數告知後端 tree_id 屬於哪張表，避免 SERIAL PK 碰撞誤連
       final response = await ApiService.post('/tree-images/upload', {
         'tree_id': image.treeId,
         'image_id': image.id,
@@ -353,13 +410,18 @@ class TreeImageService {
         'captured_at': image.capturedAt.toIso8601String(),
         'metadata': image.metadata,
         'image_data': base64Image,
+        'source': 'pending',
       });
 
       if (response['success'] == true) {
-        // 更新同步狀態
+        // 更新同步狀態 — 使用 Cloudinary 雲端 URL
+        final cloudUrl = response['remote_path'] as String?;
+        final thumbnailUrl = response['thumbnail_url'] as String?;
+        
         final updatedImage = image.copyWith(
           isSynced: true,
-          remotePath: response['remote_path'] as String?,
+          remotePath: cloudUrl,
+          thumbnailPath: thumbnailUrl ?? image.thumbnailPath,
         );
         
         // 更新索引
@@ -383,27 +445,42 @@ class TreeImageService {
     }
   }
 
-  /// 批次同步所有待同步照片
+  /// 批次同步所有待同步照片（持有互斥鎖，防止重複上傳）
   Future<Map<String, dynamic>> syncAllPendingImages() async {
-    final pendingImages = await getPendingSyncImages();
-    
-    int successCount = 0;
-    int failCount = 0;
-    
-    for (final image in pendingImages) {
-      final success = await syncImage(image);
-      if (success) {
-        successCount++;
-      } else {
-        failCount++;
-      }
+    // 等待其他同步操作完成
+    while (_syncLock != null) {
+      await _syncLock!.future;
     }
+    _syncLock = Completer<void>();
     
-    return {
-      'total': pendingImages.length,
-      'success': successCount,
-      'failed': failCount,
-    };
+    try {
+      final pendingImages = await getPendingSyncImages();
+      
+      int successCount = 0;
+      int failCount = 0;
+      
+      for (final image in pendingImages) {
+        // 跳過已在上次迭代中被標記為已同步的（防止併發 syncImage 先完成的情形）
+        if (image.isSynced) continue;
+        
+        final success = await _syncImageInternal(image);
+        if (success) {
+          successCount++;
+        } else {
+          failCount++;
+        }
+      }
+      
+      return {
+        'total': pendingImages.length,
+        'success': successCount,
+        'failed': failCount,
+      };
+    } finally {
+      final lock = _syncLock;
+      _syncLock = null;
+      lock?.complete();
+    }
   }
 
   /// 計算儲存空間使用量
@@ -510,5 +587,74 @@ class TreeImageService {
       'synced': result['success'],
       'failed': result['failed'],
     };
+  }
+
+  /// 根據 metadata 中的 session_id 取得該 session 的所有照片
+  Future<List<TreeImage>> getImagesBySessionId(String sessionId) async {
+    await _loadIndex();
+    final result = <TreeImage>[];
+    for (final images in _imageIndex.values) {
+      for (final img in images) {
+        if (img.metadata?['session_id'] == sessionId) {
+          result.add(img);
+        }
+      }
+    }
+    return result;
+  }
+
+  /// 清除已成功同步的本地照片檔案，釋放裝置儲存空間
+  /// 只刪除 isSynced == true 的照片
+  Future<Map<String, int>> cleanupSyncedImages() async {
+    await _loadIndex();
+    int cleaned = 0;
+    int failed = 0;
+
+    for (final entry in _imageIndex.entries) {
+      final toRemove = <int>[];
+      for (int i = 0; i < entry.value.length; i++) {
+        final img = entry.value[i];
+        if (!img.isSynced) continue;
+        try {
+          final file = File(img.localPath);
+          if (await file.exists()) {
+            await file.delete();
+          }
+          if (img.thumbnailPath != null) {
+            final thumb = File(img.thumbnailPath!);
+            if (await thumb.exists()) await thumb.delete();
+          }
+          toRemove.add(i);
+          cleaned++;
+        } catch (e) {
+          debugPrint('[TreeImageService] 清理失敗: ${img.id} - $e');
+          failed++;
+        }
+      }
+      // 從後往前移除，避免 index 偏移
+      for (final idx in toRemove.reversed) {
+        entry.value.removeAt(idx);
+      }
+    }
+    // 移除空的 treeId 條目
+    _imageIndex.removeWhere((_, imgs) => imgs.isEmpty);
+    await _saveIndex();
+
+    debugPrint('[TreeImageService] 清理完成: $cleaned 刪除, $failed 失敗');
+    return {'cleaned': cleaned, 'failed': failed};
+  }
+
+  /// 更新本地索引中的 treeId（用於轉移後重新映射）
+  /// oldTreeId: pending_tree_measurements.id
+  /// newTreeId: tree_survey.id 或 system_tree_id
+  Future<void> remapTreeId(String oldTreeId, String newTreeId) async {
+    await _loadIndex();
+    final images = _imageIndex.remove(oldTreeId);
+    if (images == null || images.isEmpty) return;
+
+    final remapped = images.map((img) => img.copyWith(treeId: newTreeId)).toList();
+    _imageIndex[newTreeId] = [...?_imageIndex[newTreeId], ...remapped];
+    await _saveIndex();
+    debugPrint('[TreeImageService] 重新映射 $oldTreeId → $newTreeId (${remapped.length} 張)');
   }
 }

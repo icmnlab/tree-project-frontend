@@ -100,6 +100,11 @@ class PendingMeasurementService {
           status: MeasurementStatus.pending,
           createdAt: DateTime.now(),
           priority: _calculatePriority(horizontalDistance),
+          gpsHdop: (metadata['hdop'] as num?)?.toDouble(),
+          deviceSn: metadata['device_sn'] as String?,
+          refHeight: (metadata['ref_height'] as num?)?.toDouble(),
+          utmZone: metadata['utm_zone'] as String?,
+          rawDataSnapshot: _buildRawDataSnapshot(record, metadata),
         );
         
         if (bleDia != null && bleDia > 0) {
@@ -129,6 +134,23 @@ class PendingMeasurementService {
     if (distance <= 50) return 3;  // 中等
     if (distance <= 100) return 4; // 遠
     return 5;                       // 很遠
+  }
+
+  /// 構建原始數據快照，保留 VLGEO2 所有欄位供日後追溯
+  static Map<String, dynamic> _buildRawDataSnapshot(
+    Map<String, dynamic> record,
+    Map<String, dynamic> metadata,
+  ) {
+    return {
+      'id': record['id'],
+      'type': record['type'],
+      'lat': record['lat'],
+      'lon': record['lon'],
+      'height': record['height'],
+      'dbh': record['dbh'],
+      'hasGps': record['hasGps'],
+      ...metadata,
+    };
   }
   
   /// 上傳待測量記錄到後端
