@@ -71,6 +71,9 @@ class _ScannerPageState extends State<ScannerPage>
   // ML Kit Object Detection
   ObjectDetector? _objectDetector;
   bool _isDetecting = false;
+  int _lastInferenceMs = 0; // 推論節流：上次推論完成時間
+  static const int _inferCooldownMs = 500; // 推論冷卻
+  int _inferCount = 0; // 推論計數器（debug 用）
   Rect? _trackedBbox; // Current tracked bbox from ML Kit
 
   // TFLite YOLOv8n-seg 樹幹偵測
@@ -78,10 +81,14 @@ class _ScannerPageState extends State<ScannerPage>
   bool _useTflite = true; // true = YOLOv8n-seg 樹幹偵測, false = ML Kit 通用偵測
   double? _trackedConfidence; // 最新偵測信心度
   String? _trackedLabel; // 最新偵測標籤
+  double? _trackedMaskPixelWidth; // 方案A: seg mask 計算的像素寬度
 
   // 方向感測器：偵測手機是否橫拿
   StreamSubscription? _accelSubscription;
   bool _isLandscapeHeld = false; // true = 手機橫拿，應提示使用者
+
+  // 即時影像串流是否可用（LEGACY 裝置可能不支援同時 3 個 camera use case）
+  bool _liveDetectionAvailable = true;
   
   @override
   void initState() {
@@ -163,17 +170,24 @@ class _ScannerPageState extends State<ScannerPage>
 
   /// 重新啟動影像串流（從結果頁或 bbox 頁返回相機時呼叫）
   void _restartImageStream() {
+    // 若裝置不支援即時影像串流（如 LEGACY 相機），跳過
+    if (!_liveDetectionAvailable) return;
+
     final ctrl = _cameraController;
     if (ctrl == null || !ctrl.value.isInitialized) {
       // Controller 已經不可用，需要重新初始化
       _initializeCamera();
       return;
     }
+    // 若已在串流中，不重複啟動
+    if (ctrl.value.isStreamingImages) return;
     // 嘗試重啟影像串流
     try {
       final cameras = ctrl.description;
       ctrl.startImageStream((CameraImage image) {
         if (_isDetecting || !_isAutoMode || _step != _PageStep.camera) return;
+        final now = DateTime.now().millisecondsSinceEpoch;
+        if (now - _lastInferenceMs < _inferCooldownMs) return;
         _isDetecting = true;
         _processCameraImage(image, cameras);
       });
@@ -193,18 +207,39 @@ class _ScannerPageState extends State<ScannerPage>
         orElse: () => cameras.first,
       );
 
-      _cameraController = CameraController(
-        camera,
-        ResolutionPreset.high,
-        enableAudio: false,
-        imageFormatGroup: Platform.isAndroid
-            ? ImageFormatGroup.nv21
-            : ImageFormatGroup.bgra8888,
-      );
+      // 嘗試不同解析度初始化（某些裝置在高解析度下可能失敗）
+      CameraController? controller;
+      for (final preset in [ResolutionPreset.high, ResolutionPreset.medium, ResolutionPreset.low]) {
+        try {
+          controller = CameraController(
+            camera,
+            preset,
+            enableAudio: false,
+            imageFormatGroup: Platform.isAndroid
+                ? ImageFormatGroup.nv21
+                : ImageFormatGroup.bgra8888,
+          );
+          await controller.initialize();
+          debugPrint('[ScannerPage] 相機初始化成功 (preset: $preset)');
+          break;
+        } catch (e) {
+          debugPrint('[ScannerPage] 相機初始化失敗 (preset: $preset): $e');
+          try { controller?.dispose(); } catch (_) {}
+          controller = null;
+        }
+      }
 
-      await _cameraController!.initialize();
-      await _cameraController!
-          .lockCaptureOrientation(DeviceOrientation.portraitUp);
+      if (controller == null) {
+        debugPrint('[ScannerPage] 所有解析度都無法初始化相機');
+        return;
+      }
+      _cameraController = controller;
+
+      try {
+        await _cameraController!.lockCaptureOrientation(DeviceOrientation.portraitUp);
+      } catch (e) {
+        debugPrint('[ScannerPage] lockCaptureOrientation 失敗（繼續）: $e');
+      }
 
       // 記錄相機解析度，供除錯使用
       final ps = _cameraController!.value.previewSize;
@@ -213,18 +248,49 @@ class _ScannerPageState extends State<ScannerPage>
             ' (sensor orientation: ${camera.sensorOrientation}°)');
       }
 
-      // 開始影像流進行物件追蹤
-      _cameraController!.startImageStream((CameraImage image) {
-        if (_isDetecting || !_isAutoMode || _step != _PageStep.camera) return;
-        _isDetecting = true;
-        _processCameraImage(image, camera);
-      });
+      // 嘗試開始影像串流進行物件追蹤
+      // LEGACY 裝置可能無法同時使用 Preview + ImageCapture + ImageAnalysis
+      _liveDetectionAvailable = false;
+      try {
+        _cameraController!.startImageStream((CameraImage image) {
+          if (_isDetecting || !_isAutoMode || _step != _PageStep.camera) return;
+          // 推論冷卻：避免在低階 GPU 上連續推論導致 Camera2 pipeline 超時
+          final now = DateTime.now().millisecondsSinceEpoch;
+          if (now - _lastInferenceMs < _inferCooldownMs) return;
+          _isDetecting = true;
+          _processCameraImage(image, camera);
+        });
+        _liveDetectionAvailable = true;
+      } catch (e) {
+        debugPrint('[ScannerPage] startImageStream 失敗 '
+            '(裝置可能不支援同時使用 3 個 camera use case): $e');
+        // CameraX 在 startImageStream 失敗時可能已 unbind 所有 use case，
+        // 需重新初始化 (僅 Preview + ImageCapture)
+        try {
+          await _cameraController!.dispose();
+        } catch (_) {}
+        _cameraController = CameraController(
+          camera,
+          ResolutionPreset.high,
+          enableAudio: false,
+          imageFormatGroup: Platform.isAndroid
+              ? ImageFormatGroup.nv21
+              : ImageFormatGroup.bgra8888,
+        );
+        try {
+          await _cameraController!.initialize();
+          await _cameraController!.lockCaptureOrientation(DeviceOrientation.portraitUp);
+          debugPrint('[ScannerPage] 相機重新初始化成功（無即時偵測模式）');
+        } catch (e2) {
+          debugPrint('[ScannerPage] 相機重新初始化也失敗: $e2');
+        }
+      }
 
       if (mounted) {
         setState(() => _isCameraInitialized = true);
       }
     } catch (e) {
-      debugPrint('相機初始化失敗: $e');
+      debugPrint('相機初始化完全失敗: $e');
     }
   }
 
@@ -253,6 +319,8 @@ class _ScannerPageState extends State<ScannerPage>
     try {
       if (_useTflite) {
         // --- 引擎 B: TFLite (YOLO/MobileNet SSD) ---
+        // 影像串流持續運行；_isDetecting 旗標確保同一時間只有一幀在推論，
+        // 其餘幀在 callback 中直接 return（不累積、不重建 Camera2 session）。
         final sensorOrientation = camera.sensorOrientation;
         var rotationCompensation = 0;
         if (Platform.isAndroid) {
@@ -260,7 +328,15 @@ class _ScannerPageState extends State<ScannerPage>
             if (sensorOrientation == 270) rotationCompensation = 270;
         }
 
+        final sw = Stopwatch()..start();
         final bboxes = _tfliteTracker.processCameraImage(image, rotationCompensation);
+        sw.stop();
+        _inferCount++;
+        // 每 5 次推論記錄一次（含耗時），避免 log spam
+        if (_inferCount <= 3 || _inferCount % 5 == 0) {
+          debugPrint('[ScannerPage] 推論 #$_inferCount  ${sw.elapsedMilliseconds}ms  '
+              'bbox=${bboxes.length}');
+        }
         if (mounted && _step == _PageStep.camera) {
           setState(() {
             if (bboxes.isNotEmpty) {
@@ -271,15 +347,18 @@ class _ScannerPageState extends State<ScannerPage>
                  _trackedBbox = bestBbox.rect;
                  _trackedConfidence = bestBbox.confidence;
                  _trackedLabel = bestBbox.label;
+                 _trackedMaskPixelWidth = bestBbox.maskPixelWidth;
               } else {
                  _trackedBbox = null;
                  _trackedConfidence = null;
                  _trackedLabel = null;
+                 _trackedMaskPixelWidth = null;
               }
             } else {
               _trackedBbox = null;
               _trackedConfidence = null;
               _trackedLabel = null;
+              _trackedMaskPixelWidth = null;
             }
           });
         }
@@ -309,7 +388,9 @@ class _ScannerPageState extends State<ScannerPage>
     } catch (e) {
       debugPrint('物件偵測錯誤: $e');
     } finally {
+      _lastInferenceMs = DateTime.now().millisecondsSinceEpoch;
       _isDetecting = false;
+      // 串流持續運行，下一幀到達時若 cooldown 已過會自動觸發推論
     }
   }
 
@@ -470,6 +551,7 @@ class _ScannerPageState extends State<ScannerPage>
 
       if (_isAutoMode) {
         Rect? mappedBbox;
+        double? previewToPhotoScaleX; // saved bboxSX for mask scaling
         if (_trackedBbox != null && _cameraController != null) {
           final previewSize = _cameraController!.value.previewSize!;
           final double imgW = _imageSize!.width;
@@ -496,32 +578,39 @@ class _ScannerPageState extends State<ScannerPage>
           final bool isPortraitImage = imgH > imgW;
           final bool isSensorLandscape = previewSize.width > previewSize.height;
 
+          // bboxSX: scale factor from portrait-preview-space → photo-space.
+          // Applied to maskPixelWidth too (Bug fix: mask was in preview pixels,
+          // but focal_length_px on the server is in photo/processed-image pixels).
+          double bboxSX;
+
           if (isPortraitImage && isSensorLandscape) {
             // bbox 在直向空間 (portraitW × portraitH)
             // 照片也是直向 (imgW × imgH)
             // 直接等比縮放
             final double portraitW = previewSize.height.toDouble(); // sensorH
             final double portraitH = previewSize.width.toDouble();  // sensorW
-            final double sX = imgW / portraitW;
+            bboxSX = imgW / portraitW;
             final double sY = imgH / portraitH;
 
             mappedBbox = Rect.fromLTRB(
-              _trackedBbox!.left * sX,
+              _trackedBbox!.left * bboxSX,
               _trackedBbox!.top * sY,
-              _trackedBbox!.right * sX,
+              _trackedBbox!.right * bboxSX,
               _trackedBbox!.bottom * sY,
             );
           } else {
             // 無旋轉（iOS 或特殊裝置）：直接縮放
-            final double sX = imgW / previewSize.width;
+            bboxSX = imgW / previewSize.width;
             final double sY = imgH / previewSize.height;
             mappedBbox = Rect.fromLTRB(
-              _trackedBbox!.left * sX,
+              _trackedBbox!.left * bboxSX,
               _trackedBbox!.top * sY,
-              _trackedBbox!.right * sX,
+              _trackedBbox!.right * bboxSX,
               _trackedBbox!.bottom * sY,
             );
           }
+
+          previewToPhotoScaleX = bboxSX; // save for mask scaling below
 
           // 確保不超出圖片範圍
           mappedBbox = Rect.fromLTRB(
@@ -532,7 +621,18 @@ class _ScannerPageState extends State<ScannerPage>
           );
         }
 
-        _submitAutoMeasurement(localBbox: mappedBbox);
+        // Scale maskPixelWidth: preview-portrait pixels → photo pixels.
+        // previewToPhotoScaleX ≈ photo_width / sensor_height (e.g. 3024/720 ≈ 4.2).
+        // The backend will further scale by its resize factor (photo→processed).
+        // Only send mask width when we also have a localBbox (same detection).
+        final double? scaledMaskPxW =
+            (mappedBbox != null && _trackedMaskPixelWidth != null && previewToPhotoScaleX != null)
+                ? _trackedMaskPixelWidth! * previewToPhotoScaleX
+                : null;
+
+        _submitAutoMeasurement(
+            localBbox: mappedBbox,
+            maskPixelWidth: scaledMaskPxW);
       }
     } catch (e) {
       debugPrint('拍照失敗: $e');
@@ -673,7 +773,8 @@ class _ScannerPageState extends State<ScannerPage>
   // 步驟 3b: 自動偵測 + 量測 (Auto Mode)
   // ===========================================================
 
-  Future<void> _submitAutoMeasurement({Rect? localBbox}) async {
+  Future<void> _submitAutoMeasurement(
+      {Rect? localBbox, double? maskPixelWidth}) async {
     if (_capturedImage == null) return;
 
     setState(() {
@@ -695,7 +796,8 @@ class _ScannerPageState extends State<ScannerPage>
         fovDegrees: fovDeg,
         phoneMake: _phoneMake,
         phoneModel: _phoneModel,
-        localBbox: localBbox, 
+        localBbox: localBbox,
+        maskPixelWidth: maskPixelWidth,
         returnVisualization: true,
         returnDetectionVisualization: true,
       );

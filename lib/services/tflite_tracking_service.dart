@@ -10,13 +10,15 @@ import 'package:camera/camera.dart';
 // 資料結構
 // ================================================================
 
-/// 偵測結果 (bbox + confidence + label)
+/// 偵測結果 (bbox + confidence + label + optional seg mask width)
 class TfliteBbox {
   final Rect rect; // 感測器座標空間中的 bounding box
   final double confidence;
   final String label;
+  /// 方案 A: seg mask 測出的精確樹幹像素寬度（portrait 空間，可能為 null）
+  final double? maskPixelWidth;
 
-  TfliteBbox(this.rect, this.confidence, this.label);
+  TfliteBbox(this.rect, this.confidence, this.label, {this.maskPixelWidth});
 }
 
 /// 內部：NMS 前的原始偵測
@@ -25,8 +27,11 @@ class _RawDet {
   final double conf;
   final int cls;
   final String label;
+  /// YOLOv8-seg mask coefficients (32 values); null if not a seg model
+  final List<double>? maskCoeffs;
 
-  _RawDet(this.cx, this.cy, this.w, this.h, this.conf, this.cls, this.label);
+  _RawDet(this.cx, this.cy, this.w, this.h, this.conf, this.cls, this.label,
+      {this.maskCoeffs});
 
   double get x1 => cx - w / 2;
   double get y1 => cy - h / 2;
@@ -58,16 +63,31 @@ class TfliteObjectTrackingService {
   // ── 預配置輸出 buffer (init 時分配，每幀重用) ──
   Object? _detOutputBuf;
   Object? _protoOutputBuf;
-  late Map<int, Object> _outputMap;
+  // NOTE: _outputMap is rebuilt each frame to avoid GPU-delegate reuse issues.
+  Map<int, Object>? _outputMap;
+
+  // 當 GPU delegate 無法處理多輸出時停用 proto output
+  // (某些裝置 GPU delegate 只看到 1 個 output tensor)
+  bool _protoOutputDisabled = false;
+
+  // ── Debug: 第一幀診斷 ──
+  bool _firstFrameDiagDone = false;
+  bool _inferenceSuccessLogged = false;
+  bool _useGpuDelegate = false;  // 記錄是否使用了 GPU delegate
+  Uint8List? _modelBuffer;  // 保留模型 buffer 供 CPU fallback 重載
 
   // ── 預配置輸入 buffer ──
   Float32List? _inputFloat;
   Uint8List? _inputUint8;
 
+  // ── CPU fallback 進行中 ──
+  bool _cpuReloadInProgress = false;
+
   // ── 閾值 ──
-  final double _confThreshold = 0.35;
+  final double _confThreshold = 0.25;
   final double _iouThreshold = 0.45;
   static const int _maxKeep = 5;
+  int _parseCallCount = 0; // debug: 記錄 parseAndNms 呼叫次數
 
   // ── Letterbox 狀態 (每幀更新，用於座標逆映射) ──
   int _lbPadX = 0;
@@ -124,6 +144,7 @@ class TfliteObjectTrackingService {
     );
     debugPrint('[TFLite] 模型大小: ${buffer.length} bytes  '
         'magic: ${buffer.length >= 8 ? String.fromCharCodes(buffer.sublist(4, 8)) : "?"}');
+    _modelBuffer = buffer;  // 保留 buffer 供 CPU fallback 使用
 
     // 動態決定最佳 thread 數（CPU 核心數的一半，至少 1，最多 4）
     final int cpuCores = Platform.numberOfProcessors;
@@ -138,6 +159,7 @@ class TfliteObjectTrackingService {
           ..threads = optimalThreads
           ..addDelegate(gpuDelegate);
         final interp = Interpreter.fromBuffer(buffer, options: options);
+        _useGpuDelegate = true;
         debugPrint('[TFLite] ✓ GPU delegate 載入成功 (threads=$optimalThreads)');
         return interp;
       } catch (e) {
@@ -182,6 +204,27 @@ class TfliteObjectTrackingService {
     _inputSize = inShape[1];
     _inputIsFloat = (inT.type == TensorType.float32);
 
+    // ── DEBUG: 列印所有 tensor 資訊 ──
+    final inputTensors = interp.getInputTensors();
+    debugPrint('[TFLite-DEBUG] ═══ 模型 Tensor 詳情 ═══');
+    debugPrint('[TFLite-DEBUG] GPU delegate: $_useGpuDelegate');
+    debugPrint('[TFLite-DEBUG] Input tensors: ${inputTensors.length}');
+    for (int i = 0; i < inputTensors.length; i++) {
+      final t = inputTensors[i];
+      debugPrint('[TFLite-DEBUG]   input[$i] name="${t.name}" '
+          'shape=${t.shape} type=${t.type}');
+    }
+
+    final outputTensors = interp.getOutputTensors();
+    debugPrint('[TFLite-DEBUG] Output tensors: ${outputTensors.length}');
+    for (int i = 0; i < outputTensors.length; i++) {
+      final t = outputTensors[i];
+      debugPrint('[TFLite-DEBUG]   output[$i] name="${t.name}" '
+          'shape=${t.shape} type=${t.type} '
+          'numElements=${t.numElements()}');
+    }
+    debugPrint('[TFLite-DEBUG] ═══════════════════════');
+
     // ── Output 0: detections ──
     final detShape = interp.getOutputTensor(0).shape;
     // 可能是 [1, 37, 8400] 或 [1, 8400, 37]
@@ -197,10 +240,18 @@ class TfliteObjectTrackingService {
         _detChannels = detShape[2];
         _detTransposed = false;
       }
+    } else {
+      // GPU delegate 可能改變了 output shape
+      debugPrint('[TFLite-DEBUG] ⚠ output[0] shape 不是 3D: $detShape');
+      // 如果 GPU delegate 把多輸出合併成一個，shape 可能是 [1, N]
+      // 其中 N = 37*8400 + 160*160*32 = 310800 + 819200 = 1130000
+      if (detShape.length == 2 && detShape[1] > _numDets * _detChannels) {
+        debugPrint('[TFLite-DEBUG] ⚠ GPU delegate 似乎合併了 output tensors');
+      }
     }
 
     // ── Output 1: prototypes (optional) ──
-    _numOutputs = interp.getOutputTensors().length;
+    _numOutputs = outputTensors.length;
   }
 
   /// 預分配輸入 / 輸出 buffer（避免每幀 GC 壓力）
@@ -229,25 +280,69 @@ class TfliteObjectTrackingService {
 
     _outputMap = {0: _detOutputBuf!};
 
-    // Prototype output (if present)
+    // Prototype output (if present) — use generic shape builder to handle
+    // any dimensionality (onnx2tf FP16 exports may differ from 4D).
     if (_numOutputs > 1) {
       final protoShape = _interpreter!.getOutputTensor(1).shape;
-      if (protoShape.length == 4) {
-        _protoOutputBuf = List.generate(
-            protoShape[0],
-            (_) => List.generate(
-                protoShape[1],
-                (_) => List.generate(
-                    protoShape[2],
-                    (_) => List<double>.filled(protoShape[3], 0))));
-        _outputMap[1] = _protoOutputBuf!;
-      }
+      _protoOutputBuf = _buildOutputBuffer(protoShape);
+      _outputMap![1] = _protoOutputBuf!;
+      debugPrint('[TFLite] proto output shape: $protoShape');
     }
+  }
+
+  /// 遞迴建立任意維度的巢狀 List，用來接收 TFLite 輸出 tensor。
+  static Object _buildOutputBuffer(List<int> shape) {
+    if (shape.isEmpty) return <double>[];
+    if (shape.length == 1) return List<double>.filled(shape[0], 0.0);
+    return List.generate(
+        shape[0], (_) => _buildOutputBuffer(shape.sublist(1)));
   }
 
   void dispose() {
     _interpreter?.close();
     _isInitialized = false;
+  }
+
+  /// GPU delegate 推論失敗時，非同步重載為 CPU-only interpreter。
+  void _scheduleReloadWithCpu() {
+    if (_cpuReloadInProgress) return;
+    _cpuReloadInProgress = true;
+    _reloadWithCpu().then((_) {
+      _cpuReloadInProgress = false;
+    });
+  }
+
+  Future<void> _reloadWithCpu() async {
+    debugPrint('[TFLite-RELOAD] 開始 CPU interpreter 重載...');
+    try {
+      _interpreter?.close();
+      _interpreter = null;
+
+      if (_modelBuffer == null) {
+        debugPrint('[TFLite-RELOAD] ✗ 無 model buffer，無法重載');
+        return;
+      }
+
+      // 動態決定 thread 數
+      final int cpuCores = Platform.numberOfProcessors;
+      final int optimalThreads = (cpuCores ~/ 2).clamp(1, 4);
+
+      final options = InterpreterOptions()..threads = optimalThreads;
+      _interpreter = Interpreter.fromBuffer(_modelBuffer!, options: options);
+      _useGpuDelegate = false;
+
+      // 重新 introspect 和分配 buffer
+      _introspectModel();
+      _allocateBuffers();
+      _firstFrameDiagDone = false;  // 讓 CPU 模式也做一次診斷
+
+      debugPrint('[TFLite-RELOAD] ✓ CPU interpreter 重載成功 '
+          '(threads=$optimalThreads, outputs=$_numOutputs)');
+    } catch (e, st) {
+      debugPrint('[TFLite-RELOAD] ✗ CPU 重載失敗: $e');
+      debugPrint('[TFLite-RELOAD] stack: $st');
+      _isInitialized = false;
+    }
   }
 
   // ================================================================
@@ -266,21 +361,73 @@ class TfliteObjectTrackingService {
   /// 與 _LiveBboxPainter 的 scaleX/scaleY 映射一致。
   List<TfliteBbox> processCameraImage(
       CameraImage image, int rotationDegrees) {
-    if (!_isInitialized || _interpreter == null) return [];
+    if (!_isInitialized || _interpreter == null || _cpuReloadInProgress) return [];
 
     try {
+      // ── DEBUG: 第一幀影像格式診斷（在 _fillInputBuffer 之前）──
+      if (!_firstFrameDiagDone) {
+        debugPrint('[TFLite-DEBUG] ═══ 第一幀影像診斷 ═══');
+        debugPrint('[TFLite-DEBUG] image: ${image.width}x${image.height}  '
+            'format=${image.format.group}  formatRaw=${image.format.raw}  '
+            'planes=${image.planes.length}');
+        for (int i = 0; i < image.planes.length; i++) {
+          final p = image.planes[i];
+          debugPrint('[TFLite-DEBUG]   plane[$i]: '
+              'bytes=${p.bytes.length}  '
+              'bytesPerRow=${p.bytesPerRow}  '
+              'bytesPerPixel=${p.bytesPerPixel}');
+        }
+        debugPrint('[TFLite-DEBUG] rotation=$rotationDegrees  '
+            'inputSize=$_inputSize  inputIsFloat=$_inputIsFloat');
+        debugPrint('[TFLite-DEBUG] _numOutputs=$_numOutputs  '
+            '_protoOutputDisabled=$_protoOutputDisabled  '
+            'GPU=$_useGpuDelegate');
+      }
+
       // 1. 旋轉 + 縮放 → 模型輸入 buffer
       final inputBuf = _fillInputBuffer(image, rotationDegrees);
-      if (inputBuf == null) return [];
+      if (inputBuf == null) {
+        if (!_firstFrameDiagDone) {
+          debugPrint('[TFLite-DEBUG] _fillInputBuffer 返回 null！');
+        }
+        _firstFrameDiagDone = true;
+        return [];
+      }
 
-      // 2. 執行推論
-      _interpreter!.runForMultipleInputs([inputBuf], _outputMap);
+      // 第一幀標記
+      if (!_firstFrameDiagDone) {
+        _firstFrameDiagDone = true;
+      }
 
-      // 3. 解析偵測結果 + NMS
+      // 2. 每幀建立新的 outputs map（避免 GPU delegate reuse 問題）
+      final Map<int, Object> outputsMap = {0: _detOutputBuf!};
+      if (_numOutputs > 1 && _protoOutputBuf != null && !_protoOutputDisabled) {
+        outputsMap[1] = _protoOutputBuf!;
+      }
+
+      // 3. 執行推論
+      try {
+        _interpreter!.runForMultipleInputs([inputBuf], outputsMap);
+        if (!_inferenceSuccessLogged) {
+          _inferenceSuccessLogged = true;
+          debugPrint('[TFLite] ✓ 推論成功 (GPU=$_useGpuDelegate, '
+              'outputs=${outputsMap.keys.toList()})');
+        }
+      } catch (e, st) {
+        debugPrint('[TFLite-FALLBACK] runForMultipleInputs 失敗 '
+            '(keys=${outputsMap.keys.toList()}): $e');
+        debugPrint('[TFLite-FALLBACK] stack: $st');
+        // GPU delegate 無法推論此模型 → 直接 CPU 重載
+        debugPrint('[TFLite-FALLBACK] 排程 CPU interpreter 重載...');
+        _scheduleReloadWithCpu();
+        return [];
+      }
+
+      // 4. 解析偵測結果 + NMS
       final dets = _parseAndNms();
       if (dets.isEmpty) return [];
 
-      // 4. 座標映射：模型空間 (640×640) → 直向 portrait 空間
+      // 5. 座標映射：模型空間 (640×640) → 直向 portrait 空間
       //    需要「去 letterbox」：先減去 padding 偏移，再按比例縮放。
       final double portraitW, portraitH;
       if (rotationDegrees == 90 || rotationDegrees == 270) {
@@ -301,10 +448,22 @@ class TfliteObjectTrackingService {
           ((d.x2 - _lbPadX) * invSX).clamp(0.0, portraitW),
           ((d.y2 - _lbPadY) * invSY).clamp(0.0, portraitH),
         );
-        return TfliteBbox(rect, d.conf, d.label);
+
+        // ── 方案 A: 從 seg mask 計算精確像素寬度 ──
+        // 利用 proto output (output[1]) + detection coefficients 重建 mask
+        // 並在 letterbox 空間取 bbox 中心行的 mask 寬度，再逆映射到 portrait 空間
+        double? maskPixelWidth;
+        if (_numOutputs > 1 && _protoOutputBuf != null && !_protoOutputDisabled) {
+          try {
+            maskPixelWidth = _computeMaskWidth(d, invSX);
+          } catch (_) {}
+        }
+
+        return TfliteBbox(rect, d.conf, d.label, maskPixelWidth: maskPixelWidth);
       }).toList();
-    } catch (e) {
+    } catch (e, st) {
       debugPrint('[TFLite] 推論錯誤: $e');
+      debugPrint('[TFLite] 推論錯誤 stack: $st');
       return [];
     }
   }
@@ -423,9 +582,84 @@ class TfliteObjectTrackingService {
     } else if (image.format.group == ImageFormatGroup.yuv420 ||
         image.format.group == ImageFormatGroup.nv21) {
       // ── Android YUV420 / NV21 ──
+      // camera_android (Camera2) 和 camera_android_camerax 可能產生不同平面佈局：
+      //   - 3 planes: Y / U / V (YUV420) or Y / VU interleaved (NV21)
+      //   - 2 planes: Y / VU interleaved
+      //   - 1 plane:  全部交錯 (YUYV / NV21 packed)
+      final int numPlanes = image.planes.length;
+
+      if (numPlanes < 2) {
+        // 只有 1 個 plane — 嘗試用 NV21 packed 格式解析
+        // NV21 packed: [Y0 Y1 ... Yn V0 U0 V1 U1 ...]
+        final data = image.planes[0].bytes;
+        final yRowStride = image.planes[0].bytesPerRow;
+        final int ySize = srcH * yRowStride;
+
+        int idx = 0;
+        for (int dy = 0; dy < dst; dy++) {
+          for (int dx = 0; dx < dst; dx++) {
+            if (dx < padX || dx >= padX + scaledW ||
+                dy < padY || dy >= padY + scaledH) {
+              if (_inputIsFloat) {
+                _inputFloat![idx++] = padFloat;
+                _inputFloat![idx++] = padFloat;
+                _inputFloat![idx++] = padFloat;
+              } else {
+                _inputUint8![idx++] = padByte;
+                _inputUint8![idx++] = padByte;
+                _inputUint8![idx++] = padByte;
+              }
+              continue;
+            }
+
+            final px = ((dx - padX) * stepPX).toInt();
+            final py = ((dy - padY) * stepPY).toInt();
+
+            int sx, sy;
+            if (rotationDegrees == 90) {
+              sx = py.clamp(0, srcW - 1);
+              sy = (srcH - 1 - px).clamp(0, srcH - 1);
+            } else if (rotationDegrees == 270) {
+              sx = (srcW - 1 - py).clamp(0, srcW - 1);
+              sy = px.clamp(0, srcH - 1);
+            } else {
+              sx = px.clamp(0, srcW - 1);
+              sy = py.clamp(0, srcH - 1);
+            }
+
+            final yIdx = sy * yRowStride + sx;
+            final yVal = (yIdx < data.length) ? data[yIdx] : 128;
+
+            // NV21 VU interleaved after Y plane
+            final uvBase = ySize + (sy >> 1) * yRowStride + (sx & ~1);
+            int vVal = 128, uVal = 128;
+            if (uvBase + 1 < data.length) {
+              vVal = data[uvBase];
+              uVal = data[uvBase + 1];
+            }
+
+            int r = (yVal + 1.402 * (vVal - 128)).round().clamp(0, 255);
+            int g = (yVal - 0.344136 * (uVal - 128) - 0.714136 * (vVal - 128))
+                .round().clamp(0, 255);
+            int b = (yVal + 1.772 * (uVal - 128)).round().clamp(0, 255);
+
+            if (_inputIsFloat) {
+              _inputFloat![idx++] = r / 255.0;
+              _inputFloat![idx++] = g / 255.0;
+              _inputFloat![idx++] = b / 255.0;
+            } else {
+              _inputUint8![idx++] = r;
+              _inputUint8![idx++] = g;
+              _inputUint8![idx++] = b;
+            }
+          }
+        }
+      } else {
+      // 2 or 3 planes — standard YUV420 / NV21 with separate planes
       final yPlane = image.planes[0].bytes;
       final uPlane = image.planes[1].bytes;
-      final vPlane = image.planes[2].bytes;
+      // plane[2] 可能不存在 (NV21 2-plane: Y + VU interleaved)
+      final vPlane = (numPlanes >= 3) ? image.planes[2].bytes : image.planes[1].bytes;
       final yRowStride = image.planes[0].bytesPerRow;
       final uvRowStride = image.planes[1].bytesPerRow;
       final uvPixelStride = image.planes[1].bytesPerPixel ?? 1;
@@ -495,6 +729,7 @@ class TfliteObjectTrackingService {
           }
         }
       }
+      } // end else (2-3 planes)
     } else {
       return null;
     }
@@ -511,6 +746,10 @@ class TfliteObjectTrackingService {
     // ── 1. 解析全部候選框 ──
     final List<_RawDet> candidates = [];
     final det = _detOutputBuf!;
+    _parseCallCount++;
+
+    // Debug: 追蹤 top-5 最高信心度
+    final topConfs = <double>[];
 
     for (int i = 0; i < _numDets; i++) {
       // 讀取 class confidence (取最大 class)
@@ -523,6 +762,16 @@ class TfliteObjectTrackingService {
           bestCls = c;
         }
       }
+
+      // Debug: 記錄 top-5 最高信心度
+      if (topConfs.length < 5) {
+        topConfs.add(bestConf);
+        topConfs.sort((a, b) => b.compareTo(a));
+      } else if (bestConf > topConfs.last) {
+        topConfs[4] = bestConf;
+        topConfs.sort((a, b) => b.compareTo(a));
+      }
+
       if (bestConf < _confThreshold) continue;
 
       final cx = _detVal(det, 0, i);
@@ -537,7 +786,25 @@ class TfliteObjectTrackingService {
               ? _labels![bestCls]
               : 'tree_trunk';
 
-      candidates.add(_RawDet(cx, cy, w, h, bestConf, bestCls, label));
+      // 提取 mask coefficients (channels 4+nc … 4+nc+31)
+      final int numMaskCoeffs = _detChannels - 4 - _numClasses;
+      final bool hasMask = numMaskCoeffs == 32 && _numOutputs > 1;
+      List<double>? coeffs;
+      if (hasMask) {
+        coeffs = List<double>.generate(
+            32, (k) => _detVal(det, 4 + _numClasses + k, i));
+      }
+
+      candidates.add(
+          _RawDet(cx, cy, w, h, bestConf, bestCls, label, maskCoeffs: coeffs));
+    }
+
+    // Debug: 每 5 次推論輸出信心度統計
+    if (_parseCallCount <= 3 || _parseCallCount % 5 == 0) {
+      final topStr = topConfs.map((v) => v.toStringAsFixed(3)).join(', ');
+      debugPrint('[TFLite-PARSE] #$_parseCallCount  '
+          'candidates=${candidates.length}  '
+          'top5conf=[$topStr]');
     }
 
     if (candidates.isEmpty) return [];
@@ -583,5 +850,64 @@ class TfliteObjectTrackingService {
     final inter = (ix2 - ix1) * (iy2 - iy1);
     final union = a.w * a.h + b.w * b.h - inter;
     return union > 0 ? inter / union : 0;
+  }
+
+  // ================================================================
+  // 方案 A: Seg Mask  精確像素寬度
+  // ================================================================
+
+  /// 從 YOLOv8-seg proto output 重建 mask，計算樹幹在 portrait 空間的像素寬度。
+  ///
+  /// YOLOv8-seg output[1] proto shape: [1, Ph, Pw, 32]
+  /// mask = sigmoid(proto[0][y][x]  coeffs) > 0.5    logit > 0
+  ///
+  /// 步驟：
+  ///   1. 取 bbox 中央行在 proto 空間的 y 座標
+  ///   2. 對每個 x 柱做 dot(proto[0][py][px], coeffs)  logit
+  ///   3. logit > 0  trunk pixel
+  ///   4. 計算最長連續 mask 段的寬度，換算回 portrait pixel
+  double? _computeMaskWidth(_RawDet det, double invSX) {
+    if (det.maskCoeffs == null || _protoOutputBuf == null) return null;
+
+    final proto = _protoOutputBuf as List; // [1][Ph][Pw][32]
+    final protoFrame = proto[0] as List;   // [Ph][Pw][32]
+    final int Ph = protoFrame.length;
+    if (Ph == 0) return null;
+    final int Pw = (protoFrame[0] as List).length;
+    if (Pw == 0) return null;
+
+    final coeffs = det.maskCoeffs!;
+
+    // bbox 中央行 (letterbox 空間 0.._inputSize)
+    final double midY = (det.y1 + det.y2) / 2.0;
+    // letterbox  proto 座標
+    final int py = ((midY / _inputSize) * Ph).round().clamp(0, Ph - 1);
+
+    // x 範圍：bbox letterbox x1..x2  proto x
+    final int pxLeft  = ((det.x1 / _inputSize) * Pw).floor().clamp(0, Pw - 1);
+    final int pxRight = ((det.x2 / _inputSize) * Pw).ceil().clamp(0, Pw - 1);
+
+    // dot product; logit > 0  sigmoid > 0.5
+    int maxRun = 0, curRun = 0;
+    for (int px = pxLeft; px <= pxRight; px++) {
+      final protoVec = protoFrame[py][px] as List;
+      double logit = 0.0;
+      for (int k = 0; k < 32; k++) {
+        logit += (protoVec[k] as num).toDouble() * coeffs[k];
+      }
+      if (logit > 0.0) {
+        curRun++;
+        if (curRun > maxRun) maxRun = curRun;
+      } else {
+        curRun = 0;
+      }
+    }
+
+    if (maxRun == 0) return null;
+
+    // proto pixels  letterbox pixels  portrait pixels
+    final double lbPixelWidth = maxRun * (_inputSize / Pw);
+    final double portraitPixelWidth = lbPixelWidth * invSX;
+    return portraitPixelWidth;
   }
 }
