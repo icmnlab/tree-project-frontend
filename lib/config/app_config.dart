@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io'; // Import for exit()
 
-enum Environment { prod, staging }
+enum Environment { selfHosted, prod, staging }
 
 class AppConfig {
   late Environment environment;
@@ -30,10 +30,10 @@ class AppConfig {
   Future<void> initialize() async {
     final prefs = await SharedPreferences.getInstance();
     final String envString =
-        prefs.getString('environment') ?? Environment.prod.toString();
+        prefs.getString('environment') ?? Environment.selfHosted.toString();
     Environment initialEnv = Environment.values.firstWhere(
       (e) => e.toString() == envString,
-      orElse: () => Environment.prod,
+      orElse: () => Environment.selfHosted,
     );
 
     // 載入自架 ML Service URL
@@ -47,6 +47,9 @@ class AppConfig {
   void _setEnvironment(Environment env) {
     environment = env;
     switch (env) {
+      case Environment.selfHosted:
+        baseUrl = 'https://100.118.203.75/api';
+        break;
       case Environment.staging:
         baseUrl = 'https://tree-app-backend-staging.onrender.com/api';
         break;
@@ -109,13 +112,28 @@ class AppConfig {
 
   // Toggle environment and save to shared_preferences
   Future<void> toggleEnvironment(BuildContext context) async {
-    final newEnv = (environment == Environment.prod)
-        ? Environment.staging
-        : Environment.prod;
+    final Environment newEnv;
+    switch (environment) {
+      case Environment.selfHosted:
+        newEnv = Environment.prod;
+        break;
+      case Environment.prod:
+        newEnv = Environment.staging;
+        break;
+      case Environment.staging:
+        newEnv = Environment.selfHosted;
+        break;
+    }
     _setEnvironment(newEnv);
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('environment', newEnv.toString());
+
+    final envName = switch (newEnv) {
+      Environment.selfHosted => '自架伺服器',
+      Environment.prod => '正式版 (Render)',
+      Environment.staging => '測試版 (Render)',
+    };
 
     // Show a dialog to inform the user and prompt for a restart
     await showDialog(
@@ -125,7 +143,7 @@ class AppConfig {
         return AlertDialog(
           title: const Text('環境已切換'),
           content: Text(
-              'API 環境已切換至 ${newEnv == Environment.prod ? "正式版" : "測試版"}。\n\n為了讓所有設定生效，應用程式需要重新啟動。'),
+              'API 環境已切換至 $envName。\n\n為了讓所有設定生效，應用程式需要重新啟動。'),
           actions: <Widget>[
             TextButton(
               child: const Text('立即重啟'),

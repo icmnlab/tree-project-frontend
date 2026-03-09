@@ -909,7 +909,21 @@ class _AdminPageState extends State<AdminPage> {
 
   Widget _buildSystemSettings() {
     final appConfig = AppConfig();
-    bool isStaging = appConfig.environment == Environment.staging;
+    final envName = switch (appConfig.environment) {
+      Environment.selfHosted => '自架伺服器',
+      Environment.prod => '正式版 (Render)',
+      Environment.staging => '測試版 (Render)',
+    };
+    final envIcon = switch (appConfig.environment) {
+      Environment.selfHosted => Icons.dns,
+      Environment.prod => Icons.public,
+      Environment.staging => Icons.developer_mode,
+    };
+    final envColor = switch (appConfig.environment) {
+      Environment.selfHosted => Colors.blue,
+      Environment.prod => Colors.green,
+      Environment.staging => Colors.orange,
+    };
 
     return Center(
       child: Padding(
@@ -927,18 +941,13 @@ class _AdminPageState extends State<AdminPage> {
                   style: Theme.of(context).textTheme.headlineSmall,
                 ),
                 const SizedBox(height: 24),
-                SwitchListTile(
-                  title: const Text('啟用測試環境 (Staging)'),
-                  subtitle: Text(
-                      '當前 API 環境: ${isStaging ? "測試 (Staging)" : "正式 (Production)"}\n${appConfig.baseUrl}'),
-                  value: isStaging,
-                  onChanged: (bool value) {
-                    // The toggle function now handles the dialog and restart
-                    appConfig.toggleEnvironment(context);
-                  },
-                  secondary: Icon(
-                    isStaging ? Icons.developer_mode : Icons.public,
-                    color: isStaging ? Colors.orange : Colors.green,
+                ListTile(
+                  leading: Icon(envIcon, color: envColor),
+                  title: Text('API 環境: $envName'),
+                  subtitle: Text(appConfig.baseUrl),
+                  trailing: ElevatedButton(
+                    onPressed: () => appConfig.toggleEnvironment(context),
+                    child: const Text('切換'),
                   ),
                 ),
                 const SizedBox(height: 16),
