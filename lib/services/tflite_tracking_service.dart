@@ -84,10 +84,33 @@ class TfliteObjectTrackingService {
   bool _cpuReloadInProgress = false;
 
   // ── 閾值 ──
-  final double _confThreshold = 0.25;
+  // 降低至 0.15 以增加偵測率（尤其低階裝置 GPU delegate 精度差異）
+  final double _confThreshold = 0.15;
   final double _iouThreshold = 0.45;
   static const int _maxKeep = 5;
   int _parseCallCount = 0; // debug: 記錄 parseAndNms 呼叫次數
+
+  // ── 座標格式 ──
+  // ultralytics YOLOv8 TFLite 匯出的 cx/cy/w/h 是正規化格式 (0~1)，
+  // 需乘以 _inputSize 才能得到像素座標。
+  // 參考: https://github.com/ultralytics/ultralytics/issues/8218
+  // 保留自動偵測作為安全網（萬一未來匯出格式改變）。
+  bool? _outputNormalized; // null = 尚未偵測, true = 正規化, false = 像素
+
+  // ── 效能追蹤 ──
+  bool _perfChecked = false; // 是否已檢查過首幀效能
+
+  /// 外部（scanner_page）通知首幀推論耗時。
+  /// 如果 GPU delegate 推論 > 3 秒，自動切換至 CPU 以改善後續幀。
+  void notifyInferenceTime(int elapsedMs) {
+    if (_perfChecked) return;
+    _perfChecked = true;
+    if (_useGpuDelegate && elapsedMs > 3000) {
+      debugPrint('[TFLite-PERF] 首幀推論 ${elapsedMs}ms > 3s，'
+          'GPU delegate 太慢，排程 CPU fallback');
+      _scheduleReloadWithCpu();
+    }
+  }
 
   // ── Letterbox 狀態 (每幀更新，用於座標逆映射) ──
   int _lbPadX = 0;
@@ -441,6 +464,15 @@ class TfliteObjectTrackingService {
       final double invSX = portraitW / _lbScaledW;
       final double invSY = portraitH / _lbScaledH;
 
+      // Debug: letterbox 參數 (前 10 次)
+      if (_parseCallCount <= 10) {
+        debugPrint('[TFLite-LB] padX=$_lbPadX padY=$_lbPadY '
+            'scaledW=$_lbScaledW scaledH=$_lbScaledH '
+            'portraitW=${portraitW.toStringAsFixed(0)} '
+            'portraitH=${portraitH.toStringAsFixed(0)} '
+            'invSX=${invSX.toStringAsFixed(3)} invSY=${invSY.toStringAsFixed(3)}');
+      }
+
       return dets.map((d) {
         final rect = Rect.fromLTRB(
           ((d.x1 - _lbPadX) * invSX).clamp(0.0, portraitW),
@@ -748,6 +780,28 @@ class TfliteObjectTrackingService {
     final det = _detOutputBuf!;
     _parseCallCount++;
 
+    // ── 首幀格式偵測：掃描前 100 個 detection 的 cx 值域 ──
+    // ultralytics YOLOv8 TFLite 匯出預設為正規化 (0~1)，
+    // 但保留自動偵測以相容不同版本的匯出格式。
+    if (_outputNormalized == null) {
+      double maxCx = 0;
+      for (int probe = 0; probe < min(100, _numDets); probe++) {
+        final v = _detVal(det, 0, probe).abs();
+        if (v > maxCx) maxCx = v;
+      }
+      // cx 值域判定：如果最大 cx < 2.0 → 正規化；否則像素
+      if (maxCx < 2.0) {
+        _outputNormalized = true;
+        debugPrint('[TFLite-FORMAT] 正規化格式 (0~1)，maxCx=${maxCx.toStringAsFixed(4)}，'
+            '乘以 $_inputSize 轉換');
+      } else {
+        _outputNormalized = false;
+        debugPrint('[TFLite-FORMAT] 像素格式 (0~$_inputSize)，maxCx=${maxCx.toStringAsFixed(1)}');
+      }
+    }
+    final bool norm = (_outputNormalized == true);
+    final double scale = norm ? _inputSize.toDouble() : 1.0;
+
     // Debug: 追蹤 top-5 最高信心度
     final topConfs = <double>[];
 
@@ -774,10 +828,11 @@ class TfliteObjectTrackingService {
 
       if (bestConf < _confThreshold) continue;
 
-      final cx = _detVal(det, 0, i);
-      final cy = _detVal(det, 1, i);
-      final w = _detVal(det, 2, i);
-      final h = _detVal(det, 3, i);
+      // 讀取 bbox 並套用座標格式轉換
+      final double cx = _detVal(det, 0, i) * scale;
+      final double cy = _detVal(det, 1, i) * scale;
+      final double w = _detVal(det, 2, i) * scale;
+      final double h = _detVal(det, 3, i) * scale;
 
       if (w <= 0 || h <= 0) continue;
 
@@ -799,11 +854,12 @@ class TfliteObjectTrackingService {
           _RawDet(cx, cy, w, h, bestConf, bestCls, label, maskCoeffs: coeffs));
     }
 
-    // Debug: 每 5 次推論輸出信心度統計
-    if (_parseCallCount <= 3 || _parseCallCount % 5 == 0) {
-      final topStr = topConfs.map((v) => v.toStringAsFixed(3)).join(', ');
+    // Debug: 前 10 次每次都輸出，之後每 5 次
+    if (_parseCallCount <= 10 || _parseCallCount % 5 == 0) {
+      final topStr = topConfs.map((v) => v.toStringAsFixed(4)).join(', ');
       debugPrint('[TFLite-PARSE] #$_parseCallCount  '
-          'candidates=${candidates.length}  '
+          'candidates=${candidates.length}/$_numDets  '
+          'threshold=$_confThreshold  '
           'top5conf=[$topStr]');
     }
 
@@ -823,6 +879,18 @@ class TfliteObjectTrackingService {
         if (_iou(candidates[i], candidates[j]) > _iouThreshold) {
           suppressed[j] = true;
         }
+      }
+    }
+
+    // Debug: 印出 NMS 後的 raw bbox 值（前 10 次 + 每 5 次）
+    if (kept.isNotEmpty && (_parseCallCount <= 10 || _parseCallCount % 5 == 0)) {
+      for (int k = 0; k < kept.length && k < 3; k++) {
+        final d = kept[k];
+        debugPrint('[TFLite-RAW] kept[$k] '
+            'cx=${d.cx.toStringAsFixed(2)} cy=${d.cy.toStringAsFixed(2)} '
+            'w=${d.w.toStringAsFixed(2)} h=${d.h.toStringAsFixed(2)} '
+            'conf=${d.conf.toStringAsFixed(3)} '
+            'normalized=$_outputNormalized');
       }
     }
 

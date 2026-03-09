@@ -72,7 +72,9 @@ class _ScannerPageState extends State<ScannerPage>
   ObjectDetector? _objectDetector;
   bool _isDetecting = false;
   int _lastInferenceMs = 0; // 推論節流：上次推論完成時間
-  static const int _inferCooldownMs = 500; // 推論冷卻
+  // 自適應推論冷卻：根據實際推論時間動態調整，避免針對特定手機
+  int _inferCooldownMs = 300; // 初始值，會自動調整
+  int _lastInferenceDurationMs = 0; // 用於自適應
   int _inferCount = 0; // 推論計數器（debug 用）
   Rect? _trackedBbox; // Current tracked bbox from ML Kit
 
@@ -332,10 +334,23 @@ class _ScannerPageState extends State<ScannerPage>
         final bboxes = _tfliteTracker.processCameraImage(image, rotationCompensation);
         sw.stop();
         _inferCount++;
-        // 每 5 次推論記錄一次（含耗時），避免 log spam
-        if (_inferCount <= 3 || _inferCount % 5 == 0) {
+        _lastInferenceDurationMs = sw.elapsedMilliseconds;
+
+        // 自適應冷卻：推論時間的 1.5 倍
+        // 快手機 (S22U ~50ms) → 200ms 冷卻，流暢
+        // 慢手機 (Mi A1 ~7000ms) → 5000ms 冷卻，避免 UI 卡死
+        _inferCooldownMs = (sw.elapsedMilliseconds * 1.5).round().clamp(200, 5000);
+
+        // 首幀效能回報：讓 TFLite service 判斷是否需要 GPU→CPU fallback
+        // 注意：不自動切換至 ML Kit，YOLO 座標修復後應能正常運作
+        if (_inferCount == 1 && _useTflite) {
+          _tfliteTracker.notifyInferenceTime(sw.elapsedMilliseconds);
+        }
+
+        // 前 10 次每次都記錄，之後每 10 次
+        if (_inferCount <= 10 || _inferCount % 10 == 0) {
           debugPrint('[ScannerPage] 推論 #$_inferCount  ${sw.elapsedMilliseconds}ms  '
-              'bbox=${bboxes.length}');
+              'bbox=${bboxes.length}  cooldown=${_inferCooldownMs}ms');
         }
         if (mounted && _step == _PageStep.camera) {
           setState(() {
@@ -343,16 +358,29 @@ class _ScannerPageState extends State<ScannerPage>
               bboxes.sort((a, b) => b.confidence.compareTo(a.confidence));
               final bestBbox = bboxes.first;
               
-              if (bestBbox.rect.width > 20 && bestBbox.rect.height > 20) {
+              if (bestBbox.rect.width > 10 && bestBbox.rect.height > 10) {
                  _trackedBbox = bestBbox.rect;
                  _trackedConfidence = bestBbox.confidence;
                  _trackedLabel = bestBbox.label;
                  _trackedMaskPixelWidth = bestBbox.maskPixelWidth;
+                 if (_inferCount <= 5 || _inferCount % 10 == 0) {
+                   debugPrint('[ScannerPage-UI] bbox SET: '
+                       'L=${bestBbox.rect.left.toStringAsFixed(0)} '
+                       'T=${bestBbox.rect.top.toStringAsFixed(0)} '
+                       'R=${bestBbox.rect.right.toStringAsFixed(0)} '
+                       'B=${bestBbox.rect.bottom.toStringAsFixed(0)} '
+                       'W=${bestBbox.rect.width.toStringAsFixed(0)} '
+                       'H=${bestBbox.rect.height.toStringAsFixed(0)} '
+                       'conf=${bestBbox.confidence.toStringAsFixed(3)}');
+                 }
               } else {
                  _trackedBbox = null;
                  _trackedConfidence = null;
                  _trackedLabel = null;
                  _trackedMaskPixelWidth = null;
+                 debugPrint('[ScannerPage-UI] bbox TOO SMALL: '
+                     'W=${bestBbox.rect.width.toStringAsFixed(0)} '
+                     'H=${bestBbox.rect.height.toStringAsFixed(0)}');
               }
             } else {
               _trackedBbox = null;
@@ -364,23 +392,55 @@ class _ScannerPageState extends State<ScannerPage>
         }
       } else {
         // --- 引擎 A: Google ML Kit ---
-        if (_objectDetector == null) return;
+        if (_objectDetector == null) {
+          debugPrint('[ScannerPage-MLKit] objectDetector 為 null，跳過');
+          return;
+        }
         final inputImage = _inputImageFromCameraImage(image, camera);
-        if (inputImage == null) return;
+        if (inputImage == null) {
+          debugPrint('[ScannerPage-MLKit] inputImage 轉換失敗');
+          return;
+        }
 
+        final mlSw = Stopwatch()..start();
         final objects = await _objectDetector!.processImage(inputImage);
+        mlSw.stop();
+        _inferCount++;
+        _lastInferenceDurationMs = mlSw.elapsedMilliseconds;
+        // ML Kit 通常很快 (~30-100ms)，冷卻設短一點
+        _inferCooldownMs = (mlSw.elapsedMilliseconds * 1.5).round().clamp(100, 500);
+
+        // Debug: 前 20 次每次都記錄
+        if (_inferCount <= 20 || _inferCount % 10 == 0) {
+          final labels = objects.map((o) =>
+              '${o.labels.map((l) => '${l.text}(${(l.confidence * 100).toStringAsFixed(0)}%)').join(',')} '
+              'bbox=${o.boundingBox.width.toStringAsFixed(0)}x${o.boundingBox.height.toStringAsFixed(0)}'
+          ).join(' | ');
+          debugPrint('[ScannerPage-MLKit] #$_inferCount ${mlSw.elapsedMilliseconds}ms '
+              'objects=${objects.length} $labels');
+        }
 
         if (mounted && _step == _PageStep.camera) {
           setState(() {
             if (objects.isNotEmpty) {
               final obj = objects.first;
-              if (obj.boundingBox.width > 20 && obj.boundingBox.height > 20) {
+              if (obj.boundingBox.width > 10 && obj.boundingBox.height > 10) {
                 _trackedBbox = obj.boundingBox;
+                _trackedConfidence = obj.labels.isNotEmpty
+                    ? obj.labels.first.confidence.toDouble()
+                    : null;
+                _trackedLabel = obj.labels.isNotEmpty
+                    ? obj.labels.first.text
+                    : null;
               } else {
                 _trackedBbox = null;
+                _trackedConfidence = null;
+                _trackedLabel = null;
               }
             } else {
               _trackedBbox = null;
+              _trackedConfidence = null;
+              _trackedLabel = null;
             }
           });
         }
@@ -953,12 +1013,37 @@ class _ScannerPageState extends State<ScannerPage>
                 if (_trackedBbox != null &&
                     _cameraController!.value.previewSize != null)
                   Positioned.fill(
-                    child: CustomPaint(
-                      painter: _LiveBboxPainter(
-                        bbox: _trackedBbox!,
-                        previewSize: _cameraController!.value.previewSize!,
-                        confidence: _trackedConfidence,
-                        label: _trackedLabel,
+                    child: RepaintBoundary(
+                      child: CustomPaint(
+                        painter: _LiveBboxPainter(
+                          bbox: _trackedBbox!,
+                          previewSize: _cameraController!.value.previewSize!,
+                          confidence: _trackedConfidence,
+                          label: _trackedLabel,
+                        ),
+                      ),
+                    ),
+                  ),
+                // [Debug] 推論狀態指示器（小角標，不影響使用）
+                if (_inferCount > 0)
+                  Positioned(
+                    left: 8,
+                    bottom: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '#$_inferCount ${_lastInferenceDurationMs}ms '
+                        '${_trackedBbox != null ? "✓" : "−"}'
+                        '${_trackedConfidence != null ? " ${(_trackedConfidence! * 100).toStringAsFixed(0)}%" : ""}',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 10,
+                          fontFamily: 'monospace',
+                        ),
                       ),
                     ),
                   ),
@@ -2126,16 +2211,23 @@ class _LiveBboxPainter extends CustomPainter {
       bbox.bottom * scaleY,
     );
 
+    debugPrint('[LiveBbox-PAINT] canvas=${size.width.toStringAsFixed(0)}x${size.height.toStringAsFixed(0)} '
+        'preview=${previewSize.width.toStringAsFixed(0)}x${previewSize.height.toStringAsFixed(0)} '
+        'bbox=L${bbox.left.toStringAsFixed(0)},T${bbox.top.toStringAsFixed(0)},'
+        'R${bbox.right.toStringAsFixed(0)},B${bbox.bottom.toStringAsFixed(0)} '
+        '→ rect=L${rect.left.toStringAsFixed(0)},T${rect.top.toStringAsFixed(0)},'
+        'R${rect.right.toStringAsFixed(0)},B${rect.bottom.toStringAsFixed(0)}');
+
     // 半透明填充
     final fillPaint = Paint()
       ..style = PaintingStyle.fill
-      ..color = Colors.greenAccent.withOpacity(0.15);
+      ..color = Colors.greenAccent.withOpacity(0.25);
     canvas.drawRect(rect, fillPaint);
 
-    // 邊框
+    // 邊框（加粗以確保可見）
     final borderPaint = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5
+      ..strokeWidth = 4.0
       ..color = Colors.greenAccent;
     canvas.drawRect(rect, borderPaint);
 
