@@ -1330,9 +1330,10 @@ class _AdminPageState extends State<AdminPage> {
         headers: {
           'Content-Type': 'application/json',
           'x-admin-token': token,
+          ...ApiService.getAuthHeaders(),
         },
         body: jsonEncode({'scriptName': scriptName}),
-      );
+      ).timeout(const Duration(seconds: 60));
 
       final data = jsonDecode(response.body);
       if (mounted) {

@@ -60,13 +60,15 @@ class ApiService {
     }
   }
 
+  static const _timeout = Duration(seconds: 30);
+
   // HTTP GET 請求
   static Future<Map<String, dynamic>> get(String endpoint) async {
     try {
       final response = await http.get(
         Uri.parse('$baseUrl/$endpoint'),
         headers: _getHeaders(),
-      );
+      ).timeout(_timeout);
 
       return _handleResponse(response);
     } catch (e) {
@@ -85,7 +87,7 @@ class ApiService {
         Uri.parse('$baseUrl/$endpoint'),
         headers: _getHeaders(),
         body: json.encode(data),
-      );
+      ).timeout(_timeout);
 
       return _handleResponse(response);
     } catch (e) {
@@ -103,7 +105,25 @@ class ApiService {
         Uri.parse('$baseUrl/$endpoint'),
         headers: _getHeaders(),
         body: json.encode(data),
-      );
+      ).timeout(_timeout);
+
+      return _handleResponse(response);
+    } catch (e) {
+      return {
+        'success': false,
+        'message': '請求發生錯誤: $e',
+      };
+    }
+  }
+
+  // HTTP PATCH 請求
+  static Future<Map<String, dynamic>> patch(String endpoint, dynamic data) async {
+    try {
+      final response = await http.patch(
+        Uri.parse('$baseUrl/$endpoint'),
+        headers: _getHeaders(),
+        body: json.encode(data),
+      ).timeout(_timeout);
 
       return _handleResponse(response);
     } catch (e) {
@@ -120,7 +140,7 @@ class ApiService {
       final response = await http.delete(
         Uri.parse('$baseUrl/$endpoint'),
         headers: _getHeaders(),
-      );
+      ).timeout(_timeout);
 
       return _handleResponse(response);
     } catch (e) {
@@ -139,7 +159,7 @@ class ApiService {
       await http.post(
         Uri.parse('$baseUrl/project_areas/cleanup'),
         headers: _getHeaders(),
-      );
+      ).timeout(_timeout);
       print('[ApiService] Cleanup process triggered.');
     } catch (e) {
       // 即使失敗了也不需要打斷使用者操作，只需在控制台記錄即可

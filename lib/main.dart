@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'screens/login_page.dart';
@@ -21,10 +22,25 @@ import 'services/carbon_sink_service.dart';
 import 'services/v3/ml_data_sync_service.dart';
 import 'services/network_service.dart';
 
+/// 允許自架伺服器的自簽憑證 (僅限 Tailscale 內網 IP)
+class SelfHostedHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) {
+        // 只信任 Tailscale 內網 IP 的自簽憑證
+        return host == '100.118.203.75';
+      };
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 初始化網路連線監聽
+  // 允許自架伺服器的自簽 TLS 憑證
+  HttpOverrides.global = SelfHostedHttpOverrides();
+
+  // 初始化網路連線監聯
   await NetworkService().init();
 
   // 設置系統 UI 樣式
