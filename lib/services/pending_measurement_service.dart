@@ -50,13 +50,14 @@ class PendingMeasurementService {
         
         if (horizontalDistance <= 0) continue;
 
-        // 無 GPS 的記錄跳過（通常是校準/測試用）
+        // 無 GPS 的記錄跳過（通常是校準/測試用，UTM 補救已在 BLE 解析階段處理）
         if (!hasGps) {
-          debugPrint('━━━ 記錄 ID=${record['id']} — 無 GPS，跳過 ━━━');
+          debugPrint('━━━ 記錄 ID=${record['id']} — 無 GPS 且無 UTM 可補救，跳過 ━━━');
           continue;
         }
 
-        debugPrint('━━━ 記錄 ID=${record['id']} (GPS) ━━━');
+        final gpsSource = metadata['gps_source'] as String? ?? 'gnss';
+        debugPrint('━━━ 記錄 ID=${record['id']} (GPS via $gpsSource) ━━━');
         debugPrint('  測站 GPS: ($lat, $lon)');
         debugPrint('  HD=${horizontalDistance}m  AZ=${azimuth}°  H=${height}m');
         

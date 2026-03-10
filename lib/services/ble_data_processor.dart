@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'ble_field_validator.dart';
+import '../utils/utm_converter.dart';
 
 class BleDataProcessor {
   // CSV 欄位索引 (基於 DATA_2.CSV)
@@ -246,7 +247,7 @@ class BleDataProcessor {
           }
         }
 
-        // [v19.0] UTM 座標 (X, Y, Z, UTM ZONE) - 可作為 GPS 交叉驗證
+        // [v19.0] UTM 座標 (X, Y, Z, UTM ZONE) - 可作為 GPS 交叉驗證或補救
         if (fields.length > _idxUtmZone) {
           String xStr = fields[_idxX].trim();
           String yStr = fields[_idxY].trim();
@@ -256,6 +257,28 @@ class BleDataProcessor {
           if (yStr.isNotEmpty) metadata['utm_y'] = double.tryParse(yStr);
           if (zStr.isNotEmpty) metadata['utm_z'] = double.tryParse(zStr);
           if (utmZone.isNotEmpty) metadata['utm_zone'] = utmZone;
+
+          // [v20.0] UTM → WGS84 GPS 補救：無 GPS 但有 UTM 時自動反算
+          if (!hasGps) {
+            final recovered = UtmConverter.fromVlgeo2Metadata(
+              utmX: metadata['utm_x'] as double?,
+              utmY: metadata['utm_y'] as double?,
+              utmZone: metadata['utm_zone'] as String?,
+            );
+            if (recovered != null) {
+              lat = recovered.lat;
+              lon = recovered.lon;
+              hasGps = true;
+              record['lat'] = lat;
+              record['lon'] = lon;
+              record['hasGps'] = true;
+              metadata['gps_source'] = 'utm_recovery';
+              metadata['raw_lat'] = lat;
+              metadata['raw_lon'] = lon;
+              debugPrint('[UTM RECOVERY] ID=$id: UTM(${metadata['utm_x']}, '
+                  '${metadata['utm_y']}, $utmZone) → GPS($lat, $lon)');
+            }
+          }
         }
 
         if (metadata.isNotEmpty) {
