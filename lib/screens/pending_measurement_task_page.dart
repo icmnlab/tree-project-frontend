@@ -63,7 +63,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   
   // 羅盤平滑化
   double? _smoothedHeading;
-  double? _magneticFieldStrength; // 磁力計強度，用於判斷是否需要校準
+  double? _magneticFieldStrength; // ignore: unused_field — 磁力計強度，用於判斷是否需要校準
   bool _showCalibrationHint = false;
   
   // 動畫
@@ -200,11 +200,11 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
         }
       });
       
-      _accelerometerSubscription = accelerometerEventStream()?.listen((event) {
+      _accelerometerSubscription = accelerometerEventStream().listen((event) {
         _lastAccelEvent = event;
       });
       
-      _magnetometerSubscription = magnetometerEventStream()?.listen((event) {
+      _magnetometerSubscription = magnetometerEventStream().listen((event) {
         if (!mounted) return;
         
         // 磁力計強度檢測（判斷羅盤是否需要校準）

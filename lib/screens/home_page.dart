@@ -73,7 +73,8 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  /// 頁面轉場動畫路由
+  /// 頁面轉場動畫路由 (reserved for future navigation transitions)
+  // ignore: unused_element
   static PageRouteBuilder _buildPageRoute(Widget page) {
     return PageRouteBuilder(
       pageBuilder: (context, animation, secondaryAnimation) => page,

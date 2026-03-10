@@ -48,7 +48,7 @@ class AppConfig {
     environment = env;
     switch (env) {
       case Environment.selfHosted:
-        baseUrl = 'https://100.118.203.75/api';
+        baseUrl = 'https://richardhualienserver.tail124a1b.ts.net/api';
         break;
       case Environment.staging:
         baseUrl = 'https://tree-app-backend-staging.onrender.com/api';

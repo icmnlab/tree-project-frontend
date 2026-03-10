@@ -812,6 +812,7 @@ class _AdminPageState extends State<AdminPage> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildBackupOptions() {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -872,6 +873,7 @@ class _AdminPageState extends State<AdminPage> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildApiKeyOptions() {
     return Center(
       child: Column(
@@ -911,6 +913,7 @@ class _AdminPageState extends State<AdminPage> {
     );
   }
 
+  // ignore: unused_element
   Widget _buildSystemSettings() {
     final appConfig = AppConfig();
     final envName = switch (appConfig.environment) {

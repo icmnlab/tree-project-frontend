@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'tree_input_page_v2.dart';
 import 'screens/ai_chat_page.dart';
 import 'tree_survey_detail_page.dart';
 import 'services/tree_service.dart'; // 引入 TreeService

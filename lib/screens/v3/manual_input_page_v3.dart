@@ -40,7 +40,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
   final TextEditingController _areaController = TextEditingController();
   LatLng? _currentLocation;
   String? _selectedProjectName;
-  List<String> _availableProjects = []; // 從 _filteredProjects 中獲取，用於自動匹配時的顯示
+  List<String> _availableProjects = []; // ignore: unused_field — 從 _filteredProjects 中獲取，用於自動匹配時的顯示
   bool _isLocationValid = false;
   String? _locationWarning;
   
