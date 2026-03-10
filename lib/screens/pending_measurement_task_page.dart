@@ -1497,7 +1497,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
       // 轉移前先同步未上傳的照片到後端
       final imageService = TreeImageService();
       final syncResult = await imageService.syncAllPendingImages();
-      if (syncResult['failed'] > 0 && mounted) {
+      if (((syncResult['failed'] as num?)?.toInt() ?? 0) > 0 && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('照片同步: ${syncResult['success']} 成功, ${syncResult['failed']} 失敗 (將後續重試)'),
@@ -1505,7 +1505,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
             duration: const Duration(seconds: 3),
           ),
         );
-      } else if ((syncResult['success'] as int) > 0 && mounted) {
+      } else if (((syncResult['success'] as num?)?.toInt() ?? 0) > 0 && mounted) {
         debugPrint('[Transfer] 照片同步完成: ${syncResult['success']} 張');
       }
 
