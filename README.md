@@ -1,65 +1,105 @@
-﻿# TreeAI Frontend
+# TreeAI Frontend
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-blue.svg)](https://flutter.dev/)
 [![Dart](https://img.shields.io/badge/Dart-3.x-blue.svg)](https://dart.dev/)
-[![License](https://img.shields.io/badge/License-ISC-yellow.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-智慧樹木管理系統 Flutter 行動應用程式  為臺灣港務公司 (TIPC) 設計。
+> **Sustainable TreeAI** -- Cross-platform mobile application for AI-driven urban tree inventory and carbon analysis.
 
----
-
-## 目錄
-
-- [功能](#功能)
-- [快速開始](#快速開始)
-- [專案結構](#專案結構)
-- [環境設定](#環境設定)
-- [頁面狀態](#頁面狀態)
-- [UI 設計系統](#ui-設計系統)
-- [建置與發布](#建置與發布)
-- [開發指南](#開發指南)
-- [常見問題](#常見問題)
-- [版本紀錄](#版本紀錄)
+A Flutter-based field survey app for Taiwan International Ports Corporation (TIPC). Features on-device ML inference (YOLOv8n-seg), AI-powered natural language data queries, automated species identification, and real-time tree trunk measurement via monocular depth estimation.
 
 ---
 
-## 功能
+## Table of Contents
 
-| 功能 | 說明 |
-|------|------|
-| **樹木調查** | 新增、編輯、查看樹木資料（V2/V3 表單） |
-| **AI 助手** | 自然語言查詢（Text-to-SQL，支援 Markdown） |
-| **地圖顯示** | Google Maps 樹木位置視覺化 + 專案邊界 |
-| **樹種辨識** | Pl@ntNet AI 圖片辨識 |
-| **AR 測量** | DBH 測量（GPS 距離模式 + 1.3m 參考線） |
-| **BLE 匯入** | 藍牙測量設備批次匯入 |
-| **報表匯出** | Excel、PDF 匯出 |
-| **統計分析** | 圖表與數據視覺化 |
-| **QR Code** | 掃描查詢樹木資訊 |
-| **ML 數據同步** | 自動同步訓練數據到後端 |
-
-### 技術特點
-
-- **Riverpod** 狀態管理
-- **JWT** 認證
-- **TFLite** 裝置端 YOLOv8n-seg 即時偵測
-- **三環境切換**  selfHosted / prod / staging
+- [Features](#features)
+- [Screenshots](#screenshots)
+- [Tech Stack](#tech-stack)
+- [Getting Started](#getting-started)
+- [Project Structure](#project-structure)
+- [Configuration](#configuration)
+- [Build & Deploy](#build--deploy)
+- [Testing](#testing)
+- [UI Design System](#ui-design-system)
+- [License](#license)
 
 ---
 
-## 快速開始
+## Features
 
-### 前置需求
+| Feature | Description |
+|---------|-------------|
+| **Tree Survey** | Create, edit, and view tree records with V2/V3 smart forms |
+| **AI Assistant** | Natural language queries (Text-to-SQL) with Markdown rendering |
+| **AI Agent** | Autonomous reasoning agent for carbon analysis and data exploration |
+| **Map View** | Google Maps with tree markers, project boundaries (GeoJSON), and clustering |
+| **Species Identification** | Pl@ntNet AI photo recognition with GBIF/iNaturalist cross-reference |
+| **AR Measurement** | DBH measurement via GPS distance mode + 1.3m breast height reference line |
+| **ML Scanner** | Real-time on-device YOLOv8n-seg tree trunk detection (TFLite) |
+| **BLE Import** | Bluetooth Low Energy batch import from field measurement devices |
+| **Report Export** | Excel and PDF report generation and download |
+| **Statistics** | Interactive charts and data visualization |
+| **QR Code** | Scan to query tree records |
+| **CSV Import** | Batch data import from spreadsheets |
+| **Carbon Display** | Per-tree and per-project carbon sequestration metrics |
+
+### On-Device ML Models
+
+| Model | Task | Format |
+|-------|------|--------|
+| YOLOv8n-seg | Tree trunk segmentation | TFLite (8-bit quantized) |
+| MobileNet SSD | General object detection | TFLite |
+| Object Labeler | Scene classification | TFLite |
+
+### Cloud ML (via Backend Proxy)
+
+| Model | Task | Provider |
+|-------|------|----------|
+| Depth Pro (350M params) | Monocular depth estimation | Self-hosted FastAPI |
+| SAM 2.1 Small (46M params) | Instance segmentation | Self-hosted FastAPI |
+| DeepSeek-V3 / GPT-4.1 / Gemini 2.5 | Text-to-SQL generation | SiliconFlow / OpenAI / Google |
+
+---
+
+## Screenshots
+
+*See the app in action on the [Google Play Store](#) or build from source.*
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| **Framework** | Flutter 3.x, Dart 3.x |
+| **State Management** | Riverpod |
+| **HTTP Client** | Dio |
+| **Maps** | Google Maps Flutter |
+| **ML Inference** | TFLite Flutter, Google ML Kit |
+| **Camera** | camera, image_picker |
+| **Bluetooth** | flutter_blue_plus |
+| **Location** | geolocator, geocoding |
+| **Storage** | shared_preferences, path_provider |
+| **Charts** | fl_chart |
+| **QR Code** | mobile_scanner |
+| **PDF/Excel** | open_file (download & open) |
+| **Auth** | JWT (via backend API) |
+
+---
+
+## Getting Started
+
+### Prerequisites
 
 - Flutter SDK 3.0+
 - Dart SDK 3.0+
-- Android Studio 或 VS Code
+- Android Studio or VS Code with Flutter extension
 
 ```bash
-flutter doctor  # 確認環境
+flutter doctor  # Verify environment
 ```
 
-### 安裝
+### Installation
 
 ```bash
 git clone https://github.com/KyleliuNDHU/tree-project-frontend.git
@@ -68,281 +108,211 @@ flutter pub get
 flutter run
 ```
 
-### 常用指令
+### Common Commands
 
-```bash
-flutter run                    # Debug 模式
-flutter run --release          # Release 模式
-flutter build apk --release   # 建置 APK
-flutter build ios --release    # 建置 iOS
-flutter clean                  # 清理
-flutter test                   # 執行測試
+| Command | Description |
+|---------|-------------|
+| `flutter run` | Debug mode |
+| `flutter run --release` | Release mode |
+| `flutter build apk --release` | Build Android APK |
+| `flutter build appbundle --release` | Build Android App Bundle (Play Store) |
+| `flutter build ios --release` | Build iOS |
+| `flutter clean` | Clean build artifacts |
+| `flutter test` | Run unit tests |
+
+---
+
+## Project Structure
+
+```
+lib/
++-- main.dart                          # App entry point, theme, routing
++-- config/
+|   +-- app_config.dart                # API URL, environment switching
++-- constants/
+|   +-- colors.dart                    # TIPC port-themed color palette
++-- models/                            # Data models
++-- services/                          # API calls & business logic (24 files)
+|   +-- api_service.dart               # HTTP layer (Dio + JWT)
+|   +-- ai_service.dart                # AI chat & agent integration
+|   +-- auth_service.dart              # Authentication
+|   +-- species_identification_service.dart
+|   +-- carbon_sink_service.dart       # Carbon calculation display
+|   +-- carbon_calculation_service.dart
+|   +-- ble_data_processor.dart        # BLE device communication
+|   +-- tflite_tracking_service.dart   # On-device ML inference
+|   +-- pure_vision_dbh_service.dart   # DBH measurement pipeline
+|   +-- tree_image_service.dart        # Photo upload
+|   +-- conflict_resolution_service.dart
+|   +-- ar_measurement_integration_service.dart
+|   +-- project_boundary_service.dart
+|   +-- ml_data_sync_service.dart      # Training data sync
+|   +-- ...
++-- screens/                           # UI pages (17 files)
+|   +-- home_page.dart                 # Navigation hub
+|   +-- login_page.dart                # JWT authentication
+|   +-- ai_chat_page.dart              # AI assistant + agent
+|   +-- scanner_page.dart              # Real-time ML scanning
+|   +-- map_page.dart                  # Google Maps view
+|   +-- tree_survey_page.dart          # Tree list
+|   +-- tree_input_page_v2.dart        # Create tree (smart form)
+|   +-- tree_edit_page_v2.dart         # Edit tree
+|   +-- species_identification_page.dart
+|   +-- statistics_page.dart           # Charts & analytics
+|   +-- csv_import_page.dart           # Batch CSV import
+|   +-- ble_import_page.dart           # BLE device import
+|   +-- manual_input_page.dart         # Manual measurement input
+|   +-- admin_page.dart                # Admin panel
+|   +-- scan_qrcode_page.dart          # QR code scanner
+|   +-- ...
++-- widgets/                           # Reusable components
++-- routes/
+|   +-- auth_guard.dart                # Route protection
++-- themes/                            # Theme configuration
+assets/
++-- ml/                                # TFLite models
+|   +-- tree_trunk_seg.tflite          # YOLOv8n-seg (tree trunk)
+|   +-- mobilenet_ssd.tflite           # General object detection
+|   +-- object_labeler.tflite          # Scene classification
+|   +-- labels.txt                     # Detection labels
++-- tree_species_tw.json               # Taiwan tree species database
++-- icons/                             # App icons
+android/                               # Android platform config
+ios/                                    # iOS platform config
+test/                                   # Unit & widget tests
 ```
 
 ---
 
-## 專案結構
+## Configuration
 
-```
-frontend/
- lib/
-    main.dart                     # 入口 + 主題
-    config/
-       app_config.dart           # API URL、環境設定
-    constants/
-       colors.dart               # TIPC 配色
-    models/                       # 資料模型
-    services/                     # API 呼叫 + 業務邏輯
-       api_service.dart          # HTTP 層
-       species_identification_service.dart
-       carbon_sink_service.dart
-       tflite_tracking_service.dart  # 裝置端 ML
-       pure_vision_dbh_service.dart  # DBH 測量
-       v3/                       # V3 進階服務
-           tree_image_service.dart
-           conflict_resolution_service.dart
-           ar_measurement_integration_service.dart
-           project_boundary_service.dart
-           ml_data_sync_service.dart
-    screens/                      # 頁面
-       home_page.dart
-       login_page.dart
-       scanner_page.dart         # 即時掃描
-       species_identification_page.dart
-       v3/                       # V3 測量頁面
-    widgets/                      # 可重用元件
-    routes/                       # 路由
-       auth_guard.dart
-    themes/                       # 主題
-    ai_assistant_page.dart        # AI 聊天
-    map_page.dart                 # 地圖
-    tree_survey_page.dart         # 調查列表
-    tree_input_page_v2.dart       # 新增 (V2)
-    tree_edit_page_v2.dart        # 編輯
-    statistics_page.dart          # 統計
-    admin_page.dart              # 管理後台
-    scan_qrcode_page.dart        # QR Code
- assets/                           # 靜態資源
- android/                          # Android 設定
- ios/                              # iOS 設定
- test/                             # 測試（251 案例）
- pubspec.yaml                      # 依賴管理
-```
+### API Environment
 
----
+Configured in `lib/config/app_config.dart`. Supports three environments:
 
-## 環境設定
+| Environment | Description |
+|-------------|-------------|
+| **selfHosted** | Self-hosted Ubuntu server (default, requires Tailscale VPN) |
+| **prod** | Cloud production (Render) |
+| **staging** | Cloud staging (Render) |
 
-### API 環境切換
-
-設定位於 `lib/config/app_config.dart`。支援三種環境：
-
-| 環境 | URL | 說明 |
-|------|-----|------|
-| **selfHosted** | `https://100.118.203.75/api` | 自架伺服器（預設） |
-| **prod** | `https://tree-app-backend-prod.onrender.com/api` | Render 正式版 |
-| **staging** | `https://tree-app-backend-staging.onrender.com/api` | Render 測試版 |
-
-在 Admin 頁面可切換環境（需重啟 App）。
+Environment can be switched from the Admin page (requires app restart).
 
 ### Google Maps API Key
 
-**Android**  `android/gradle.properties`：
+**Android:** Add to `android/gradle.properties`:
 ```properties
 MAPS_API_KEY=your_api_key
 ```
 
-**iOS**  `ios/Runner/AppDelegate.swift`：
+**iOS:** Add to `ios/Runner/AppDelegate.swift`:
 ```swift
 GMSServices.provideAPIKey("your_api_key")
 ```
 
-> `gradle.properties` 和 `key.properties` 已加入 `.gitignore`，不會提交到 Git。
+> Both `gradle.properties` and `key.properties` are in `.gitignore` and not committed to version control.
 
 ---
 
-## 頁面狀態
+## Build & Deploy
 
->  使用中 |  較少使用 |  已棄用
-
-| 頁面 | 功能 | 狀態 |
-|------|------|------|
-| `home_page.dart` | 首頁導航 |  |
-| `ai_assistant_page.dart` | AI 聊天 (Text-to-SQL) |  |
-| `map_page.dart` | 地圖 + 邊界 |  |
-| `tree_survey_page.dart` | 調查列表 |  |
-| `tree_input_page_v2.dart` | 新增樹木 (V2) |  |
-| `tree_edit_page_v2.dart` | 編輯樹木 |  |
-| `statistics_page.dart` | 統計圖表 |  |
-| `species_identification_page.dart` | 樹種辨識 |  |
-| `scanner_page.dart` | 即時 ML 掃描 |  |
-| `admin_page.dart` | 管理後台 |  |
-| `scan_qrcode_page.dart` | QR Code |  |
-| `tree_input_page.dart` | 新增 (V1) |  |
-
----
-
-## UI 設計系統
-
-TIPC 港務風格 + 生態綠色主題（v16.0.0 建立）。
-
-### 配色
-
-```dart
-// lib/constants/colors.dart
-portBlue:       #0D47A1   // 主色 - 港務深藍
-oceanCyan:      #00BCD4   // 海洋青
-forestGreen:    #2E7D32   // 森林綠
-leafGreen:      #43A047   // 葉綠
-warmOrange:     #FF7043   // 警告橘
-sunYellow:      #FFCA28   // 陽光黃
-```
-
-### 設計原則
-- 極簡現代化、Material 3 + Google Fonts
-- 圓角 + 漸層 + 磨砂玻璃效果
-- 統一使用 `AppColors` 配色常數
-
----
-
-## 建置與發布
-
-### Android
+### Android APK
 
 ```bash
-flutter build apk --release
-#  build/app/outputs/flutter-apk/app-release.apk
+# Debug APK (for testing)
+flutter build apk --debug
 
-flutter build appbundle --release    # Play Store
-#  build/app/outputs/bundle/release/app-release.aab
+# Release APK (for distribution)
+flutter build apk --release
+# Output: build/app/outputs/flutter-apk/app-release.apk
+
+# App Bundle (for Google Play Store)
+flutter build appbundle --release
+# Output: build/app/outputs/bundle/release/app-release.aab
 ```
 
 ### iOS
 
 ```bash
 flutter build ios --release
-# 在 Xcode 中 Archive  上傳 App Store Connect
+# Open in Xcode -> Archive -> Upload to App Store Connect
 ```
 
-### 簽名設定
+### Signing (Android)
 
-1. 產生 keystore：
+1. Generate keystore:
 ```bash
 keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
 ```
 
-2. 建立 `android/key.properties`（不提交到 Git）
+2. Create `android/key.properties` (not committed to Git):
+```properties
+storePassword=<password>
+keyPassword=<password>
+keyAlias=upload
+storeFile=<path>/upload-keystore.jks
+```
+
+### Android Configuration
+
+| Setting | Value |
+|---------|-------|
+| Application ID | `com.sustainable.treeai` |
+| Min SDK | 24 (Android 7.0) |
+| Target SDK | 35 (Android 15) |
+| NDK | 27.0 |
+| Java | 11 |
 
 ---
 
-## 開發指南
-
-### 新增頁面
-
-```dart
-// lib/screens/example_page.dart
-import 'package:flutter/material.dart';
-import '../constants/colors.dart';
-
-class ExamplePage extends StatelessWidget {
-  const ExamplePage({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('範例')),
-      body: Center(
-        child: Text('Hello', style: TextStyle(color: AppColors.primary)),
-      ),
-    );
-  }
-}
-```
-
-### API 呼叫
-
-```dart
-import 'package:dio/dio.dart';
-import '../config/app_config.dart';
-
-final dio = Dio(BaseOptions(
-  baseUrl: AppConfig.baseUrl,
-  headers: {'Authorization': 'Bearer $token'},
-));
-
-final response = await dio.post('/chat', data: {
-  'message': '列出所有樹木',
-});
-```
-
-### 狀態管理
-
-使用 Riverpod：
-
-```dart
-final counterProvider = StateProvider<int>((ref) => 0);
-
-class MyWidget extends ConsumerWidget {
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final count = ref.watch(counterProvider);
-    return Text('Count: $count');
-  }
-}
-```
-
----
-
-## 常見問題
-
-| 問題 | 解法 |
-|------|------|
-| `flutter pub get` 失敗 | `flutter clean && flutter pub cache repair && flutter pub get` |
-| Android 建置失敗 | `cd android && ./gradlew clean` |
-| iOS 建置失敗 | `cd ios && rm -rf Pods Podfile.lock && pod install --repo-update` |
-| Google Maps 不顯示 | 確認 API Key 已設定且啟用 Maps SDK |
-| 找不到 key.properties | `android/key.properties` 需手動建立（不在 Git 中） |
-
----
-
-## 測試
+## Testing
 
 ```bash
-flutter test               # 所有測試
+flutter test               # Run all tests
+flutter test test/v3/       # Run V3 test suite only
 ```
 
-251 個測試案例（V3 測試套件），涵蓋：
-- AR DBH 測量整合、BLE 模擬
-- 資料庫正規化、衝突解決
-- 專案邊界、ID 生成、端到端工作流程
+Test coverage includes:
+- AR DBH measurement integration
+- BLE device simulation and data processing
+- Database normalization validation
+- Conflict resolution logic
+- Project boundary calculations
+- ID generation and uniqueness
+- End-to-end survey workflows
 
 ---
 
-## 版本紀錄
+## UI Design System
 
-完整版本紀錄請見 [CHANGELOG.md](CHANGELOG.md)。
+TIPC port-themed design with ecological green accents.
 
-### 主要版本
+### Color Palette
 
-| 版本 | 日期 | 重點 |
-|------|------|------|
-| 18.5 | 2026-03-10 | 自架伺服器三環境切換 |
-| 18.4 | 2026-02-22 | ML 精度升級 + App 穩定性 |
-| 18.3 | 2025-12-14 | 專案管理清理機制 + UX 改進 |
-| 18.2 | 2025-12-14 | AR GPS 距離模式 + 安全改進 |
-| 18.0 | 2025-12-03 | V3 測試套件 + ML 同步 |
-| 17.0 | 2025-12-03 | 專案邊界 + 智慧匹配 |
-| 16.0 | 2025-12-02 | UI 全面翻新（TIPC 風格） |
-| 15.0 | 2025-12-02 | 樹種辨識 + AI 聊天 |
+| Color | Hex | Usage |
+|-------|-----|-------|
+| Port Blue | `#0D47A1` | Primary -- navigation, headers |
+| Ocean Cyan | `#00BCD4` | Secondary -- accents, links |
+| Forest Green | `#2E7D32` | Ecological -- carbon, trees |
+| Leaf Green | `#43A047` | Success states |
+| Warm Orange | `#FF7043` | Warnings, alerts |
+| Sun Yellow | `#FFCA28` | Highlights |
+
+### Design Principles
+
+- Material 3 with Google Fonts (Noto Sans TC)
+- Rounded corners, gradients, frosted glass effects
+- Consistent use of `AppColors` constants throughout
+- Responsive layout for phones and tablets
+- Dark mode support
 
 ---
 
-## 授權
+## License
 
-ISC License
+[MIT License](LICENSE)
 
-## 聯絡
+## Related
 
-- GitHub: [@KyleliuNDHU](https://github.com/KyleliuNDHU)
-- Frontend: [tree-project-frontend](https://github.com/KyleliuNDHU/tree-project-frontend)
-- Backend: [tree-project-backend](https://github.com/KyleliuNDHU/tree-project-backend)
+- **Backend:** [tree-project-backend](https://github.com/KyleliuNDHU/tree-project-backend) -- Node.js REST API + ML service
+- **Author:** [@KyleliuNDHU](https://github.com/KyleliuNDHU) -- National Dong Hwa University

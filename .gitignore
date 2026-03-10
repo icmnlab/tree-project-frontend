@@ -57,3 +57,7 @@ android/gradle.properties
 # iOS Secrets & Configs
 ios/Flutter/Generated.xcconfig
 ios/Flutter/flutter_export_environment.sh
+
+# API keys and backend data
+**/apiKeys.json
+tree-project-backend/
