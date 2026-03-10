@@ -360,13 +360,34 @@ class BleDataProcessor {
           merged.add(group.last);
         }
       } else {
-        // 1P 或 HD/AZ 不同：取最後一個 SEQ
+        // 1P 或 HD/AZ 不同：取最後一個 SEQ，但保留所有 SEQ 資料
         group.sort((a, b) =>
             ((a['seq'] as int?) ?? 1).compareTo((b['seq'] as int?) ?? 1));
-        final last = group.last;
+        final last = Map<String, dynamic>.from(group.last);
+
+        // 保留所有 SEQ 的完整資料到 metadata，避免資料遺失
+        final lastMeta = Map<String, dynamic>.from(
+            last['metadata'] as Map<String, dynamic>? ?? {});
+        lastMeta['merge_method'] = '1P_keep_last';
+        lastMeta['total_seq_count'] = group.length;
+        lastMeta['all_seq_data'] = group.map((r) {
+          final m = r['metadata'] as Map<String, dynamic>? ?? {};
+          return {
+            'seq': r['seq'],
+            'lat': r['lat'],
+            'lon': r['lon'],
+            'height': r['height'],
+            'horizontal_distance': m['horizontal_distance'],
+            'slope_distance': m['slope_distance'],
+            'azimuth': m['azimuth'],
+            'pitch': m['pitch'],
+            'altitude': m['altitude'],
+          };
+        }).toList();
+        last['metadata'] = lastMeta;
 
         debugPrint('[SEQ MERGE] ${type} ID=${entry.key}: '
-            '${group.length} SEQ, keep last SEQ=${last['seq']}');
+            '${group.length} SEQ, keep last SEQ=${last['seq']} (all SEQ preserved in metadata)');
         merged.add(last);
       }
     }

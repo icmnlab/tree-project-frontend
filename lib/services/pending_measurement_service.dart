@@ -49,33 +49,32 @@ class PendingMeasurementService {
         final String? dbhSource = metadata['dbh_source'] as String?;
         
         if (horizontalDistance <= 0) continue;
-        
-        debugPrint('━━━ 記錄 ID=${record['id']} (${hasGps ? "GPS" : "無GPS"}) ━━━');
+
+        // 無 GPS 的記錄跳過（通常是校準/測試用）
+        if (!hasGps) {
+          debugPrint('━━━ 記錄 ID=${record['id']} — 無 GPS，跳過 ━━━');
+          continue;
+        }
+
+        debugPrint('━━━ 記錄 ID=${record['id']} (GPS) ━━━');
         debugPrint('  測站 GPS: ($lat, $lon)');
         debugPrint('  HD=${horizontalDistance}m  AZ=${azimuth}°  H=${height}m');
         
-        double treeLat = 0;
-        double treeLon = 0;
-        
-        if (hasGps) {
-          final treePos = _stationService.calculateTreePosition(
-            stationLat: lat,
-            stationLng: lon,
-            distanceMeters: horizontalDistance,
-            azimuthDegrees: azimuth,
-          );
-          treeLat = treePos.latitude;
-          treeLon = treePos.longitude;
-          
-          final verifyDist = _stationService.getDistance(
-            lat1: lat, lon1: lon,
-            lat2: treeLat, lon2: treeLon,
-          );
-          debugPrint('  計算樹位: (${treeLat.toStringAsFixed(7)}, ${treeLon.toStringAsFixed(7)})');
-          debugPrint('  驗證距離: ${verifyDist.toStringAsFixed(2)}m (應≈${horizontalDistance}m)');
-        } else {
-          debugPrint('  無 GPS，跳過位置推算');
-        }
+        final treePos = _stationService.calculateTreePosition(
+          stationLat: lat,
+          stationLng: lon,
+          distanceMeters: horizontalDistance,
+          azimuthDegrees: azimuth,
+        );
+        final double treeLat = treePos.latitude;
+        final double treeLon = treePos.longitude;
+
+        final verifyDist = _stationService.getDistance(
+          lat1: lat, lon1: lon,
+          lat2: treeLat, lon2: treeLon,
+        );
+        debugPrint('  計算樹位: (${treeLat.toStringAsFixed(7)}, ${treeLon.toStringAsFixed(7)})');
+        debugPrint('  驗證距離: ${verifyDist.toStringAsFixed(2)}m (應≈${horizontalDistance}m)');
         
         final pending = PendingTreeMeasurement(
           sessionId: sessionId,
@@ -360,39 +359,33 @@ class PendingMeasurementService {
     }
   }
   
-  /// 更新整個 session 的專案資訊
+  /// 更新整個 session 的專案資訊（單次請求，取代 N+1 逐筆 PATCH）
   Future<void> updateSessionProject({
     required String sessionId,
     required String projectArea,
     String? projectCode,
     String? projectName,
   }) async {
-    final trees = await getPendingTrees(sessionId: sessionId);
-    final errors = <String>[];
-    for (final tree in trees) {
-      if (tree.id == null) continue;
-      try {
-        final response = await http.patch(
-          Uri.parse('$_baseUrl/api/pending-measurements/${tree.id}'),
-          headers: {
-            'Content-Type': 'application/json',
-            ...ApiService.getAuthHeaders(),
-          },
-          body: jsonEncode({
-            'project_area': projectArea,
-            'project_code': projectCode,
-            'project_name': projectName,
-          }),
-        ).timeout(_timeout);
-        if (response.statusCode != 200) {
-          errors.add('ID ${tree.id}: HTTP ${response.statusCode}');
-        }
-      } catch (e) {
-        errors.add('ID ${tree.id}: $e');
+    try {
+      final response = await http.patch(
+        Uri.parse('$_baseUrl/api/pending-measurements/session/$sessionId/project'),
+        headers: {
+          'Content-Type': 'application/json',
+          ...ApiService.getAuthHeaders(),
+        },
+        body: jsonEncode({
+          'project_area': projectArea,
+          'project_code': projectCode,
+          'project_name': projectName,
+        }),
+      ).timeout(_timeout);
+
+      if (response.statusCode != 200) {
+        throw Exception('批量更新專案資訊失敗: ${response.statusCode}');
       }
-    }
-    if (errors.isNotEmpty) {
-      throw Exception('部分更新失敗: ${errors.join(", ")}');
+    } catch (e) {
+      debugPrint('批量更新專案資訊失敗: $e');
+      rethrow;
     }
   }
 
