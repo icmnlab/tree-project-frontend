@@ -16,6 +16,7 @@ import 'screens/v3_services_page.dart';
 import 'routes/auth_guard.dart';
 import 'themes/app_theme.dart';
 import 'config/app_config.dart';
+import 'services/theme_service.dart';
 import 'config/global_keys.dart';
 import 'services/api_service.dart';
 import 'services/carbon_sink_service.dart';
@@ -75,6 +76,9 @@ void main() async {
     print('ML 數據同步服務初始化失敗: $e');
   }
 
+  // 初始化主題服務
+  await ThemeService().initialize();
+
   runApp(const MyApp());
 }
 
@@ -83,11 +87,15 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return ListenableBuilder(
+      listenable: ThemeService(),
+      builder: (context, _) => MaterialApp(
       title: '永續碳匯管理系統',
-      navigatorKey: GlobalKeys.navigatorKey, // Assign global navigator key
+      navigatorKey: GlobalKeys.navigatorKey,
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme, // 使用新設計系統
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeService().themeMode,
       initialRoute: '/login',
       routes: {
         '/': (context) =>
@@ -130,6 +138,7 @@ class MyApp extends StatelessWidget {
         '/v3-project-boundary': (context) =>
             const AuthGuard(child: ProjectBoundaryDrawPage()),
       },
+    ),
     );
   }
 }

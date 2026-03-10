@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
+import '../services/theme_service.dart';
 import '../tree_survey_page.dart';
 import '../tree_list_page.dart';
 import 'ble_import_page.dart';
@@ -55,30 +56,182 @@ class _HomePageState extends State<HomePage> {
     const TreeListPage(),
   ];
 
+  bool _fabExpanded = false;
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? AppColors.darkBackground : AppColors.neutral100;
+
     return Scaffold(
-      backgroundColor: AppColors.neutral100,
+      backgroundColor: bgColor,
       body: Column(
         children: [
           const NetworkAwareBanner(),
           Expanded(child: _pages[_selectedIndex]),
         ],
       ),
-      bottomNavigationBar: _buildBottomNavBar(),
+      floatingActionButton: _buildFAB(context),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: _buildBottomNavBar(isDark),
       extendBody: true,
     );
   }
 
-  Widget _buildBottomNavBar() {
+  Widget _buildFAB(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 快捷選單（展開時顯示）
+          AnimatedScale(
+            scale: _fabExpanded ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOutBack,
+            child: AnimatedOpacity(
+              opacity: _fabExpanded ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 150),
+              child: Container(
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.darkCard
+                      : AppColors.white,
+                  borderRadius: BorderRadius.circular(AppTheme.radiusLG),
+                  boxShadow: AppTheme.shadowLG,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _fabMenuItem(
+                      icon: Icons.bluetooth_rounded,
+                      label: 'BLE 匯入',
+                      color: AppColors.tipcRed,
+                      onTap: () {
+                        setState(() => _fabExpanded = false);
+                        Navigator.push(context, _buildPageRoute(const BleImportPage()));
+                      },
+                    ),
+                    _fabMenuItem(
+                      icon: Icons.assignment_rounded,
+                      label: '待測量任務',
+                      color: Colors.deepOrange,
+                      onTap: () {
+                        setState(() => _fabExpanded = false);
+                        Navigator.push(context, _buildPageRoute(const PendingMeasurementTaskPage()));
+                      },
+                    ),
+                    _fabMenuItem(
+                      icon: Icons.camera_rounded,
+                      label: '掃描測試',
+                      color: Colors.teal,
+                      onTap: () {
+                        setState(() => _fabExpanded = false);
+                        Navigator.push(context, _buildPageRoute(const ScannerPage()));
+                      },
+                    ),
+                    _fabMenuItem(
+                      icon: Icons.nature_rounded,
+                      label: '新增調查',
+                      color: AppColors.primary,
+                      onTap: () {
+                        setState(() => _fabExpanded = false);
+                        Navigator.pushNamed(context, '/tree-survey');
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // FAB 按鈕
+          SizedBox(
+            width: 56,
+            height: 56,
+            child: FloatingActionButton(
+              heroTag: 'main_fab',
+              elevation: _fabExpanded ? 8 : 4,
+              onPressed: () => setState(() => _fabExpanded = !_fabExpanded),
+              child: AnimatedRotation(
+                turns: _fabExpanded ? 0.125 : 0,
+                duration: const Duration(milliseconds: 200),
+                child: const Icon(Icons.add_rounded, size: 28),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _fabMenuItem({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppTheme.radiusMD),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Text(label, style: AppTheme.labelLarge),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 頁面轉場動畫路由
+  static PageRouteBuilder _buildPageRoute(Widget page) {
+    return PageRouteBuilder(
+      pageBuilder: (context, animation, secondaryAnimation) => page,
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        final curved = CurvedAnimation(parent: animation, curve: Curves.easeInOutCubic);
+        return FadeTransition(
+          opacity: curved,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.05, 0),
+              end: Offset.zero,
+            ).animate(curved),
+            child: child,
+          ),
+        );
+      },
+      transitionDuration: const Duration(milliseconds: 300),
+    );
+  }
+
+  Widget _buildBottomNavBar(bool isDark) {
+    final navBg = isDark ? AppColors.darkSurface : AppColors.white;
+    final primary = Theme.of(context).colorScheme.primary;
+
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       decoration: BoxDecoration(
-        color: AppColors.white,
+        color: navBg,
         borderRadius: BorderRadius.circular(AppTheme.radiusXL),
         boxShadow: [
           BoxShadow(
-            color: AppColors.neutral900.withOpacity(0.1),
+            color: (isDark ? Colors.black : AppColors.neutral900).withValues(alpha: 0.15),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -90,26 +243,26 @@ class _HomePageState extends State<HomePage> {
           height: 70,
           elevation: 0,
           backgroundColor: Colors.transparent,
-          indicatorColor: AppColors.primary.withOpacity(0.1),
+          indicatorColor: primary.withValues(alpha: 0.1),
           selectedIndex: _selectedIndex,
           onDestinationSelected: (index) {
             setState(() => _selectedIndex = index);
           },
           labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-          destinations: const [
+          destinations: [
             NavigationDestination(
-              icon: Icon(Icons.dashboard_outlined),
-              selectedIcon: Icon(Icons.dashboard_rounded, color: AppColors.primary),
+              icon: const Icon(Icons.dashboard_outlined),
+              selectedIcon: Icon(Icons.dashboard_rounded, color: primary),
               label: '首頁',
             ),
             NavigationDestination(
-              icon: Icon(Icons.folder_outlined),
-              selectedIcon: Icon(Icons.folder_rounded, color: AppColors.primary),
+              icon: const Icon(Icons.folder_outlined),
+              selectedIcon: Icon(Icons.folder_rounded, color: primary),
               label: '專案',
             ),
             NavigationDestination(
-              icon: Icon(Icons.park_outlined),
-              selectedIcon: Icon(Icons.park_rounded, color: AppColors.primary),
+              icon: const Icon(Icons.park_outlined),
+              selectedIcon: Icon(Icons.park_rounded, color: primary),
               label: '樹木',
             ),
           ],
@@ -127,7 +280,11 @@ class DashboardPage extends StatefulWidget {
   State<DashboardPage> createState() => _DashboardPageState();
 }
 
-class _DashboardPageState extends State<DashboardPage> {
+class _DashboardPageState extends State<DashboardPage>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _animController;
+  late final Animation<double> _headerFade;
+  late final Animation<Offset> _headerSlide;
   String? _userName;
   bool _isEditMode = false;
   List<String> _cardOrder = [];
@@ -156,8 +313,40 @@ class _DashboardPageState extends State<DashboardPage> {
   @override
   void initState() {
     super.initState();
+    _animController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 800),
+    );
+    _headerFade = CurvedAnimation(
+      parent: _animController,
+      curve: const Interval(0, 0.5, curve: Curves.easeOut),
+    );
+    _headerSlide = Tween<Offset>(
+      begin: const Offset(0, -0.15),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(
+      parent: _animController,
+      curve: const Interval(0, 0.5, curve: Curves.easeOutCubic),
+    ));
+    _animController.forward();
     _loadUserInfo();
     _loadCardOrder();
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
+  }
+
+  /// 卡片交錯動畫
+  Animation<double> _cardAnimation(int index) {
+    final start = (0.15 + index * 0.05).clamp(0.0, 0.85);
+    final end = (start + 0.15).clamp(0.0, 1.0);
+    return CurvedAnimation(
+      parent: _animController,
+      curve: Interval(start, end, curve: Curves.easeOutBack),
+    );
   }
 
   Future<void> _loadUserInfo() async {
@@ -262,16 +451,31 @@ class _DashboardPageState extends State<DashboardPage> {
       if (!categories.contains(cat)) categories.add(cat);
     }
 
+    // Build global card index for staggered animation
+    int globalCardIndex = 0;
+    final cardIndexMap = <String, int>{};
+    for (final card in orderedCards) {
+      cardIndexMap[card['id'] as String] = globalCardIndex++;
+    }
+
     return CustomScrollView(
       slivers: [
-        SliverToBoxAdapter(child: _buildHeader()),
+        SliverToBoxAdapter(
+          child: SlideTransition(
+            position: _headerSlide,
+            child: FadeTransition(
+              opacity: _headerFade,
+              child: _buildHeader(),
+            ),
+          ),
+        ),
         
         SliverToBoxAdapter(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
             child: Row(
               children: [
-                Text('功能中心', style: AppTheme.headlineSmall.copyWith(color: AppColors.neutral900)),
+                Text('功能中心', style: Theme.of(context).textTheme.headlineSmall),
                 const Spacer(),
                 IconButton(
                   icon: Icon(_isEditMode ? Icons.check : Icons.tune, size: 20),
@@ -294,7 +498,9 @@ class _DashboardPageState extends State<DashboardPage> {
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 6),
                 child: Text(
                   categoryLabels[cat] ?? cat,
-                  style: AppTheme.labelLarge.copyWith(color: AppColors.neutral500),
+                  style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
+                  ),
                 ),
               ),
             ),
@@ -328,6 +534,10 @@ class _DashboardPageState extends State<DashboardPage> {
                       );
                     }
                     
+                    // 交錯入場動畫
+                    final cardIdx = cardIndexMap[id] ?? 0;
+                    final anim = _cardAnimation(cardIdx);
+
                     if (_isEditMode) {
                       return LongPressDraggable<String>(
                         data: id,
@@ -367,7 +577,13 @@ class _DashboardPageState extends State<DashboardPage> {
                       );
                     }
                     
-                    return featureCard;
+                    return ScaleTransition(
+                      scale: anim,
+                      child: FadeTransition(
+                        opacity: anim,
+                        child: featureCard,
+                      ),
+                    );
                   },
                   childCount: cardsInCat.length,
                 ),
@@ -381,12 +597,23 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 6) return '夜深了';
+    if (hour < 12) return '早安';
+    if (hour < 18) return '午安';
+    return '晚安';
+  }
+
   Widget _buildHeader() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final headerBg = isDark ? AppColors.darkSurface : AppColors.white;
+
     return Container(
       padding: EdgeInsets.fromLTRB(20, MediaQuery.of(context).padding.top + 16, 20, 24),
-      decoration: const BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.only(
+      decoration: BoxDecoration(
+        color: headerBg,
+        borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(24),
           bottomRight: Radius.circular(24),
         ),
@@ -404,7 +631,7 @@ class _DashboardPageState extends State<DashboardPage> {
                   borderRadius: BorderRadius.circular(AppTheme.radiusMD),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primary.withOpacity(0.3),
+                      color: AppColors.primary.withValues(alpha: 0.3),
                       blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
@@ -424,16 +651,14 @@ class _DashboardPageState extends State<DashboardPage> {
                     Text(
                       '永續碳匯管理系統',
                       style: AppTheme.labelLarge.copyWith(
-                        color: AppColors.primary,
+                        color: Theme.of(context).colorScheme.primary,
                         fontSize: 15,
                       ),
                     ),
                     const SizedBox(height: 2),
                     Text(
                       'TIPC 臺灣港務',
-                      style: AppTheme.bodySmall.copyWith(
-                        color: AppColors.neutral500,
-                      ),
+                      style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
                 ),
@@ -446,18 +671,16 @@ class _DashboardPageState extends State<DashboardPage> {
           
           const SizedBox(height: 24),
           
-          // 歡迎訊息
+          // 動態問候訊息
           Text(
-            '您好，${_userName ?? '使用者'}',
-            style: AppTheme.headlineLarge.copyWith(
-              color: AppColors.neutral900,
-            ),
+            '${_getGreeting()}，${_userName ?? '使用者'}',
+            style: Theme.of(context).textTheme.headlineLarge,
           ),
           const SizedBox(height: 4),
           Text(
             '歡迎使用智慧樹木管理平台',
-            style: AppTheme.bodyMedium.copyWith(
-              color: AppColors.neutral500,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
         ],
@@ -466,6 +689,8 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _buildUserMenu() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return PopupMenuButton<String>(
       offset: const Offset(0, 48),
       shape: RoundedRectangleBorder(
@@ -474,12 +699,12 @@ class _DashboardPageState extends State<DashboardPage> {
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: AppColors.neutral100,
+          color: isDark ? AppColors.darkSurfaceLighter : AppColors.neutral100,
           borderRadius: BorderRadius.circular(AppTheme.radiusMD),
         ),
-        child: const Icon(
+        child: Icon(
           Icons.person_rounded,
-          color: AppColors.neutral700,
+          color: isDark ? AppColors.darkTextSecondary : AppColors.neutral700,
           size: 22,
         ),
       ),
@@ -496,11 +721,25 @@ class _DashboardPageState extends State<DashboardPage> {
         ),
         const PopupMenuDivider(),
         PopupMenuItem(
+          value: 'theme',
+          child: Row(
+            children: [
+              Icon(
+                isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                size: 20,
+              ),
+              const SizedBox(width: 12),
+              Text(isDark ? '切換亮色模式' : '切換暗色模式'),
+            ],
+          ),
+        ),
+        const PopupMenuDivider(),
+        const PopupMenuItem(
           value: 'logout',
           child: Row(
             children: [
               Icon(Icons.logout_rounded, size: 20, color: AppColors.error),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Text('登出', style: TextStyle(color: AppColors.error)),
             ],
           ),
@@ -509,6 +748,8 @@ class _DashboardPageState extends State<DashboardPage> {
       onSelected: (value) {
         if (value == 'logout') {
           AuthService.logout(context);
+        } else if (value == 'theme') {
+          ThemeService().toggleDarkMode();
         }
       },
     );

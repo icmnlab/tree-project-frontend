@@ -105,6 +105,19 @@ class AppColors {
   static const Color divider = neutral300;
 
   // ============================================
+  // 暗色模式色系
+  // ============================================
+  static const Color darkSurface = Color(0xFF1A1A2E);
+  static const Color darkSurfaceLight = Color(0xFF222240);
+  static const Color darkSurfaceLighter = Color(0xFF2A2A4A);
+  static const Color darkCard = Color(0xFF252545);
+  static const Color darkBackground = Color(0xFF12121F);
+  static const Color darkBorder = Color(0xFF3A3A5C);
+  static const Color darkTextPrimary = Color(0xFFE8E8F0);
+  static const Color darkTextSecondary = Color(0xFFB0B0C8);
+  static const Color darkTextTertiary = Color(0xFF8888A8);
+
+  // ============================================
   // 漸層配置
   // ============================================
   static const LinearGradient primaryGradient = LinearGradient(
