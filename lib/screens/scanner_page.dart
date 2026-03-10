@@ -91,6 +91,9 @@ class _ScannerPageState extends State<ScannerPage>
 
   // 即時影像串流是否可用（LEGACY 裝置可能不支援同時 3 個 camera use case）
   bool _liveDetectionAvailable = true;
+
+  // 重試 ML 服務連線
+  bool _isRetryingService = false;
   
   @override
   void initState() {
@@ -168,6 +171,13 @@ class _ScannerPageState extends State<ScannerPage>
   Future<void> _checkService() async {
     _serviceAvailable = await _service.isServiceAvailable();
     if (mounted) setState(() {});
+  }
+
+  Future<void> _retryServiceCheck() async {
+    if (_isRetryingService) return;
+    setState(() => _isRetryingService = true);
+    _serviceAvailable = await _service.isServiceAvailable();
+    if (mounted) setState(() => _isRetryingService = false);
   }
 
   /// 重新啟動影像串流（從結果頁或 bbox 頁返回相機時呼叫）
@@ -1073,14 +1083,33 @@ class _ScannerPageState extends State<ScannerPage>
                 color: Colors.red.withValues(alpha:0.8),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Row(
+              child: Row(
                 children: [
-                  Icon(Icons.warning, color: Colors.white, size: 20),
-                  SizedBox(width: 8),
-                  Expanded(
+                  const Icon(Icons.warning, color: Colors.white, size: 20),
+                  const SizedBox(width: 8),
+                  const Expanded(
                     child: Text(
-                      'ML 服務未連線，請確認伺服器已啟動',
-                      style: TextStyle(color: Colors.white, fontSize: 13),
+                      'ML 服務未連線\n模型載入中或伺服器未啟動',
+                      style: TextStyle(color: Colors.white, fontSize: 13, height: 1.3),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: _retryServiceCheck,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.25),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: _isRetryingService
+                          ? const SizedBox(
+                              width: 16, height: 16,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white,
+                              ),
+                            )
+                          : const Text('重試', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],

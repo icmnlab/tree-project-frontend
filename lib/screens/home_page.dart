@@ -56,8 +56,6 @@ class _HomePageState extends State<HomePage> {
     const TreeListPage(),
   ];
 
-  bool _fabExpanded = false;
-
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -71,131 +69,7 @@ class _HomePageState extends State<HomePage> {
           Expanded(child: _pages[_selectedIndex]),
         ],
       ),
-      floatingActionButton: _buildFAB(context),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
       bottomNavigationBar: _buildBottomNavBar(isDark),
-      extendBody: true,
-    );
-  }
-
-  Widget _buildFAB(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // 快捷選單（展開時顯示）
-          AnimatedScale(
-            scale: _fabExpanded ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOutBack,
-            child: AnimatedOpacity(
-              opacity: _fabExpanded ? 1.0 : 0.0,
-              duration: const Duration(milliseconds: 150),
-              child: Container(
-                margin: const EdgeInsets.only(bottom: 12),
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).brightness == Brightness.dark
-                      ? AppColors.darkCard
-                      : AppColors.white,
-                  borderRadius: BorderRadius.circular(AppTheme.radiusLG),
-                  boxShadow: AppTheme.shadowLG,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _fabMenuItem(
-                      icon: Icons.bluetooth_rounded,
-                      label: 'BLE 匯入',
-                      color: AppColors.tipcRed,
-                      onTap: () {
-                        setState(() => _fabExpanded = false);
-                        Navigator.push(context, _buildPageRoute(const BleImportPage()));
-                      },
-                    ),
-                    _fabMenuItem(
-                      icon: Icons.assignment_rounded,
-                      label: '待測量任務',
-                      color: Colors.deepOrange,
-                      onTap: () {
-                        setState(() => _fabExpanded = false);
-                        Navigator.push(context, _buildPageRoute(const PendingMeasurementTaskPage()));
-                      },
-                    ),
-                    _fabMenuItem(
-                      icon: Icons.camera_rounded,
-                      label: '掃描測試',
-                      color: Colors.teal,
-                      onTap: () {
-                        setState(() => _fabExpanded = false);
-                        Navigator.push(context, _buildPageRoute(const ScannerPage()));
-                      },
-                    ),
-                    _fabMenuItem(
-                      icon: Icons.nature_rounded,
-                      label: '新增調查',
-                      color: AppColors.primary,
-                      onTap: () {
-                        setState(() => _fabExpanded = false);
-                        Navigator.pushNamed(context, '/tree-survey');
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          // FAB 按鈕
-          SizedBox(
-            width: 56,
-            height: 56,
-            child: FloatingActionButton(
-              heroTag: 'main_fab',
-              elevation: _fabExpanded ? 8 : 4,
-              onPressed: () => setState(() => _fabExpanded = !_fabExpanded),
-              child: AnimatedRotation(
-                turns: _fabExpanded ? 0.125 : 0,
-                duration: const Duration(milliseconds: 200),
-                child: const Icon(Icons.add_rounded, size: 28),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _fabMenuItem({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppTheme.radiusMD),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: color, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Text(label, style: AppTheme.labelLarge),
-            ],
-          ),
-        ),
-      ),
     );
   }
 

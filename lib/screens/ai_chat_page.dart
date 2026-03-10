@@ -81,6 +81,7 @@ class ChatMessage {
   final ChartData? chartData; // [NEW] 可選的圖表資料
   final List<Map<String, dynamic>>? suggestions; // [NEW] 智慧建議
   final List<Map<String, dynamic>>? anomalies; // [NEW] 異常警示
+  final List<Map<String, dynamic>>? toolCalls; // [NEW] Agent 工具調用記錄
 
   ChatMessage({
     String? id,
@@ -94,6 +95,7 @@ class ChatMessage {
     this.chartData,
     this.suggestions,
     this.anomalies,
+    this.toolCalls,
   })  : id = id ?? DateTime.now().millisecondsSinceEpoch.toString(),
         timestamp = timestamp ?? DateTime.now();
 
@@ -106,6 +108,7 @@ class ChatMessage {
     ChartData? chartData,
     List<Map<String, dynamic>>? suggestions,
     List<Map<String, dynamic>>? anomalies,
+    List<Map<String, dynamic>>? toolCalls,
   }) {
     return ChatMessage(
       id: id,
@@ -119,6 +122,7 @@ class ChatMessage {
       chartData: chartData ?? this.chartData,
       suggestions: suggestions ?? this.suggestions,
       anomalies: anomalies ?? this.anomalies,
+      toolCalls: toolCalls ?? this.toolCalls,
     );
   }
 }
@@ -222,6 +226,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   bool _isLoading = false;
   bool _isSidebarOpen = false; // 預設收合，避免遮擋內容
   bool _isDarkMode = false;
+  bool _isAgentMode = true; // 預設啟用 Agent 模式
 
   // Settings
   String _selectedModel = 'deepseek-ai/DeepSeek-V3';
@@ -419,14 +424,26 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
     _scrollToBottom();
 
     try {
-      // 呼叫 AI API (注意參數順序: message, projectAreas, modelPreference, userId, sessionId)
-      final response = await _aiService.getChatResponse(
-        message,
-        widget.selectedProjectAreas, // 使用 widget 傳入的區域
-        _selectedModel,
-        widget.userId,
-        sessionId: _currentSession?.id, // 傳送 sessionId 以追蹤對話
-      );
+      Map<String, dynamic> response;
+
+      if (_isAgentMode) {
+        // Agent 模式: 使用 Agent API (具備工具調用)
+        response = await _aiService.getAgentResponse(
+          message,
+          widget.userId,
+          sessionId: _currentSession?.id,
+          model: _selectedModel,
+        );
+      } else {
+        // 一般模式: 使用原有 Chat API
+        response = await _aiService.getChatResponse(
+          message,
+          widget.selectedProjectAreas,
+          _selectedModel,
+          widget.userId,
+          sessionId: _currentSession?.id,
+        );
+      }
 
       // 更新 AI 回覆
       // [NEW] 解析圖表資料（兼容性 - 可選欄位）
@@ -458,6 +475,16 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
           debugPrint('[AI Chat] 解析 anomalies 失敗: $e');
         }
       }
+
+      // 解析 Agent 工具調用記錄
+      List<Map<String, dynamic>>? toolCalls;
+      if (response['toolCalls'] != null) {
+        try {
+          toolCalls = List<Map<String, dynamic>>.from(response['toolCalls']);
+        } catch (e) {
+          debugPrint('[AI Chat] 解析 toolCalls 失敗: $e');
+        }
+      }
       
       if (mounted) {
         setState(() {
@@ -473,6 +500,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
               chartData: chartData,
               suggestions: suggestions,
               anomalies: anomalies,
+              toolCalls: toolCalls,
             );
           }
           _isLoading = false;
@@ -1046,6 +1074,52 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
           ),
           
           const Spacer(),
+
+          // Agent 模式切換
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () => setState(() => _isAgentMode = !_isAgentMode),
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  color: _isAgentMode
+                      ? colorScheme.primary.withOpacity(0.15)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(8),
+                  border: _isAgentMode
+                      ? Border.all(color: colorScheme.primary.withOpacity(0.3))
+                      : null,
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      _isAgentMode ? Icons.smart_toy : Icons.chat_bubble_outline,
+                      color: _isAgentMode
+                          ? colorScheme.primary
+                          : colorScheme.onSurfaceVariant,
+                      size: 18,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _isAgentMode ? 'Agent' : 'Chat',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: _isAgentMode
+                            ? colorScheme.primary
+                            : colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          
+          const SizedBox(width: 4),
 
           // 深色模式切換
           Material(
@@ -1627,6 +1701,10 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
         if (message.suggestions != null && message.suggestions!.isNotEmpty)
           _buildSuggestionsSection(message.suggestions!, colorScheme),
 
+        // [NEW] Agent 工具調用記錄
+        if (message.toolCalls != null && message.toolCalls!.isNotEmpty)
+          _buildToolCallsSection(message.toolCalls!, colorScheme),
+
         // SQL 查詢（可展開）
         if (message.executedSQL != null && message.executedSQL!.isNotEmpty)
           _buildExpandableSQL(message.executedSQL!, colorScheme),
@@ -1679,6 +1757,112 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
             ),
             child: Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
           ),
+        ),
+      ),
+    );
+  }
+
+  /// Agent 工具調用記錄展示
+  Widget _buildToolCallsSection(List<Map<String, dynamic>> toolCalls, ColorScheme colorScheme) {
+    const toolLabels = {
+      'query_tree_data': '查詢樹木資料',
+      'calculate_carbon': '碳匯計算',
+      'species_carbon_info': '樹種碳匯查詢',
+      'project_summary': '專案統計',
+      'carbon_credit_estimate': '碳信用估算',
+    };
+    const toolIcons = {
+      'query_tree_data': Icons.search_rounded,
+      'calculate_carbon': Icons.eco_rounded,
+      'species_carbon_info': Icons.park_rounded,
+      'project_summary': Icons.analytics_rounded,
+      'carbon_credit_estimate': Icons.monetization_on_rounded,
+    };
+
+    return Padding(
+      padding: const EdgeInsets.only(top: 12),
+      child: Theme(
+        data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+        child: ExpansionTile(
+          tilePadding: EdgeInsets.zero,
+          childrenPadding: EdgeInsets.zero,
+          title: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.smart_toy_rounded, size: 14, color: colorScheme.primary),
+              const SizedBox(width: 4),
+              Text(
+                'Agent 使用了 ${toolCalls.length} 個工具',
+                style: TextStyle(fontSize: 12, color: colorScheme.primary),
+              ),
+            ],
+          ),
+          children: toolCalls.map((tc) {
+            final toolName = tc['tool'] as String? ?? '';
+            final label = toolLabels[toolName] ?? toolName;
+            final icon = toolIcons[toolName] ?? Icons.build_rounded;
+            final args = tc['args'] as Map<String, dynamic>? ?? {};
+            final resultSummary = tc['resultSummary'];
+
+            return Container(
+              margin: const EdgeInsets.only(bottom: 6),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: colorScheme.primary.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: colorScheme.primary.withOpacity(0.15),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(icon, size: 14, color: colorScheme.primary),
+                      const SizedBox(width: 6),
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.primary,
+                        ),
+                      ),
+                      const Spacer(),
+                      Icon(Icons.check_circle_rounded,
+                          size: 14, color: Colors.green.shade600),
+                    ],
+                  ),
+                  if (args.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      args.entries.map((e) => '${e.key}: ${e.value}').join(', '),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: colorScheme.onSurfaceVariant,
+                        fontFamily: 'monospace',
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                  if (resultSummary != null &&
+                      resultSummary is Map &&
+                      resultSummary['rowCount'] != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      '回傳 ${resultSummary['rowCount']} 筆資料',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.green.shade700,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          }).toList(),
         ),
       ),
     );

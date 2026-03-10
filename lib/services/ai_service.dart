@@ -19,6 +19,25 @@ class AiService {
     });
   }
 
+  /// 發送 Agent 對話 (具備工具調用能力)
+  Future<Map<String, dynamic>> getAgentResponse(
+    String message,
+    String userId, {
+    String? sessionId,
+    String? model,
+  }) async {
+    return ApiService.post('agent/chat', {
+      'message': message,
+      if (sessionId != null) 'sessionId': sessionId,
+      if (model != null) 'model': model,
+    });
+  }
+
+  /// 取得 Agent 狀態
+  Future<Map<String, dynamic>> getAgentStatus() async {
+    return ApiService.get('agent/status');
+  }
+
   Future<Map<String, dynamic>> getSpeciesRecommendations(
       String userId, List<String> selectedAreas) async {
     return ApiService.post('ai/species_recommendations',
