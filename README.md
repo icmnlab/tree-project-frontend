@@ -1,833 +1,243 @@
-# 🌳 TreeAI Frontend - 智慧樹木管理系統前端
+﻿# TreeAI Frontend
 
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-blue.svg)](https://flutter.dev/)
 [![Dart](https://img.shields.io/badge/Dart-3.x-blue.svg)](https://dart.dev/)
 [![License](https://img.shields.io/badge/License-ISC-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-18.5.0-green.svg)](https://github.com/KyleliuNDHU/tree-project-frontend)
 
-> 基於大語言模型的永續發展分析平台 - Flutter 行動應用程式
-
----
-
-## 📦 版本紀錄
-
-### v18.5.0 (2026-03-10) - Self-Hosted Server Support 🏠
-
-#### 🏠 自架伺服器支援
-- **三環境切換** — 新增 `Environment.selfHosted` 選項
-  - `selfHosted` → `https://100.118.203.75/api`（自架伺服器，預設）
-  - `prod` → Render 正式版（備援）
-  - `staging` → Render 測試版
-- **Admin 系統設定 UI** — 更新為 3 環境切換按鈕
-  - 各環境獨立圖示與顏色標識（dns/public/developer_mode）
-  - 環境循環：selfHosted → prod → staging → selfHosted
-- **ML Service URL** — 自動配置
-  - Backend 登入時透過 `mlConfig` 自動推送 ML Service URL
-  - 前端無需手動設定 ML 連線
-
-#### 📋 變更清單
-| 類型 | 檔案 | 說明 |
-|------|------|------|
-| feat | `lib/config/app_config.dart` | 新增 selfHosted 環境，預設使用自架伺服器 |
-| feat | `lib/admin_page.dart` | 系統設定 UI 改為 3 環境切換按鈕 |
+智慧樹木管理系統 Flutter 行動應用程式  為臺灣港務公司 (TIPC) 設計。
 
 ---
 
-### v18.4.0 (2026-02-22) - App Stabilization & ML Precision Upgrade 🚀
+## 目錄
 
-#### 🚀 測量與精準度升級
-- **ML Precision Upgrade** - 提升測量精度與使用者體驗
-  - 支援 EXIF 焦距提取與 GPS 保護機制
-  - 實作多相片融合 UI (Multi-shot fusion)
-- **Stakeout 導航與拍照指南**
-  - 新增 Stakeout 導航功能，協助尋找目標樹木
-  - 引入拍照指南 (Photo Guide) 輔助使用者拍攝高品質照片
-
-#### 🔧 系統穩定性與 UX 優化
-- **App Stabilization** - 全面提升應用程式穩定度
-  - 引入中英雙語 Key 支援 (bilingual keys) 與相簿畫廊 (Photo Gallery)
-  - V2 測量表單：放寬 `species_id` 限制（改為非必填）
-  - BLE 匯入：支援多數決專案匹配 (Majority vote project matching)
-- **Dashboard 與任務流程優化**
-  - Dashboard UX 重大翻新：將任務分類為三大區塊並支援拖曳排序
-  - PopScope 退出確認：防止測量表單意外關閉
-  - 支援多 Session 選擇器與未分配任務的專案區位指派流程
-  - 進度條改為由後端統計數據驅動
-- **BLE Measurement Pipeline**
-  - 解決 Race conditions 問題，提升效能與資料穩健性
-  - 整合 Fused Location 提升定位精準度
-- **Type Cast Safety**
-  - 強化所有 `fromJson` 方法中的 String/int/double 型別轉換安全性
-
-#### 🛠️ 其他修復
-- 修復 ngrok header 阻擋問題，確保 API 正常連線
+- [功能](#功能)
+- [快速開始](#快速開始)
+- [專案結構](#專案結構)
+- [環境設定](#環境設定)
+- [頁面狀態](#頁面狀態)
+- [UI 設計系統](#ui-設計系統)
+- [建置與發布](#建置與發布)
+- [開發指南](#開發指南)
+- [常見問題](#常見問題)
+- [版本紀錄](#版本紀錄)
 
 ---
 
-### v18.3.2 (2025-12-14) - 專案管理邏輯修正與清理機制完善 🔧
-
-#### 🔧 修復與改進
-- **V2 專案區位/專案名稱清理邏輯** - 新增退出時清理機制
-  - 追蹤新增的專案區位 ID 和專案 code
-  - 退出時詢問是否清理未提交的新增資料
-  - 提交成功後不會清理（標記 `_hasSubmitted`）
-- **V2 樹種清理邏輯** - 新增退出時清理機制
-  - 追蹤新增的樹種 ID
-  - 退出時使用 cleanup API 清理未使用的樹種
-- **V3 專案管理邏輯修改** - 改為與 V2 一致的邏輯
-  - 將下拉選單改為點擊輸入框開啟對話框選擇/新增
-  - 支援新增專案區位和專案名稱（類似 V2）
-  - 先選專案區位，再選專案名稱的流程
-  - 添加清理追蹤和退出時清理機制
-
-#### 🗑️ 清理機制
-- **追蹤新增資料**：
-  - 專案區位 ID (`_createdAreaIds`)
-  - 專案 code (`_createdProjectCodes`)
-  - 樹種 ID (`_createdSpeciesIds`)
-- **清理時機**：
-  - 使用者點擊返回按鈕時詢問
-  - 頁面 dispose 時自動清理（若未提交）
-- **清理方式**：
-  - 專案區位：直接刪除 (`deleteProjectArea`)
-  - 專案：直接刪除 (`deleteProject`)
-  - 樹種：觸發後端 cleanup API
-
-#### 📋 變更清單
-| 類型 | 檔案 | 說明 |
-|------|------|------|
-| fix | `lib/tree_input_page_v2.dart` | 添加專案區位/專案名稱/樹種的追蹤和清理邏輯 |
-| fix | `lib/screens/v3/manual_input_page_v3.dart` | 修改專案管理邏輯，添加清理機制 |
-| feat | `lib/tree_input_page_v2.dart` | 添加 WillPopScope 詢問清理 |
-| feat | `lib/screens/v3/manual_input_page_v3.dart` | 添加專案區位/專案名稱對話框和新增功能 |
-
----
-
-### v18.3.1 (2025-12-14) - UX 改進與程式碼清理 ✨
-
-#### ✨ 使用者體驗改進
-- **匯出功能 Loading 動畫** - 所有匯出按鈕現在顯示 loading 狀態
-  - Admin 頁面 Excel/PDF 匯出按鈕顯示 loading 指示器
-  - 樹木列表頁面 Excel/PDF 匯出顯示 loading 狀態
-  - AI 永續報告 PDF 匯出顯示 loading 動畫
-  - 防止重複點擊匯出按鈕
-- **表單提交 Loading 狀態** - V3 手動輸入頁面提交按鈕顯示 loading
-
-#### 🧹 程式碼清理
-- **移除未使用的 Imports** - 清理 6 個未使用的 import 語句
-  - `lib/main.dart` - 移除 `integrated_tree_form_page.dart` import
-  - `lib/screens/v3/manual_input_page_v3.dart` - 移除未使用服務
-  - `lib/screens/v3/integrated_tree_form_page.dart` - 移除 `image_picker` import
-  - `lib/screens/pending_measurement_task_page.dart` - 移除未使用 import
-  - `lib/services/api_service.dart` - 移除 `flutter/material.dart` import
-- **修復 Linter Warnings** - 所有 linter 警告已修復
-
-#### 📋 變更清單
-| 類型 | 檔案 | 說明 |
-|------|------|------|
-| feat | `lib/admin_page.dart` | 匯出按鈕添加 loading 動畫 |
-| feat | `lib/tree_list_page.dart` | 匯出按鈕添加 loading 動畫 |
-| feat | `lib/screens/ai_sustainability_report_screen.dart` | PDF 匯出添加 loading 動畫 |
-| feat | `lib/screens/v3/manual_input_page_v3.dart` | 提交按鈕添加 loading 狀態 |
-| refactor | 多個檔案 | 清理未使用的 imports |
-
----
-
-### v18.3.0 (2025-12-14) - 編譯修復與穩定性改進 🔧
-
-#### 🔧 修復
-- **編譯錯誤修復**
-  - 修復 `IntegratedTreeFormPage` 路由編譯錯誤（註解需要參數的路由）
-  - 修復 `download_service.dart` 正則表達式語法錯誤
-  - 修復 `main.dart` import 路徑問題
-  - 所有編譯錯誤已解決，APK 可正常生成
-- **路由優化**
-  - 註解 `/v3-integrated-form` 路由（需 task 參數，改用 MaterialPageRoute 直接導航）
-  - 功能保持正常運作，不影響現有使用方式
-
-#### 📋 變更清單
-| 類型 | 說明 |
-|------|------|
-| fix | 修復 IntegratedTreeFormPage 路由編譯錯誤 |
-| fix | 修復 download_service.dart 正則表達式問題 |
-| fix | 修復 main.dart import 路徑 |
-| refactor | 優化路由定義（移除無法使用的路由） |
-
----
-
-### v18.2.0 (2025-12-14) - AR 測量優化與安全改進 🔒
-
-#### 🆕 新增功能
-- **AR 測量 GPS 距離模式** - 支援使用手機 GPS 與樹木座標自動計算距離
-  - 整合 `geolocator` 套件實現 GPS 定位
-  - 自動計算使用者位置與目標樹木的距離（Haversine 公式）
-  - 適用於 VLGEO2 第二階段測量場景
-- **虛擬 1.3m 測量線** - 參考 iPhone 測距儀設計
-  - 在相機預覽畫面顯示虛擬 1.3m DBH 測量線
-  - 引導測量員找到正確的測量位置
-  - 不再依賴使用者身高或手持方式
-
-#### 🔒 安全性改進
-- **Google Maps API Key 安全設定**
-  - API Key 存放於 `android/gradle.properties`（不提交到 Git）
-  - 已加入 `.gitignore` 確保不會洩漏
-  - 配合 Google Cloud Console 的應用程式限制與 API 限制，提供完整安全保護
-
-#### 🔧 整合優化
-- **IntegratedTreeFormPage** - 整合 GPS 距離計算功能
-  - 自動從 VLGEO2 任務資料取得樹木座標
-  - 測量時可選擇使用已知距離或 GPS 計算距離
-- **ManualInputPageV3** - 整合 GPS 距離計算
-  - 使用當前位置與輸入的樹木座標計算距離
-  - 支援 AR 測量時自動填入距離
-
-#### 📋 技術變更
-- 新增 `geolocator: ^10.1.0` 套件
-- 新增 `camera: ^0.11.3` 套件（用於 Live Camera 預覽）
-- 移除已廢棄的 `CameraHeightAssistant` 服務
-- 修復 `build.gradle.kts` 的 Base64 解碼問題
-
-#### 📋 變更清單
-| 類型 | 說明 |
-|------|------|
-| feat | AR 測量新增 GPS 距離模式 |
-| feat | AR 測量新增虛擬 1.3m 線引導 |
-| security | Google Maps API Key 移至 gradle.properties |
-| refactor | 移除 CameraHeightAssistant，改用視覺引導 |
-| fix | 修復 build.gradle.kts 編譯錯誤 |
-
----
-
-### v18.1.0 (2025-01-14) - V3 進階服務 UI 整合 🎛️
-
-#### 🆕 新增功能
-- **V3 進階服務管理頁面** - 統一管理所有 V3 進階功能
-  - 樹木影像管理：瀏覽、同步狀態、批量上傳
-  - 資料衝突處理：查看待處理操作、重試/放棄功能
-  - AR 測量校準：距離、相機高度設定介面
-  - ML 數據同步：查看待上傳數據、手動觸發同步
-
-- **首頁新增「進階服務」入口** - 快速存取 V3 功能
-
-#### 📋 擴充 API
-| 服務 | 新增方法 |
-|------|----------|
-| `TreeImageService` | `getUnsyncedImages()`, `getAllImages()`, `syncAllImages()` |
-| `ConflictResolutionService` | `retryOperation()`, `abandonOperation()` |
-| `ARMeasurementIntegrationService` | `currentCalibration`, `setCalibration()` |
-
-#### 🔧 Backend 修復
-- 修正 `users.pg.sql` CASCADE 刪除外鍵依賴問題
-- 統一 `pending_tree_measurements` 資料表結構（使用 `session_id`）
-
-#### 📋 變更清單
-| 類型 | 說明 |
-|------|------|
-| feat | 新增 `v3_services_page.dart` 進階服務管理頁面 |
-| feat | 首頁新增「進階服務」功能卡片 |
-| fix | Backend: CASCADE 處理外鍵依賴 |
-| fix | Backend: 統一 pending_tree_measurements 結構 |
-
----
-
-### v18.0.0 (2025-12-03) - V3 測試套件與 ML 同步服務 🧪
-
-#### 🆕 新增功能
-- **ML 數據同步服務** - 自動同步本地 ML 訓練數據到後端
-  - `MLDataSyncService` - 背景同步服務
-  - WiFi 優先上傳，支援離線暫存
-  - 批次上傳（最大 500 條/批）
-  - 自動重試機制
-
-#### 🧪 V3 測試套件 (8,258 行)
-全面覆蓋 V3 功能的測試，共 251 個測試案例全部通過：
-
-| 測試檔案 | 行數 | 測試內容 |
-|----------|------|----------|
-| `extreme_validation_test.dart` | 1,207 | AR/樹種/COMPLETE標準/2NF/ML 驗證 |
-| `database_optimization_test.dart` | 1,145 | 資料庫正規化/索引/圖片存儲/ML API |
-| `conflict_resolution_test.dart` | 1,009 | 衝突檢測/解決策略/版本控制 |
-| `ar_dbh_integration_test.dart` | 903 | AR DBH 測量整合測試 |
-| `ble_simulation_test.dart` | 907 | BLE 設備模擬/訊號測試 |
-| `boundary_service_test.dart` | 896 | 專案邊界/Ray Casting/座標驗證 |
-| `id_generation_test.dart` | 600 | ID 生成/序列/唯一性測試 |
-| `integration_workflow_test.dart` | 591 | 端到端工作流程測試 |
-
-#### 📋 測試覆蓋範圍
-- ✅ Station Arrival COMPLETE 標準（10m 閾值）
-- ✅ AR 參照物最小 30px 驗證
-- ✅ 2NF 資料庫正規化驗證
-- ✅ ML 數據記錄格式驗證
-- ✅ GPS 誤差容忍度計算
-
-#### 📋 變更清單
-| 類型 | 說明 |
-|------|------|
-| feat | 新增 `ml_data_sync_service.dart` ML 數據同步服務 |
-| test | 新增 8 個 V3 測試檔案 (8,258 行) |
-| test | 251 個測試全部通過 |
-
----
-
-### v17.1.0 (2025-12-04) - V3 進階服務層 🛠️
-
-#### 🆕 新增功能
-- **V3 影像記錄系統** - 樹木照片本地儲存與雲端同步
-  - `TreeImageService` - 影像管理服務（本地優先）
-  - 支援多種照片類型：全景、樹幹、DBH 測量、樹冠、損傷
-  - 佇列上傳機制，離線時自動暫存
-- **V3 衝突解決機制** - Optimistic Lock 版本控制
-  - `ConflictResolutionService` - 資料衝突檢測與解決
-  - 自動重試佇列，支援多人協作同步
-  - 衝突對話框 UI 元件
-- **AR 測量整合服務** - 增強版 AR DBH 測量
-  - `ARMeasurementIntegrationService` - 校準資料與信心度估算
-  - 支援快速測量、參照物測量、多角度測量
-  - 品質等級評估 (A-F)
-- **BLE 模擬測試服務** - 開發環境專用
-  - `BLESimulationService` - 模擬 BLE 設備數據
-  - 預定義測試情境：單株測量、多株測量、間歇連線
-  - 控制面板 Widget 便於開發測試
-
-#### 🔧 V3 服務層擴充
-| 服務 | 檔案 | 行數 | 說明 |
-|------|------|------|------|
-| 影像記錄 | `tree_image_service.dart` | 488 | 本地儲存 + 雲端同步 |
-| 衝突解決 | `conflict_resolution_service.dart` | 690 | Optimistic Lock |
-| AR 整合 | `ar_measurement_integration_service.dart` | 574 | 校準 + 信心度 |
-| BLE 模擬 | `ble_simulation_service.dart` | 747 | 開發測試用 |
-
-#### 📋 變更清單
-| 類型 | 說明 |
-|------|------|
-| feat | 新增 V3 影像記錄系統 (`tree_image_service.dart`) |
-| feat | 新增衝突解決服務 (`conflict_resolution_service.dart`) |
-| feat | 新增 AR 測量整合服務 (`ar_measurement_integration_service.dart`) |
-| feat | 新增 BLE 模擬測試服務 (`ble_simulation_service.dart`) |
-| docs | 更新 `V3_DEVELOPMENT_PLAN.md` 實作進度 |
-
----
-
-### v17.0.0 (2025-12-03) - V3 專案邊界與智慧匹配 🗺️
-
-#### 🆕 新增功能
-- **專案邊界管理** - 使用者可在地圖上手動繪製專案邊界多邊形
-  - `ProjectBoundaryDrawPage` - 地圖繪製介面，支援拖曳調整頂點
-  - `ProjectBoundaryService` - 本地 Ray Casting 演算法快速檢測
-  - 5 分鐘快取機制，減少 API 請求
-- **座標驗證機制** - 新增樹木時自動檢查座標是否在專案邊界內
-  - 有邊界的專案：座標必須在邊界內（可選擇強制提交）
-  - 無邊界的專案：不受座標限制
-- **批次匯入自動匹配** - BLE 批次匯入時根據座標自動匹配專案名稱
-  - 自動填入 `project_name` 和 `project_code`
-  - 顯示匹配結果統計 SnackBar
-
-#### 🔧 V3 服務層
-- `lib/services/v3/project_boundary_service.dart` - 專案邊界服務
-- `lib/services/v3/ml_data_collector.dart` - ML 數據收集服務
-- `lib/services/v3/data_filter_service.dart` - 數據過濾服務
-
-#### 📋 變更清單
-| 類型 | 說明 |
-|------|------|
-| feat | 新增 `project_boundary_service.dart` 專案邊界服務 |
-| feat | 新增 `project_boundary_draw_page.dart` 地圖繪製頁面 |
-| feat | `map_page.dart` 整合專案邊界多邊形顯示 |
-| feat | `tree_input_page_v2.dart` 新增座標邊界驗證 |
-| feat | `manual_input_page_v2.dart` 新增自動專案匹配 |
-| fix | 修復 `ai_chat_page.dart` warningOrange 顏色錯誤 |
-| fix | 修復 `ai_assistant_page.dart` warningOrange 顏色錯誤 |
-
----
-
-### v16.0.1 (2025-12-02) - 錯誤修復 🔧
-
-#### 🔧 修復
-- **FAB 遮擋問題** - 修復 FloatingActionButton 被底部導航遮擋的問題
-- **後端 OpenAI 兼容性** - 新增 `getTokenLimitParams()` helper 函數
-  - 支援 o1/o3 系列模型使用 `max_completion_tokens` 參數
-  - 舊版模型 (gpt-4, gpt-4-turbo 等) 仍使用 `max_tokens`（向後兼容）
-- **圖片上傳錯誤處理** - 改進 multer fileFilter 錯誤回應格式
-
-#### 📋 變更清單
-| 類型 | 說明 |
-|------|------|
-| fix | `tree_survey_page.dart` FAB 底部邊距調整 |
-| fix | `ai.js` OpenAI API 參數兼容性 |
-| fix | `speciesIdentification.js` multer 錯誤處理 |
-| fix | `openaiController.js` 新增 helper 函數 |
-| fix | `aiReportController.js` 新增 helper 函數 |
-
----
-
-### v16.0.0 (2025-12-02) - 極簡現代化介面重構 🎨
-
-#### 🎨 UI 全面翻新
-- **統一設計系統** - 建立 TIPC 港務風格 + 生態綠色主題
-  - 全新配色系統 (`colors.dart`)：港務藍、森林綠、海洋青
-  - 現代化主題 (`app_theme.dart`)：Material 3 + Google Fonts
-  - 圓角設計、漸層效果、玻璃擬態風格
-- **首頁重新設計** - 磨砂玻璃底部導航、漸層 AppBar、功能卡片
-- **統計頁面優化** - 修復圖表文字重疊問題、旋轉標籤、現代化圖表卡片
-- **登入頁面美化** - 藍色漸層背景、動畫效果、玻璃擬態登入卡片
-- **樹木列表優化** - 現代化搜尋框、標籤篩選、計數顯示
-- **調查頁面更新** - 統一 AppBar 風格、改進空狀態顯示
-- **地圖頁面整合** - 漸層標題欄、統一視覺風格
-
-#### 🔧 改進
-- 所有頁面採用統一的 `AppColors` 配色
-- 移除冗餘的顏色定義，統一使用設計系統
-- 改善動畫過渡效果
-- 優化載入狀態顯示
-
-#### 📋 變更清單
-| 類型 | 說明 |
-|------|------|
-| style | 新增 `constants/colors.dart` 設計系統配色 |
-| style | 新增 `themes/app_theme.dart` 現代化主題 |
-| style | 重構 `home_page.dart` 極簡現代化設計 |
-| fix | 修復 `statistics_page.dart` 圖表文字重疊 |
-| style | 美化 `login_page.dart` 登入介面 |
-| style | 優化 `tree_list_page.dart` 列表頁面 |
-| style | 優化 `tree_survey_page.dart` 調查頁面 |
-| style | 優化 `map_page.dart` 地圖頁面 |
-
----
-
-### v15.0.0 (2025-12-02) - 重大更新 🎉
-
-#### 🌿 新增功能
-- **樹種辨識功能** - 整合 Pl@ntNet + GBIF + iNaturalist 三合一 API
-  - 拍照或從相簿選擇圖片進行辨識
-  - 顯示辨識結果含學名、信心度
-  - 自動標記臺灣原生種
-- **AI 聊天頁面** - 全新智慧對話介面
-- **BLE 解碼器優化** - 改進藍芽封包處理效能
-
-#### 🔧 改進
-- Text-to-SQL 功能優化
-- 測試腳本整理至 `archived_test_scripts/` 資料夾
-- 程式碼架構重構
-
-#### 📋 變更清單
-| 類型 | 說明 |
-|------|------|
-| feat | 樹種辨識頁面 (`species_identification_page.dart`) |
-| feat | 樹種辨識服務 (`species_identification_service.dart`) |
-| feat | AI 聊天頁面 (`ai_chat_page.dart`) |
-| refactor | BLE 封包解碼器重構 (`ble_packet_decoder.dart`) |
-| chore | 測試腳本歸檔整理 |
-
----
-
-## 📋 目錄
-
-- [專案簡介](#-專案簡介)
-- [功能特色](#-功能特色)
-- [畫面截圖](#-畫面截圖)
-- [快速開始](#-快速開始)
-- [專案結構](#-專案結構)
-- [設定說明](#-設定說明)
-- [UI 設計系統](#-ui-設計系統)
-- [建置與發布](#-建置與發布)
-- [開發指南](#-開發指南)
-- [常見問題](#-常見問題)
-
----
-
-## 📖 專案簡介
-
-TreeAI 是一個智慧樹木管理系統的行動應用程式，專為臺灣港務公司 (TIPC) 設計：
-
-- 📱 **跨平台** - 支援 Android 和 iOS
-- 🎨 **TIPC 風格** - 深藍色系專業介面，搭配生態綠色主題
-- 🤖 **AI 助手** - 自然語言查詢資料
-- 🗺️ **地圖視覺化** - Google Maps 整合
-- 📊 **統計圖表** - 數據分析視覺化
-
----
-
-## ✨ 功能特色
-
-### 主要功能
+## 功能
 
 | 功能 | 說明 |
 |------|------|
-| 🌲 **樹木調查** | 新增、編輯、查看樹木資料 |
-| 🌿 **樹種辨識** | Pl@ntNet AI 圖片辨識 ⭐ NEW |
-| 🤖 **AI 聊天** | 自然語言查詢（支援 Markdown） |
-| 🗺️ **地圖顯示** | 樹木位置視覺化 |
-| 📊 **統計分析** | 圖表與數據分析 |
-| 📷 **QR Code** | 掃描查詢樹木資訊 |
-| 📄 **報表匯出** | PDF、Excel 匯出 |
-| 🔐 **管理後台** | 管理員功能面板 |
+| **樹木調查** | 新增、編輯、查看樹木資料（V2/V3 表單） |
+| **AI 助手** | 自然語言查詢（Text-to-SQL，支援 Markdown） |
+| **地圖顯示** | Google Maps 樹木位置視覺化 + 專案邊界 |
+| **樹種辨識** | Pl@ntNet AI 圖片辨識 |
+| **AR 測量** | DBH 測量（GPS 距離模式 + 1.3m 參考線） |
+| **BLE 匯入** | 藍牙測量設備批次匯入 |
+| **報表匯出** | Excel、PDF 匯出 |
+| **統計分析** | 圖表與數據視覺化 |
+| **QR Code** | 掃描查詢樹木資訊 |
+| **ML 數據同步** | 自動同步訓練數據到後端 |
 
 ### 技術特點
 
-- 🎯 **Riverpod** 狀態管理
-- 🔒 **JWT** 認證機制
-- 📍 **Geolocator** 定位服務
-- 📸 **Image Picker** 圖片選擇
-- 💾 **Secure Storage** 安全儲存
+- **Riverpod** 狀態管理
+- **JWT** 認證
+- **TFLite** 裝置端 YOLOv8n-seg 即時偵測
+- **三環境切換**  selfHosted / prod / staging
 
 ---
 
-## 🎨 UI 設計系統 (v16.0.0 新增)
-
-### 配色方案
-
-```dart
-// TIPC 港務色系
-portBlue: #0D47A1      // 主色 - 港務深藍
-oceanCyan: #00BCD4     // 海洋青
-skyBlue: #42A5F5       // 天空藍
-
-// 生態綠色系
-forestGreen: #2E7D32   // 森林綠
-leafGreen: #43A047     // 葉綠
-natureGreen: #66BB6A   // 自然綠
-
-// 輔助色
-warmOrange: #FF7043    // 溫暖橘
-sunYellow: #FFCA28     // 陽光黃
-creativePurple: #7E57C2 // 創意紫
-```
-
-### 設計原則
-- **極簡現代化** - 簡潔清晰的介面設計
-- **一致性** - 統一的視覺語言和交互模式
-- **可存取性** - 適當的對比度和字體大小
-- **動態效果** - 流暢的動畫過渡
-
----
-
-## 📱 功能狀態總覽
-
-> 🟢 上線使用中 | 🟡 可用但較少使用 | 🔴 已棄用/停用 | ⚠️ 開發中
-
-### 頁面狀態
-
-| 頁面檔案 | 功能說明 | 狀態 | 備註 |
-|----------|----------|------|------|
-| `home_page.dart` | 首頁導航 | 🟢 | 主要入口 |
-| `ai_assistant_page.dart` | AI 聊天 | 🟢 | 核心功能，Text-to-SQL |
-| `map_page.dart` | 地圖顯示 | 🟢 | Google Maps 整合 |
-| `tree_survey_page.dart` | 樹木調查列表 | 🟢 | 支援篩選、分頁 |
-| `tree_survey_detail_page.dart` | 調查詳情 | 🟢 | |
-| `tree_input_page_v2.dart` | 樹木新增 (V2) | 🟢 | 建議使用此版本 |
-| `tree_edit_page_v2.dart` | 樹木編輯 | 🟢 | |
-| `statistics_page.dart` | 統計圖表 | 🟢 | |
-| `admin_page.dart` | 管理後台 | 🟢 | 僅管理員可見 |
-| `scan_qrcode_page.dart` | QR Code 掃描 | 🟢 | 掃描查詢樹木 |
-| `species_identification_page.dart` | 樹種辨識 | 🟢 | Pl@ntNet AI ⭐ NEW |
-| `ai_chat_page.dart` | AI 對話 | 🟢 | 新介面 ⭐ NEW |
-| `login_page.dart` | 登入頁面 | 🟢 | |
-| `tree_input_page.dart` | 樹木新增 (V1) | 🟡 | 舊版，保留相容 |
-
-### API 連線狀態
-
-| 功能 | 對應 Backend API | 狀態 |
-|------|------------------|------|
-| 登入驗證 | `POST /api/login` | 🟢 |
-| AI 聊天 | `POST /api/chat` | 🟢 |
-| 樹木列表 | `GET /api/tree_survey` | 🟢 |
-| 地圖資料 | `GET /api/tree_survey/map` | 🟢 |
-| 統計資料 | `GET /api/tree_statistics` | 🟢 |
-| 報表匯出 | `GET /api/export/excel` | 🟢 |
-| 樹種辨識 | `POST /api/species/identify` | 🟢 | ⭐ NEW |
-
----
-
-## �📸 畫面截圖
-
-| 首頁 | AI 聊天 | 地圖 | 統計 |
-|:----:|:------:|:----:|:----:|
-| ![Home](assets/screenshots/home.png) | ![Chat](assets/screenshots/chat.png) | ![Map](assets/screenshots/map.png) | ![Stats](assets/screenshots/stats.png) |
-
-> 💡 截圖資料夾需要自行新增：`assets/screenshots/`
-
----
-
-## 🚀 快速開始
+## 快速開始
 
 ### 前置需求
 
-- **Flutter SDK** 3.0.0 以上
-- **Dart SDK** 3.0.0 以上
-- **Android Studio** 或 **VS Code**
-- **Xcode**（僅 macOS，用於 iOS 開發）
-
-### 檢查環境
+- Flutter SDK 3.0+
+- Dart SDK 3.0+
+- Android Studio 或 VS Code
 
 ```bash
-flutter doctor
+flutter doctor  # 確認環境
 ```
 
-確保所有項目都是 ✅
-
-### 安裝步驟
+### 安裝
 
 ```bash
-# 1. 複製專案
 git clone https://github.com/KyleliuNDHU/tree-project-frontend.git
 cd tree-project-frontend
-
-# 2. 安裝依賴
 flutter pub get
-
-# 3. 執行應用程式
 flutter run
 ```
 
 ### 常用指令
 
 ```bash
-flutter run                    # 執行（Debug 模式）
-flutter run --release          # 執行（Release 模式）
-flutter build apk              # 建置 Android APK
-flutter build ios              # 建置 iOS
-flutter clean                  # 清理建置檔案
-flutter pub get                # 安裝依賴
-flutter pub upgrade            # 更新依賴
+flutter run                    # Debug 模式
+flutter run --release          # Release 模式
+flutter build apk --release   # 建置 APK
+flutter build ios --release    # 建置 iOS
+flutter clean                  # 清理
+flutter test                   # 執行測試
 ```
 
 ---
 
-## 📁 專案結構
+## 專案結構
 
 ```
 frontend/
-├── lib/                            # 📂 主要程式碼
-│   ├── main.dart                   # 🚀 主程式入口 + 主題設定
-│   │
-│   ├── config/                     # ⚙️ 設定
-│   │   └── app_config.dart         # API URL、環境設定
-│   │
-│   ├── constants/                  # 🎨 常數
-│   │   └── colors.dart             # TIPC 配色常數 ⭐
-│   │
-│   ├── models/                     # 📋 資料模型
-│   │   └── tree_species.dart       # 樹種模型
-│   │
-│   ├── services/                   # 🔧 服務層
-│   │   ├── carbon_sink_service.dart # 碳匯計算服務
-│   │   └── species_identification_service.dart # 樹種辨識服務 ⭐ NEW
-│   │
-│   ├── screens/                    # 📱 頁面（子頁面）
-│   │   ├── home_page.dart          # 首頁
-│   │   ├── login_page.dart         # 登入頁
-│   │   ├── cities_page.dart        # 城市選擇
-│   │   ├── project_areas_page.dart # 專案區域
-│   │   └── species_identification_page.dart # 樹種辨識 ⭐ NEW
-│   │
-│   ├── widgets/                    # 🧩 可重用元件
-│   │
-│   ├── routes/                     # 🛣️ 路由
-│   │   └── auth_guard.dart         # 認證守衛
-│   │
-│   ├── themes/                     # 🎨 主題
-│   │
-│   │── ai_assistant_page.dart      # 🤖 AI 聊天頁面 ⭐
-│   ├── map_page.dart               # 🗺️ 地圖頁面 ⭐
-│   ├── tree_survey_page.dart       # 🌲 樹木調查列表
-│   ├── tree_survey_detail_page.dart # 📄 調查詳情
-│   ├── tree_input_page.dart        # ✏️ 樹木輸入 (V1)
-│   ├── tree_input_page_v2.dart     # ✏️ 樹木輸入 (V2)
-│   ├── tree_edit_page_v2.dart      # 📝 樹木編輯
-│   ├── statistics_page.dart        # 📊 統計頁面
-│   ├── admin_page.dart             # 🔐 管理後台
-│   └── scan_qrcode_page.dart       # 📷 QR Code 掃描
-│
-├── assets/                         # 📦 靜態資源
-│   ├── data/                       # 資料檔案
-│   ├── icons/                      # 圖標
-│   └── images/                     # 圖片
-│
-├── android/                        # 🤖 Android 設定
-│   ├── app/
-│   │   ├── build.gradle.kts        # 建置設定
-│   │   └── src/main/
-│   │       ├── AndroidManifest.xml # 權限設定
-│   │       └── res/                # 資源檔案
-│   └── key.properties              # 簽名金鑰（不要提交！）
-│
-├── ios/                            # 🍎 iOS 設定
-│   ├── Runner/
-│   │   ├── Info.plist              # 權限設定
-│   │   └── AppDelegate.swift       # 應用委託
-│   ├── Podfile                     # CocoaPods 依賴
-│   └── Podfile.lock                # 依賴鎖定
-│
-├── test/                           # 🧪 測試
-│   └── widget_test.dart            # Widget 測試
-│
-├── pubspec.yaml                    # 📦 依賴管理
-└── pubspec.lock                    # 依賴鎖定
+ lib/
+    main.dart                     # 入口 + 主題
+    config/
+       app_config.dart           # API URL、環境設定
+    constants/
+       colors.dart               # TIPC 配色
+    models/                       # 資料模型
+    services/                     # API 呼叫 + 業務邏輯
+       api_service.dart          # HTTP 層
+       species_identification_service.dart
+       carbon_sink_service.dart
+       tflite_tracking_service.dart  # 裝置端 ML
+       pure_vision_dbh_service.dart  # DBH 測量
+       v3/                       # V3 進階服務
+           tree_image_service.dart
+           conflict_resolution_service.dart
+           ar_measurement_integration_service.dart
+           project_boundary_service.dart
+           ml_data_sync_service.dart
+    screens/                      # 頁面
+       home_page.dart
+       login_page.dart
+       scanner_page.dart         # 即時掃描
+       species_identification_page.dart
+       v3/                       # V3 測量頁面
+    widgets/                      # 可重用元件
+    routes/                       # 路由
+       auth_guard.dart
+    themes/                       # 主題
+    ai_assistant_page.dart        # AI 聊天
+    map_page.dart                 # 地圖
+    tree_survey_page.dart         # 調查列表
+    tree_input_page_v2.dart       # 新增 (V2)
+    tree_edit_page_v2.dart        # 編輯
+    statistics_page.dart          # 統計
+    admin_page.dart              # 管理後台
+    scan_qrcode_page.dart        # QR Code
+ assets/                           # 靜態資源
+ android/                          # Android 設定
+ ios/                              # iOS 設定
+ test/                             # 測試（251 案例）
+ pubspec.yaml                      # 依賴管理
 ```
 
 ---
 
-## ⚙️ 設定說明
+## 環境設定
 
-### API 設定
+### API 環境切換
 
-API 設定位於 `lib/config/app_config.dart`，採用單例模式支援環境切換：
+設定位於 `lib/config/app_config.dart`。支援三種環境：
 
-```dart
-// lib/config/app_config.dart
-enum Environment { prod, staging }
+| 環境 | URL | 說明 |
+|------|-----|------|
+| **selfHosted** | `https://100.118.203.75/api` | 自架伺服器（預設） |
+| **prod** | `https://tree-app-backend-prod.onrender.com/api` | Render 正式版 |
+| **staging** | `https://tree-app-backend-staging.onrender.com/api` | Render 測試版 |
 
-class AppConfig {
-  // 正式環境
-  static const String prodUrl = 'https://tree-app-backend-prod.onrender.com/api';
-  
-  // 測試環境
-  static const String stagingUrl = 'https://tree-app-backend-staging.onrender.com/api';
-}
-```
-
-#### 環境切換功能 ⭐
-
-- **正式版 (Prod)**: `https://tree-app-backend-prod.onrender.com/api`
-- **測試版 (Staging)**: `https://tree-app-backend-staging.onrender.com/api`
-
-使用者可在管理後台頁面切換環境，切換後需重啟 App。
+在 Admin 頁面可切換環境（需重啟 App）。
 
 ### Google Maps API Key
 
-#### Android
-編輯 `android/app/src/main/AndroidManifest.xml`：
-
-```xml
-<meta-data
-    android:name="com.google.android.geo.API_KEY"
-    android:value="YOUR_ANDROID_API_KEY"/>
+**Android**  `android/gradle.properties`：
+```properties
+MAPS_API_KEY=your_api_key
 ```
 
-#### iOS
-編輯 `ios/Runner/AppDelegate.swift`：
-
+**iOS**  `ios/Runner/AppDelegate.swift`：
 ```swift
-GMSServices.provideAPIKey("YOUR_IOS_API_KEY")
+GMSServices.provideAPIKey("your_api_key")
 ```
 
-### 如何取得 Google Maps API Key
-
-1. 前往 [Google Cloud Console](https://console.cloud.google.com/)
-2. 建立新專案或選擇現有專案
-3. 啟用 **Maps SDK for Android** 和 **Maps SDK for iOS**
-4. 建立 API 金鑰
-5. 建議設定 API 金鑰限制（應用程式限制）
+> `gradle.properties` 和 `key.properties` 已加入 `.gitignore`，不會提交到 Git。
 
 ---
 
-## 🎨 UI 設計系統
+## 頁面狀態
 
-### 配色方案（TIPC 風格）
+>  使用中 |  較少使用 |  已棄用
+
+| 頁面 | 功能 | 狀態 |
+|------|------|------|
+| `home_page.dart` | 首頁導航 |  |
+| `ai_assistant_page.dart` | AI 聊天 (Text-to-SQL) |  |
+| `map_page.dart` | 地圖 + 邊界 |  |
+| `tree_survey_page.dart` | 調查列表 |  |
+| `tree_input_page_v2.dart` | 新增樹木 (V2) |  |
+| `tree_edit_page_v2.dart` | 編輯樹木 |  |
+| `statistics_page.dart` | 統計圖表 |  |
+| `species_identification_page.dart` | 樹種辨識 |  |
+| `scanner_page.dart` | 即時 ML 掃描 |  |
+| `admin_page.dart` | 管理後台 |  |
+| `scan_qrcode_page.dart` | QR Code |  |
+| `tree_input_page.dart` | 新增 (V1) |  |
+
+---
+
+## UI 設計系統
+
+TIPC 港務風格 + 生態綠色主題（v16.0.0 建立）。
+
+### 配色
 
 ```dart
 // lib/constants/colors.dart
-class AppColors {
-  static const primary = Color(0xFF0D47A1);      // 深藍色 - 主色
-  static const secondary = Color(0xFF1976D2);    // 中藍色
-  static const accent = Color(0xFF00BCD4);       // 青色 - 海洋感
-  static const background = Color(0xFFE3F2FD);   // 淡藍色背景
-  static const text = Color(0xFF212121);         // 主要文字
-  static const secondaryText = Color(0xFF757575); // 次要文字
-  static const error = Color(0xFFD32F2F);        // 錯誤
-  static const success = Color(0xFF0288D1);      // 成功
-  static const warning = Color(0xFFFFA000);      // 警告
-}
+portBlue:       #0D47A1   // 主色 - 港務深藍
+oceanCyan:      #00BCD4   // 海洋青
+forestGreen:    #2E7D32   // 森林綠
+leafGreen:      #43A047   // 葉綠
+warmOrange:     #FF7043   // 警告橘
+sunYellow:      #FFCA28   // 陽光黃
 ```
 
-### 使用配色
-
-```dart
-import 'package:sustainable_treeai/constants/colors.dart';
-
-// 使用方式
-Container(
-  color: AppColors.primary,
-  child: Text(
-    'Hello',
-    style: TextStyle(color: AppColors.text),
-  ),
-)
-```
-
-### 主題設定
-
-主題定義在 `lib/main.dart` 的 `createAppTheme()` 函數中，包含：
-
-- AppBar 樣式
-- Button 樣式
-- Input 樣式
-- Card 樣式
-- Text 樣式
+### 設計原則
+- 極簡現代化、Material 3 + Google Fonts
+- 圓角 + 漸層 + 磨砂玻璃效果
+- 統一使用 `AppColors` 配色常數
 
 ---
 
-## 📦 建置與發布
+## 建置與發布
 
-### Android APK
+### Android
 
 ```bash
-# Debug APK
-flutter build apk --debug
-
-# Release APK
 flutter build apk --release
+#  build/app/outputs/flutter-apk/app-release.apk
 
-# APK 位置
-# build/app/outputs/flutter-apk/app-release.apk
-```
-
-### Android App Bundle（上架 Play Store）
-
-```bash
-flutter build appbundle --release
-
-# AAB 位置
-# build/app/outputs/bundle/release/app-release.aab
+flutter build appbundle --release    # Play Store
+#  build/app/outputs/bundle/release/app-release.aab
 ```
 
 ### iOS
 
 ```bash
-# 需要在 macOS 上執行
 flutter build ios --release
-
-# 然後在 Xcode 中 Archive 並上傳到 App Store Connect
+# 在 Xcode 中 Archive  上傳 App Store Connect
 ```
 
-### 簽名設定（Android）
+### 簽名設定
 
 1. 產生 keystore：
 ```bash
 keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
 ```
 
-2. 建立 `android/key.properties`：
-```properties
-storePassword=your_store_password
-keyPassword=your_key_password
-keyAlias=upload
-storeFile=../upload-keystore.jks
-```
-
-3. 在 `android/app/build.gradle.kts` 中引用（已設定）
+2. 建立 `android/key.properties`（不提交到 Git）
 
 ---
 
-## 👨‍💻 開發指南
+## 開發指南
 
 ### 新增頁面
-
-1. 在 `lib/` 或 `lib/screens/` 建立新的 dart 檔案
-2. 建立 StatelessWidget 或 StatefulWidget
-3. 在 `main.dart` 或路由中註冊
-
-**範例：**
 
 ```dart
 // lib/screens/example_page.dart
@@ -840,23 +250,16 @@ class ExamplePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('範例頁面'),
-      ),
+      appBar: AppBar(title: const Text('範例')),
       body: Center(
-        child: Text(
-          'Hello World!',
-          style: TextStyle(color: AppColors.primary),
-        ),
+        child: Text('Hello', style: TextStyle(color: AppColors.primary)),
       ),
     );
   }
 }
 ```
 
-### 呼叫 API
-
-使用 Dio 套件：
+### API 呼叫
 
 ```dart
 import 'package:dio/dio.dart';
@@ -867,24 +270,18 @@ final dio = Dio(BaseOptions(
   headers: {'Authorization': 'Bearer $token'},
 ));
 
-// GET 請求
-final response = await dio.get('/tree_survey');
-
-// POST 請求
 final response = await dio.post('/chat', data: {
   'message': '列出所有樹木',
 });
 ```
 
-### 狀態管理（Riverpod）
+### 狀態管理
+
+使用 Riverpod：
 
 ```dart
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-// 定義 Provider
 final counterProvider = StateProvider<int>((ref) => 0);
 
-// 使用 Provider
 class MyWidget extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -896,103 +293,56 @@ class MyWidget extends ConsumerWidget {
 
 ---
 
-## ❓ 常見問題
+## 常見問題
 
-### Q: `flutter pub get` 失敗？
+| 問題 | 解法 |
+|------|------|
+| `flutter pub get` 失敗 | `flutter clean && flutter pub cache repair && flutter pub get` |
+| Android 建置失敗 | `cd android && ./gradlew clean` |
+| iOS 建置失敗 | `cd ios && rm -rf Pods Podfile.lock && pod install --repo-update` |
+| Google Maps 不顯示 | 確認 API Key 已設定且啟用 Maps SDK |
+| 找不到 key.properties | `android/key.properties` 需手動建立（不在 Git 中） |
+
+---
+
+## 測試
 
 ```bash
-flutter clean
-flutter pub cache repair
-flutter pub get
+flutter test               # 所有測試
 ```
 
-### Q: Android 建置失敗？
-
-確認：
-1. `android/local.properties` 中的 SDK 路徑正確
-2. Gradle 版本相容
-3. 執行 `cd android && ./gradlew clean`
-
-### Q: iOS 建置失敗？
-
-```bash
-cd ios
-rm -rf Pods Podfile.lock
-pod install --repo-update
-cd ..
-flutter clean
-flutter run
-```
-
-### Q: Google Maps 不顯示？
-
-確認：
-1. API Key 已正確設定
-2. Google Cloud 專案已啟用 Maps SDK
-3. API Key 限制設定正確
-
-### Q: 權限問題？
-
-確認 `AndroidManifest.xml` 和 `Info.plist` 中的權限設定：
-
-**Android 權限：**
-```xml
-<uses-permission android:name="android.permission.INTERNET"/>
-<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
-<uses-permission android:name="android.permission.CAMERA"/>
-```
-
-**iOS 權限（Info.plist）：**
-```xml
-<key>NSLocationWhenInUseUsageDescription</key>
-<string>需要位置權限以顯示您的位置</string>
-<key>NSCameraUsageDescription</key>
-<string>需要相機權限以掃描 QR Code</string>
-```
+251 個測試案例（V3 測試套件），涵蓋：
+- AR DBH 測量整合、BLE 模擬
+- 資料庫正規化、衝突解決
+- 專案邊界、ID 生成、端到端工作流程
 
 ---
 
-## 📚 學習資源
+## 版本紀錄
 
-### Flutter 官方資源
-- [Flutter 官方文件](https://docs.flutter.dev/)
-- [Flutter Cookbook](https://docs.flutter.dev/cookbook)
-- [Flutter Widget 目錄](https://docs.flutter.dev/development/ui/widgets)
+完整版本紀錄請見 [CHANGELOG.md](CHANGELOG.md)。
 
-### 推薦學習路線
-1. Dart 基礎語法
-2. Flutter Widget 基礎
-3. 狀態管理（Riverpod）
-4. 網路請求（Dio）
-5. 本地儲存
-6. 導航與路由
+### 主要版本
 
----
-
-## 🤝 貢獻指南
-
-1. Fork 專案
-2. 建立功能分支 (`git checkout -b feature/AmazingFeature`)
-3. 提交變更 (`git commit -m 'Add some AmazingFeature'`)
-4. 推送到分支 (`git push origin feature/AmazingFeature`)
-5. 開啟 Pull Request
+| 版本 | 日期 | 重點 |
+|------|------|------|
+| 18.5 | 2026-03-10 | 自架伺服器三環境切換 |
+| 18.4 | 2026-02-22 | ML 精度升級 + App 穩定性 |
+| 18.3 | 2025-12-14 | 專案管理清理機制 + UX 改進 |
+| 18.2 | 2025-12-14 | AR GPS 距離模式 + 安全改進 |
+| 18.0 | 2025-12-03 | V3 測試套件 + ML 同步 |
+| 17.0 | 2025-12-03 | 專案邊界 + 智慧匹配 |
+| 16.0 | 2025-12-02 | UI 全面翻新（TIPC 風格） |
+| 15.0 | 2025-12-02 | 樹種辨識 + AI 聊天 |
 
 ---
 
-## 📄 授權
+## 授權
 
-本專案使用 ISC 授權條款
+ISC License
 
----
+## 聯絡
 
-## 📞 聯絡資訊
-
-- **GitHub**: [@KyleliuNDHU](https://github.com/KyleliuNDHU)
-- **專案連結**: [tree-project-frontend](https://github.com/KyleliuNDHU/tree-project-frontend)
-- **後端專案**: [tree-project-backend](https://github.com/KyleliuNDHU/tree-project-backend)
-
----
-
-<p align="center">
-  Made with ❤️ using Flutter
-</p>
+- GitHub: [@KyleliuNDHU](https://github.com/KyleliuNDHU)
+- Frontend: [tree-project-frontend](https://github.com/KyleliuNDHU/tree-project-frontend)
+- Backend: [tree-project-backend](https://github.com/KyleliuNDHU/tree-project-backend)
