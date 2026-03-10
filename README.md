@@ -3,13 +3,35 @@
 [![Flutter](https://img.shields.io/badge/Flutter-3.x-blue.svg)](https://flutter.dev/)
 [![Dart](https://img.shields.io/badge/Dart-3.x-blue.svg)](https://dart.dev/)
 [![License](https://img.shields.io/badge/License-ISC-yellow.svg)](LICENSE)
-[![Version](https://img.shields.io/badge/Version-18.3.2-green.svg)](https://github.com/KyleliuNDHU/tree-project-frontend)
+[![Version](https://img.shields.io/badge/Version-18.5.0-green.svg)](https://github.com/KyleliuNDHU/tree-project-frontend)
 
 > 基於大語言模型的永續發展分析平台 - Flutter 行動應用程式
 
 ---
 
 ## 📦 版本紀錄
+
+### v18.5.0 (2026-03-10) - Self-Hosted Server Support 🏠
+
+#### 🏠 自架伺服器支援
+- **三環境切換** — 新增 `Environment.selfHosted` 選項
+  - `selfHosted` → `https://100.118.203.75/api`（自架伺服器，預設）
+  - `prod` → Render 正式版（備援）
+  - `staging` → Render 測試版
+- **Admin 系統設定 UI** — 更新為 3 環境切換按鈕
+  - 各環境獨立圖示與顏色標識（dns/public/developer_mode）
+  - 環境循環：selfHosted → prod → staging → selfHosted
+- **ML Service URL** — 自動配置
+  - Backend 登入時透過 `mlConfig` 自動推送 ML Service URL
+  - 前端無需手動設定 ML 連線
+
+#### 📋 變更清單
+| 類型 | 檔案 | 說明 |
+|------|------|------|
+| feat | `lib/config/app_config.dart` | 新增 selfHosted 環境，預設使用自架伺服器 |
+| feat | `lib/admin_page.dart` | 系統設定 UI 改為 3 環境切換按鈕 |
+
+---
 
 ### v18.4.0 (2026-02-22) - App Stabilization & ML Precision Upgrade 🚀
 
