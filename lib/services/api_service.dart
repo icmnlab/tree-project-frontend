@@ -220,7 +220,7 @@ class ApiService {
       final response = await http.get(
         Uri.parse('$baseUrl/tree_survey'),
         headers: _getHeaders(),
-      );
+      ).timeout(_timeout);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -241,7 +241,7 @@ class ApiService {
       final response = await http.get(
         Uri.parse('$baseUrl/carbon-sink/tree-species'),
         headers: _getHeaders(),
-      );
+      ).timeout(_timeout);
 
       if (response.statusCode == 200) {
         return _handleResponse(response);

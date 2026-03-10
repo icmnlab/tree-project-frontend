@@ -161,26 +161,36 @@ class PureVisionDbhService {
     required int x,
     required int y,
   }) async {
-    final uri = Uri.parse('$_baseUrl/debug/depth-at-point');
-    final request = http.MultipartRequest('POST', uri);
-    // 添加 ML API Key 認證
-    request.headers.addAll(_authHeaders);
-    request.files.add(
-      await http.MultipartFile.fromPath('image', imageFile.path),
-    );
-    request.fields['x'] = x.toString();
-    request.fields['y'] = y.toString();
+    try {
+      final uri = Uri.parse('$_baseUrl/debug/depth-at-point');
+      final request = http.MultipartRequest('POST', uri);
+      // 添加 ML API Key 認證
+      request.headers.addAll(_authHeaders);
+      request.files.add(
+        await http.MultipartFile.fromPath('image', imageFile.path),
+      );
+      request.fields['x'] = x.toString();
+      request.fields['y'] = y.toString();
 
-    final streamedResponse = await request.send().timeout(
-      const Duration(seconds: 30),
-    );
-    final response = await http.Response.fromStream(streamedResponse);
+      final streamedResponse = await request.send().timeout(
+        const Duration(seconds: 30),
+      );
+      final response = await http.Response.fromStream(streamedResponse);
 
-    if (response.statusCode != 200) {
-      throw PureVisionException('API 錯誤 (${response.statusCode})');
+      if (response.statusCode != 200) {
+        throw PureVisionException('API 錯誤 (${response.statusCode})');
+      }
+
+      return json.decode(response.body);
+    } on PureVisionException {
+      rethrow;
+    } on SocketException {
+      throw PureVisionException('無法連接 ML 服務');
+    } on TimeoutException {
+      throw PureVisionException('請求逾時');
+    } on FormatException {
+      throw PureVisionException('伺服器回傳無效的 JSON 格式');
     }
-
-    return json.decode(response.body);
   }
 
   /// 取得 ML Service 設定（可用模式、模型資訊等）
@@ -443,10 +453,14 @@ class PureVisionDbhService {
 
       final data = json.decode(response.body);
       return AutoMeasureResult.fromJson(data);
+    } on PureVisionException {
+      rethrow;
     } on SocketException {
       throw PureVisionException('無法連接 ML 服務');
     } on TimeoutException {
       throw PureVisionException('多照片分析逾時');
+    } on FormatException {
+      throw PureVisionException('伺服器回傳無效的 JSON 格式');
     } on http.ClientException catch (e) {
       throw PureVisionException('網路錯誤: $e');
     }

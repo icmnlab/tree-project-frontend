@@ -154,6 +154,9 @@ class PendingMeasurementService {
   }
   
   /// 上傳待測量記錄到後端
+  static const _timeout = Duration(seconds: 30);
+
+  /// 上傳待測量記錄到後端
   Future<Map<String, dynamic>> uploadPendingMeasurements(
     List<PendingTreeMeasurement> measurements,
   ) async {
@@ -167,7 +170,7 @@ class PendingMeasurementService {
         body: jsonEncode({
           'measurements': measurements.map((m) => m.toJson()).toList(),
         }),
-      );
+      ).timeout(_timeout);
       
       if (response.statusCode == 200 || response.statusCode == 201) {
         return jsonDecode(response.body);
@@ -186,7 +189,7 @@ class PendingMeasurementService {
       final response = await http.get(
         Uri.parse('$_baseUrl/api/pending-measurements/sessions'),
         headers: ApiService.getAuthHeaders(),
-      );
+      ).timeout(_timeout);
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as List;
@@ -219,7 +222,7 @@ class PendingMeasurementService {
       final response = await http.get(
         uri,
         headers: ApiService.getAuthHeaders(),
-      );
+      ).timeout(_timeout);
       
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as List;
@@ -274,7 +277,7 @@ class PendingMeasurementService {
           ...ApiService.getAuthHeaders(),
         },
         body: jsonEncode(body),
-      );
+      ).timeout(_timeout);
       
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
@@ -300,7 +303,7 @@ class PendingMeasurementService {
           'status': MeasurementStatus.skipped.value,
           'measurement_notes': reason ?? '使用者跳過',
         }),
-      );
+      ).timeout(_timeout);
 
       if (response.statusCode != 200) {
         throw Exception('跳過測量失敗: ${response.statusCode}');
@@ -323,7 +326,7 @@ class PendingMeasurementService {
         body: jsonEncode({
           'status': status.value,
         }),
-      );
+      ).timeout(_timeout);
     } catch (e) {
       debugPrint('更新任務狀態失敗: $e');
       rethrow;
@@ -344,7 +347,7 @@ class PendingMeasurementService {
         body: jsonEncode({
           'session_id': sessionId,
         }),
-      );
+      ).timeout(_timeout);
       
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
@@ -365,20 +368,31 @@ class PendingMeasurementService {
     String? projectName,
   }) async {
     final trees = await getPendingTrees(sessionId: sessionId);
+    final errors = <String>[];
     for (final tree in trees) {
       if (tree.id == null) continue;
-      await http.patch(
-        Uri.parse('$_baseUrl/api/pending-measurements/${tree.id}'),
-        headers: {
-          'Content-Type': 'application/json',
-          ...ApiService.getAuthHeaders(),
-        },
-        body: jsonEncode({
-          'project_area': projectArea,
-          'project_code': projectCode,
-          'project_name': projectName,
-        }),
-      );
+      try {
+        final response = await http.patch(
+          Uri.parse('$_baseUrl/api/pending-measurements/${tree.id}'),
+          headers: {
+            'Content-Type': 'application/json',
+            ...ApiService.getAuthHeaders(),
+          },
+          body: jsonEncode({
+            'project_area': projectArea,
+            'project_code': projectCode,
+            'project_name': projectName,
+          }),
+        ).timeout(_timeout);
+        if (response.statusCode != 200) {
+          errors.add('ID ${tree.id}: HTTP ${response.statusCode}');
+        }
+      } catch (e) {
+        errors.add('ID ${tree.id}: $e');
+      }
+    }
+    if (errors.isNotEmpty) {
+      throw Exception('部分更新失敗: ${errors.join(", ")}');
     }
   }
 

@@ -64,10 +64,10 @@ class ScannerService {
     debugPrint('[ScannerService] Connecting to $url');
 
     try {
-      _channel = WebSocketChannel.connect(Uri.parse(url));
       _responseController = StreamController<ScannerResponse>.broadcast();
+      _channel = WebSocketChannel.connect(Uri.parse(url));
 
-      // 監聽訊息
+      // 監聯訊息
       _channel!.stream.listen(
         _onMessage,
         onError: (e) {
@@ -82,6 +82,7 @@ class ScannerService {
       );
     } catch (e) {
       debugPrint('[ScannerService] Connect failed: $e');
+      _dispose();
       rethrow;
     }
   }

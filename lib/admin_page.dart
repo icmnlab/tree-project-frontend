@@ -81,6 +81,7 @@ class _AdminPageState extends State<AdminPage> {
     });
     try {
       final users = await _userService.fetchUsers();
+      if (!mounted) return;
       setState(() {
         _users = users.map((user) {
           // [FIX] Backend now guarantees boolean, but keeping robust parsing logic just in case
@@ -103,9 +104,11 @@ class _AdminPageState extends State<AdminPage> {
         );
       }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -116,6 +119,7 @@ class _AdminPageState extends State<AdminPage> {
     });
     try {
       final projectsResponse = await _projectService.getProjects();
+      if (!mounted) return;
       if (projectsResponse['success'] == true &&
           projectsResponse['data'] != null) {
         setState(() {
@@ -124,11 +128,9 @@ class _AdminPageState extends State<AdminPage> {
               .toList();
         });
       } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(projectsResponse['message'] ?? '無法載入專案列表')),
-          );
-        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(projectsResponse['message'] ?? '無法載入專案列表')),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -137,9 +139,11 @@ class _AdminPageState extends State<AdminPage> {
         );
       }
     } finally {
-      setState(() {
-        _isLoadingProjects = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingProjects = false;
+        });
+      }
     }
   }
 
