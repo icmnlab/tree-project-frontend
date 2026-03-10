@@ -308,7 +308,7 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
                             ..._trees.take(5).map((tree) => Card(
                                   margin: const EdgeInsets.only(bottom: 10),
                                   elevation: 3,
-                                  shadowColor: Colors.green.withOpacity(0.3),
+                                  shadowColor: Colors.green.withValues(alpha:0.3),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -373,7 +373,7 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.forestGreen.withOpacity(0.4),
+                    color: AppColors.forestGreen.withValues(alpha:0.4),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),

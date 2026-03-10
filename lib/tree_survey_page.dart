@@ -210,11 +210,11 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppColors.portBlue, AppColors.portBlue.withOpacity(0.8)],
+              colors: [AppColors.portBlue, AppColors.portBlue.withValues(alpha: 0.8)],
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.portBlue.withOpacity(0.3),
+                color: AppColors.portBlue.withValues(alpha: 0.3),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -267,7 +267,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.portBlue.withOpacity(0.1),
+                          color: AppColors.portBlue.withValues(alpha: 0.1),
                           blurRadius: 20,
                           spreadRadius: 5,
                         ),
@@ -300,7 +300,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
+                          color: Colors.black.withValues(alpha: 0.05),
                           blurRadius: 20,
                           spreadRadius: 5,
                         ),
@@ -312,7 +312,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                         Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: AppColors.error.withOpacity(0.1),
+                            color: AppColors.error.withValues(alpha: 0.1),
                             shape: BoxShape.circle,
                           ),
                           child: const Icon(
@@ -366,7 +366,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
+                              color: Colors.black.withValues(alpha: 0.05),
                               blurRadius: 20,
                               spreadRadius: 5,
                             ),
@@ -379,7 +379,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                               padding: const EdgeInsets.all(24),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
-                                  colors: [AppColors.forestGreen.withOpacity(0.1), AppColors.leafGreen.withOpacity(0.1)],
+                                  colors: [AppColors.forestGreen.withValues(alpha: 0.1), AppColors.leafGreen.withValues(alpha: 0.1)],
                                   begin: Alignment.topLeft,
                                   end: Alignment.bottomRight,
                                 ),
@@ -419,7 +419,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                                     borderRadius: BorderRadius.circular(16),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: AppColors.forestGreen.withOpacity(0.1),
+                                        color: AppColors.forestGreen.withValues(alpha: 0.1),
                                         blurRadius: 10,
                                         offset: const Offset(0, 2),
                                       ),
@@ -431,7 +431,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                                       Container(
                                         padding: const EdgeInsets.all(6),
                                         decoration: BoxDecoration(
-                                          color: AppColors.forestGreen.withOpacity(0.1),
+                                          color: AppColors.forestGreen.withValues(alpha: 0.1),
                                           borderRadius: BorderRadius.circular(8),
                                         ),
                                         child: const Icon(Icons.park_rounded, size: 18, color: AppColors.forestGreen),
@@ -467,7 +467,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.04),
+                                color: Colors.black.withValues(alpha: 0.04),
                                 blurRadius: 12,
                                 offset: const Offset(0, 4),
                               ),
@@ -505,7 +505,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                                         borderRadius: BorderRadius.circular(14),
                                         boxShadow: [
                                           BoxShadow(
-                                            color: AppColors.forestGreen.withOpacity(0.3),
+                                            color: AppColors.forestGreen.withValues(alpha: 0.3),
                                             blurRadius: 8,
                                             offset: const Offset(0, 3),
                                           ),
@@ -543,7 +543,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                                               Container(
                                                 padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                                 decoration: BoxDecoration(
-                                                  color: AppColors.portBlue.withOpacity(0.1),
+                                                  color: AppColors.portBlue.withValues(alpha: 0.1),
                                                   borderRadius: BorderRadius.circular(10),
                                                 ),
                                                 child: Text(
@@ -640,11 +640,11 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [AppColors.portBlue, AppColors.portBlue.withOpacity(0.85)],
+                    colors: [AppColors.portBlue, AppColors.portBlue.withValues(alpha: 0.85)],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.portBlue.withOpacity(0.4),
+                      color: AppColors.portBlue.withValues(alpha: 0.4),
                       blurRadius: 16,
                       spreadRadius: 0,
                       offset: const Offset(0, 6),
@@ -680,7 +680,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(

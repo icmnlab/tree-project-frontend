@@ -1070,7 +1070,7 @@ class _ScannerPageState extends State<ScannerPage>
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.red.withOpacity(0.8),
+                color: Colors.red.withValues(alpha:0.8),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: const Row(
@@ -1097,7 +1097,7 @@ class _ScannerPageState extends State<ScannerPage>
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.orange.shade900.withOpacity(0.9),
+                color: Colors.orange.shade900.withValues(alpha:0.9),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.orangeAccent, width: 1.5),
               ),
@@ -1143,8 +1143,8 @@ class _ScannerPageState extends State<ScannerPage>
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: _isAutoMode
-                    ? Colors.tealAccent.withOpacity(0.2)
-                    : Colors.grey.withOpacity(0.3),
+                    ? Colors.tealAccent.withValues(alpha:0.2)
+                    : Colors.grey.withValues(alpha:0.3),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: _isAutoMode ? Colors.tealAccent : Colors.grey,
@@ -1274,7 +1274,7 @@ class _ScannerPageState extends State<ScannerPage>
                     margin: const EdgeInsets.only(bottom: 8, left: 16, right: 16),
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.red.shade900.withOpacity(0.85),
+                      color: Colors.red.shade900.withValues(alpha:0.85),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(_errorMessage!,
@@ -1429,10 +1429,10 @@ class _ScannerPageState extends State<ScannerPage>
               margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: _distanceStatusColor(r.distanceStatus).withOpacity(0.15),
+                color: _distanceStatusColor(r.distanceStatus).withValues(alpha:0.15),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: _distanceStatusColor(r.distanceStatus).withOpacity(0.5),
+                  color: _distanceStatusColor(r.distanceStatus).withValues(alpha:0.5),
                 ),
               ),
               child: Row(
@@ -1847,7 +1847,7 @@ class _ScannerPageState extends State<ScannerPage>
             child: Text(
               'ML: ${config.mlServiceSource}',
               style: TextStyle(
-                color: config.useSelfHostedMl ? Colors.tealAccent.withOpacity(0.8) : Colors.white54,
+                color: config.useSelfHostedMl ? Colors.tealAccent.withValues(alpha:0.8) : Colors.white54,
                 fontSize: 11,
               ),
             ),
@@ -2023,9 +2023,9 @@ class _ScannerPageState extends State<ScannerPage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.3),
+        color: color.withValues(alpha:0.3),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.6)),
+        border: Border.all(color: color.withValues(alpha:0.6)),
       ),
       child: Text(text, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
     );
@@ -2124,7 +2124,7 @@ class _BboxOverlayPainter extends CustomPainter {
     final Path fullPath = Path()..addRect(Offset.zero & size);
     final Path bboxPath = Path()..addRect(bbox!);
     final Path dimPath = Path.combine(PathOperation.difference, fullPath, bboxPath);
-    canvas.drawPath(dimPath, Paint()..color = Colors.black.withOpacity(0.45));
+    canvas.drawPath(dimPath, Paint()..color = Colors.black.withValues(alpha:0.45));
 
     final borderPaint = Paint()
       ..color = Colors.tealAccent
@@ -2157,7 +2157,7 @@ class _BboxOverlayPainter extends CustomPainter {
     final cx = bbox!.center.dx;
     final cy = bbox!.center.dy;
     final crossPaint = Paint()
-      ..color = Colors.white.withOpacity(0.5)
+      ..color = Colors.white.withValues(alpha:0.5)
       ..strokeWidth = 1;
     canvas.drawLine(Offset(cx - 12, cy), Offset(cx + 12, cy), crossPaint);
     canvas.drawLine(Offset(cx, cy - 12), Offset(cx, cy + 12), crossPaint);
@@ -2221,7 +2221,7 @@ class _LiveBboxPainter extends CustomPainter {
     // 半透明填充
     final fillPaint = Paint()
       ..style = PaintingStyle.fill
-      ..color = Colors.greenAccent.withOpacity(0.25);
+      ..color = Colors.greenAccent.withValues(alpha:0.25);
     canvas.drawRect(rect, fillPaint);
 
     // 邊框（加粗以確保可見）
@@ -2258,7 +2258,7 @@ class _LiveBboxPainter extends CustomPainter {
       );
       canvas.drawRRect(
         RRect.fromRectAndRadius(bgRect, const Radius.circular(4)),
-        Paint()..color = Colors.greenAccent.withOpacity(0.85),
+        Paint()..color = Colors.greenAccent.withValues(alpha:0.85),
       );
       tp.paint(canvas, Offset(rect.left + 4, rect.top - tp.height - 2));
     }

@@ -69,7 +69,7 @@ class CitiesPage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.blue.withOpacity(0.4),
+                    color: Colors.blue.withValues(alpha:0.4),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
@@ -80,7 +80,7 @@ class CitiesPage extends StatelessWidget {
                 leading: Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha:0.2),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Icon(
@@ -99,12 +99,12 @@ class CitiesPage extends StatelessWidget {
                 ),
                 subtitle: Text(
                   '查看所有區位',
-                  style: TextStyle(color: Colors.white.withOpacity(0.9)),
+                  style: TextStyle(color: Colors.white.withValues(alpha:0.9)),
                 ),
                 trailing: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha:0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const Icon(Icons.arrow_forward, color: Colors.white),
@@ -137,7 +137,7 @@ class CitiesPage extends StatelessWidget {
                       vertical: 5,
                     ),
                     elevation: 3,
-                    shadowColor: cityColor.withOpacity(0.3),
+                    shadowColor: cityColor.withValues(alpha:0.3),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -145,7 +145,7 @@ class CitiesPage extends StatelessWidget {
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
                         gradient: LinearGradient(
-                          colors: [Colors.white, cityColor.withOpacity(0.08)],
+                          colors: [Colors.white, cityColor.withValues(alpha:0.08)],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
@@ -179,7 +179,7 @@ class CitiesPage extends StatelessWidget {
                         trailing: Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: cityColor.withOpacity(0.1),
+                            color: cityColor.withValues(alpha:0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Icon(

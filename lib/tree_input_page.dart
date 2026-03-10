@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'constants/colors.dart';
-// import 'package:http/http.dart' as http; // Refactored to use services
 import 'dart:convert';
 import 'package:geolocator/geolocator.dart';
 import 'package:file_picker/file_picker.dart';
 import 'utils/location_helper.dart';
-// import 'package:dio/dio.dart'; // Re-adding for commented out code
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 import 'dart:math';
@@ -252,28 +250,6 @@ class _TreeInputPageState extends State<TreeInputPage> {
       } else {
         logDebug('專案樹木編號 API 返回失敗，未更新編號');
       }
-      /*
-      final response = await http.get(
-        Uri.parse(
-            'http://172.20.10.4:3000/api/tree_survey/next_project_number/$projectCode'),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['success']) {
-          logDebug('API 返回的下一個專案樹木編號: ${data['nextNumber']}');
-          if (mounted) {
-            setState(() {
-              projectTreeController.text = 'PT-${data['nextNumber']}';
-            });
-          }
-        } else {
-          logDebug('專案樹木編號 API 返回失敗，未更新編號');
-        }
-      } else {
-        logDebug('專案樹木編號 API 請求失敗，狀態碼: ${response.statusCode}');
-      }
-      */
     } catch (e) {
       logDebug('生成專案樹木編號時發生錯誤: $e');
     }
@@ -350,37 +326,6 @@ class _TreeInputPageState extends State<TreeInputPage> {
         final resp = await _projectAreaService.addProjectArea(areaData);
         debugPrint('[DEBUG] 自動新增區位 $areaName，API 回應: ${resp}');
       }
-      /*
-      final checkResp = await http
-          .get(Uri.parse('http://172.20.10.4:3000/api/project_areas'));
-      if (checkResp.statusCode == 200) {
-        final data = jsonDecode(checkResp.body);
-        final List<dynamic> areas = data['data'] ?? [];
-        final exists = areas.any((a) => a['area_name'] == areaName);
-        debugPrint('[DEBUG] 檢查區位 $areaName 是否已存在: $exists');
-        if (!exists) {
-          // 2. 若不存在，則自動新增
-          final x = double.tryParse(xCoordController.text) ?? 0;
-          final y = double.tryParse(yCoordController.text) ?? 0;
-          final desc = areaName; // 或直接給空字串 ''
-          final resp = await http.post(
-            Uri.parse('http://172.20.10.4:3000/api/project_areas'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode({
-              'area_name': areaName,
-              'description': desc,
-              'xCoord': x,
-              'yCoord': y,
-              'isSubmit': true
-            }),
-          );
-          debugPrint(
-              '[DEBUG] 自動新增區位 $areaName，API 回應: ${resp.statusCode} ${resp.body}');
-        }
-      } else {
-        debugPrint('[DEBUG] 查詢 project_areas 失敗: ${checkResp.statusCode}');
-      }
-      */
     } catch (e) {
       debugPrint('[DEBUG] 區位同步發生錯誤: $e');
     }
@@ -421,29 +366,6 @@ class _TreeInputPageState extends State<TreeInputPage> {
           final randomNumber = _generateSafeFallbackId();
           systemTreeController.text = 'ST-$randomNumber';
         }
-        /*
-        final response = await http.get(
-          Uri.parse(
-              'http://172.20.10.4:3000/api/tree_survey/next_system_number'),
-        );
-
-        if (response.statusCode == 200) {
-          final data = jsonDecode(utf8.decode(response.bodyBytes));
-          if (data['success']) {
-            systemTreeController.text = 'ST-${data['nextNumber']}';
-          } else {
-            // 如果API失敗，使用隨機編號
-            final random = Random();
-            final randomNumber = 1000 + random.nextInt(9000);
-            systemTreeController.text = 'ST-$randomNumber';
-          }
-        } else {
-          // 如果API請求失敗，使用隨機編號
-          final random = Random();
-          final randomNumber = 1000 + random.nextInt(9000);
-          systemTreeController.text = 'ST-$randomNumber';
-        }
-        */
       } catch (e) {
         // 如果發生錯誤，使用隨機編號
         final randomNumber = _generateSafeFallbackId();
@@ -467,29 +389,6 @@ class _TreeInputPageState extends State<TreeInputPage> {
             final randomNumber = _generateSafeFallbackId();
             projectTreeController.text = 'PT-$randomNumber';
           }
-          /*
-          final response = await http.get(
-            Uri.parse(
-                'http://172.20.10.4:3000/api/tree_survey/next_project_number/${projectCodeController.text}'),
-          );
-
-          if (response.statusCode == 200) {
-            final data = jsonDecode(utf8.decode(response.bodyBytes));
-            if (data['success']) {
-              projectTreeController.text = 'PT-${data['nextNumber']}';
-            } else {
-              // 如果API失敗，使用隨機編號
-              final random = Random();
-              final randomNumber = 1000 + random.nextInt(9000);
-              projectTreeController.text = 'PT-$randomNumber';
-            }
-          } else {
-            // 如果API請求失敗，使用隨機編號
-            final random = Random();
-            final randomNumber = 1000 + random.nextInt(9000);
-            projectTreeController.text = 'PT-$randomNumber';
-          }
-          */
         } catch (e) {
           final randomNumber = _generateSafeFallbackId();
           projectTreeController.text = 'PT-$randomNumber';
@@ -501,11 +400,6 @@ class _TreeInputPageState extends State<TreeInputPage> {
       }
     }
 
-    // 更新 API 地址
-    // const apiBaseUrl = 'http://172.20.10.4:3000'; // Not used with ApiService
-    // final url = _isEditing // Linter warning: The value of the local variable 'url' isn't used.
-    //     ? '$apiBaseUrl/api/tree_survey/${_currentTreeData!['id']}'
-    //     : '$apiBaseUrl/api/tree_survey';
 
     try {
       final data = {
@@ -576,37 +470,6 @@ class _TreeInputPageState extends State<TreeInputPage> {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(errorMsg)));
       }
-      /*
-      final response = await (widget.isEdit ? http.put : http.post)(
-        Uri.parse(url),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode(data),
-      );
-
-      // 確保在回調前檢查 widget 是否仍然掛載
-      if (!mounted) return;
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        logDebug('請求成功，返回數據: ${response.body}');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(widget.isEdit ? '更新成功!' : '提交成功!')),
-        );
-        Navigator.pop(context, true);
-      } else {
-        String errorMsg = '伺服器錯誤: ${response.statusCode}';
-        logDebug('請求失敗: $errorMsg，響應體: ${response.body}');
-        try {
-          final errorJson = jsonDecode(response.body);
-          if (errorJson['message'] != null) {
-            errorMsg = errorJson['message'];
-          }
-        } catch (e) {
-          // 使用預設錯誤訊息
-        }
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text(errorMsg)));
-      }
-      */
     } catch (e) {
       logDebug('請求過程中發生錯誤: $e');
       if (mounted) {
@@ -787,7 +650,7 @@ class _TreeInputPageState extends State<TreeInputPage> {
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: AppColors.forestGreen.withOpacity(0.3)),
+            borderSide: BorderSide(color: AppColors.forestGreen.withValues(alpha: 0.3)),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
@@ -903,7 +766,7 @@ class _TreeInputPageState extends State<TreeInputPage> {
           const SizedBox(height: 8),
           Container(
             decoration: BoxDecoration(
-              border: Border.all(color: AppColors.forestGreen.withOpacity(0.3)),
+              border: Border.all(color: AppColors.forestGreen.withValues(alpha: 0.3)),
               borderRadius: BorderRadius.circular(12),
             ),
             child: ListView.builder(
@@ -939,7 +802,7 @@ class _TreeInputPageState extends State<TreeInputPage> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 15),
                 decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.forestGreen.withOpacity(0.3)),
+                  border: Border.all(color: AppColors.forestGreen.withValues(alpha: 0.3)),
                   borderRadius: BorderRadius.circular(12),
                   color: AppColors.surfaceLight,
                 ),
@@ -985,7 +848,7 @@ class _TreeInputPageState extends State<TreeInputPage> {
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: AppColors.forestGreen.withOpacity(0.3)),
+                  borderSide: BorderSide(color: AppColors.forestGreen.withValues(alpha: 0.3)),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -1204,24 +1067,6 @@ class _TreeInputPageState extends State<TreeInputPage> {
     try {
       // Refactored to use TreeSpeciesService
       _speciesList = await _speciesService.getSpecies();
-      /*
-      final response = await http.get(
-        Uri.parse('http://172.20.10.4:3000/api/tree_species'),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        setState(() {
-          if (data['data'] != null && data['data'] is List) {
-            _speciesList = List<Map<String, dynamic>>.from(data['data']);
-          } else {
-            _speciesList = [];
-          }
-        });
-      } else {
-        logDebug('無法載入樹種列表: ${response.statusCode}');
-      }
-      */
     } catch (e) {
       logDebug('載入樹種列表錯誤: $e');
     } finally {
@@ -1261,34 +1106,6 @@ class _TreeInputPageState extends State<TreeInputPage> {
         _projectList = [];
       }
       logDebug('載入的專案列表: $_projectList');
-      /*
-      final response = await http.get(
-        Uri.parse('http://172.20.10.4:3000/api/projects'),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        logDebug('專案列表 API 回應: $data');
-        setState(() {
-          if (data['data'] != null && data['data'] is List) {
-            _projectList =
-                List<Map<String, dynamic>>.from(data['data'].map((item) {
-              // 確保所有必要欄位都轉換為字串類型
-              return {
-                'name': item['name']?.toString() ?? '',
-                'code': item['code']?.toString() ?? '',
-                'area': item['area']?.toString() ?? '',
-              };
-            }));
-            logDebug('載入的專案列表: $_projectList');
-          } else {
-            _projectList = [];
-          }
-        });
-      } else {
-        logDebug('無法載入專案列表: ${response.statusCode}');
-      }
-      */
     } catch (e) {
       logDebug('載入專案列表錯誤: $e');
     } finally {
@@ -1311,63 +1128,18 @@ class _TreeInputPageState extends State<TreeInputPage> {
       // Refactored to use ProjectAreaService
       _projectAreas = await _projectAreaService.getProjectAreas();
       logDebug('載入的專案區位: $_projectAreas');
-      /*
-      final response = await http.get(
-        Uri.parse('http://172.20.10.4:3000/api/project_areas'),
-      );
-
-      logDebug('專案區位 API 回應狀態碼: ${response.statusCode}');
-      logDebug('專案區位 API 回應內容: ${response.body}');
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        logDebug('專案區位 API 回應解析後: $data');
-
-        setState(() {
-          if (data != null &&
-              data is Map &&
-              data.containsKey('data') &&
-              data['data'] is List) {
-            _projectAreas = List<Map<String, dynamic>>.from(data['data']);
-            logDebug('載入的專案區位: $_projectAreas');
-          } else {
-            logDebug('專案區位 API 回應為 null或格式不符');
-            _projectAreas = [];
-          }
-        });
-      } else {
-        logDebug('無法載入專案區位列表，狀態碼: ${response.statusCode}');
-        logDebug('錯誤回應: ${response.body}');
-
-        // 添加測試資料，確保用戶體驗不中斷
-        setState(() {
-          _projectAreas = [
-            {
-              'area_name': '測試區位',
-              'area_code': 'AREA-TEST',
-              'description': '測試區位'
-            }
-          ];
-          logDebug('API 錯誤，添加測試數據: $_projectAreas');
-        });
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('無法載入專案區位列表，使用預設資料')),
-          );
-        }
-      }
-      */
     } catch (e) {
       logDebug('載入專案區位列表錯誤: $e');
 
       // 添加測試資料，確保用戶體驗不中斷
-      setState(() {
-        _projectAreas = [
-          {'area_name': '測試區位', 'area_code': 'AREA-TEST', 'description': '測試區位'}
-        ];
-        logDebug('發生異常，添加測試數據: $_projectAreas');
-      });
+      if (mounted) {
+        setState(() {
+          _projectAreas = [
+            {'area_name': '測試區位', 'area_code': 'AREA-TEST', 'description': '測試區位'}
+          ];
+          logDebug('發生異常，添加測試數據: $_projectAreas');
+        });
+      }
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1375,9 +1147,11 @@ class _TreeInputPageState extends State<TreeInputPage> {
         );
       }
     } finally {
-      setState(() {
-        _loadingAreas = false;
-      });
+      if (mounted) {
+        setState(() {
+          _loadingAreas = false;
+        });
+      }
     }
   }
 
@@ -1398,44 +1172,6 @@ class _TreeInputPageState extends State<TreeInputPage> {
         _filteredProjects = [];
       }
       logDebug('過濾後的專案列表: $_filteredProjects');
-      /*
-      final encodedArea = Uri.encodeComponent(area);
-      final response = await http.get(
-        Uri.parse('http://172.20.10.4:3000/api/projects/by_area/$encodedArea'),
-      );
-
-      // 檢查 widget 是否仍然掛載
-      if (!mounted) return;
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        logDebug('過濾專案 API 回應: $data');
-        setState(() {
-          if (data['data'] != null && data['data'] is List) {
-            _filteredProjects =
-                List<Map<String, dynamic>>.from(data['data'].map((item) {
-              return {
-                'name': item['name']?.toString() ?? '',
-                'code': item['code']?.toString() ?? '',
-                'area': item['area']?.toString() ?? '',
-              };
-            }));
-            logDebug('過濾後的專案列表: $_filteredProjects');
-          } else {
-            _filteredProjects = [];
-          }
-        });
-      } else {
-        logDebug('無法載入專案列表: ${response.statusCode}');
-
-        // 顯示錯誤提示，讓用戶知道發生了問題
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('無法載入專案列表：${response.statusCode}')),
-          );
-        }
-      }
-      */
     } catch (e) {
       logDebug('載入專案列表錯誤: $e');
 
@@ -1481,37 +1217,6 @@ class _TreeInputPageState extends State<TreeInputPage> {
           SnackBar(content: Text('新增樹種失敗: ${response['message']}')),
         );
       }
-      /*
-      final response = await http.post(
-        Uri.parse('http://172.20.10.4:3000/api/tree_species'),
-        headers: {"Content-Type": "application/json"},
-        body: jsonEncode({
-          "name": name,
-        }),
-      );
-
-      // 檢查 widget 是否仍然掛載
-      if (!mounted) return;
-
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('新增樹種成功: $name')),
-        );
-        // 重新載入樹種列表
-        _loadSpeciesList();
-        // 設置剛剛添加的樹種
-        setState(() {
-          // 如果 API 返回了編號則使用，否則保持空白等待系統生成
-          treeIdController.text = data['id'] ?? '';
-          treeNameController.text = name;
-        });
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('新增樹種失敗: ${response.statusCode}')),
-        );
-      }
-      */
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1670,49 +1375,6 @@ class _TreeInputPageState extends State<TreeInputPage> {
           SnackBar(content: Text(response['message'] ?? '新增專案區位失敗')),
         );
       }
-      /*
-      final response = await http.post(
-        Uri.parse('http://172.20.10.4:3000/api/project_areas'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode(requestData),
-      );
-
-      logDebug('新增專案區位 API 回應狀態碼: ${response.statusCode}');
-      logDebug('新增專案區位 API 回應內容: ${response.body}');
-
-      if (!mounted) return;
-
-      if (response.statusCode == 201 || response.statusCode == 200) {
-        final responseData = jsonDecode(response.body);
-        await _loadProjectAreas();
-        projectAreaController.text = areaName;
-
-        // 顯示成功訊息，包含縣市資訊
-        final city = responseData['data']?['city'] ?? '未知縣市';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('專案區位新增成功 (縣市: $city)')),
-        );
-      } else {
-        logDebug('新增專案區位失敗: ${response.statusCode}');
-        logDebug('錯誤回應: ${response.body}');
-
-        // 嘗試從錯誤回應中解析訊息
-        String errorMessage = '新增專案區位失敗';
-        try {
-          final errorData = jsonDecode(response.body);
-          if (errorData['message'] != null) {
-            errorMessage = errorData['message'];
-          }
-        } catch (e) {
-          logDebug('解析錯誤訊息失敗: $e');
-        }
-
-        // 顯示錯誤訊息
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage)),
-        );
-      }
-      */
     } catch (e) {
       logDebug('新增專案區位錯誤: $e');
       if (!mounted) return;
@@ -1748,7 +1410,7 @@ class _TreeInputPageState extends State<TreeInputPage> {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.forestGreen.withOpacity(0.3)),
+              borderSide: BorderSide(color: AppColors.forestGreen.withValues(alpha: 0.3)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -1788,7 +1450,7 @@ class _TreeInputPageState extends State<TreeInputPage> {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.forestGreen.withOpacity(0.3)),
+              borderSide: BorderSide(color: AppColors.forestGreen.withValues(alpha: 0.3)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -1824,7 +1486,7 @@ class _TreeInputPageState extends State<TreeInputPage> {
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: AppColors.forestGreen.withOpacity(0.3)),
+              borderSide: BorderSide(color: AppColors.forestGreen.withValues(alpha: 0.3)),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -2062,45 +1724,6 @@ class _TreeInputPageState extends State<TreeInputPage> {
           SnackBar(content: Text('新增專案失敗: ${response['message'] ?? '未知錯誤'}')),
         );
       }
-      /*
-      final response = await http.post(
-        Uri.parse('http://172.20.10.4:3000/api/projects/add'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'name': projectName,
-          'area': projectAreaController.text, // Use the currently selected area
-        }),
-      );
-
-      if (!mounted) return;
-
-      if (response.statusCode == 201) {
-        final data = jsonDecode(response.body);
-        final newProject = data['project'];
-
-        logDebug('專案新增成功: ${newProject['name']} (${newProject['code']})');
-
-        // Update the main form's state
-        setState(() {
-          projectNameController.text = newProject['name'];
-          projectCodeController.text = newProject['code'];
-          // Optionally: Refresh the filtered project list and common species
-        });
-        await _updateFilteredProjects(projectAreaController.text);
-        await _generateProjectTreeNumber(); // Generate project tree number for the new project
-        await _loadCommonSpecies();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('專案 "$projectName" 新增成功')),
-        );
-      } else {
-        final errorData = jsonDecode(response.body);
-        logDebug('新增專案失敗: ${response.statusCode} - ${errorData['message']}');
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('新增專案失敗: ${errorData['message'] ?? '未知錯誤'}')),
-        );
-      }
-      */
     } catch (e) {
       logDebug('新增專案時發生錯誤: $e');
       if (mounted) {
@@ -2137,36 +1760,6 @@ class _TreeInputPageState extends State<TreeInputPage> {
           systemTreeController.text = 'ST-$randomNumber';
         });
       }
-      /*
-      final response = await http.get(
-        Uri.parse('http://172.20.10.4:3000/api/tree_survey/next_system_number'),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(response.bodyBytes));
-        if (data['success']) {
-          logDebug('API 返回的下一個系統樹木編號: ${data['nextNumber']}');
-          setState(() {
-            systemTreeController.text = 'ST-${data['nextNumber']}';
-          });
-        } else {
-          logDebug('API 返回失敗，使用隨機編號');
-          // 生成隨機編號作為備用
-          final random = Random();
-          final randomNumber = 1000 + random.nextInt(9000);
-          setState(() {
-            systemTreeController.text = 'ST-$randomNumber';
-          });
-        }
-      } else {
-        logDebug('系統樹木編號 API 請求失敗，狀態碼: ${response.statusCode}');
-        // 生成隨機編號作為備用
-        final randomNumber = _generateSafeFallbackId();
-        setState(() {
-          systemTreeController.text = 'ST-$randomNumber';
-        });
-      }
-      */
 
       // 如果已有專案代碼，則同時生成專案樹木編號
       if (projectCodeController.text.isNotEmpty) {
@@ -2205,21 +1798,6 @@ class _TreeInputPageState extends State<TreeInputPage> {
       setState(() {
         _commonSpecies = response;
       });
-      /*
-      final response = await http.get(
-        Uri.parse(
-            'http://172.20.10.4:3000/api/tree_survey/common_species/${projectCodeController.text}'),
-      );
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        if (data['success']) {
-          setState(() {
-            _commonSpecies = List<Map<String, dynamic>>.from(data['data']);
-          });
-        }
-      }
-      */
     } catch (e) {
       logDebug('載入專案常見樹種錯誤: $e');
     } finally {
@@ -2263,7 +1841,7 @@ class _TreeInputPageState extends State<TreeInputPage> {
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: AppColors.forestGreen.withOpacity(0.3)),
+                          borderSide: BorderSide(color: AppColors.forestGreen.withValues(alpha: 0.3)),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -2300,7 +1878,7 @@ class _TreeInputPageState extends State<TreeInputPage> {
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: AppColors.forestGreen.withOpacity(0.3)),
+                          borderSide: BorderSide(color: AppColors.forestGreen.withValues(alpha: 0.3)),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -2486,11 +2064,11 @@ class _TreeInputPageState extends State<TreeInputPage> {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [AppColors.portBlue, AppColors.portBlue.withOpacity(0.8)],
+                colors: [AppColors.portBlue, AppColors.portBlue.withValues(alpha: 0.8)],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.portBlue.withOpacity(0.3),
+                  color: AppColors.portBlue.withValues(alpha: 0.3),
                   blurRadius: 12,
                   offset: const Offset(0, 4),
                 ),
@@ -2558,14 +2136,14 @@ class _TreeInputPageState extends State<TreeInputPage> {
                                 Container(
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
-                                      colors: [AppColors.portBlue, AppColors.portBlue.withOpacity(0.85)],
+                                      colors: [AppColors.portBlue, AppColors.portBlue.withValues(alpha: 0.85)],
                                       begin: Alignment.topLeft,
                                       end: Alignment.bottomRight,
                                     ),
                                     borderRadius: BorderRadius.circular(14),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: AppColors.portBlue.withOpacity(0.3),
+                                        color: AppColors.portBlue.withValues(alpha: 0.3),
                                         blurRadius: 8,
                                         offset: const Offset(0, 3),
                                       ),
@@ -2687,37 +2265,6 @@ class _TreeBatchUploadWidgetState extends State<TreeBatchUploadWidget> {
           }
         }
 
-        /*
-        String fileName = result.files.single.name;
-
-        FormData formData = FormData.fromMap({
-          "file": await MultipartFile.fromFile(file.path, filename: fileName),
-        });
-
-        Dio dio = Dio();
-        Response response = await dio.post(
-          '${ApiService.baseUrl}/tree_survey/import', // Use ApiService.baseUrl
-          data: formData,
-          onSendProgress: (int sent, int total) {
-            setState(() {
-              _uploadProgress = sent / total;
-              _statusMessage =
-                  '上傳中... ${(_uploadProgress * 100).toStringAsFixed(0)}%';
-            });
-          },
-        );
-
-        if (response.statusCode == 200) {
-          setState(() {
-            _statusMessage = '上傳成功：${response.data['message']}';
-          });
-          widget.onUploadComplete();
-        } else {
-          setState(() {
-            _statusMessage = '上傳失敗：${response.statusMessage}';
-          });
-        }
-        */
       }
     } catch (e) {
       if (mounted) {
@@ -2746,17 +2293,6 @@ class _TreeBatchUploadWidgetState extends State<TreeBatchUploadWidget> {
           _statusMessage = '無法下載模板，請檢查網絡連接';
         });
       }
-      /*
-      const url = 'http://172.20.10.4:3000/api/tree_survey/template';
-      final Uri uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        setState(() {
-          _statusMessage = '無法下載模板，請檢查網絡連接';
-        });
-      }
-      */
     } catch (e) {
       setState(() {
         _statusMessage = '下載模板時出錯：$e';
@@ -2773,7 +2309,7 @@ class _TreeBatchUploadWidgetState extends State<TreeBatchUploadWidget> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -2789,7 +2325,7 @@ class _TreeBatchUploadWidgetState extends State<TreeBatchUploadWidget> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppColors.portBlue.withOpacity(0.1),
+                    color: AppColors.portBlue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(Icons.upload_file_rounded, color: AppColors.portBlue, size: 22),
@@ -2824,7 +2360,7 @@ class _TreeBatchUploadWidgetState extends State<TreeBatchUploadWidget> {
                     onPressed: _downloadTemplate,
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.portBlue,
-                      side: BorderSide(color: AppColors.portBlue.withOpacity(0.5)),
+                      side: BorderSide(color: AppColors.portBlue.withValues(alpha: 0.5)),
                       padding: const EdgeInsets.symmetric(
                         horizontal: 16,
                         vertical: 14,
@@ -2840,14 +2376,14 @@ class _TreeBatchUploadWidgetState extends State<TreeBatchUploadWidget> {
                   child: Container(
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
-                        colors: [AppColors.portBlue, AppColors.portBlue.withOpacity(0.85)],
+                        colors: [AppColors.portBlue, AppColors.portBlue.withValues(alpha: 0.85)],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
                       borderRadius: BorderRadius.circular(14),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.portBlue.withOpacity(0.3),
+                          color: AppColors.portBlue.withValues(alpha: 0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 3),
                         ),
@@ -2896,8 +2432,8 @@ class _TreeBatchUploadWidgetState extends State<TreeBatchUploadWidget> {
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: _statusMessage.contains('錯誤') || _statusMessage.contains('失敗')
-                      ? AppColors.error.withOpacity(0.1)
-                      : AppColors.forestGreen.withOpacity(0.1),
+                      ? AppColors.error.withValues(alpha: 0.1)
+                      : AppColors.forestGreen.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Row(

@@ -130,13 +130,13 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
     // 添加現有邊界（其他專案）
     for (final boundary in _existingBoundaries) {
       if (boundary.projectName != _selectedProject) {
-        _addBoundaryPolygon(boundary, _existingColor.withOpacity(0.3));
+        _addBoundaryPolygon(boundary, _existingColor.withValues(alpha:0.3));
       }
     }
     
     // 添加當前專案的現有邊界
     if (_currentProjectBoundary != null) {
-      _addBoundaryPolygon(_currentProjectBoundary!, _currentProjectColor.withOpacity(0.4));
+      _addBoundaryPolygon(_currentProjectBoundary!, _currentProjectColor.withValues(alpha:0.4));
     }
     
     // 添加繪製中的多邊形
@@ -177,7 +177,7 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
     _polygons.add(Polygon(
       polygonId: PolygonId('boundary_${boundary.projectName}'),
       points: points,
-      strokeColor: color.withOpacity(1),
+      strokeColor: color.withValues(alpha:1),
       strokeWidth: 2,
       fillColor: color,
       consumeTapEvents: true,
@@ -208,7 +208,7 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
         points: _drawingPoints,
         strokeColor: _drawingColor,
         strokeWidth: 2,
-        fillColor: _drawingColor.withOpacity(0.2),
+        fillColor: _drawingColor.withValues(alpha:0.2),
       ));
     }
   }

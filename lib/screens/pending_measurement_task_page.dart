@@ -1274,7 +1274,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: isAligned
-                        ? Colors.green.withOpacity(0.1)
+                        ? Colors.green.withValues(alpha:0.1)
                         : Colors.transparent,
                   ),
                   child: Transform.rotate(
@@ -1615,11 +1615,11 @@ class _StakeoutRadarPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final bgPaint = Paint()..color = bgColor..style = PaintingStyle.fill;
     final ringPaint = Paint()
-      ..color = ringColor.withOpacity(0.3)
+      ..color = ringColor.withValues(alpha:0.3)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
     final crossPaint = Paint()
-      ..color = ringColor.withOpacity(0.5)
+      ..color = ringColor.withValues(alpha:0.5)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
     final dotPaint = Paint()..color = dotColor..style = PaintingStyle.fill;

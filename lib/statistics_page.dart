@@ -53,6 +53,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
       final response = await ApiService.get('tree_statistics');
 
       if (response['success'] == true && response['data'] != null) {
+        if (!mounted) return;
         setState(() {
           _statistics = response['data'];
         });
@@ -81,15 +82,18 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
         );
       }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
   Future<void> _fetchTreeData() async {
     try {
       final response = await _apiService.fetchTreeSurveyData();
+      if (!mounted) return;
       setState(() {
         _treeData = response;
         _calculateCarbonMetrics();
@@ -153,7 +157,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: accentColor.withOpacity(0.1),
+            color: accentColor.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -170,8 +174,8 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  accentColor.withOpacity(0.1),
-                  accentColor.withOpacity(0.05),
+                  accentColor.withValues(alpha: 0.1),
+                  accentColor.withValues(alpha: 0.05),
                 ],
               ),
               borderRadius: const BorderRadius.only(
@@ -184,7 +188,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: accentColor.withOpacity(0.15),
+                    color: accentColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: Icon(icon, color: accentColor, size: 24),
@@ -253,7 +257,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
             barTouchData: BarTouchData(
               enabled: true,
               touchTooltipData: BarTouchTooltipData(
-                getTooltipColor: (_) => AppColors.portBlue.withOpacity(0.9),
+                getTooltipColor: (_) => AppColors.portBlue.withValues(alpha: 0.9),
                 tooltipRoundedRadius: 8,
                 getTooltipItem: (group, groupIndex, rod, rodIndex) {
                   final name = topSpecies[group.x.toInt()]['樹種名稱'];
@@ -391,7 +395,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
             barTouchData: BarTouchData(
               enabled: true,
               touchTooltipData: BarTouchTooltipData(
-                getTooltipColor: (_) => AppColors.portBlue.withOpacity(0.9),
+                getTooltipColor: (_) => AppColors.portBlue.withValues(alpha: 0.9),
                 tooltipRoundedRadius: 8,
                 getTooltipItem: (group, groupIndex, rod, rodIndex) {
                   final name = topProjects[group.x.toInt()]['專案名稱'];
@@ -506,7 +510,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
             barTouchData: BarTouchData(
               enabled: true,
               touchTooltipData: BarTouchTooltipData(
-                getTooltipColor: (_) => AppColors.warmOrange.withOpacity(0.9),
+                getTooltipColor: (_) => AppColors.warmOrange.withValues(alpha: 0.9),
                 tooltipRoundedRadius: 8,
                 getTooltipItem: (group, groupIndex, rod, rodIndex) {
                   final name = topAreas[group.x.toInt()]['專案區位'];
@@ -613,7 +617,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.creativePurple.withOpacity(0.1),
+            color: AppColors.creativePurple.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -628,8 +632,8 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  AppColors.creativePurple.withOpacity(0.1),
-                  AppColors.creativePurple.withOpacity(0.05),
+                  AppColors.creativePurple.withValues(alpha: 0.1),
+                  AppColors.creativePurple.withValues(alpha: 0.05),
                 ],
               ),
               borderRadius: const BorderRadius.only(
@@ -642,7 +646,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.creativePurple.withOpacity(0.15),
+                    color: AppColors.creativePurple.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: const Icon(Icons.straighten, color: AppColors.creativePurple, size: 24),
@@ -701,7 +705,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: AppColors.forestGreen.withOpacity(0.1),
+            color: AppColors.forestGreen.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -716,8 +720,8 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  AppColors.forestGreen.withOpacity(0.1),
-                  AppColors.forestGreen.withOpacity(0.05),
+                  AppColors.forestGreen.withValues(alpha: 0.1),
+                  AppColors.forestGreen.withValues(alpha: 0.05),
                 ],
               ),
               borderRadius: const BorderRadius.only(
@@ -730,7 +734,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.forestGreen.withOpacity(0.15),
+                    color: AppColors.forestGreen.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: const Icon(Icons.eco, color: AppColors.forestGreen, size: 24),
@@ -809,7 +813,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF00897B).withOpacity(0.3),
+            color: const Color(0xFF00897B).withValues(alpha: 0.3),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -825,7 +829,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: const Icon(Icons.calculate, color: Colors.white, size: 28),
@@ -893,10 +897,10 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.15),
+        color: Colors.white.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Colors.white.withOpacity(0.2),
+          color: Colors.white.withValues(alpha: 0.2),
           width: 1,
         ),
       ),

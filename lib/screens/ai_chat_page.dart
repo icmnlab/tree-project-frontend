@@ -588,12 +588,12 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
         color: _isDarkMode ? const Color(0xFF171717) : Colors.white,
         border: Border(
           right: BorderSide(
-            color: colorScheme.outline.withOpacity(0.1),
+            color: colorScheme.outline.withValues(alpha:0.1),
           ),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha:0.05),
             blurRadius: 10,
             offset: const Offset(2, 0),
           ),
@@ -612,7 +612,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
                     gradient: LinearGradient(
                       colors: [
                         colorScheme.primary,
-                        colorScheme.primary.withOpacity(0.8),
+                        colorScheme.primary.withValues(alpha:0.8),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(10),
@@ -649,7 +649,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: colorScheme.outline.withOpacity(0.2),
+                      color: colorScheme.outline.withValues(alpha:0.2),
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -698,7 +698,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
             decoration: BoxDecoration(
               border: Border(
                 top: BorderSide(
-                  color: colorScheme.outline.withOpacity(0.1),
+                  color: colorScheme.outline.withValues(alpha:0.1),
                 ),
               ),
             ),
@@ -726,7 +726,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
           color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: colorScheme.outline.withOpacity(0.1),
+            color: colorScheme.outline.withValues(alpha:0.1),
           ),
         ),
         child: Row(
@@ -818,14 +818,14 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
       margin: const EdgeInsets.only(bottom: 4),
       child: Material(
         color: isSelected 
-            ? colorScheme.primary.withOpacity(0.12) 
+            ? colorScheme.primary.withValues(alpha:0.12) 
             : Colors.transparent,
         borderRadius: BorderRadius.circular(10),
         child: InkWell(
           onTap: () => _selectSession(session),
           onLongPress: () => _showDeleteConfirmation(session),
           borderRadius: BorderRadius.circular(10),
-          hoverColor: colorScheme.primary.withOpacity(0.05),
+          hoverColor: colorScheme.primary.withValues(alpha:0.05),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             child: Row(
@@ -834,7 +834,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
                     color: isSelected 
-                        ? colorScheme.primary.withOpacity(0.15)
+                        ? colorScheme.primary.withValues(alpha:0.15)
                         : colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -866,7 +866,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
                         _formatSessionDate(session.updatedAt),
                         style: TextStyle(
                           fontSize: 12,
-                          color: colorScheme.onSurfaceVariant.withOpacity(0.8),
+                          color: colorScheme.onSurfaceVariant.withValues(alpha:0.8),
                         ),
                       ),
                     ],
@@ -884,7 +884,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
                         child: Icon(
                           Icons.delete_outline_rounded,
                           size: 16,
-                          color: colorScheme.error.withOpacity(0.7),
+                          color: colorScheme.error.withValues(alpha:0.7),
                         ),
                       ),
                     ),
@@ -967,7 +967,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
         color: colorScheme.surface,
         border: Border(
           bottom: BorderSide(
-            color: colorScheme.outline.withOpacity(0.1),
+            color: colorScheme.outline.withValues(alpha:0.1),
           ),
         ),
       ),
@@ -983,7 +983,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: _isSidebarOpen 
-                      ? colorScheme.primaryContainer.withOpacity(0.3)
+                      ? colorScheme.primaryContainer.withValues(alpha:0.3)
                       : Colors.transparent,
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -1024,7 +1024,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.1),
+                  color: colorScheme.primary.withValues(alpha:0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(
@@ -1078,7 +1078,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
                   color: colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: colorScheme.outline.withOpacity(0.15),
+                    color: colorScheme.outline.withValues(alpha:0.15),
                   ),
                 ),
                 child: Row(
@@ -1153,13 +1153,13 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
                   gradient: LinearGradient(
                     colors: [
                       colorScheme.primary,
-                      colorScheme.primary.withOpacity(0.7),
+                      colorScheme.primary.withValues(alpha:0.7),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: colorScheme.primary.withOpacity(0.3),
+                      color: colorScheme.primary.withValues(alpha:0.3),
                       blurRadius: 20,
                       offset: const Offset(0, 8),
                     ),
@@ -1227,11 +1227,11 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
           color: colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: colorScheme.outline.withOpacity(0.1),
+            color: colorScheme.outline.withValues(alpha:0.1),
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: Colors.black.withValues(alpha:0.03),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -1242,7 +1242,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: colorScheme.primary.withOpacity(0.1),
+                color: colorScheme.primary.withValues(alpha:0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -1322,7 +1322,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
             color: colorScheme.surfaceContainerHighest,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: colorScheme.outline.withOpacity(0.2),
+              color: colorScheme.outline.withValues(alpha:0.2),
             ),
           ),
           child: Row(
@@ -1364,7 +1364,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
         color: colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: colorScheme.outline.withOpacity(0.2),
+          color: colorScheme.outline.withValues(alpha:0.2),
         ),
       ),
       child: Column(
@@ -1438,12 +1438,12 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
                       colors: [Colors.purple.shade400, Colors.purple.shade600],
                     )
                   : LinearGradient(
-                      colors: [colorScheme.primary, colorScheme.primary.withOpacity(0.8)],
+                      colors: [colorScheme.primary, colorScheme.primary.withValues(alpha:0.8)],
                     ),
               borderRadius: BorderRadius.circular(8),
               boxShadow: [
                 BoxShadow(
-                  color: (isUser ? Colors.purple : colorScheme.primary).withOpacity(0.2),
+                  color: (isUser ? Colors.purple : colorScheme.primary).withValues(alpha:0.2),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -1508,7 +1508,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
                 width: 8,
                 height: 8,
                 decoration: BoxDecoration(
-                  color: colorScheme.primary.withOpacity(0.3 + value * 0.7),
+                  color: colorScheme.primary.withValues(alpha:0.3 + value * 0.7),
                   shape: BoxShape.circle,
                 ),
               );
@@ -1562,7 +1562,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
               color: _isDarkMode ? const Color(0xFF1E1E1E) : const Color(0xFFF5F5F5),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: colorScheme.outline.withOpacity(0.1),
+                color: colorScheme.outline.withValues(alpha:0.1),
               ),
             ),
             codeblockPadding: const EdgeInsets.all(16),
@@ -1581,7 +1581,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
               color: colorScheme.onSurface,
             ),
             tableBorder: TableBorder.all(
-              color: colorScheme.outline.withOpacity(0.2),
+              color: colorScheme.outline.withValues(alpha:0.2),
               borderRadius: BorderRadius.circular(8),
             ),
             tableCellsPadding: const EdgeInsets.all(12),
@@ -1674,7 +1674,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
               color: colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(6),
               border: Border.all(
-                color: colorScheme.outline.withOpacity(0.1),
+                color: colorScheme.outline.withValues(alpha:0.1),
               ),
             ),
             child: Icon(icon, size: 16, color: colorScheme.onSurfaceVariant),
@@ -1789,7 +1789,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
         color: colorScheme.surface,
         border: Border(
           top: BorderSide(
-            color: colorScheme.outline.withOpacity(0.1),
+            color: colorScheme.outline.withValues(alpha:0.1),
           ),
         ),
       ),
@@ -1807,11 +1807,11 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
               color: colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(24),
               border: Border.all(
-                color: colorScheme.outline.withOpacity(0.15),
+                color: colorScheme.outline.withValues(alpha:0.15),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
+                  color: Colors.black.withValues(alpha:0.04),
                   blurRadius: 12,
                   offset: const Offset(0, 2),
                 ),
@@ -1831,7 +1831,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
                     decoration: InputDecoration(
                       hintText: '輸入訊息，向 AI 助手提問...',
                       hintStyle: TextStyle(
-                        color: colorScheme.onSurfaceVariant.withOpacity(0.6),
+                        color: colorScheme.onSurfaceVariant.withValues(alpha:0.6),
                         fontSize: 15,
                       ),
                       border: InputBorder.none,
@@ -1859,16 +1859,16 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
                           : LinearGradient(
                               colors: [
                                 colorScheme.primary,
-                                colorScheme.primary.withOpacity(0.85),
+                                colorScheme.primary.withValues(alpha:0.85),
                               ],
                             ),
-                      color: _isLoading ? colorScheme.outline.withOpacity(0.3) : null,
+                      color: _isLoading ? colorScheme.outline.withValues(alpha:0.3) : null,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: _isLoading
                           ? null
                           : [
                               BoxShadow(
-                                color: colorScheme.primary.withOpacity(0.3),
+                                color: colorScheme.primary.withValues(alpha:0.3),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -1932,10 +1932,10 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
       margin: const EdgeInsets.only(top: 16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+        color: colorScheme.surfaceContainerHighest.withValues(alpha:0.5),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: colorScheme.outline.withOpacity(0.1),
+          color: colorScheme.outline.withValues(alpha:0.1),
         ),
       ),
       child: Column(
@@ -2101,7 +2101,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
           drawVerticalLine: false,
           horizontalInterval: maxValue > 0 ? maxValue / 4 : 1,
           getDrawingHorizontalLine: (value) => FlLine(
-            color: colorScheme.outline.withOpacity(0.1),
+            color: colorScheme.outline.withValues(alpha:0.1),
             strokeWidth: 1,
           ),
         ),
@@ -2131,9 +2131,9 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
       margin: const EdgeInsets.only(top: 12),
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.1),
+        color: Colors.orange.withValues(alpha:0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+        border: Border.all(color: Colors.orange.withValues(alpha:0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -2222,10 +2222,10 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: colorScheme.primaryContainer.withOpacity(0.5),
+                      color: colorScheme.primaryContainer.withValues(alpha:0.5),
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: colorScheme.primary.withOpacity(0.2),
+                        color: colorScheme.primary.withValues(alpha:0.2),
                       ),
                     ),
                     child: Row(

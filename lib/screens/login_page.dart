@@ -190,10 +190,10 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
           height: 100,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.white.withOpacity(0.15),
+            color: Colors.white.withValues(alpha:0.15),
             boxShadow: [
               BoxShadow(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha:0.2),
                 blurRadius: 30,
                 spreadRadius: 5,
               ),
@@ -220,7 +220,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
           'Tree Survey Management System',
           style: TextStyle(
             fontSize: 12,
-            color: Colors.white.withOpacity(0.8),
+            color: Colors.white.withValues(alpha:0.8),
             letterSpacing: 1,
           ),
         ),
@@ -229,6 +229,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
   }
 
   Widget _buildLoginCard() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return ClipRRect(
       borderRadius: BorderRadius.circular(24),
       child: BackdropFilter(
@@ -236,11 +237,13 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
         child: Container(
           padding: const EdgeInsets.all(28),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.95),
+            color: isDark
+                ? AppColors.darkCard.withValues(alpha: 0.95)
+                : Colors.white.withValues(alpha: 0.95),
             borderRadius: BorderRadius.circular(24),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.15),
+                color: Colors.black.withValues(alpha: isDark ? 0.3 : 0.15),
                 blurRadius: 30,
                 offset: const Offset(0, 15),
               ),
@@ -295,9 +298,10 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
   }
 
   Widget _buildLoginTypeSelector() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.background,
+        color: isDark ? AppColors.darkSurface : AppColors.background,
         borderRadius: BorderRadius.circular(16),
       ),
       padding: const EdgeInsets.all(4),
@@ -341,7 +345,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: AppColors.portBlue.withOpacity(0.3),
+                    color: AppColors.portBlue.withValues(alpha:0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -354,13 +358,13 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
             Icon(
               icon,
               size: 18,
-              color: isSelected ? Colors.white : Colors.grey.shade500,
+              color: isSelected ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? AppColors.darkTextSecondary : Colors.grey.shade500),
             ),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : Colors.grey.shade600,
+                color: isSelected ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? AppColors.darkTextSecondary : Colors.grey.shade600),
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
               ),
@@ -378,14 +382,15 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     bool isPassword = false,
     String? Function(String?)? validator,
   }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return TextFormField(
       controller: controller,
       obscureText: isPassword && !_isPasswordVisible,
-      style: const TextStyle(fontSize: 16),
+      style: TextStyle(fontSize: 16, color: isDark ? AppColors.darkTextPrimary : Colors.black87),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(
-          color: Colors.grey.shade600,
+          color: isDark ? AppColors.darkTextSecondary : Colors.grey.shade600,
           fontWeight: FontWeight.w500,
         ),
         prefixIcon: Icon(icon, color: AppColors.portBlue, size: 22),
@@ -395,7 +400,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                   _isPasswordVisible
                       ? Icons.visibility_off_rounded
                       : Icons.visibility_rounded,
-                  color: Colors.grey.shade500,
+                  color: isDark ? AppColors.darkTextTertiary : Colors.grey.shade500,
                   size: 22,
                 ),
                 onPressed: () {
@@ -406,14 +411,14 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
               )
             : null,
         filled: true,
-        fillColor: AppColors.background,
+        fillColor: isDark ? AppColors.darkSurface : AppColors.background,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: Colors.grey.shade200, width: 1),
+          borderSide: BorderSide(color: isDark ? AppColors.darkBorder : Colors.grey.shade200, width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -443,7 +448,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.forestGreen.withOpacity(0.4),
+            color: AppColors.forestGreen.withValues(alpha:0.4),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -494,7 +499,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
         Text(
           '© 2012-$currentYear 臺灣港務公司',
           style: TextStyle(
-            color: Colors.white.withOpacity(0.7),
+            color: Colors.white.withValues(alpha:0.7),
             fontSize: 12,
           ),
         ),
@@ -502,7 +507,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
         Text(
           'Taiwan International Ports Corporation',
           style: TextStyle(
-            color: Colors.white.withOpacity(0.5),
+            color: Colors.white.withValues(alpha:0.5),
             fontSize: 10,
           ),
         ),

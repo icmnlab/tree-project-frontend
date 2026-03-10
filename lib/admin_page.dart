@@ -494,7 +494,7 @@ class _AdminPageState extends State<AdminPage> {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 6.0),
       elevation: 4.0,
-      shadowColor: roleColor.withOpacity(0.3),
+      shadowColor: roleColor.withValues(alpha:0.3),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14.0)),
       child: Container(
         decoration: BoxDecoration(
@@ -502,7 +502,7 @@ class _AdminPageState extends State<AdminPage> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Colors.white, roleColor.withOpacity(0.05)],
+            colors: [Colors.white, roleColor.withValues(alpha:0.05)],
           ),
         ),
         child: ListTile(
@@ -512,7 +512,7 @@ class _AdminPageState extends State<AdminPage> {
             height: 48,
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [roleColor.withOpacity(0.8), roleColor],
+                colors: [roleColor.withValues(alpha:0.8), roleColor],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
@@ -530,7 +530,7 @@ class _AdminPageState extends State<AdminPage> {
           ),
           title: Text(
             username ?? '未知用戶名',
-            style: TextStyle(fontWeight: FontWeight.w600, color: roleColor.withOpacity(0.9)),
+            style: TextStyle(fontWeight: FontWeight.w600, color: roleColor.withValues(alpha:0.9)),
           ),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -1264,7 +1264,7 @@ class _AdminPageState extends State<AdminPage> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha:0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(icon, color: color, size: 28),
@@ -1300,7 +1300,7 @@ class _AdminPageState extends State<AdminPage> {
                             size: 18, color: color),
                         label: Text('執行腳本', style: TextStyle(color: color)),
                         style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: color.withOpacity(0.5)),
+                          side: BorderSide(color: color.withValues(alpha:0.5)),
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 8),
                         ),

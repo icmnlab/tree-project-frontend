@@ -414,7 +414,7 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [color.withOpacity(0.1), color.withOpacity(0.05)],
+          colors: [color.withValues(alpha:0.1), color.withValues(alpha:0.05)],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
@@ -428,7 +428,7 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
+              color: color.withValues(alpha:0.15),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(icon, color: color, size: 22),
@@ -439,7 +439,7 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: color.withOpacity(0.9),
+              color: color.withValues(alpha:0.9),
             ),
           ),
         ],
@@ -583,7 +583,7 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
                       borderRadius: BorderRadius.circular(12),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.teal.withOpacity(0.4),
+                          color: Colors.teal.withValues(alpha:0.4),
                           blurRadius: 12,
                           offset: const Offset(0, 4),
                         ),

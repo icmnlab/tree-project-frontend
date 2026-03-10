@@ -482,7 +482,7 @@ class _ProjectAreasPageState extends State<ProjectAreasPage> {
                             vertical: 6,
                           ),
                           elevation: 4,
-                          shadowColor: areaColor.withOpacity(0.3),
+                          shadowColor: areaColor.withValues(alpha:0.3),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(14),
                           ),
@@ -490,7 +490,7 @@ class _ProjectAreasPageState extends State<ProjectAreasPage> {
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(14),
                               gradient: LinearGradient(
-                                colors: [Colors.white, areaColor.withOpacity(0.08)],
+                                colors: [Colors.white, areaColor.withValues(alpha:0.08)],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),
@@ -502,7 +502,7 @@ class _ProjectAreasPageState extends State<ProjectAreasPage> {
                                 height: 50,
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
-                                    colors: [areaColor.withOpacity(0.7), areaColor],
+                                    colors: [areaColor.withValues(alpha:0.7), areaColor],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
@@ -519,7 +519,7 @@ class _ProjectAreasPageState extends State<ProjectAreasPage> {
                                 style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 16,
-                                  color: areaColor.withOpacity(0.9),
+                                  color: areaColor.withValues(alpha:0.9),
                                 ),
                               ),
                               subtitle: area['area_code'] != null
@@ -531,7 +531,7 @@ class _ProjectAreasPageState extends State<ProjectAreasPage> {
                               trailing: Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: areaColor.withOpacity(0.1),
+                                  color: areaColor.withValues(alpha:0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Icon(
@@ -579,7 +579,7 @@ class _ProjectsByAreaPage extends StatelessWidget {
               vertical: 6,
             ),
             elevation: 4,
-            shadowColor: projectColor.withOpacity(0.3),
+            shadowColor: projectColor.withValues(alpha:0.3),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
             ),
@@ -587,7 +587,7 @@ class _ProjectsByAreaPage extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(14),
                 gradient: LinearGradient(
-                  colors: [Colors.white, projectColor.withOpacity(0.08)],
+                  colors: [Colors.white, projectColor.withValues(alpha:0.08)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -625,7 +625,7 @@ class _ProjectsByAreaPage extends StatelessWidget {
                 trailing: Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: projectColor.withOpacity(0.1),
+                    color: projectColor.withValues(alpha:0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -659,7 +659,7 @@ class _ProjectsByAreaPage extends StatelessWidget {
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: AppColors.forestGreen.withOpacity(0.4),
+              color: AppColors.forestGreen.withValues(alpha:0.4),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),

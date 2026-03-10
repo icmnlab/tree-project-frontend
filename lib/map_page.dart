@@ -105,7 +105,7 @@ class _MapPageState extends State<MapPage> {
           points: points,
           strokeColor: color,
           strokeWidth: 2,
-          fillColor: color.withOpacity(0.15),
+          fillColor: color.withValues(alpha: 0.15),
           consumeTapEvents: true,
           onTap: () => _showBoundaryInfo(boundary),
         ));
@@ -200,7 +200,7 @@ class _MapPageState extends State<MapPage> {
                     Colors.purple,
                     Colors.teal,
                     Colors.pink,
-                  ][index % 6].withOpacity(0.2),
+                  ][index % 6].withValues(alpha: 0.2),
                   child: Icon(
                     Icons.crop_square,
                     color: [
@@ -856,7 +856,7 @@ class _MapPageState extends State<MapPage> {
                     color: Colors.white,
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withValues(alpha: 0.1),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -871,7 +871,7 @@ class _MapPageState extends State<MapPage> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF0D47A1).withOpacity(0.1),
+                            color: const Color(0xFF0D47A1).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: const Row(
@@ -914,7 +914,7 @@ class _MapPageState extends State<MapPage> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF00BCD4).withOpacity(0.1),
+                            color: const Color(0xFF00BCD4).withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: const Row(
@@ -963,7 +963,7 @@ class _MapPageState extends State<MapPage> {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFF0D47A1).withOpacity(0.3),
+                            color: const Color(0xFF0D47A1).withValues(alpha: 0.3),
                             blurRadius: 6,
                             offset: const Offset(0, 3),
                           ),
@@ -975,7 +975,7 @@ class _MapPageState extends State<MapPage> {
                           Container(
                             padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
+                              color: Colors.white.withValues(alpha: 0.2),
                               shape: BoxShape.circle,
                             ),
                             child: const Icon(Icons.park, size: 14, color: Colors.white),
@@ -1005,15 +1005,15 @@ class _MapPageState extends State<MapPage> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.5),
-                    Colors.black.withOpacity(0.3),
+                    Colors.black.withValues(alpha: 0.5),
+                    Colors.black.withValues(alpha: 0.3),
                   ],
                 ),
               ),
               child: Center(
                 child: Card(
                   elevation: 12,
-                  shadowColor: const Color(0xFF0D47A1).withOpacity(0.4),
+                  shadowColor: const Color(0xFF0D47A1).withValues(alpha: 0.4),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                   child: Container(
                     padding: const EdgeInsets.all(28),
@@ -1032,7 +1032,7 @@ class _MapPageState extends State<MapPage> {
                           width: 64,
                           height: 64,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF0D47A1).withOpacity(0.1),
+                            color: const Color(0xFF0D47A1).withValues(alpha: 0.1),
                             shape: BoxShape.circle,
                           ),
                           child: const Center(
@@ -1088,8 +1088,8 @@ class _MapPageState extends State<MapPage> {
               boxShadow: [
                 BoxShadow(
                   color: _hasLocationPermission 
-                    ? const Color(0xFF0D47A1).withOpacity(0.3)
-                    : Colors.grey.withOpacity(0.3),
+                    ? const Color(0xFF0D47A1).withValues(alpha: 0.3)
+                    : Colors.grey.withValues(alpha: 0.3),
                   blurRadius: 8,
                   spreadRadius: 1,
                   offset: const Offset(0, 2),
@@ -1143,7 +1143,7 @@ class _MapPageState extends State<MapPage> {
               shape: BoxShape.circle,
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF0D47A1).withOpacity(0.4),
+                  color: const Color(0xFF0D47A1).withValues(alpha: 0.4),
                   blurRadius: 12,
                   spreadRadius: 2,
                   offset: const Offset(0, 4),

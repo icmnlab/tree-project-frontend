@@ -1606,7 +1606,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
                             borderRadius: BorderRadius.circular(8),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.teal.withOpacity(0.3),
+                                color: Colors.teal.withValues(alpha:0.3),
                                 blurRadius: 8,
                                 offset: const Offset(0, 3),
                               ),

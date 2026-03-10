@@ -534,11 +534,11 @@ class _TreeListPageState extends State<TreeListPage> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppColors.portBlue, AppColors.portBlue.withOpacity(0.8)],
+              colors: [AppColors.portBlue, AppColors.portBlue.withValues(alpha: 0.8)],
             ),
             boxShadow: [
               BoxShadow(
-                color: AppColors.portBlue.withOpacity(0.3),
+                color: AppColors.portBlue.withValues(alpha: 0.3),
                 blurRadius: 12,
                 offset: const Offset(0, 4),
               ),
@@ -675,7 +675,7 @@ class _TreeListPageState extends State<TreeListPage> {
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.04),
+                                color: Colors.black.withValues(alpha: 0.04),
                                 blurRadius: 10,
                                 offset: const Offset(0, 2),
                               ),
@@ -707,7 +707,7 @@ class _TreeListPageState extends State<TreeListPage> {
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
+                              color: Colors.black.withValues(alpha: 0.04),
                               blurRadius: 10,
                               offset: const Offset(0, 2),
                             ),
@@ -751,7 +751,7 @@ class _TreeListPageState extends State<TreeListPage> {
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.portBlue.withOpacity(0.08),
+                              color: AppColors.portBlue.withValues(alpha: 0.08),
                               blurRadius: 8,
                               offset: const Offset(0, 2),
                             ),
@@ -777,7 +777,7 @@ class _TreeListPageState extends State<TreeListPage> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: AppColors.forestGreen.withOpacity(0.1),
+                          color: AppColors.forestGreen.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
@@ -806,7 +806,7 @@ class _TreeListPageState extends State<TreeListPage> {
                                   borderRadius: BorderRadius.circular(20),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppColors.portBlue.withOpacity(0.1),
+                                      color: AppColors.portBlue.withValues(alpha: 0.1),
                                       blurRadius: 20,
                                       spreadRadius: 5,
                                     ),
@@ -835,7 +835,7 @@ class _TreeListPageState extends State<TreeListPage> {
                                   borderRadius: BorderRadius.circular(20),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: Colors.black.withOpacity(0.05),
+                                      color: Colors.black.withValues(alpha: 0.05),
                                       blurRadius: 20,
                                       spreadRadius: 5,
                                     ),
@@ -847,7 +847,7 @@ class _TreeListPageState extends State<TreeListPage> {
                                     Container(
                                       padding: const EdgeInsets.all(16),
                                       decoration: BoxDecoration(
-                                        color: AppColors.error.withOpacity(0.1),
+                                        color: AppColors.error.withValues(alpha: 0.1),
                                         shape: BoxShape.circle,
                                       ),
                                       child: Icon(
@@ -889,7 +889,7 @@ class _TreeListPageState extends State<TreeListPage> {
                                       borderRadius: BorderRadius.circular(20),
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.black.withOpacity(0.05),
+                                          color: Colors.black.withValues(alpha: 0.05),
                                           blurRadius: 20,
                                           spreadRadius: 5,
                                         ),
@@ -901,7 +901,7 @@ class _TreeListPageState extends State<TreeListPage> {
                                         Container(
                                           padding: const EdgeInsets.all(20),
                                           decoration: BoxDecoration(
-                                            color: AppColors.forestGreen.withOpacity(0.1),
+                                            color: AppColors.forestGreen.withValues(alpha: 0.1),
                                             shape: BoxShape.circle,
                                           ),
                                           child: Icon(Icons.park_outlined, size: 48, color: AppColors.forestGreen),
@@ -930,7 +930,7 @@ class _TreeListPageState extends State<TreeListPage> {
                                           borderRadius: BorderRadius.circular(20),
                                           boxShadow: [
                                             BoxShadow(
-                                              color: Colors.black.withOpacity(0.04),
+                                              color: Colors.black.withValues(alpha: 0.04),
                                               blurRadius: 12,
                                               offset: const Offset(0, 4),
                                             ),
@@ -981,7 +981,7 @@ class _TreeListPageState extends State<TreeListPage> {
                                                         borderRadius: BorderRadius.circular(14),
                                                         boxShadow: [
                                                           BoxShadow(
-                                                            color: AppColors.forestGreen.withOpacity(0.3),
+                                                            color: AppColors.forestGreen.withValues(alpha: 0.3),
                                                             blurRadius: 8,
                                                             offset: const Offset(0, 3),
                                                           ),
@@ -1040,7 +1040,7 @@ class _TreeListPageState extends State<TreeListPage> {
                                                           Container(
                                                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                                             decoration: BoxDecoration(
-                                                              color: AppColors.portBlue.withOpacity(0.1),
+                                                              color: AppColors.portBlue.withValues(alpha: 0.1),
                                                               borderRadius: BorderRadius.circular(8),
                                                             ),
                                                             child: Text(

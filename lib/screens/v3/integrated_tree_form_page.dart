@@ -1152,7 +1152,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
                           child: Container(
                             width: 1.5,
                             height: double.infinity,
-                            color: Colors.teal.withOpacity(0.2),
+                            color: Colors.teal.withValues(alpha:0.2),
                           ),
                         ),
                         Center(
@@ -1242,7 +1242,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.85),
+        color: color.withValues(alpha:0.85),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Text(label, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),

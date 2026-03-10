@@ -248,7 +248,7 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
                       });
                     }
                   },
-                  selectedColor: AppColors.forestGreen.withOpacity(0.3),
+                  selectedColor: AppColors.forestGreen.withValues(alpha:0.3),
                 );
               }).toList(),
             ),
@@ -272,7 +272,7 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
         color: canIdentify ? null : Colors.grey.shade300,
         boxShadow: canIdentify ? [
           BoxShadow(
-            color: Colors.green.withOpacity(0.3),
+            color: Colors.green.withValues(alpha:0.3),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -461,7 +461,7 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
           colors: [AppColors.surfaceLight, Colors.teal.shade50],
         ),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.forestGreen.withOpacity(0.3)),
+        border: Border.all(color: AppColors.forestGreen.withValues(alpha:0.3)),
       ),
       child: Column(
         children: [
@@ -477,7 +477,7 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha:0.2),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(Icons.eco, color: Colors.white, size: 24),
@@ -633,10 +633,10 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.portBlueLight.withOpacity(0.3)),
+        border: Border.all(color: AppColors.portBlueLight.withValues(alpha:0.3)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.portBlue.withOpacity(0.1),
+            color: AppColors.portBlue.withValues(alpha:0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -648,7 +648,7 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: AppColors.portBlueLight.withOpacity(0.1),
+              color: AppColors.portBlueLight.withValues(alpha:0.1),
               borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
             ),
             child: Row(
@@ -656,7 +656,7 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
-                    color: AppColors.portBlueLight.withOpacity(0.2),
+                    color: AppColors.portBlueLight.withValues(alpha:0.2),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(Icons.eco, color: AppColors.portBlue, size: 18),
@@ -703,10 +703,10 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.forestGreen.withOpacity(0.3)),
+        border: Border.all(color: AppColors.forestGreen.withValues(alpha:0.3)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.forestGreen.withOpacity(0.1),
+            color: AppColors.forestGreen.withValues(alpha:0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -809,7 +809,7 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha:0.04),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -821,9 +821,9 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
           width: 48,
           height: 48,
           decoration: BoxDecoration(
-            color: _getScoreColor(score).withOpacity(0.1),
+            color: _getScoreColor(score).withValues(alpha:0.1),
             shape: BoxShape.circle,
-            border: Border.all(color: _getScoreColor(score).withOpacity(0.3)),
+            border: Border.all(color: _getScoreColor(score).withValues(alpha:0.3)),
           ),
           child: Center(
             child: Text(

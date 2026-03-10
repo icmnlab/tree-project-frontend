@@ -105,7 +105,7 @@ class AppTheme {
   // ============================================
   static List<BoxShadow> get shadowSM => [
     BoxShadow(
-      color: AppColors.neutral900.withOpacity(0.04),
+      color: AppColors.neutral900.withValues(alpha:0.04),
       blurRadius: 8,
       offset: const Offset(0, 2),
     ),
@@ -113,7 +113,7 @@ class AppTheme {
 
   static List<BoxShadow> get shadowMD => [
     BoxShadow(
-      color: AppColors.neutral900.withOpacity(0.06),
+      color: AppColors.neutral900.withValues(alpha:0.06),
       blurRadius: 16,
       offset: const Offset(0, 4),
     ),
@@ -121,7 +121,7 @@ class AppTheme {
 
   static List<BoxShadow> get shadowLG => [
     BoxShadow(
-      color: AppColors.neutral900.withOpacity(0.08),
+      color: AppColors.neutral900.withValues(alpha:0.08),
       blurRadius: 24,
       offset: const Offset(0, 8),
     ),
@@ -173,7 +173,7 @@ class AppTheme {
       surfaceTintColor: Colors.transparent,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(radiusLG),
-        side: BorderSide(color: AppColors.neutral300.withOpacity(0.5)),
+        side: BorderSide(color: AppColors.neutral300.withValues(alpha:0.5)),
       ),
       margin: EdgeInsets.zero,
     ),
@@ -250,7 +250,7 @@ class AppTheme {
     // Chip 主題
     chipTheme: ChipThemeData(
       backgroundColor: AppColors.neutral100,
-      selectedColor: AppColors.primary.withOpacity(0.15),
+      selectedColor: AppColors.primary.withValues(alpha:0.15),
       labelStyle: labelMedium,
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       shape: RoundedRectangleBorder(
@@ -292,7 +292,7 @@ class AppTheme {
 
     // 分隔線主題
     dividerTheme: DividerThemeData(
-      color: AppColors.neutral300.withOpacity(0.5),
+      color: AppColors.neutral300.withValues(alpha:0.5),
       thickness: 1,
       space: 1,
     ),
@@ -343,7 +343,7 @@ class AppTheme {
       }),
       trackColor: WidgetStateProperty.resolveWith((states) {
         if (states.contains(WidgetState.selected)) {
-          return AppColors.primary.withOpacity(0.3);
+          return AppColors.primary.withValues(alpha:0.3);
         }
         return AppColors.neutral300;
       }),
@@ -383,7 +383,7 @@ class AppTheme {
       activeTrackColor: AppColors.primary,
       inactiveTrackColor: AppColors.neutral200,
       thumbColor: AppColors.primary,
-      overlayColor: AppColors.primary.withOpacity(0.2),
+      overlayColor: AppColors.primary.withValues(alpha:0.2),
     ),
   );
 
@@ -543,7 +543,7 @@ class AppTheme {
     ),
 
     dividerTheme: DividerThemeData(
-      color: AppColors.darkBorder.withOpacity(0.5),
+      color: AppColors.darkBorder.withValues(alpha:0.5),
       thickness: 1,
       space: 1,
     ),
@@ -676,7 +676,7 @@ class AppCard extends StatelessWidget {
         color: backgroundColor ?? AppColors.white,
         borderRadius: BorderRadius.circular(AppTheme.radiusLG),
         border: hasBorder ? Border.all(
-          color: AppColors.neutral300.withOpacity(0.5),
+          color: AppColors.neutral300.withValues(alpha:0.5),
         ) : null,
         boxShadow: shadow ?? AppTheme.shadowSM,
       ),
@@ -767,7 +767,7 @@ class AppBadge extends StatelessWidget {
         vertical: AppTheme.spacingXS,
       ),
       decoration: BoxDecoration(
-        color: backgroundColor ?? AppColors.primary.withOpacity(0.1),
+        color: backgroundColor ?? AppColors.primary.withValues(alpha:0.1),
         borderRadius: BorderRadius.circular(AppTheme.radiusFull),
       ),
       child: Row(
@@ -825,7 +825,7 @@ class StatCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(10),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha:0.1),
                   borderRadius: BorderRadius.circular(AppTheme.radiusMD),
                 ),
                 child: Icon(icon, color: color, size: 22),
