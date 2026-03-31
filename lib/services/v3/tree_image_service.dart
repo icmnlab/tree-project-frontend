@@ -276,9 +276,14 @@ class TreeImageService {
       final targetPath = '${treeDir.path}/$imageId$extension';
       await image.copy(targetPath);
       
-      // 建立縮圖（可選，這裡簡化處理）
+      // 建立縮圖（使用原圖副本，避免額外套件依賴）
       final thumbnailPath = '${treeDir.path}/${imageId}_thumb$extension';
-      // TODO: 實作縮圖生成（使用 flutter_image_compress 套件）
+      try {
+        await File(targetPath).copy(thumbnailPath);
+      } catch (_) {
+        // 縮圖非關鍵路徑，失敗不阻斷流程
+        debugPrint('[TreeImageService] 縮圖建立失敗，使用原圖路徑');
+      }
       
       // 建立影像記錄
       final treeImage = TreeImage(

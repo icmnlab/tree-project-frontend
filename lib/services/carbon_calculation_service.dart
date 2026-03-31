@@ -1,83 +1,141 @@
 import 'dart:math' as Math;
 
+/// Carbon storage & sequestration calculator.
+///
+/// Methodology — Chave et al. (2014) pantropical allometric equation:
+///   Full model  : AGB = 0.0673 × (ρ × D² × H)^0.976  [kg]
+///   Simplified  : AGB = exp(−2.48 + 2.4835 × ln(D))   [kg]  (DBH-only)
+///   Total Biomass = 1.24 × AGB  (root-to-shoot ratio 0.24)
+///   Carbon        = 0.50 × TB   (IPCC 2006 default carbon fraction)
+///   CO₂e          = C × 3.67    (molecular weight ratio 44 / 12)
+///
+/// References:
+///   [1] Chave, J. et al. (2014). Improved allometric models to estimate the
+///       aboveground biomass of tropical trees. Global Change Biology, 20(10),
+///       3177–3190. https://doi.org/10.1111/gcb.12629
+///   [2] IPCC (2006). Guidelines for National Greenhouse Gas Inventories.
+///       Vol. 4, Ch. 4, Table 4.3.
+///   [3] Mokany, K. et al. (2006). Critical analysis of root:shoot ratios in
+///       terrestrial biomes. Global Change Biology, 12(1), 84–96.
+///   [4] Zanne, A.E. et al. (2009). Global Wood Density Database. Dryad.
 class CarbonCalculationService {
-  // 根據研究報告中不同樹種的碳含量比例和絕乾比重
-  static final Map<String, Map<String, double>> treeParameters = {
-    '相思樹': {'density': 0.65, 'carbonFraction': 0.48, 'conversionFactor': 0.312},
-    '樟樹': {'density': 0.37, 'carbonFraction': 0.47, 'conversionFactor': 0.174},
-    '台灣杉': {'density': 0.32, 'carbonFraction': 0.48, 'conversionFactor': 0.155},
-    '欖仁': {'density': 0.52, 'carbonFraction': 0.47, 'conversionFactor': 0.244},
-    '苦楝': {'density': 0.48, 'carbonFraction': 0.47, 'conversionFactor': 0.226},
-    '木賊葉木麻黃': {
-      'density': 0.58,
-      'carbonFraction': 0.48,
-      'conversionFactor': 0.278
-    },
-    '阿勒勃': {'density': 0.51, 'carbonFraction': 0.48, 'conversionFactor': 0.245},
-    // 可根據研究報告新增更多樹種
-    '其他': {'density': 0.50, 'carbonFraction': 0.48, 'conversionFactor': 0.240},
+  static const double _carbonFraction = 0.50; // IPCC 2006
+  static const double _rootShootExpansion = 1.24; // Mokany et al. 2006
+  static const double _co2ConversionFactor = 3.67; // 44/12
+  static const double _defaultGrowthRate = 0.03; // 3 % yr⁻¹
+
+  // Wood density ρ (g/cm³) — cross-referenced with Zanne et al. (2009) GWDD.
+  // Values represent basic specific gravity (oven-dry mass / green volume).
+  // Verified against: wood-database.com, ICRAF Agroforestry Tree Database,
+  // and Taiwan Forestry Bureau published tables where available.
+  // Unverified entries retain the tree_carbon_data DB average ((min+max)/2).
+  static final Map<String, double> speciesWoodDensity = {
+    // --- 74 species from tree_carbon_data DB (id 1–74) ---
+    // Ficus spp. corrected: DB values were ~0.10 above GWDD median
+    '榕樹': 0.55, '小葉欖仁': 0.58, '樟樹': 0.52, '白千層': 0.65,
+    '鳳凰木': 0.50, '臺灣欒樹': 0.58, '羅漢松': 0.57, '構樹': 0.40,
+    '黑板樹': 0.35, '銀合歡': 0.65, '欖仁': 0.56, '大葉桃花心木': 0.55,
+    '苦楝': 0.48, '印度橡膠樹': 0.50, '赤桉': 0.70, '茄苳': 0.64,
+    '楓香': 0.58, '黃槿': 0.52, '蒲葵': 0.48, '流蘇': 0.60,
+    '木賊葉木麻黃': 0.83, '瓊崖海棠': 0.68, '白榕': 0.52, '雞蛋花': 0.53,
+    '龍柏': 0.53, '肯氏南洋杉': 0.59, '菩提樹': 0.49, '可可椰子': 0.43,
+    '白水木': 0.66, '土肉桂': 0.56, '大葉山欖': 0.72, '小葉桃花心木': 0.55,
+    '海檬果': 0.52, '水黃皮': 0.70, '洋紅風鈴木': 0.59, '檄樹': 0.53,
+    '毛柿': 0.68, '鐵色': 0.78, '馬拉巴栗': 0.46, '金龜樹': 0.68,
+    '棋盤腳': 0.56, '破布子': 0.54, '大葉合歡': 0.63, '菲島福木': 0.72,
+    '楊桃': 0.50, '芒果樹': 0.59, '緬梔': 0.52, '黃連木': 0.66,
+    '潺槁樹': 0.57, '阿勒勃': 0.54, '欖仁舅': 0.62, '蘭嶼羅漢松': 0.54,
+    '無葉檉柳': 0.70, '月橘': 0.78, '鴨腳木': 0.53, '鐵刀木': 0.73,
+    '巴西乳香': 0.59, '西印度櫻桃': 0.70, '釋迦': 0.53, '蓮霧': 0.66,
+    '白玉蘭': 0.56, '臺灣胡桃': 0.72, '龍眼': 0.69, '墨水樹': 0.54,
+    '中東海棗': 0.48, '小葉南洋杉': 0.55, '人心果': 0.64, '九丁榕': 0.52,
+    '雀榕': 0.52, '大花紫薇': 0.68, '大王椰子': 0.43, '雨豆樹': 0.54,
+    '櫸': 0.68, '血桐': 0.48,
+    // --- Additional common species not yet in DB ---
+    '相思樹': 0.65, '台灣杉': 0.32, '台灣櫸': 0.68, '光蠟樹': 0.56,
+    '牛樟': 0.52, '桂花': 0.72, '台灣肖楠': 0.45, '柳杉': 0.35,
   };
 
+  // Scientific name → Chinese common name (for PlantNet integration)
+  static final Map<String, String> _scientificToCommon = {
+    'Ficus microcarpa': '榕樹', 'Terminalia mantaly': '小葉欖仁',
+    'Cinnamomum camphora': '樟樹', 'Melaleuca leucadendra': '白千層',
+    'Delonix regia': '鳳凰木', 'Koelreuteria elegans': '臺灣欒樹',
+    'Podocarpus macrophyllus': '羅漢松', 'Broussonetia papyrifera': '構樹',
+    'Alstonia scholaris': '黑板樹', 'Leucaena leucocephala': '銀合歡',
+    'Swietenia macrophylla': '大葉桃花心木', 'Melia azedarach': '苦楝',
+    'Ficus elastica': '印度橡膠樹', 'Eucalyptus camaldulensis': '赤桉',
+    'Bischofia javanica': '茄苳', 'Liquidambar formosana': '楓香',
+    'Hibiscus tiliaceus': '黃槿', 'Livistona chinensis': '蒲葵',
+    'Casuarina equisetifolia': '木賊葉木麻黃', 'Calophyllum inophyllum': '瓊崖海棠',
+    'Ficus religiosa': '菩提樹', 'Cocos nucifera': '可可椰子',
+    'Cinnamomum osmophloeum': '土肉桂', 'Murraya paniculata': '月橘',
+    'Cassia siamea': '鐵刀木', 'Roystonea regia': '大王椰子',
+    'Samanea saman': '雨豆樹', 'Zelkova serrata': '櫸',
+    'Macaranga tanarius': '血桐', 'Mangifera indica': '芒果樹',
+    'Dimocarpus longan': '龍眼', 'Syzygium samarangense': '蓮霧',
+    'Pachira macrocarpa': '馬拉巴栗', 'Lagerstroemia speciosa': '大花紫薇',
+    'Acacia confusa': '相思樹', 'Taiwania cryptomerioides': '台灣杉',
+    'Araucaria cunninghamii': '肯氏南洋杉', 'Ficus benjamina': '九丁榕',
+    'Ficus superba': '雀榕', 'Annona squamosa': '釋迦',
+    'Schefflera octophylla': '鴨腳木', 'Plumeria rubra': '雞蛋花',
+  };
+
+  static const double _defaultWoodDensity = 0.58; // tropical mean (Chave 2014)
+
+  /// Look up wood density by species name (Chinese or scientific).
+  static double getWoodDensity(String species) {
+    // Direct Chinese name lookup
+    if (speciesWoodDensity.containsKey(species)) {
+      return speciesWoodDensity[species]!;
+    }
+    // Scientific name lookup
+    final common = _scientificToCommon[species];
+    if (common != null && speciesWoodDensity.containsKey(common)) {
+      return speciesWoodDensity[common]!;
+    }
+    // Partial match (e.g., "台灣欒樹" vs "臺灣欒樹")
+    for (final key in speciesWoodDensity.keys) {
+      if (key.contains(species) || species.contains(key)) {
+        return speciesWoodDensity[key]!;
+      }
+    }
+    return _defaultWoodDensity;
+  }
+
   // 計算樹木碳儲存量（單位：kg CO₂e）
+  // Chave et al. (2014) — uses full model when height available
   static double calculateCarbonStorage(
       String species, double height, double dbh) {
-    // 從參數表取得該樹種的轉換參數，若沒有則使用預設值
-    final params = treeParameters[species] ?? treeParameters['其他']!;
+    if (dbh <= 0) return 0;
 
-    // 計算材積 (m³)
-    // 使用台灣常用公式：立木材積 = (DBH(m))² × 0.79 × H(m) × 形數(0.45)
-    final dbhInMeters = dbh / 100; // 將公分轉為公尺
-    final volume = Math.pow(dbhInMeters, 2) * 0.79 * height * 0.45;
+    final density = getWoodDensity(species);
 
-    // 轉換為生物量 (kg)
-    final biomass = volume * params['density']! * 1000;
+    double agb;
+    if (height > 0 && density > 0) {
+      // Full Chave 2014: AGB = 0.0673 × (ρ × D² × H)^0.976
+      agb = 0.0673 * Math.pow(density * dbh * dbh * height, 0.976);
+    } else {
+      // Simplified: AGB = exp(−2.48 + 2.4835 × ln(D))
+      agb = Math.exp(-2.48 + 2.4835 * Math.log(dbh));
+    }
 
-    // 擴展至全樹生物量（含地下部）
-    // 根據研究使用根莖比 (R) 約 0.25
-    final totalBiomass = biomass * 1.25;
-
-    // 計算碳儲存量 (kg C)
-    final carbonStock = totalBiomass * params['carbonFraction']!;
-
-    // 轉換為 CO₂e (kg)
-    final co2eStock = carbonStock * (44 / 12); // CO₂ 與 C 的分子量比
-
-    return co2eStock;
+    final totalBiomass = _rootShootExpansion * agb;
+    final carbonStock = _carbonFraction * totalBiomass;
+    return carbonStock * _co2ConversionFactor;
   }
 
   // 計算年碳吸收量（單位：kg CO₂e/年）
+  // Mean annual increment = total storage / age, or default 3 % yr⁻¹
   static double calculateAnnualCarbonSequestration(
       String species, double height, double dbh, int ageYears) {
-    // 獲取總碳儲存量
     final totalStorage = calculateCarbonStorage(species, height, dbh);
+    if (totalStorage <= 0) return 0;
 
-    // 根據樹齡計算年均吸收量
-    // 研究顯示幼齡至中齡林階段碳吸收速率最高
-    double annualRate;
-    if (ageYears <= 0) {
-      // 預設情況，使用研究中的平均值
-      annualRate = 5.0; // 台灣常見樹木年碳吸收率約5-10 kgCO₂/株/年
-    } else if (ageYears < 5) {
-      // 幼齡期（快速生長）
-      annualRate = totalStorage / ageYears * 0.15;
-    } else if (ageYears < 20) {
-      // 中齡期（生長高峰）
-      annualRate = totalStorage / ageYears * 0.10;
-    } else if (ageYears < 50) {
-      // 成熟期（生長減緩）
-      annualRate = totalStorage / ageYears * 0.05;
-    } else {
-      // 老齡期（大型老樹仍持續積碳）
-      annualRate = totalStorage / ageYears * 0.03;
+    if (ageYears > 0) {
+      return totalStorage / ageYears;
     }
-
-    // 針對特定樹種調整係數
-    if (species == '竹子' || species.contains('竹')) {
-      // 研究顯示竹子固碳量是一般樹木的2-4倍
-      annualRate *= 2.5;
-    }
-
-    return annualRate;
+    return totalStorage * _defaultGrowthRate;
   }
 
   // 計算抵換碳足跡所需樹木數量
@@ -86,8 +144,6 @@ class CarbonCalculationService {
     final annualSequestration =
         calculateAnnualCarbonSequestration(species, avgHeight, avgDbh, avgAge);
     if (annualSequestration <= 0) return 0;
-
-    // 計算所需樹木數量 = 碳足跡 / 單株年均吸收量
     return (carbonFootprint / annualSequestration).ceil();
   }
 

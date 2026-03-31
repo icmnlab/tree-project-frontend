@@ -360,8 +360,15 @@ class MLDataSyncService {
     
     if (failedJson.isEmpty) return;
     
-    // TODO: 實作重試邏輯
-    debugPrint('[MLDataSync] 有 ${failedJson.length} 個失敗批次待重試');
+    debugPrint('[MLDataSync] 重試 ${failedJson.length} 個失敗批次');
+    // 清除失敗記錄後重新執行完整同步
+    await prefs.setStringList(_failedBatchesKey, []);
+    final result = await sync(force: true);
+    if (!result.success) {
+      debugPrint('[MLDataSync] 重試同步失敗: ${result.message}');
+    } else {
+      debugPrint('[MLDataSync] 重試同步完成');
+    }
   }
 }
 

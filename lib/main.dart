@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/login_page.dart';
 import 'screens/home_page.dart';
 import 'admin_page.dart';
@@ -22,6 +23,20 @@ import 'services/api_service.dart';
 import 'services/carbon_sink_service.dart';
 import 'services/v3/ml_data_sync_service.dart';
 import 'services/network_service.dart';
+
+/// 持久化的 AI Chat userId，確保跨導航保留對話歷史
+String _persistentAiUserId = '';
+
+Future<String> _getOrCreateAiUserId() async {
+  if (_persistentAiUserId.isNotEmpty) return _persistentAiUserId;
+  final prefs = await SharedPreferences.getInstance();
+  _persistentAiUserId = prefs.getString('ai_chat_user_id') ?? '';
+  if (_persistentAiUserId.isEmpty) {
+    _persistentAiUserId = 'user-${DateTime.now().millisecondsSinceEpoch}';
+    await prefs.setString('ai_chat_user_id', _persistentAiUserId);
+  }
+  return _persistentAiUserId;
+}
 
 /// 允許自架伺服器的自簽憑證 (僅限 Tailscale 內網 IP)
 class SelfHostedHttpOverrides extends HttpOverrides {
@@ -79,6 +94,9 @@ void main() async {
   // 初始化主題服務
   await ThemeService().initialize();
 
+  // 初始化持久化 AI userId
+  await _getOrCreateAiUserId();
+
   runApp(const MyApp());
 }
 
@@ -112,14 +130,14 @@ class MyApp extends StatelessWidget {
         // 舊路由保留兼容，重定向到新版 AI Chat
         '/ai-assistant': (context) => AuthGuard(
               child: AIChatPage(
-                userId: 'user-${DateTime.now().millisecondsSinceEpoch}',
+                userId: _persistentAiUserId,
                 selectedProjectAreas: const [],
               ),
             ),
         // 新版 AI 聊天頁面 (ChatGPT 風格)
         '/ai-chat': (context) => AuthGuard(
               child: AIChatPage(
-                userId: 'user-${DateTime.now().millisecondsSinceEpoch}',
+                userId: _persistentAiUserId,
                 selectedProjectAreas: const [],
               ),
             ),

@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:math' show atan, min;
+import 'dart:math' show atan, min, max;
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/services.dart';
@@ -155,8 +155,11 @@ class _ScannerPageState extends State<ScannerPage>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     final ctrl = _cameraController;
     if (state == AppLifecycleState.inactive) {
-      // 清理相機資源；guard 避免已 dispose 的 controller
+      // 清理相機資源；先停止影像串流再 dispose
       try {
+        if (ctrl?.value.isStreamingImages == true) {
+          ctrl?.stopImageStream();
+        }
         ctrl?.dispose();
       } catch (_) {}
       _cameraController = null;
@@ -476,7 +479,10 @@ class _ScannerPageState extends State<ScannerPage>
       if (sensorOrientation == 270) rotationCompensation = 270;
       rotation = InputImageRotationValue.fromRawValue(rotationCompensation);
     }
-    if (rotation == null) return null;
+    if (rotation == null) {
+      debugPrint('[ScannerPage-MLKit] rotation 為 null (sensorOrientation=$sensorOrientation)');
+      return null;
+    }
 
     final format = InputImageFormatValue.fromRawValue(image.format.raw);
 
@@ -738,10 +744,10 @@ class _ScannerPageState extends State<ScannerPage>
     final y2 = toImgY(screenBbox.bottom);
 
     return Rect.fromLTRB(
-      x1 < x2 ? x1 : x2,
-      y1 < y2 ? y1 : y2,
-      x1 < x2 ? x2 : x1 + 1,
-      y1 < y2 ? y2 : y1 + 1,
+      min(x1, x2),
+      min(y1, y2),
+      max(x1, x2),
+      max(y1, y2),
     );
   }
 
@@ -2230,18 +2236,27 @@ class _LiveBboxPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final double scaleX = size.width / previewSize.height;
-    final double scaleY = size.height / previewSize.width;
+    // bbox 座標在 portrait 空間：
+    //   X ∈ [0, portraitW]  (portraitW = 感測器短邊)
+    //   Y ∈ [0, portraitH]  (portraitH = 感測器長邊)
+    // previewSize 在某些裝置是 landscape (W>H)，某些是 portrait (W<H)，
+    // 必須統一取短邊 = portraitW、長邊 = portraitH。
+    final double portraitW = min(previewSize.width, previewSize.height);
+    final double portraitH = max(previewSize.width, previewSize.height);
+
+    final double scaleX = size.width / portraitW;
+    final double scaleY = size.height / portraitH;
 
     final rect = Rect.fromLTRB(
-      bbox.left * scaleX,
-      bbox.top * scaleY,
-      bbox.right * scaleX,
-      bbox.bottom * scaleY,
+      (bbox.left * scaleX).clamp(0.0, size.width),
+      (bbox.top * scaleY).clamp(0.0, size.height),
+      (bbox.right * scaleX).clamp(0.0, size.width),
+      (bbox.bottom * scaleY).clamp(0.0, size.height),
     );
 
     debugPrint('[LiveBbox-PAINT] canvas=${size.width.toStringAsFixed(0)}x${size.height.toStringAsFixed(0)} '
         'preview=${previewSize.width.toStringAsFixed(0)}x${previewSize.height.toStringAsFixed(0)} '
+        'portraitWH=${portraitW.toStringAsFixed(0)}x${portraitH.toStringAsFixed(0)} '
         'bbox=L${bbox.left.toStringAsFixed(0)},T${bbox.top.toStringAsFixed(0)},'
         'R${bbox.right.toStringAsFixed(0)},B${bbox.bottom.toStringAsFixed(0)} '
         '→ rect=L${rect.left.toStringAsFixed(0)},T${rect.top.toStringAsFixed(0)},'

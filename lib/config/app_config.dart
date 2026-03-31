@@ -77,9 +77,9 @@ class AppConfig {
     if (url != null && url.isNotEmpty) {
       // 確保 URL 格式正確
       String cleanUrl = url.trim().replaceAll(RegExp(r'/+$'), ''); // 去除尾部 /
-      if (!cleanUrl.endsWith('/api/v1')) {
-        cleanUrl = '$cleanUrl/api/v1';
-      }
+      // 去除使用者可能多輸入的 API 路徑，避免重複拼接
+      cleanUrl = cleanUrl.replaceAll(RegExp(r'/api(/v\d+)?$'), '');
+      cleanUrl = '$cleanUrl/api/v1';
       _selfHostedMlUrl = cleanUrl;
       await prefs.setString('self_hosted_ml_url', cleanUrl);
     } else {
