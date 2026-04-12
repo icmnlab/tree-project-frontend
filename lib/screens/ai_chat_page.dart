@@ -1769,7 +1769,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
       'calculate_carbon': '碳匯計算',
       'species_carbon_info': '樹種碳匯查詢',
       'project_summary': '專案統計',
-      'carbon_credit_estimate': '碳信用估算',
+      'carbon_credit_estimate': '碳匯統計',
     };
     const toolIcons = {
       'query_tree_data': Icons.search_rounded,
