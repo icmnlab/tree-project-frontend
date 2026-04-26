@@ -58,6 +58,11 @@ android/gradle.properties
 ios/Flutter/Generated.xcconfig
 ios/Flutter/flutter_export_environment.sh
 
+# iOS build artifacts (should not be tracked)
+ios/build/
+ios/Pods/
+ios/.symlinks/
+
 # API keys and backend data
 **/apiKeys.json
 tree-project-backend/
