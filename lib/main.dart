@@ -38,14 +38,21 @@ Future<String> _getOrCreateAiUserId() async {
   return _persistentAiUserId;
 }
 
-/// 允許自架伺服器的自簽憑證 (僅限 Tailscale 內網 IP)
+/// 允許自架伺服器的自簽憑證 (僅限 Tailscale 內網 IP / MagicDNS)
 class SelfHostedHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
     return super.createHttpClient(context)
       ..badCertificateCallback = (X509Certificate cert, String host, int port) {
-        // 只信任 Tailscale 內網 IP 的自簽憑證
-        return host == '100.118.203.75';
+        // 只信任 Tailscale 內網的自簽憑證：
+        //   - Ubuntu server IP (100.118.203.75)
+        //   - Windows server IP (100.81.214.9)
+        //   - Tailscale MagicDNS 名稱 (*.ts.net)
+        // 任何公網或非 Tailscale 的主機都仍會正常驗證 TLS，保持安全性。
+        if (host == '100.118.203.75') return true;
+        if (host == '100.81.214.9') return true;
+        if (host.endsWith('.ts.net')) return true;
+        return false;
       };
   }
 }
