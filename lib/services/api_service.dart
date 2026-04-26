@@ -13,7 +13,23 @@ class ApiService {
   static const _secureStorage = FlutterSecureStorage();
 
   static Future<void> initialize() async {
-    _jwtToken = await _secureStorage.read(key: _jwtTokenKey);
+    try {
+      _jwtToken = await _secureStorage.read(key: _jwtTokenKey);
+    } catch (e) {
+      // flutter_secure_storage may fail with BadPaddingException after
+      // reinstall / keystore reset. Clear the corrupted entry and continue so
+      // the app can still render the login screen instead of hanging on a
+      // black screen.
+      _jwtToken = null;
+      try {
+        await _secureStorage.delete(key: _jwtTokenKey);
+      } catch (_) {
+        // As a last resort wipe everything this plugin stored for us.
+        try {
+          await _secureStorage.deleteAll();
+        } catch (_) {}
+      }
+    }
   }
 
   static Future<void> setJwtToken(String? token) async {
