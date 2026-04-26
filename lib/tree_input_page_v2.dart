@@ -11,6 +11,7 @@ import 'services/project_area_service.dart';
 import 'services/location_service.dart';
 import 'services/species_service.dart';
 import 'services/v3/project_boundary_service.dart'; // V3: 專案邊界驗證
+import 'widgets/conflict_resolution_dialog.dart';
 
 // 定義日誌函數
 void logDebug(String message) {
@@ -55,6 +56,8 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
 
   bool _isEditing = false;
   Map<String, dynamic>? _currentTreeData;
+  // [T6][S1] 上次載入時的 updated_at
+  String? _loadedUpdatedAt;
   
   // Cleanup Tracking - 追蹤本次 session 新增的專案區位、專案和樹種，以便在退出時清理
   final List<int> _createdAreaIds = [];
@@ -119,6 +122,8 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
 
     _isEditing = widget.isEdit;
     _currentTreeData = widget.treeData;
+    // [T6][S1] 載入時的 updated_at，送出時作為樂觀鎖依據
+    _loadedUpdatedAt = widget.treeData?['updated_at']?.toString();
 
     _loadSpeciesList();
     _loadProjectList();
@@ -390,6 +395,9 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
         "carbon_storage": double.tryParse(carbonstorageController.text) ?? 0,
         "carbon_sequestration_per_year":
             double.tryParse(annualcarbonController.text) ?? 0,
+        // [T6][S1] 編輯模式帶上樂觀鎖時間戳
+        if (_isEditing && _loadedUpdatedAt != null)
+          "expected_updated_at": _loadedUpdatedAt,
       };
 
       logDebug('提交 V2 單筆數據: ${jsonEncode(treeData)}');
@@ -399,6 +407,47 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
         // 編輯模式：使用 V2 Update API
         response = await _treeService.updateTreeV2(
             _currentTreeData!['id'].toString(), treeData);
+        // [T6] 衝突處理
+        if (response['code'] == 'CONFLICT' && mounted) {
+          final server = (response['serverVersion'] as Map?)?.cast<String, dynamic>() ?? {};
+          final action = await showConflictResolutionDialog(
+            context,
+            serverVersion: server,
+            myDraft: treeData,
+          );
+          if (action == ConflictAction.keepMine) {
+            treeData.remove('expected_updated_at');
+            response = await _treeService.updateTreeV2(
+                _currentTreeData!['id'].toString(), treeData);
+          } else if (action == ConflictAction.useServer) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('已捽棄本次編輯，返回列表')),
+              );
+              Navigator.pop(context, true);
+            }
+            return;
+          } else if (action == ConflictAction.manualMerge) {
+            if (mounted) {
+              _populateFormWithData(server);
+              _loadedUpdatedAt = server['updated_at']?.toString();
+              setState(() {});
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('已載入伺服器最新版本，請重新調整後再儲存')),
+              );
+            }
+            return;
+          } else {
+            return;
+          }
+        }
+        if (response['code'] == 'DELETED' && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('資料已被刪除，將返回列表')),
+          );
+          Navigator.pop(context, true);
+          return;
+        }
       } else {
         // 新增模式：呼叫 V2 Create API
         response = await _treeService.createTreeV2(treeData);

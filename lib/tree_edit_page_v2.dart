@@ -12,6 +12,7 @@ import 'services/project_area_service.dart';
 // location_service import removed - unused in edit mode
 import 'services/species_service.dart';
 import 'services/v3/ml_data_collector.dart'; // V3 ML 數據收集
+import 'widgets/conflict_resolution_dialog.dart';
 
 // A new, dedicated page for editing tree data in V2 style.
 // This avoids mixing create/edit logic and resolves state issues.
@@ -105,6 +106,9 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
 
   // Tree ID is final in edit mode
   late final String _treeId;
+
+  // [T6][S1] 載入時的 updated_at，送出時作為樂觀鎖依據
+  String? _loadedUpdatedAt;
   
   // 清理追蹤：記錄編輯過程中新增的臨時資料
   final List<int> _createdAreaIds = [];
@@ -117,6 +121,7 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
     super.initState();
 
     _treeId = widget.treeData['id'].toString();
+    _loadedUpdatedAt = widget.treeData['updated_at']?.toString();
 
     _loadSpeciesList();
     _loadProjectAreas();
@@ -372,12 +377,58 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
         "survey_time": surveyTime.toIso8601String(),
         "carbon_storage": currentCarbonStorage,
         "carbon_sequestration_per_year": currentAnnualCarbon,
+        // [T6][S1] 樂觀鎖送載入當下的 updated_at
+        if (_loadedUpdatedAt != null) "expected_updated_at": _loadedUpdatedAt,
       };
 
       logDebug(
           'Submitting V2 update for tree ID $_treeId: ${jsonEncode(treeData)}');
 
-      final response = await _treeService.updateTreeV2(_treeId, treeData);
+      var response = await _treeService.updateTreeV2(_treeId, treeData);
+
+      // [T6] 409 衝突 → 三選一對話框
+      if (response['code'] == 'CONFLICT' && mounted) {
+        final server = (response['serverVersion'] as Map?)?.cast<String, dynamic>() ?? {};
+        final action = await showConflictResolutionDialog(
+          context,
+          serverVersion: server,
+          myDraft: treeData,
+        );
+        if (action == ConflictAction.keepMine) {
+          // 強制覆寫：拿掉 expected_updated_at 重送
+          treeData.remove('expected_updated_at');
+          response = await _treeService.updateTreeV2(_treeId, treeData);
+        } else if (action == ConflictAction.useServer) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('已捽棄本次編輯，返回列表')),
+            );
+            Navigator.pop(context, true);
+          }
+          return;
+        } else if (action == ConflictAction.manualMerge) {
+          // 載回伺服器版本讓使用者重調
+          if (mounted) {
+            _populateFormWithData(server);
+            _loadedUpdatedAt = server['updated_at']?.toString();
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('已載入伺服器最新版本，請重新調整後再儲存')),
+            );
+          }
+          return;
+        } else {
+          return; // 使用者取消
+        }
+      }
+
+      // [T6][S5] 資料已被刪除
+      if (response['code'] == 'DELETED' && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('資料已被刪除，將返回列表')),
+        );
+        Navigator.pop(context, true);
+        return;
+      }
 
       if (!mounted) return;
 
