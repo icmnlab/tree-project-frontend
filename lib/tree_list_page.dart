@@ -9,6 +9,37 @@ import 'services/api_service.dart';
 import 'services/auth_service.dart'; // 角色權限
 import 'constants/colors.dart';
 
+/// [T6 cleanup] 中文表頭→V2 (English) DB 欄位映射
+/// 用于 Excel 匯入 + 批次更新改走 createTreeV2 / updateTreeV2。
+Map<String, dynamic> _zhToV2(Map<String, dynamic> src) {
+  const zh2en = {
+    '專案區位': 'project_area',
+    '專案代碼': 'project_code',
+    '專案名稱': 'project_name',
+    '系統樹木': 'system_tree_id',
+    '專案樹木': 'project_tree_id',
+    '樹種編號': 'species_id',
+    '樹種名稱': 'species_name',
+    'X坐標': 'x_coord',
+    'Y坐標': 'y_coord',
+    '狀況': 'status',
+    '註記': 'note',
+    '樹木備註': 'tree_remark',
+    '樹高（公尺）': 'tree_height_m',
+    '胸徑（公分）': 'dbh_cm',
+    '調查備註': 'survey_notes',
+    '調查時間': 'survey_time',
+    '碳儲存量': 'carbon_storage',
+    '推估年碳吸存量': 'carbon_sequestration_per_year',
+  };
+  final out = <String, dynamic>{};
+  src.forEach((k, v) {
+    final ek = zh2en[k];
+    if (ek != null && v != null && v.toString().isNotEmpty) out[ek] = v;
+  });
+  return out;
+}
+
 class TreeListPage extends StatefulWidget {
   const TreeListPage({Key? key}) : super(key: key);
 
@@ -404,9 +435,12 @@ class _TreeListPageState extends State<TreeListPage> {
           _importStatus = '正在上傳資料...';
         });
 
-        // 批次上傳資料
+        // 批次上傳資料（T6 cleanup：走 V2 createTreeV2）
         for (var item in data) {
-          await _treeService.addTree(item);
+          final v2 = _zhToV2(item);
+          if (v2.isNotEmpty) {
+            await _treeService.createTreeV2(v2);
+          }
         }
 
         setState(() {
@@ -498,8 +532,13 @@ class _TreeListPageState extends State<TreeListPage> {
             (key, value) => value == null || value.toString().isEmpty);
 
         if (updateData.isNotEmpty) {
-          for (final tree in treesToUpdate) {
-            await _treeService.updateTree(tree['id'].toString(), updateData);
+          // [T6 cleanup] 走 V2：中文表頭譯成英文欄位。
+          // 批次更新不帶 expected_updated_at → 其實是後寫贏（同 Phase 1 向後相容設計）。
+          final v2Update = _zhToV2(updateData);
+          if (v2Update.isNotEmpty) {
+            for (final tree in treesToUpdate) {
+              await _treeService.updateTreeV2(tree['id'].toString(), v2Update);
+            }
           }
         }
 

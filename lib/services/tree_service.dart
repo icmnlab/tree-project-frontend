@@ -31,14 +31,7 @@ class TreeService {
     return await ApiService.get('tree_survey/by_area/$encodedName');
   }
 
-  Future<Map<String, dynamic>> addTree(Map<String, dynamic> treeData) async {
-    return await ApiService.post('tree_survey', treeData);
-  }
-
-  Future<Map<String, dynamic>> updateTree(
-      String id, Map<String, dynamic> treeData) async {
-    return await ApiService.put('tree_survey/$id', treeData);
-  }
+  // [T6 cleanup] addTree / updateTree (V1) 已移除，改用 createTreeV2 / updateTreeV2
 
   Future<Map<String, dynamic>> deleteTree(String id) async {
     return await ApiService.delete('tree_survey/$id');

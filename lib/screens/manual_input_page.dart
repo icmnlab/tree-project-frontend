@@ -1095,28 +1095,29 @@ class _ManualInputPageState extends State<ManualInputPage> {
           finalSurveyRemark = "$instrumentData | $finalSurveyRemark";
         }
 
+        // [T6 cleanup] V1 addTree 已移除，改走 createTreeV2（英文鍵名）
         final submitData = {
-          "專案區位": item['project_area'],
-          "專案代碼": pCode,
-          "專案名稱": item['project_name'],
-          "系統樹木": nextSysId++,
-          "專案樹木": currentPrjId,
-          "樹種編號": item['species_id'] ?? '',
-          "樹種名稱": item['species_name'] ?? '',
-          "X坐標": item['lon'] ?? 0.0,
-          "Y坐標": item['lat'] ?? 0.0,
-          "狀況": item['status'] ?? "良好",
-          "註記": item['note'] ?? "無",
-          "樹木備註": item['tree_remark'] ?? "無",
-          "樹高（公尺）": item['height'] ?? 0.0,
-          "胸徑（公分）": item['dbh'] ?? 0.0,
-          "調查備註": finalSurveyRemark, // [v13.1] 現在包含儀器測量參數
-          "調查時間": item['timestamp_iso'] ?? DateTime.now().toIso8601String(),
-          "碳儲存量": 0,
-          "推估年碳吸存量": 0,
+          "project_area": item['project_area'],
+          "project_code": pCode,
+          "project_name": item['project_name'],
+          "system_tree_id": nextSysId++,
+          "project_tree_id": currentPrjId,
+          "species_id": item['species_id'] ?? '',
+          "species_name": item['species_name'] ?? '',
+          "x_coord": item['lon'] ?? 0.0,
+          "y_coord": item['lat'] ?? 0.0,
+          "status": item['status'] ?? "良好",
+          "note": item['note'] ?? "無",
+          "tree_remark": item['tree_remark'] ?? "無",
+          "tree_height_m": item['height'] ?? 0.0,
+          "dbh_cm": item['dbh'] ?? 0.0,
+          "survey_notes": finalSurveyRemark,
+          "survey_time": item['timestamp_iso'] ?? DateTime.now().toIso8601String(),
+          "carbon_storage": 0,
+          "carbon_sequestration_per_year": 0,
         };
 
-        await _treeService.addTree(submitData);
+        await _treeService.createTreeV2(submitData);
         successCount++;
       }
 
