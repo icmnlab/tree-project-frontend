@@ -161,7 +161,7 @@ class MyApp extends StatelessWidget {
         // 如需路由方式，應使用 onGenerateRoute 處理 arguments
         // '/v3-integrated-form': (context) => const IntegratedTreeFormPage(),
         '/v3-project-boundary': (context) =>
-            const AuthGuard(child: ProjectBoundaryDrawPage()),
+            const AuthGuard(requiredRole: '專案管理員', child: ProjectBoundaryDrawPage()),
       },
     ),
     );

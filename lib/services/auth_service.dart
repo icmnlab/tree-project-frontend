@@ -141,6 +141,16 @@ class AuthService {
     return await hasMinimumRole('專案管理員');
   }
 
+  /// [T7] 是否可以管理專案邊界 / 區位（專案管理員以上）
+  static Future<bool> canManageProjects() async {
+    return await hasMinimumRole('專案管理員');
+  }
+
+  /// [T7] 是否可以匯入 CSV（業務管理員以上）
+  static Future<bool> canImportCsv() async {
+    return await hasMinimumRole('業務管理員');
+  }
+
   /// 是否可以管理使用者（業務管理員以上）
   static Future<bool> canManageUsers() async {
     return await hasMinimumRole('業務管理員');

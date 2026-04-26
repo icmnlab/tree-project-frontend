@@ -29,6 +29,9 @@ class _AdminPageState extends State<AdminPage> {
   bool _isLoading = false;
   String _searchQuery = '';
   String _selectedRole = '全部';
+  // [T7] 角色權限
+  bool _canManageProjects = false; // 專案邊界 tab
+  bool _canImportCsv = false;       // CSV 匯入 tab
 
   List<Project> _projectsForExport = [];
   List<String> _selectedProjectCodesForMultiExport = []; // 用於儲存多選的專案代碼
@@ -54,6 +57,33 @@ class _AdminPageState extends State<AdminPage> {
     super.initState();
     _fetchUsers();
     _fetchProjectsForExport();
+    _loadPermissions();
+  }
+
+  // [T7] 載入角色權限 -> 控制 tab 顯示
+  Future<void> _loadPermissions() async {
+    final canManage = await AuthService.canManageProjects();
+    final canCsv = await AuthService.canImportCsv();
+    if (mounted) {
+      setState(() {
+        _canManageProjects = canManage;
+        _canImportCsv = canCsv;
+      });
+    }
+  }
+
+  // [T7] 4 個固定 tab + 2 個可選 tab；依角色展開對應的頁面
+  Widget _buildBodyForIndex() {
+    final pages = <Widget>[
+      _buildUserList(),
+      _buildExportOptions(),
+      _buildAdminZone(),
+      _buildProjectManagement(),
+      if (_canManageProjects) const ProjectBoundaryDrawPage(),
+      if (_canImportCsv) const CsvImportPage(),
+    ];
+    final idx = _selectedIndex.clamp(0, pages.length - 1);
+    return pages[idx];
   }
 
   List<Map<String, dynamic>> get _filteredUsers {
@@ -1426,31 +1456,35 @@ class _AdminPageState extends State<AdminPage> {
                 unselectedIconTheme: IconThemeData(color: Colors.grey[600]),
                 selectedLabelTextStyle:
                     TextStyle(color: Theme.of(context).colorScheme.primary),
-                destinations: const [
-                  NavigationRailDestination(
+                destinations: [
+                  const NavigationRailDestination(
                     icon: Icon(Icons.people),
                     label: Text('使用者管理'),
                   ),
-                  NavigationRailDestination(
+                  const NavigationRailDestination(
                     icon: Icon(Icons.file_download),
                     label: Text('資料匯出'),
                   ),
-                  NavigationRailDestination(
+                  const NavigationRailDestination(
                     icon: Icon(Icons.build),
                     label: Text('管理員專區'),
                   ),
-                  NavigationRailDestination(
+                  const NavigationRailDestination(
                     icon: Icon(Icons.folder_delete),
                     label: Text('專案管理'),
                   ),
-                  NavigationRailDestination(
-                    icon: Icon(Icons.map),
-                    label: Text('專案邊界'),
-                  ),
-                  NavigationRailDestination(
-                    icon: Icon(Icons.upload_file),
-                    label: Text('CSV 匯入'),
-                  ),
+                  // [T7] 專案邊界 — 專案管理員以上
+                  if (_canManageProjects)
+                    const NavigationRailDestination(
+                      icon: Icon(Icons.map),
+                      label: Text('專案邊界'),
+                    ),
+                  // [T7] CSV 匯入 — 業務管理員以上
+                  if (_canImportCsv)
+                    const NavigationRailDestination(
+                      icon: Icon(Icons.upload_file),
+                      label: Text('CSV 匯入'),
+                    ),
                 ],
               ),
             if (_isSidebarVisible)
@@ -1459,17 +1493,7 @@ class _AdminPageState extends State<AdminPage> {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
-                child: _selectedIndex == 0
-                    ? _buildUserList()
-                    : _selectedIndex == 1
-                        ? _buildExportOptions()
-                        : _selectedIndex == 2
-                            ? _buildAdminZone()
-                            : _selectedIndex == 3
-                                ? _buildProjectManagement()
-                                : _selectedIndex == 4
-                                    ? const ProjectBoundaryDrawPage()
-                                    : const CsvImportPage(),
+                child: _buildBodyForIndex(),
               ),
             ),
           ],

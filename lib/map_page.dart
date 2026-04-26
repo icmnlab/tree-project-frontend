@@ -7,6 +7,7 @@ import 'services/api_service.dart';
 import 'utils/location_helper.dart';
 import 'services/v3/project_boundary_service.dart';
 import 'screens/v3/project_boundary_draw_page.dart';
+import 'services/auth_service.dart'; // [T7] 角色權限
 import 'constants/colors.dart';
 
 class MapPage extends StatefulWidget {
@@ -32,6 +33,7 @@ class _MapPageState extends State<MapPage> {
   MapType _currentMapType = MapType.normal;
   bool _showMenu = true;
   bool _showBoundaries = true; // V3: 是否顯示邊界
+  bool _canManageProjects = false; // [T7] 是否可繪製邊界
 
   // [優化] 快取樹木資料，避免重複呼叫 API
   List<dynamic> _cachedTreeData = [];
@@ -49,10 +51,17 @@ class _MapPageState extends State<MapPage> {
     ApiService.triggerCleanup();
     _loadMapData();
     _loadProjectBoundaries(); // V3: 載入專案邊界
+    _loadPermissions(); // [T7] 載入角色權限
     // 延遲請求權限，確保 widget 已完全建立
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkLocationPermission();
     });
+  }
+
+  // [T7] 載入使用者角色權限
+  Future<void> _loadPermissions() async {
+    final canManage = await AuthService.canManageProjects();
+    if (mounted) setState(() => _canManageProjects = canManage);
   }
 
   // V3: 載入專案邊界
@@ -693,16 +702,18 @@ class _MapPageState extends State<MapPage> {
                   ],
                 ),
               ),
-              const PopupMenuItem(
-                value: 'draw',
-                child: Row(
-                  children: [
-                    Icon(Icons.edit, color: Colors.blue),
-                    SizedBox(width: 8),
-                    Text('繪製邊界'),
-                  ],
+              // [T7] 僅專案管理員以上顯示
+              if (_canManageProjects)
+                const PopupMenuItem(
+                  value: 'draw',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit, color: Colors.blue),
+                      SizedBox(width: 8),
+                      Text('繪製邊界'),
+                    ],
+                  ),
                 ),
-              ),
               if (_projectBoundaries.isNotEmpty)
                 PopupMenuItem(
                   value: 'list',
