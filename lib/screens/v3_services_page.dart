@@ -1,8 +1,7 @@
-import 'dart:io';
+﻿import 'dart:io';
 import 'package:flutter/material.dart';
 import '../services/v3/tree_image_service.dart';
 import '../services/v3/conflict_resolution_service.dart';
-import '../services/v3/ar_measurement_integration_service.dart';
 import '../services/v3/ml_data_sync_service.dart';
 
 /// V3 進階服務管理頁面
@@ -10,8 +9,11 @@ import '../services/v3/ml_data_sync_service.dart';
 /// 功能：
 /// 1. 樹木影像管理 - 查看、同步照片
 /// 2. 衝突解決 - 查看待處理的衝突
-/// 3. DBH 測量校準 - 校準測量設定
-/// 4. ML 數據同步 - 管理訓練數據同步
+/// 3. ML 數據同步 - 管理訓練數據同步
+///
+/// 註：DBH 測量校準 UI 已於 T3 移除（純視覺示意，未連接量測流程）。
+///     ar_measurement_integration_service.dart / CalibrationData 暫保留，
+///     待 T4 ML data 規劃再決定是否一併刪除。
 class V3ServicesPage extends StatefulWidget {
   const V3ServicesPage({super.key});
 
@@ -22,7 +24,6 @@ class V3ServicesPage extends StatefulWidget {
 class _V3ServicesPageState extends State<V3ServicesPage> {
   final TreeImageService _imageService = TreeImageService();
   final ConflictResolutionService _conflictService = ConflictResolutionService();
-  final ARMeasurementIntegrationService _arService = ARMeasurementIntegrationService();
   final MLDataSyncService _mlSyncService = MLDataSyncService();
   
   // 服務狀態
@@ -30,7 +31,6 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
   int _pendingImageCount = 0;
   int _pendingConflictCount = 0;
   int _pendingMlDataCount = 0;
-  CalibrationData? _currentCalibration;
   
   @override
   void initState() {
@@ -45,7 +45,6 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
       // 加載各服務狀態
       final unsyncedImages = await _imageService.getUnsyncedImages();
       final pendingOps = _conflictService.pendingOperations;
-      _currentCalibration = _arService.currentCalibration ?? CalibrationData.standard;
       
       // 獲取 ML 數據同步狀態
       final mlStatus = await _mlSyncService.getStatus();
@@ -102,14 +101,6 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
                     color: _pendingConflictCount > 0 ? Colors.orange : Colors.green,
                     badge: _pendingConflictCount > 0 ? _pendingConflictCount : null,
                     onTap: () => _showConflictResolver(),
-                  ),
-                  const SizedBox(height: 12),
-                  _buildServiceCard(
-                    title: 'DBH 測量校準',
-                    subtitle: '目前使用: ${_currentCalibration != null ? "自訂校準" : "標準設定"}',
-                    icon: Icons.straighten,
-                    color: Colors.teal,
-                    onTap: () => _showARCalibration(),
                   ),
                   const SizedBox(height: 12),
                   _buildServiceCard(
@@ -342,7 +333,7 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
           const SizedBox(height: 12),
           Text(
             'V3 進階服務提供離線資料管理、衝突解決、'
-            'DBH 測量校準等功能。所有資料會在有網路時自動同步。',
+            'ML 數據同步等功能。所有資料會在有網路時自動同步。',
             style: TextStyle(
               fontSize: 13,
               color: Colors.grey.shade600,
@@ -370,15 +361,6 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
       context,
       MaterialPageRoute(
         builder: (context) => _ConflictResolverPage(service: _conflictService),
-      ),
-    ).then((_) => _loadServiceStatus());
-  }
-  
-  void _showARCalibration() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => _ARCalibrationPage(service: _arService),
       ),
     ).then((_) => _loadServiceStatus());
   }
@@ -806,195 +788,3 @@ class _ConflictResolverPageState extends State<_ConflictResolverPage> {
   }
 }
 
-// === 子頁面：AR 校準 ===
-
-class _ARCalibrationPage extends StatefulWidget {
-  final ARMeasurementIntegrationService service;
-  
-  const _ARCalibrationPage({required this.service});
-
-  @override
-  State<_ARCalibrationPage> createState() => _ARCalibrationPageState();
-}
-
-class _ARCalibrationPageState extends State<_ARCalibrationPage> {
-  late double _distance;
-  late double _cameraHeight;
-  bool _isSaving = false;
-
-  @override
-  void initState() {
-    super.initState();
-    final cal = widget.service.currentCalibration ?? CalibrationData.standard;
-    _distance = cal.deviceToTreeDistance;
-    _cameraHeight = cal.cameraHeight;
-  }
-
-  Future<void> _saveCalibration() async {
-    setState(() => _isSaving = true);
-    try {
-      await widget.service.setCalibration(CalibrationData(
-        deviceToTreeDistance: _distance,
-        cameraHeight: _cameraHeight,
-        sensorSize: CalibrationData.standard.sensorSize,
-        focalLength: CalibrationData.standard.focalLength,
-      ));
-      if (mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('校準已保存')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('保存失敗: $e')),
-        );
-      }
-    } finally {
-      setState(() => _isSaving = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('DBH 測量校準'),
-        backgroundColor: Colors.teal,
-        foregroundColor: Colors.white,
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '測量距離',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '手機到樹幹的距離: ${_distance.toStringAsFixed(1)} m',
-                    style: TextStyle(color: Colors.grey.shade600),
-                  ),
-                  Slider(
-                    value: _distance,
-                    min: 0.5,
-                    max: 5.0,
-                    divisions: 45,
-                    label: '${_distance.toStringAsFixed(1)} m',
-                    onChanged: (v) => setState(() => _distance = v),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '相機高度',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '相機離地高度: ${_cameraHeight.toStringAsFixed(2)} m',
-                    style: TextStyle(color: Colors.grey.shade600),
-                  ),
-                  Text(
-                    '(DBH 標準高度為 1.3m)',
-                    style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
-                  ),
-                  Slider(
-                    value: _cameraHeight,
-                    min: 0.5,
-                    max: 2.0,
-                    divisions: 30,
-                    label: '${_cameraHeight.toStringAsFixed(2)} m',
-                    onChanged: (v) => setState(() => _cameraHeight = v),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    setState(() {
-                      _distance = CalibrationData.standard.deviceToTreeDistance;
-                      _cameraHeight = CalibrationData.standard.cameraHeight;
-                    });
-                  },
-                  child: const Text('重設為預設值'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: _isSaving ? null : _saveCalibration,
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
-                  child: _isSaving
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('保存校準'),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.lightbulb, color: Colors.blue.shade700, size: 20),
-                    const SizedBox(width: 8),
-                    Text(
-                      '校準提示',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue.shade700,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '• 測量距離會影響精度，建議保持 1-2 公尺\n'
-                  '• 相機高度應對準 DBH 測量位置 (1.3m)\n'
-                  '• 定期校準可提升測量準確度',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.blue.shade700,
-                    height: 1.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
