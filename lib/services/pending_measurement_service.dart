@@ -248,6 +248,8 @@ class PendingMeasurementService {
   }
   
   /// 更新測量結果
+  /// [T6][Phase1.5] [expectedUpdatedAt] 帶上載入時的 updated_at 啟用樂觀鎖；
+  /// 後端不符會回 409 / 不存在回 410，本方法不再 throw，直接回傳 body Map 給呼叫端判斷 code 欄位。
   Future<Map<String, dynamic>> updateMeasurement({
     required int id,
     required double dbhCm,
@@ -255,6 +257,7 @@ class PendingMeasurementService {
     required String method,
     String? notes,
     String? speciesName,
+    String? expectedUpdatedAt,
   }) async {
     try {
       final body = {
@@ -269,6 +272,9 @@ class PendingMeasurementService {
       if (speciesName != null) {
         body['species_name'] = speciesName;
       }
+      if (expectedUpdatedAt != null) {
+        body['expected_updated_at'] = expectedUpdatedAt;
+      }
 
       final response = await http.patch(
         Uri.parse('$_baseUrl/api/pending-measurements/$id'),
@@ -278,9 +284,12 @@ class PendingMeasurementService {
         },
         body: jsonEncode(body),
       ).timeout(_timeout);
-      
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body);
+
+      // [T6] 200 / 409 / 410 都把 body 解析後回傳
+      if (response.statusCode == 200 ||
+          response.statusCode == 409 ||
+          response.statusCode == 410) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
       } else {
         throw Exception('更新測量結果失敗: ${response.statusCode}');
       }

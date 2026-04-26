@@ -42,6 +42,8 @@ class PendingTreeMeasurement {
   // 狀態資訊
   final MeasurementStatus status;
   final DateTime createdAt;
+  // [T6][Phase1.5] 樂觀鎖依據（PG trigger 自動更新）
+  final DateTime? updatedAt;
   final DateTime? completedAt;
   final String? assignedTo; // 指派給哪位測量員
   final int? priority; // 優先級 (1-5)
@@ -84,6 +86,7 @@ class PendingTreeMeasurement {
     this.altitude,
     required this.status,
     required this.createdAt,
+    this.updatedAt,
     this.completedAt,
     this.assignedTo,
     this.priority,
@@ -247,6 +250,9 @@ class PendingTreeMeasurement {
       altitude: _toDoubleOrNull(json['altitude']),
       status: MeasurementStatus.fromString(json['status']?.toString() ?? 'pending'),
       createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.now(),
+      updatedAt: json['updated_at'] != null
+          ? DateTime.tryParse(json['updated_at'].toString())
+          : null,
       completedAt: json['completed_at'] != null
           ? DateTime.tryParse(json['completed_at'].toString())
           : null,
@@ -349,6 +355,7 @@ class PendingTreeMeasurement {
     double? altitude,
     MeasurementStatus? status,
     DateTime? createdAt,
+    DateTime? updatedAt,
     DateTime? completedAt,
     String? assignedTo,
     int? priority,
@@ -386,6 +393,7 @@ class PendingTreeMeasurement {
       altitude: altitude ?? this.altitude,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       completedAt: completedAt ?? this.completedAt,
       assignedTo: assignedTo ?? this.assignedTo,
       priority: priority ?? this.priority,

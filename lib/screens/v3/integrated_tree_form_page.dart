@@ -12,6 +12,7 @@ import '../../services/v3/tree_image_service.dart';
 import '../../services/v3/ml_data_collector.dart';
 import '../../services/ar_measurement_service.dart';
 import '../scanner_page.dart';
+import '../../widgets/conflict_resolution_dialog.dart';
 
 /// V3 整合式樹木測量表單
 /// 
@@ -924,15 +925,85 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
         if (_selectedStatus != '正常') '樹況: $_selectedStatus',
         if (_notesController.text.isNotEmpty) _notesController.text,
       ].join(' | ');
-      
-      await _pendingService.updateMeasurement(
+
+      // [T6][Phase1.5] 帶上載入當下的 updated_at 做樂觀鎖
+      final expectedUpdatedAt = widget.task.updatedAt?.toIso8601String();
+      var updateResp = await _pendingService.updateMeasurement(
         id: taskId,
         dbhCm: dbh,
         confidence: _measurementConfidence ?? 1.0,
         method: _measurementMethod ?? 'manual_input',
         notes: combinedNotes.isEmpty ? _selectedStatus : combinedNotes,
         speciesName: _speciesController.text,
+        expectedUpdatedAt: expectedUpdatedAt,
       );
+
+      // [T6] 409 衝突 → 三選一
+      if (updateResp['code'] == 'CONFLICT' && mounted) {
+        final server = (updateResp['serverVersion'] as Map?)?.cast<String, dynamic>() ?? {};
+        final action = await showConflictResolutionDialog(
+          context,
+          serverVersion: server,
+          myDraft: {
+            'measured_dbh_cm': dbh,
+            'measurement_confidence': _measurementConfidence ?? 1.0,
+            'measurement_method': _measurementMethod ?? 'manual_input',
+            'measurement_notes': combinedNotes,
+            'species_name': _speciesController.text,
+            'status': 'completed',
+          },
+        );
+        if (action == ConflictAction.keepMine) {
+          // 強制覆寫：不帶 expected_updated_at 重送
+          updateResp = await _pendingService.updateMeasurement(
+            id: taskId,
+            dbhCm: dbh,
+            confidence: _measurementConfidence ?? 1.0,
+            method: _measurementMethod ?? 'manual_input',
+            notes: combinedNotes.isEmpty ? _selectedStatus : combinedNotes,
+            speciesName: _speciesController.text,
+          );
+        } else if (action == ConflictAction.useServer) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('已捽棄本次測量，返回任務列表')),
+            );
+            Navigator.of(context).pop(false);
+          }
+          return;
+        } else if (action == ConflictAction.manualMerge) {
+          // 載回伺服器最新值讓使用者重調
+          if (mounted) {
+            final srvDbh = server['measured_dbh_cm'];
+            if (srvDbh != null) {
+              _dbhController.text = srvDbh.toString();
+            }
+            final srvSpecies = server['species_name']?.toString();
+            if (srvSpecies != null && srvSpecies.isNotEmpty) {
+              _speciesController.text = srvSpecies;
+            }
+            final srvNotes = server['measurement_notes']?.toString();
+            if (srvNotes != null) {
+              _notesController.text = srvNotes;
+            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('已載入伺服器最新版本，請重新調整後再儲存')),
+            );
+          }
+          return;
+        } else {
+          return; // 取消
+        }
+      }
+
+      // [T6][S5] 410 該筆已刪 / 已轉移
+      if (updateResp['code'] == 'DELETED' && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('資料已被刪除或已轉移，返回任務列表')),
+        );
+        Navigator.of(context).pop(false);
+        return;
+      }
 
       if (mounted) {
         Navigator.of(context).pop(true); // 返回 true 表示成功
