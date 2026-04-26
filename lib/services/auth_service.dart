@@ -155,4 +155,9 @@ class AuthService {
   static Future<bool> canManageUsers() async {
     return await hasMinimumRole('業務管理員');
   }
+
+  /// [T8.2] 是否可以管理 IP 黑名單（系統管理員）
+  static Future<bool> canManageIpBlacklist() async {
+    return await hasMinimumRole('系統管理員');
+  }
 }

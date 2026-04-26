@@ -12,6 +12,7 @@ import 'models/project.dart';
 import 'config/app_config.dart'; // Import AppConfig
 import 'screens/v3/project_boundary_draw_page.dart'; // V3 專案邊界繪製
 import 'screens/csv_import_page.dart'; // [Phase C] CSV 匯入頁面
+import 'screens/ip_blacklist_page.dart'; // [T8.2] IP 黑名單管理
 import '../services/api_service.dart';
 import '../services/auth_service.dart';
 
@@ -32,6 +33,7 @@ class _AdminPageState extends State<AdminPage> {
   // [T7] 角色權限
   bool _canManageProjects = false; // 專案邊界 tab
   bool _canImportCsv = false;       // CSV 匯入 tab
+  bool _canManageIpBlacklist = false; // [T8.2] IP 黑名單 tab
 
   List<Project> _projectsForExport = [];
   List<String> _selectedProjectCodesForMultiExport = []; // 用於儲存多選的專案代碼
@@ -64,15 +66,17 @@ class _AdminPageState extends State<AdminPage> {
   Future<void> _loadPermissions() async {
     final canManage = await AuthService.canManageProjects();
     final canCsv = await AuthService.canImportCsv();
+    final canIp = await AuthService.canManageIpBlacklist();
     if (mounted) {
       setState(() {
         _canManageProjects = canManage;
         _canImportCsv = canCsv;
+        _canManageIpBlacklist = canIp;
       });
     }
   }
 
-  // [T7] 4 個固定 tab + 2 個可選 tab；依角色展開對應的頁面
+  // [T7] 4 個固定 tab + 3 個可選 tab；依角色展開對應的頁面
   Widget _buildBodyForIndex() {
     final pages = <Widget>[
       _buildUserList(),
@@ -81,6 +85,7 @@ class _AdminPageState extends State<AdminPage> {
       _buildProjectManagement(),
       if (_canManageProjects) const ProjectBoundaryDrawPage(),
       if (_canImportCsv) const CsvImportPage(),
+      if (_canManageIpBlacklist) const IpBlacklistPage(),
     ];
     final idx = _selectedIndex.clamp(0, pages.length - 1);
     return pages[idx];
@@ -1484,6 +1489,12 @@ class _AdminPageState extends State<AdminPage> {
                     const NavigationRailDestination(
                       icon: Icon(Icons.upload_file),
                       label: Text('CSV 匯入'),
+                    ),
+                  // [T8.2] IP 黑名單 — 系統管理員
+                  if (_canManageIpBlacklist)
+                    const NavigationRailDestination(
+                      icon: Icon(Icons.shield),
+                      label: Text('IP 黑名單'),
                     ),
                 ],
               ),
