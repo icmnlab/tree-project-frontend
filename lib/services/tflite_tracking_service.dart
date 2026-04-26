@@ -51,6 +51,12 @@ class TfliteObjectTrackingService {
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
 
+  // ── 最近一次 camera preview 的 portrait 尺寸 (供 backend mask_pixel_width 座標對齊) ──
+  double _lastPreviewPortraitW = 0.0;
+  double _lastPreviewPortraitH = 0.0;
+  double get lastPreviewPortraitWidth => _lastPreviewPortraitW;
+  double get lastPreviewPortraitHeight => _lastPreviewPortraitH;
+
   // ── 模型幾何 (initialize 時從 tensor shape 偵測) ──
   int _inputSize = 640;
   int _numDets = 8400; // 80² + 40² + 20²
@@ -463,6 +469,11 @@ class TfliteObjectTrackingService {
 
       final double invSX = portraitW / _lbScaledW;
       final double invSY = portraitH / _lbScaledH;
+
+      // 保存 preview portrait 尺寸，供呼叫端（scanner_page）傳遞給 backend
+      // 作為 mask_pixel_width 的座標參考，避免 preview != JPEG 解析度時錯誤縮放。
+      _lastPreviewPortraitW = portraitW;
+      _lastPreviewPortraitH = portraitH;
 
       // Debug: letterbox 參數 (前 10 次)
       if (_parseCallCount <= 10) {
