@@ -1,6 +1,4 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'constants/colors.dart';
 // import 'package:provider/provider.dart'; // Unused
 import 'screens/api_key_management_screen.dart';
@@ -40,8 +38,6 @@ class _AdminPageState extends State<AdminPage> {
   bool _isLoadingProjects = false;
   bool _isExportingExcel = false;
   bool _isExportingPdf = false;
-  final TextEditingController _tokenController =
-      TextEditingController(); // Create controller as a state variable
 
   // Services
   final UserService _userService = UserService();
@@ -50,7 +46,6 @@ class _AdminPageState extends State<AdminPage> {
 
   @override
   void dispose() {
-    _tokenController.dispose(); // Dispose of the controller
     super.dispose();
   }
 
@@ -1011,28 +1006,7 @@ class _AdminPageState extends State<AdminPage> {
             ),
             const SizedBox(height: 24),
 
-            // Admin Token 輸入框
-            Card(
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.grey.shade300)),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: TextField(
-                  controller: _tokenController,
-                  decoration: const InputDecoration(
-                    labelText: 'Admin API Token (執行腳本所需)',
-                    border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.vpn_key),
-                    helperText: '為了安全，所有維運操作都需要驗證管理員 Token。',
-                    helperMaxLines: 2, // 確保提示文字不會被截斷
-                  ),
-                  obscureText: true,
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
+            // [T2] Admin Token 輸入框已移除：腳本執行改走 JWT（需系統管理員）
 
             _buildSectionTitle('知識庫工程 (Knowledge Engineering)'),
             const SizedBox(height: 16),
@@ -1045,7 +1019,6 @@ class _AdminPageState extends State<AdminPage> {
                   icon: Icons.sync,
                   color: Colors.blue,
                   scriptName: 'populate_knowledge_from_survey',
-                  tokenController: _tokenController,
                 ),
                 const SizedBox(height: 16),
                 _buildScriptCard(
@@ -1054,7 +1027,6 @@ class _AdminPageState extends State<AdminPage> {
                   icon: Icons.science,
                   color: Colors.teal,
                   scriptName: 'generateEmbeddings',
-                  tokenController: _tokenController,
                 ),
               ],
             ),
@@ -1070,7 +1042,6 @@ class _AdminPageState extends State<AdminPage> {
                   icon: Icons.auto_awesome,
                   color: Colors.purple,
                   scriptName: 'generate_species_knowledge',
-                  tokenController: _tokenController,
                 ),
                 const SizedBox(height: 16),
                 _buildScriptCard(
@@ -1079,7 +1050,6 @@ class _AdminPageState extends State<AdminPage> {
                   icon: Icons.translate,
                   color: Colors.indigo,
                   scriptName: 'enrich_species_synonyms',
-                  tokenController: _tokenController,
                 ),
               ],
             ),
@@ -1095,7 +1065,6 @@ class _AdminPageState extends State<AdminPage> {
                   icon: Icons.calculate,
                   color: Colors.orange,
                   scriptName: 'populateSpeciesRegionScore',
-                  tokenController: _tokenController,
                 ),
               ],
             ),
@@ -1269,15 +1238,13 @@ class _AdminPageState extends State<AdminPage> {
     required IconData icon,
     required Color color,
     required String scriptName,
-    required TextEditingController tokenController,
-    // width 參數已移除
   }) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => _runBackendScript(scriptName, tokenController.text),
+        onTap: () => _runBackendScript(scriptName),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Row(
@@ -1317,7 +1284,7 @@ class _AdminPageState extends State<AdminPage> {
                       alignment: Alignment.centerRight,
                       child: OutlinedButton.icon(
                         onPressed: () =>
-                            _runBackendScript(scriptName, tokenController.text),
+                            _runBackendScript(scriptName),
                         icon: Icon(Icons.play_circle_outline,
                             size: 18, color: color),
                         label: Text('執行腳本', style: TextStyle(color: color)),
@@ -1338,30 +1305,17 @@ class _AdminPageState extends State<AdminPage> {
     );
   }
 
-  Future<void> _runBackendScript(String scriptName, String token) async {
-    if (token.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('請輸入 Admin API Token')),
-      );
-      return;
-    }
-
+  Future<void> _runBackendScript(String scriptName) async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final response = await http.post(
-        Uri.parse('${ApiService.baseUrl}/admin/run-script'),
-        headers: {
-          'Content-Type': 'application/json',
-          'x-admin-token': token,
-          ...ApiService.getAuthHeaders(),
-        },
-        body: jsonEncode({'scriptName': scriptName}),
-      ).timeout(const Duration(seconds: 60));
-
-      final data = jsonDecode(response.body);
+      // [T2] 改走 ApiService.post（JWT 自動帶），不再需 X-Admin-Token。
+      // backend /api/admin/run-script 由 requireRole('系統管理員') 守護。
+      final data = await ApiService.post('admin/run-script', {
+        'scriptName': scriptName,
+      });
       if (mounted) {
         if (data['success'] == true) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -1369,19 +1323,14 @@ class _AdminPageState extends State<AdminPage> {
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('腳本執行失敗: ${data['message']}')),
+            SnackBar(content: Text('腳本執行失敗: ${data['message'] ?? '未知錯誤'}')),
           );
         }
       }
     } catch (e) {
       if (mounted) {
-        // Try to show the raw body if json decode fails, truncated
-        String errorMessage = e.toString();
-        if (e is FormatException) {
-          errorMessage = "伺服器回應格式錯誤 (非 JSON)";
-        }
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('發生錯誤: $errorMessage')),
+          SnackBar(content: Text('發生錯誤: $e')),
         );
       }
     } finally {
