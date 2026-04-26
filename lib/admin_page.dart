@@ -918,18 +918,12 @@ class _AdminPageState extends State<AdminPage> {
     final appConfig = AppConfig();
     final envName = switch (appConfig.environment) {
       Environment.selfHosted => '自架伺服器',
-      Environment.prod => '正式版 (Render)',
-      Environment.staging => '測試版 (Render)',
     };
     final envIcon = switch (appConfig.environment) {
       Environment.selfHosted => Icons.dns,
-      Environment.prod => Icons.public,
-      Environment.staging => Icons.developer_mode,
     };
     final envColor = switch (appConfig.environment) {
       Environment.selfHosted => Colors.blue,
-      Environment.prod => Colors.green,
-      Environment.staging => Colors.orange,
     };
 
     return Center(
@@ -952,16 +946,6 @@ class _AdminPageState extends State<AdminPage> {
                   leading: Icon(envIcon, color: envColor),
                   title: Text('API 環境: $envName'),
                   subtitle: Text(appConfig.baseUrl),
-                  trailing: ElevatedButton(
-                    onPressed: () => appConfig.toggleEnvironment(context),
-                    child: const Text('切換'),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  '切換環境後，應用程式將會提示您重新啟動以載入新的伺服器設定。',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey),
                 ),
               ],
             ),

@@ -1,15 +1,16 @@
-import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:io'; // Import for exit()
 
-enum Environment { selfHosted, prod, staging }
+// 後端固定為自架伺服器（Tailscale）。歷史上曾有 Render prod/staging 環境，
+// 已於 2026-04 退役，因此 enum 只剩單一值；保留 enum 是為了讓舊 SharedPreferences
+// 的 'environment' 字串不會炸掉，並為未來再次新增環境留好擴充點。
+enum Environment { selfHosted }
 
 class AppConfig {
   late Environment environment;
   late String baseUrl;
   late String mlServiceUrl;
 
-  /// 自架 ML Service 的 URL（null = 使用 Render）
+  /// 自架 ML Service 的 URL（null/空 = 未設定，前端會顯示警告）
   String? _selfHostedMlUrl;
 
   /// ML Service API Key (用於自架時的認證)
@@ -46,23 +47,15 @@ class AppConfig {
   // Private method to set URLs
   void _setEnvironment(Environment env) {
     environment = env;
-    switch (env) {
-      case Environment.selfHosted:
-        baseUrl = 'https://richardhualienserver.tail124a1b.ts.net/api';
-        break;
-      case Environment.staging:
-        baseUrl = 'https://tree-app-backend-staging.onrender.com/api';
-        break;
-      case Environment.prod:
-        baseUrl = 'https://tree-app-backend-prod.onrender.com/api';
-        break;
-    }
+    // 目前唯一環境：自架後端（Tailscale）
+    baseUrl = 'https://richardhualienserver.tail124a1b.ts.net/api';
 
-    // ML Service URL: 優先使用從 API 取得的自架 URL，否則用 Render
+    // ML Service URL：優先使用使用者設定的 ngrok URL；未設定則保留空字串，
+    // 由 useSelfHostedMl=false 的呼叫端跳出「請先在管理頁設定 ML Service」提示。
     if (_selfHostedMlUrl != null && _selfHostedMlUrl!.isNotEmpty) {
       mlServiceUrl = _selfHostedMlUrl!;
     } else {
-      mlServiceUrl = 'https://tree-app-ml-service.onrender.com/api/v1';
+      mlServiceUrl = '';
     }
   }
 
@@ -107,54 +100,6 @@ class AppConfig {
     if (useSelfHostedMl) {
       return '自架 (${_selfHostedMlUrl!})';
     }
-    return 'Render Cloud';
-  }
-
-  // Toggle environment and save to shared_preferences
-  Future<void> toggleEnvironment(BuildContext context) async {
-    final Environment newEnv;
-    switch (environment) {
-      case Environment.selfHosted:
-        newEnv = Environment.prod;
-        break;
-      case Environment.prod:
-        newEnv = Environment.staging;
-        break;
-      case Environment.staging:
-        newEnv = Environment.selfHosted;
-        break;
-    }
-    _setEnvironment(newEnv);
-
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('environment', newEnv.toString());
-
-    final envName = switch (newEnv) {
-      Environment.selfHosted => '自架伺服器',
-      Environment.prod => '正式版 (Render)',
-      Environment.staging => '測試版 (Render)',
-    };
-
-    // Show a dialog to inform the user and prompt for a restart
-    await showDialog(
-      context: context,
-      barrierDismissible: false, // User must interact with the dialog
-      builder: (BuildContext dialogContext) {
-        return AlertDialog(
-          title: const Text('環境已切換'),
-          content: Text(
-              'API 環境已切換至 $envName。\n\n為了讓所有設定生效，應用程式需要重新啟動。'),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('立即重啟'),
-              onPressed: () {
-                // This is a simple way to "restart". A more graceful way might involve more complex state management.
-                exit(0);
-              },
-            ),
-          ],
-        );
-      },
-    );
+    return '未設定（請先在管理頁設定 ML Service URL）';
   }
 }

@@ -43,8 +43,10 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        // 從 gradle.properties 讀取 Google Maps API Key（安全方式，不會提交到 Git）
-        val googleMapsApiKey = project.findProperty("GOOGLE_MAPS_API_KEY") as String? ?: ""
+        // 從 key.properties 讀取 Google Maps API Key（key.properties 已 gitignore）
+        // fallback 到 project property，保留 CI 環境用 -P 注入的彈性
+        val googleMapsApiKey = (keystoreProperties["GOOGLE_MAPS_API_KEY"] as String?)
+            ?: (project.findProperty("GOOGLE_MAPS_API_KEY") as String? ?: "")
         manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = googleMapsApiKey
     }
 

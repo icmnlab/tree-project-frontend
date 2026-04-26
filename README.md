@@ -173,8 +173,8 @@ assets/
 +-- ml/                                # TFLite models
 |   +-- tree_trunk_seg.tflite          # YOLOv8n-seg (tree trunk)
 |   +-- mobilenet_ssd.tflite           # General object detection
-|   +-- object_labeler.tflite          # Scene classification
 |   +-- labels.txt                     # Detection labels
+|   +-- tree_trunk_labels.txt          # Trunk segmentation labels
 +-- tree_species_tw.json               # Taiwan tree species database
 +-- icons/                             # App icons
 android/                               # Android platform config

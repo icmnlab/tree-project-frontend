@@ -171,6 +171,26 @@ class _ScannerPageState extends State<ScannerPage>
     }
   }
 
+  /// 從 EXIF 欄位字串（可能含 "mm"、空白、單位符號）抽出數字部分。
+  /// 保留小數點 / 負號 / 正號，去掉其他字元。
+  /// 若抽不到有效字串，回傳空字串（讓 double.tryParse 回傳 null）。
+  String _stripNonNumeric(String s) {
+    final buf = StringBuffer();
+    bool dotSeen = false;
+    for (final ch in s.runes) {
+      final c = String.fromCharCode(ch);
+      if (RegExp(r'[0-9]').hasMatch(c)) {
+        buf.write(c);
+      } else if (c == '.' && !dotSeen) {
+        buf.write(c);
+        dotSeen = true;
+      } else if (c == '-' && buf.isEmpty) {
+        buf.write(c);
+      }
+    }
+    return buf.toString();
+  }
+
   Future<void> _checkService() async {
     _serviceAvailable = await _service.isServiceAvailable();
     if (mounted) setState(() {});
@@ -589,12 +609,23 @@ class _ScannerPageState extends State<ScannerPage>
           if (ratio is IfdRatios && ratio.ratios.isNotEmpty) {
             focalMm = ratio.ratios.first.numerator / ratio.ratios.first.denominator;
           } else {
-            focalMm = double.tryParse(focalTag.printable.replaceAll(' ', ''));
+            // printable 可能包含單位 / 空白 / 分數表示法 (例如 "5.4 mm", "27/5")
+            // 先嘗試分數，再做保守的數字抽取
+            final raw = focalTag.printable.trim();
+            if (raw.contains('/')) {
+              final parts = raw.split('/');
+              if (parts.length == 2) {
+                final n = double.tryParse(_stripNonNumeric(parts[0]));
+                final d = double.tryParse(_stripNonNumeric(parts[1]));
+                if (n != null && d != null && d != 0) focalMm = n / d;
+              }
+            }
+            focalMm ??= double.tryParse(_stripNonNumeric(raw));
           }
         }
         final focal35Tag = exifData['EXIF FocalLengthIn35mmFilm'];
         if (focal35Tag != null) {
-          focal35 = double.tryParse(focal35Tag.printable.replaceAll(' ', ''));
+          focal35 = double.tryParse(_stripNonNumeric(focal35Tag.printable));
         }
         final makeTag = exifData['Image Make'];
         if (makeTag != null) {
@@ -1937,7 +1968,7 @@ class _ScannerPageState extends State<ScannerPage>
                     SwitchListTile(
                       title: const Text('使用自架 ML 服務'),
                       subtitle: Text(
-                        useSelfHosted ? '連接到自己的電腦' : '使用 Render 雲端',
+                        useSelfHosted ? '連接到自己的電腦' : '使用後端預設 ML 服務',
                         style: const TextStyle(fontSize: 12),
                       ),
                       value: useSelfHosted,
