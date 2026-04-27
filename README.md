@@ -1,323 +1,145 @@
-# TreeAI Frontend
+# sustainable_treeai
 
-[![Flutter](https://img.shields.io/badge/Flutter-3.x-blue.svg)](https://flutter.dev/)
-[![Dart](https://img.shields.io/badge/Dart-3.x-blue.svg)](https://dart.dev/)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+Flutter app for field tree survey, carbon-sink analysis, and on-site DBH
+measurement. Talks to `tree-project-backend` over HTTPS.
 
-> **Sustainable TreeAI** -- Cross-platform mobile application for AI-driven urban tree inventory and carbon analysis.
+## Stack
 
-A Flutter-based field survey app for Taiwan International Ports Corporation (TIPC). Features on-device ML inference (YOLOv8n-seg), AI-powered natural language data queries, automated species identification, and real-time tree trunk measurement via monocular depth estimation.
+- Flutter SDK >= 3.0, Dart >= 3.0
+- State management: `flutter_riverpod` + `provider`
+- HTTP: `dio` + `http`, SSE via `flutter_client_sse`
+- Storage: `shared_preferences`, `flutter_secure_storage`
+- Maps: `google_maps_flutter` (primary), `flutter_map` + `latlong2` (fallback)
+- Camera / scanning: `camera` (forced Camera2 via `camera_android`), `mobile_scanner`, `image_picker`
+- BLE: `flutter_blue_plus` (specific pin `1.32.0`)
+- On-device ML: `tflite_flutter`, `google_mlkit_object_detection`
+- Sensors: `geolocator`, `sensors_plus`, `permission_handler`
+- Reports: `pdf`, `excel`, `fl_chart`, `flutter_markdown`
 
-本 App 為臺灣港務股份有限公司 (TIPC) 開發之現場調查手機應用程式。以 Flutter 跨平台開發，內建裝置端 YOLOv8n-seg 樹幹切割、自然語言 AI 資料查詢、自動樹種辨識，以及以單眼深度估計達成之即時胸徑量測。
+App version is tracked in `pubspec.yaml` (`version: 18.3.2+10`).
 
-> **📖 For a project-wide bilingual overview see the root [README](../../README.md). · 中英雙語完整總覽請見根目錄 [README](../../README.md)。**
-
----
-
-## Table of Contents
-
-- [Features](#features)
-- [Screenshots](#screenshots)
-- [Tech Stack](#tech-stack)
-- [Getting Started](#getting-started)
-- [Project Structure](#project-structure)
-- [Configuration](#configuration)
-- [Build & Deploy](#build--deploy)
-- [Testing](#testing)
-- [UI Design System](#ui-design-system)
-- [License](#license)
-
----
-
-## Features
-
-| Feature | Description |
-|---------|-------------|
-| **Tree Survey** | Create, edit, and view tree records with V2/V3 smart forms |
-| **AI Assistant** | Natural language queries (Text-to-SQL) with Markdown rendering |
-| **AI Agent** | Autonomous reasoning agent for carbon analysis and data exploration |
-| **Map View** | Google Maps with tree markers, project boundaries (GeoJSON), and clustering |
-| **Species Identification** | Pl@ntNet AI photo recognition with GBIF/iNaturalist cross-reference |
-| **AR Measurement** | DBH measurement via GPS distance mode + 1.3m breast height reference line |
-| **ML Scanner** | Real-time on-device YOLOv8n-seg tree trunk detection (TFLite) |
-| **BLE Import** | Bluetooth Low Energy batch import from field measurement devices |
-| **Report Export** | Excel and PDF report generation and download |
-| **Statistics** | Interactive charts and data visualization |
-| **QR Code** | Scan to query tree records |
-| **CSV Import** | Batch data import from spreadsheets |
-| **Carbon Display** | Per-tree and per-project carbon sequestration metrics |
-
-### On-Device ML Models
-
-| Model | Task | Format |
-|-------|------|--------|
-| YOLOv8n-seg | Tree trunk segmentation | TFLite (8-bit quantized) |
-| MobileNet SSD | General object detection | TFLite |
-| Object Labeler | Scene classification | TFLite |
-
-### Cloud ML (via Backend Proxy)
-
-| Model | Task | Provider |
-|-------|------|----------|
-| Depth Pro (350M params) | Monocular depth estimation | Self-hosted FastAPI |
-| SAM 2.1 Small (46M params) | Instance segmentation | Self-hosted FastAPI |
-| DeepSeek-V3 / GPT-4.1 / Gemini 2.5 | Text-to-SQL generation | SiliconFlow / OpenAI / Google |
-
----
-
-## Screenshots
-
-*See the app in action on the [Google Play Store](#) or build from source.*
-
----
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| **Framework** | Flutter 3.x, Dart 3.x |
-| **State Management** | Riverpod |
-| **HTTP Client** | Dio |
-| **Maps** | Google Maps Flutter |
-| **ML Inference** | TFLite Flutter, Google ML Kit |
-| **Camera** | camera, image_picker |
-| **Bluetooth** | flutter_blue_plus |
-| **Location** | geolocator, geocoding |
-| **Storage** | shared_preferences, path_provider |
-| **Charts** | fl_chart |
-| **QR Code** | mobile_scanner |
-| **PDF/Excel** | open_file (download & open) |
-| **Auth** | JWT (via backend API) |
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- Flutter SDK 3.0+
-- Dart SDK 3.0+
-- Android Studio or VS Code with Flutter extension
+## Quick start
 
 ```bash
-flutter doctor  # Verify environment
-```
-
-### Installation
-
-```bash
-git clone https://github.com/KyleliuNDHU/tree-project-frontend.git
-cd tree-project-frontend
 flutter pub get
-flutter run
+flutter run                  # picks up the only environment (selfHosted)
 ```
 
-### Common Commands
-
-| Command | Description |
-|---------|-------------|
-| `flutter run` | Debug mode |
-| `flutter run --release` | Release mode |
-| `flutter build apk --release` | Build Android APK |
-| `flutter build appbundle --release` | Build Android App Bundle (Play Store) |
-| `flutter build ios --release` | Build iOS |
-| `flutter clean` | Clean build artifacts |
-| `flutter test` | Run unit tests |
-
----
-
-## Project Structure
+The first launch loads `AppConfig` from `SharedPreferences`. There is currently
+one environment (`Environment.selfHosted`) pointing at the Tailscale-hosted
+backend:
 
 ```
-lib/
-+-- main.dart                          # App entry point, theme, routing
-+-- config/
-|   +-- app_config.dart                # API URL, environment switching
-+-- constants/
-|   +-- colors.dart                    # TIPC port-themed color palette
-+-- models/                            # Data models
-+-- services/                          # API calls & business logic (24 files)
-|   +-- api_service.dart               # HTTP layer (Dio + JWT)
-|   +-- ai_service.dart                # AI chat & agent integration
-|   +-- auth_service.dart              # Authentication
-|   +-- species_identification_service.dart
-|   +-- carbon_sink_service.dart       # Carbon calculation display
-|   +-- carbon_calculation_service.dart
-|   +-- ble_data_processor.dart        # BLE device communication
-|   +-- tflite_tracking_service.dart   # On-device ML inference
-|   +-- pure_vision_dbh_service.dart   # DBH measurement pipeline
-|   +-- tree_image_service.dart        # Photo upload
-|   +-- conflict_resolution_service.dart
-|   +-- ar_measurement_integration_service.dart
-|   +-- project_boundary_service.dart
-|   +-- ml_data_sync_service.dart      # Training data sync
-|   +-- ...
-+-- screens/                           # UI pages (17 files)
-|   +-- home_page.dart                 # Navigation hub
-|   +-- login_page.dart                # JWT authentication
-|   +-- ai_chat_page.dart              # AI assistant + agent
-|   +-- scanner_page.dart              # Real-time ML scanning
-|   +-- map_page.dart                  # Google Maps view
-|   +-- tree_survey_page.dart          # Tree list
-|   +-- tree_input_page_v2.dart        # Create tree (smart form)
-|   +-- tree_edit_page_v2.dart         # Edit tree
-|   +-- species_identification_page.dart
-|   +-- statistics_page.dart           # Charts & analytics
-|   +-- csv_import_page.dart           # Batch CSV import
-|   +-- ble_import_page.dart           # BLE device import
-|   +-- manual_input_page.dart         # Manual measurement input
-|   +-- admin_page.dart                # Admin panel
-|   +-- scan_qrcode_page.dart          # QR code scanner
-|   +-- ...
-+-- widgets/                           # Reusable components
-+-- routes/
-|   +-- auth_guard.dart                # Route protection
-+-- themes/                            # Theme configuration
-assets/
-+-- ml/                                # TFLite models
-|   +-- tree_trunk_seg.tflite          # YOLOv8n-seg (tree trunk)
-|   +-- mobilenet_ssd.tflite           # General object detection
-|   +-- labels.txt                     # Detection labels
-|   +-- tree_trunk_labels.txt          # Trunk segmentation labels
-+-- tree_species_tw.json               # Taiwan tree species database
-+-- icons/                             # App icons
-android/                               # Android platform config
-ios/                                    # iOS platform config
-test/                                   # Unit & widget tests
+https://richardhualienserver.tail124a1b.ts.net/api
 ```
 
----
+The historical Render staging/prod environments were retired 2026-04; the
+`enum` is kept for forward compatibility (see `lib/config/app_config.dart`).
 
 ## Configuration
 
-### API Environment
+User-controlled settings live in `SharedPreferences`:
 
-Configured in `lib/config/app_config.dart`. Supports three environments:
+| Key | Set from | Used for |
+|-----|----------|----------|
+| `environment` | `lib/config/app_config.dart` | Backend selection (currently always `selfHosted`) |
+| `self_hosted_ml_url` | API Key Management page | Custom ML Service URL (e.g. ngrok tunnel) |
+| `ml_api_key` | API Key Management page | `X-ML-API-Key` for the ML Service |
+| `auth_token` | Login flow | JWT for the backend |
 
-| Environment | Description |
-|-------------|-------------|
-| **selfHosted** | Self-hosted Ubuntu server (default, requires Tailscale VPN) |
-| **prod** | Cloud production (Render) |
-| **staging** | Cloud staging (Render) |
+There is no compile-time `.env`; everything is configured at runtime through
+the in-app management page.
 
-Environment can be switched from the Admin page (requires app restart).
+## Project structure
 
-### Google Maps API Key
-
-**Android:** Add to `android/gradle.properties`:
-```properties
-MAPS_API_KEY=your_api_key
+```
+frontend/
+├── lib/
+│   ├── main.dart                  # Riverpod ProviderScope + AppConfig.initialize
+│   ├── config/                    # AppConfig (environment / URLs)
+│   ├── constants/                 # Static strings, enums
+│   ├── routes/                    # Route table
+│   ├── themes/                    # ThemeData
+│   ├── models/                    # Plain Dart DTOs
+│   ├── services/                  # Networking + business services (24 modules)
+│   ├── widgets/                   # Reusable UI parts
+│   ├── screens/                   # Top-level pages (see below)
+│   ├── utils/                     # Helpers, formatters
+│   ├── tree_input_page_v2.dart    # V2 manual entry
+│   ├── tree_edit_page_v2.dart     # V2 edit form
+│   ├── tree_list_page.dart
+│   ├── tree_survey_page.dart
+│   ├── tree_survey_detail_page.dart
+│   ├── project_trees_page.dart
+│   ├── statistics_page.dart
+│   ├── map_page.dart
+│   └── admin_page.dart
+├── assets/                        # Images, fonts, on-device ML models
+├── android/   ios/   web/   windows/   linux/   macos/
+├── test/
+└── pubspec.yaml
 ```
 
-**iOS:** Add to `ios/Runner/AppDelegate.swift`:
-```swift
-GMSServices.provideAPIKey("your_api_key")
-```
+### Screens (`lib/screens/`)
 
-> Both `gradle.properties` and `key.properties` are in `.gitignore` and not committed to version control.
+- `login_page.dart` — JWT login.
+- `home_page.dart` — landing dashboard.
+- `ai_chat_page.dart` — chat with the backend AI assistant + Agent (SSE streaming).
+- `species_identification_page.dart` — image-based species ID.
+- `scanner_page.dart` — live DBH scan (WebSocket frames to ML service).
+- `manual_input_page.dart`, `manual_input_page_v2.dart` — keyboard / Stepper entry.
+- `csv_import_page.dart` — admin CSV import.
+- `ble_import_page.dart` — BLE measurement device import.
+- `cities_page.dart`, `project_areas_page.dart` — area / project browsing.
+- `pending_measurement_task_page.dart` — work queue.
+- `ai_sustainability_report_screen.dart` — AI-generated report viewer.
+- `api_key_management_screen.dart` — runtime ML URL / API key configuration.
+- `ip_blacklist_page.dart` — admin tool.
+- `user_form_screen.dart` — user CRUD.
+- `v3_services_page.dart`, `v3/` — V3 workflow entry points.
 
----
+### Services (`lib/services/`)
 
-## Build & Deploy
+The networking layer is split into per-domain services that wrap `dio` /
+`http`. They handle auth header injection, base URL resolution from
+`AppConfig`, and JSON shaping. New API calls should be added here, not
+inline in widgets.
 
-### Android APK
+## Permissions / native config
+
+- Android: `android/app/build.gradle` controls `minSdk` / `targetSdk`. Camera2
+  is forced because some LEGACY devices crash on CameraX with three use cases.
+- iOS: `ios/Runner/Info.plist` declares camera, location, BLE, and photo
+  library usage strings.
+- Runtime requests: `permission_handler` (camera, location, bluetooth,
+  storage). The login flow asks for the minimum set; deeper screens request
+  more on demand.
+
+## Build
 
 ```bash
-# Debug APK (for testing)
-flutter build apk --debug
-
-# Release APK (for distribution)
-flutter build apk --release
-# Output: build/app/outputs/flutter-apk/app-release.apk
-
-# App Bundle (for Google Play Store)
-flutter build appbundle --release
-# Output: build/app/outputs/bundle/release/app-release.aab
+flutter pub get
+flutter analyze
+flutter test
+flutter build apk --release         # Android
+flutter build appbundle --release   # Play Store
+flutter build ios --release         # iOS (needs macOS + Xcode)
+flutter build web --release         # Web
 ```
 
-### iOS
+App icons are generated by `flutter_launcher_icons`:
 
 ```bash
-flutter build ios --release
-# Open in Xcode -> Archive -> Upload to App Store Connect
+flutter pub run flutter_launcher_icons:main
 ```
 
-### Signing (Android)
-
-1. Generate keystore:
-```bash
-keytool -genkey -v -keystore upload-keystore.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
-```
-
-2. Create `android/key.properties` (not committed to Git):
-```properties
-storePassword=<password>
-keyPassword=<password>
-keyAlias=upload
-storeFile=<path>/upload-keystore.jks
-```
-
-### Android Configuration
-
-| Setting | Value |
-|---------|-------|
-| Application ID | `com.sustainable.treeai` |
-| Min SDK | 24 (Android 7.0) |
-| Target SDK | 35 (Android 15) |
-| NDK | 27.0 |
-| Java | 11 |
-
----
+(See `flutter_launcher_icons_android.yaml` for the Android-specific config.)
 
 ## Testing
 
-```bash
-flutter test               # Run all tests
-flutter test test/v3/       # Run V3 test suite only
-```
+Tests live under `test/` and use the standard `flutter_test` + `test`
+packages. Run with `flutter test`.
 
-Test coverage includes:
-- AR DBH measurement integration
-- BLE device simulation and data processing
-- Database normalization validation
-- Conflict resolution logic
-- Project boundary calculations
-- ID generation and uniqueness
-- End-to-end survey workflows
+## License
 
----
-
-## UI Design System
-
-TIPC port-themed design with ecological green accents.
-
-### Color Palette
-
-| Color | Hex | Usage |
-|-------|-----|-------|
-| Port Blue | `#0D47A1` | Primary -- navigation, headers |
-| Ocean Cyan | `#00BCD4` | Secondary -- accents, links |
-| Forest Green | `#2E7D32` | Ecological -- carbon, trees |
-| Leaf Green | `#43A047` | Success states |
-| Warm Orange | `#FF7043` | Warnings, alerts |
-| Sun Yellow | `#FFCA28` | Highlights |
-
-### Design Principles
-
-- Material 3 with Google Fonts (Noto Sans TC)
-- Rounded corners, gradients, frosted glass effects
-- Consistent use of `AppColors` constants throughout
-- Responsive layout for phones and tablets
-- Dark mode support
-
----
-
-## License · 授權
-
-[MIT License](LICENSE)
-
-## Related · 相關連結
-
-- **Backend:** [tree-project-backend](https://github.com/KyleliuNDHU/tree-project-backend) — Node.js REST API + ML service · 後端 API 與 ML 服務
-- **Root README:** [../../README.md](../../README.md) — Project overview (bilingual) · 專案總覽（中英雙語）
-- **Author:** [@KyleliuNDHU](https://github.com/KyleliuNDHU) — National Dong Hwa University · 國立東華大學
+See `LICENSE`.
