@@ -169,8 +169,13 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
         CarbonCalculationService.calculateAnnualCarbonSequestration(
             species, height, dbh, estimatedAge);
 
+    // [B5] 暗/亮模式輔助
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppColors.darkCard : Colors.white;
+    final pageBg = isDark ? AppColors.darkBackground : AppColors.surfaceLight;
+
     return Scaffold(
-      backgroundColor: AppColors.surfaceLight,
+      backgroundColor: pageBg,
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.transparent,
@@ -221,7 +226,7 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [AppColors.surfaceLight, Colors.white],
+            colors: [pageBg, cardBg],
           ),
         ),
         child: SingleChildScrollView(
@@ -347,10 +352,15 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
         cardColor = AppColors.neutral600;
     }
 
+    // [B5] helper 讀 Theme
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppColors.darkCard : Colors.white;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.neutral900;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardBg,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -382,7 +392,7 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
                     style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.neutral900,
+                      color: textPrimary,
                       letterSpacing: 0.3,
                     ),
                   ),
@@ -407,10 +417,15 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
   }
 
   Widget _buildPhotoGallery() {
+    // [B5]
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppColors.darkCard : Colors.white;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.neutral900;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardBg,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -437,7 +452,7 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
                 ),
                 const SizedBox(width: 14),
                 Text('樹木照片 (${_treeImages.length})',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: AppColors.neutral900)),
+                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600, color: textPrimary)),
               ],
             ),
             const SizedBox(height: 12),
@@ -487,6 +502,10 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
 
   Widget _buildInfoRow(String label, String? value,
       {bool isHighlighted = false}) {
+    // [B5]
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.neutral900;
+    final textTertiary = isDark ? AppColors.darkTextTertiary : AppColors.neutral500;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -498,7 +517,7 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
               label,
               style: TextStyle(
                 fontWeight: FontWeight.w500,
-                color: AppColors.neutral500,
+                color: textTertiary,
                 fontSize: 14,
               ),
             ),
@@ -508,7 +527,7 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
               value ?? '無',
               style: TextStyle(
                 fontWeight: isHighlighted ? FontWeight.w600 : FontWeight.w500,
-                color: isHighlighted ? AppColors.portBlue : AppColors.neutral900,
+                color: isHighlighted ? AppColors.portBlue : textPrimary,
                 fontSize: isHighlighted ? 15 : 14,
               ),
             ),

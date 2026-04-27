@@ -424,6 +424,10 @@ class _ProjectAreasPageState extends State<ProjectAreasPage> {
   Widget build(BuildContext context) {
     String title = widget.cityName != null ? '${widget.cityName}區位' : '全台專案區位';
 
+    // [B5]
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppColors.darkCard : Colors.white;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(title),
@@ -490,7 +494,7 @@ class _ProjectAreasPageState extends State<ProjectAreasPage> {
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(14),
                               gradient: LinearGradient(
-                                colors: [Colors.white, areaColor.withValues(alpha:0.08)],
+                                  colors: [cardBg, areaColor.withValues(alpha:0.08)],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),
@@ -563,6 +567,10 @@ class _ProjectsByAreaPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // [B5]
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppColors.darkCard : Colors.white;
+
     return Scaffold(
       appBar: AppBar(
         title: Text('$areaName專案'),
@@ -587,7 +595,7 @@ class _ProjectsByAreaPage extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(14),
                 gradient: LinearGradient(
-                  colors: [Colors.white, projectColor.withValues(alpha:0.08)],
+                  colors: [cardBg, projectColor.withValues(alpha:0.08)],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),

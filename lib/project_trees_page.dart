@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'tree_input_page_v2.dart';
 import 'tree_survey_page.dart';
 import 'screens/ai_chat_page.dart';
 import '../services/project_service.dart'; // 引入 ProjectService
@@ -68,7 +67,8 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
               _projectInfo = projectData;
             });
           }
-          await _fetchTrees(projectCode);
+          // [B7 fix] 使用 project_name 查樹木（后端以 project_name 为查詢條件）
+          await _fetchTrees(widget.projectName);
         } else {
           throw Exception('專案代碼遺失');
         }
@@ -102,10 +102,10 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
     }
   }
 
-  Future<void> _fetchTrees(String projectCode) async {
+  Future<void> _fetchTrees(String projectName) async {
     try {
-      // 使用 TreeService 獲取樹木列表
-      final treesResult = await _treeService.getTreesByProjectCode(projectCode);
+      // [B7 fix] 后端 tree_survey/by_project/:name 是用 project_name 查，原本传 projectCode 永远 0 笔
+      final treesResult = await _treeService.getTreesByProjectName(projectName);
 
       if (treesResult['success']) {
         final List<dynamic> treeData = treesResult['data'];
@@ -129,18 +129,6 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
         });
       }
     }
-  }
-
-  void _navigateToAddTree() {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) =>
-            TreeInputPageV2(treeData: {'project_name': widget.projectName}),
-      ),
-    ).then((_) {
-      _fetchProjectData();
-    });
   }
 
   // [REFACTOR] 使用 Dialog 選擇 V1/V2
@@ -177,6 +165,12 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
 
   @override
   Widget build(BuildContext context) {
+    // [B5] 暗/亮模式輔助
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppColors.darkCard : Colors.white;
+    final cardBgSoft = isDark ? AppColors.darkSurfaceLight : AppColors.surfaceLight;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.darkGreen;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.projectName),
@@ -265,7 +259,8 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
                                   child: ElevatedButton.icon(
                                     icon: const Icon(Icons.add),
                                     label: const Text('新增樹木'),
-                                    onPressed: _navigateToAddTree,
+                                    // [B5 fix] 改用 dialog 讓使用者選 V2 或智慧模式（之前只跳 V2 不一致）
+                                    onPressed: _showAddDialog,
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.green,
                                       padding: const EdgeInsets.all(12),
@@ -276,12 +271,15 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
                             ],
                           ),
                           const SizedBox(height: 20),
+                          // [B7] 統計卡（有樹時） / 空狀態（沒樹時）
                           if (_trees.isNotEmpty) ...[
+                            _buildStatsCard(cardBg, textPrimary, isDark),
+                            const SizedBox(height: 20),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
-                                  colors: [AppColors.surfaceLight, AppColors.surfaceLight],
+                                  colors: [cardBgSoft, cardBgSoft],
                                   begin: Alignment.centerLeft,
                                   end: Alignment.centerRight,
                                 ),
@@ -316,7 +314,7 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(12),
                                       gradient: LinearGradient(
-                                        colors: [Colors.white, AppColors.surfaceLight],
+                                        colors: [cardBg, cardBgSoft],
                                         begin: Alignment.topLeft,
                                         end: Alignment.bottomRight,
                                       ),
@@ -340,7 +338,7 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
                                         tree['樹種名稱'] ?? '未知樹種',
                                         style: TextStyle(
                                           fontWeight: FontWeight.bold,
-                                          color: AppColors.darkGreen,
+                                          color: textPrimary,
                                         ),
                                       ),
                                       subtitle: Column(
@@ -358,36 +356,99 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
                                     ),
                                   ),
                                 )),
+                          ] else if (!_isLoading && _errorMessage.isEmpty) ...[
+                            // [B7] 空狀態
+                            _buildEmptyState(cardBg, textPrimary, isDark),
                           ],
                         ],
                       ),
                     ),
-      floatingActionButton: _canEdit
-          ? Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [AppColors.leafGreen, AppColors.forestGreen],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.forestGreen.withValues(alpha:0.4),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: FloatingActionButton(
-                onPressed: _showAddDialog,
-                backgroundColor: Colors.transparent,
-                elevation: 0,
-                tooltip: '新增樹木資料',
-                child: const Icon(Icons.add, size: 28),
-              ),
-            )
-          : null,
+      floatingActionButton: null,  // [B7] 移除重複的 FAB，上方「新增樹木」按鈕已足夠
+    );
+  }
+
+  // [B7] 專案統計卡
+  Widget _buildStatsCard(Color cardBg, Color textPrimary, bool isDark) {
+    final treeCount = _trees.length;
+    double totalCarbonStorage = 0;
+    double totalAnnualSeq = 0;
+    for (final tree in _trees) {
+      final cs = tree['碳儲存量'];
+      final ann = tree['推估年碳吸存量'];
+      if (cs != null) totalCarbonStorage += (cs is num ? cs.toDouble() : double.tryParse(cs.toString()) ?? 0);
+      if (ann != null) totalAnnualSeq += (ann is num ? ann.toDouble() : double.tryParse(ann.toString()) ?? 0);
+    }
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.neutral600;
+
+    Widget statItem(IconData icon, String label, String value, Color color) {
+      return Expanded(
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 28),
+            const SizedBox(height: 6),
+            Text(value, style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: textPrimary)),
+            const SizedBox(height: 2),
+            Text(label, style: TextStyle(fontSize: 12, color: textSecondary)),
+          ],
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.forestGreen.withValues(alpha: 0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          statItem(Icons.forest, '樹木數', '$treeCount 棵', AppColors.forestGreen),
+          Container(width: 1, height: 50, color: textSecondary.withValues(alpha: 0.2)),
+          statItem(Icons.cloud_outlined, '碳儲存量',
+              '${totalCarbonStorage.toStringAsFixed(1)} kg', AppColors.portBlue),
+          Container(width: 1, height: 50, color: textSecondary.withValues(alpha: 0.2)),
+          statItem(Icons.eco_outlined, '年碳吸存',
+              '${totalAnnualSeq.toStringAsFixed(2)} kg', AppColors.leafGreen),
+        ],
+      ),
+    );
+  }
+
+  // [B7] 空狀態
+  Widget _buildEmptyState(Color cardBg, Color textPrimary, bool isDark) {
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.neutral600;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 24),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.forestGreen.withValues(alpha: 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.park_outlined, size: 64, color: textSecondary.withValues(alpha: 0.5)),
+          const SizedBox(height: 16),
+          Text('這個專案還沒有樹木資料',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: textPrimary)),
+          const SizedBox(height: 8),
+          Text('點上方「新增樹木」開始第一筆調查',
+              style: TextStyle(fontSize: 13, color: textSecondary), textAlign: TextAlign.center),
+        ],
+      ),
     );
   }
 }
