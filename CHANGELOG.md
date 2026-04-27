@@ -4,6 +4,23 @@
 
 ---
 
+## v18.5.1 (2026-04-28) — V3 species refactor + docs cleanup
+
+### V3 樹種辨識
+- `lib/screens/v3/integrated_tree_form_page.dart` · `lib/screens/v3/manual_input_page_v3.dart`
+  - 顯示名稱改用學名 (`scientificNameWithoutAuthor`)；中文俗名只在 snackbar 提示
+  - 移除手動「新增樹種」按鈕；改在提交時用 `_ensureSpeciesId()` 自動建檔（先 server-side searchSpecies → 找不到才 POST /tree_species）
+  - TextFormField onChanged 編輯時自動清掉舊 _speciesId，避免誤套到別的樹
+
+### AI Chat
+- `lib/screens/ai_chat_page.dart`：修掉之前的 chat-leak
+
+### 公開文件清理
+- README 加完整架構圖（Flutter ↔ backend ↔ ml_service 雙路徑），已升級為 Mermaid
+- 移除 README/CHANGELOG 內所有硬寫的 Tailscale hostname/IP
+
+---
+
 ## v18.5.0 (2026-03-10) - Self-Hosted Server Support
 
 ### 自架伺服器支援
