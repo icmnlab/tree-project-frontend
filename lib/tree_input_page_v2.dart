@@ -11,6 +11,7 @@ import 'services/project_area_service.dart';
 import 'services/location_service.dart';
 import 'services/species_service.dart';
 import 'services/v3/project_boundary_service.dart'; // V3: 專案邊界驗證
+import 'screens/v3/project_boundary_draw_page.dart'; // [新功能] 新增專案 → 引導畫邊界
 import 'widgets/conflict_resolution_dialog.dart';
 
 // 定義日誌函數
@@ -1254,6 +1255,12 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('專案 "$projectName" 新增成功')),
         );
+
+        // [新功能] 引導使用者立刻畫邊界
+        await _promptDrawBoundaryAfterCreate(
+          projectName: newProject['name'] as String,
+          projectCode: newProject['code'] as String?,
+        );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -1262,6 +1269,49 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
     } finally {
       setState(() => _isLoading = false);
     }
+  }
+
+  /// [新功能] 新增專案成功後詢問是否立即繪製邊界。
+  /// 專案 row 已建立 → 不論使用者跳過、半途離開、網路失敗都不影響事實。
+  Future<void> _promptDrawBoundaryAfterCreate({
+    required String projectName,
+    String? projectCode,
+  }) async {
+    if (!mounted) return;
+    final shouldDraw = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('要繪製專案邊界嗎？'),
+        content: const Text(
+          '建議現在就在地圖上畫出專案範圍，'
+          '這樣之後使用智慧模式新增樹木時可以自動匹配到此專案。\n\n'
+          '可以稍後在地圖頁手動補畫，不影響專案已建立的事實。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('稍後再說'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(ctx, true),
+            icon: const Icon(Icons.draw),
+            label: const Text('立刻繪製'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDraw != true || !mounted) return;
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ProjectBoundaryDrawPage(
+          projectName: projectName,
+          projectCode: projectCode,
+        ),
+      ),
+    );
   }
 
   void _showEnhancedSpeciesDialog() {

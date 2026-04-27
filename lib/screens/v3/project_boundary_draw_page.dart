@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../services/v3/project_boundary_service.dart';
 import '../../services/api_service.dart';
+import '../../widgets/conflict_resolution_dialog.dart';
 import '../../constants/colors.dart';
 
 class ProjectBoundaryDrawPage extends StatefulWidget {
@@ -99,6 +100,38 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
     
     if (mounted) {
       setState(() => _isLoading = false);
+    }
+
+    // [B3 fix] 初次載入時自動把鏡頭拉到目前專案邊界中心 / 樹木重心
+    _flyCameraToInitialView();
+  }
+
+  void _flyCameraToInitialView() {
+    if (_controller == null) {
+      // GoogleMap 還沒初始化完成 — 在 onMapCreated 內已自行處理初次 camera
+      // 因此這裡 noop 即可（onMapCreated 會 retry）
+      return;
+    }
+    if (_currentProjectBoundary != null) {
+      final center = _boundaryService.calculatePolygonCenter(
+          _currentProjectBoundary!.coordinates);
+      _controller!.animateCamera(CameraUpdate.newLatLngZoom(
+        LatLng(center['lat']!, center['lng']!),
+        15,
+      ));
+    } else if (_existingTreeLocations.isNotEmpty) {
+      double sumLat = 0, sumLng = 0;
+      for (final loc in _existingTreeLocations) {
+        sumLat += loc.latitude;
+        sumLng += loc.longitude;
+      }
+      _controller!.animateCamera(CameraUpdate.newLatLngZoom(
+        LatLng(
+          sumLat / _existingTreeLocations.length,
+          sumLng / _existingTreeLocations.length,
+        ),
+        15,
+      ));
     }
   }
 
@@ -214,8 +247,23 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
   }
 
   void _updateDrawingPoint(int index, LatLng newPosition) {
+    // [B2 fix] 拖動頂點時只更新內部點 + polylines/preview polygon，
+    // 不要重建 markers Set（重建會觸發 Marker 動畫漂移）。
+    if (index < 0 || index >= _drawingPoints.length) return;
     _drawingPoints[index] = newPosition;
-    _updateMapElements();
+
+    // 移除舊的繪製預覽元素
+    _polylines
+        .removeWhere((p) => p.polylineId.value == 'drawing_line');
+    _polygons
+        .removeWhere((p) => p.polygonId.value == 'drawing_polygon');
+
+    // 重新加入更新後的繪製預覽
+    _addDrawingPolygon();
+
+    // 注意：marker 本身已經在 onDragEnd 之後由 GoogleMaps 內建處理位置
+    // 因此這裡不去清掉 _markers / 重新放 marker，避免漂移動畫
+    setState(() {});
   }
 
   void _showBoundaryInfo(ProjectBoundary boundary) {
@@ -416,7 +464,45 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
         coordinates: _drawingPoints.map((p) => [p.latitude, p.longitude]).toList(),
       );
 
-      final response = await ApiService.post('/project-boundaries', boundary.toJson());
+      // [Phase 2c] 樂觀鎖：若是更新既有邊界，帶上 expectedUpdatedAt
+      final payload = boundary.toJson();
+      if (_currentProjectBoundary?.updatedAt != null) {
+        payload['expectedUpdatedAt'] =
+            _currentProjectBoundary!.updatedAt!.toIso8601String();
+      }
+
+      var response = await ApiService.post('/project-boundaries', payload);
+
+      // 處理 409 衝突
+      if (response['success'] != true && response['code'] == 'CONFLICT') {
+        if (!mounted) {
+          setState(() => _isSaving = false);
+          return;
+        }
+        final serverVersion = (response['serverVersion'] as Map?) ?? {};
+        final action = await showConflictResolutionDialog(
+          context,
+          serverVersion: Map<String, dynamic>.from(serverVersion),
+          myDraft: payload,
+        );
+        if (action == ConflictAction.keepMine) {
+          // 強制覆寫：移除 expectedUpdatedAt 重送
+          final retryPayload = Map<String, dynamic>.from(payload)
+            ..remove('expectedUpdatedAt');
+          response = await ApiService.post(
+              '/project-boundaries', retryPayload);
+        } else if (action == ConflictAction.useServer ||
+            action == ConflictAction.manualMerge) {
+          // 重新拉一次 server 版本後返回（讓使用者重新編輯）
+          await _loadData();
+          setState(() => _isSaving = false);
+          return;
+        } else {
+          // 取消
+          setState(() => _isSaving = false);
+          return;
+        }
+      }
 
       if (response['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -536,6 +622,41 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
 
   @override
   Widget build(BuildContext context) {
+    // [新功能] 畫到一半離開時警告（已儲存或未開始繪製則直接放行）
+    return PopScope(
+      canPop: !(_isDrawing && _drawingPoints.isNotEmpty),
+      onPopInvokedWithResult: (didPop, _) async {
+        if (didPop) return;
+        if (!mounted) return;
+        final confirmed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('未儲存的邊界'),
+            content: Text(
+              '你已畫了 ${_drawingPoints.length} 個點，但尚未儲存。\n離開後這些點會遺失，確定要離開嗎？',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('繼續編輯'),
+              ),
+              TextButton(
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('放棄並離開'),
+              ),
+            ],
+          ),
+        );
+        if (confirmed == true && mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: _buildScaffold(context),
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('專案邊界繪製'),
@@ -566,7 +687,11 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
                     target: LatLng(23.7, 121.0),
                     zoom: 7,
                   ),
-                  onMapCreated: (controller) => _controller = controller,
+                  onMapCreated: (controller) {
+                    _controller = controller;
+                    // [B3 fix] 地圖初始化完成後再嘗試一次 fly camera
+                    _flyCameraToInitialView();
+                  },
                   onTap: _onMapTap,
                   polygons: _polygons,
                   markers: _markers,

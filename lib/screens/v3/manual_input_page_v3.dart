@@ -14,6 +14,7 @@ import '../../services/v3/ml_data_collector.dart'; // ML Data Collector
 import '../scanner_page.dart'; // For DBH measurement
 import '../../services/ar_measurement_service.dart'; // For MeasurementResult
 import '../../services/project_area_service.dart'; // 新增專案區位服務
+import 'project_boundary_draw_page.dart'; // [N新功能] 新增專案 → 引導畫邊界
 
 class ManualInputPageV3 extends StatefulWidget {
   const ManualInputPageV3({super.key});
@@ -528,12 +529,66 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
         await _updateFilteredProjects(_areaController.text);
         _validateLocation();
         _showSnackBar('專案 "$projectName" 新增成功');
+
+        // [新功能] 引導使用者立刻畫邊界（可跳過，不影響專案已建立的事實）
+        await _promptDrawBoundaryAfterCreate(
+          projectName: newProject['name'] as String,
+          projectCode: newProject['code'] as String?,
+        );
       }
     } catch (e) {
       _showSnackBar('新增專案時連線錯誤: $e');
     } finally {
       setState(() => _isLoading = false);
     }
+  }
+
+  /// [新功能] 新增專案成功後詢問是否立即繪製邊界。
+  /// 設計原則：專案 row 已建立，邊界是「可選後續步驟」，
+  /// 不論使用者跳過、半途離開、或網路失敗，都不影響專案已存的事實。
+  Future<void> _promptDrawBoundaryAfterCreate({
+    required String projectName,
+    String? projectCode,
+  }) async {
+    if (!mounted) return;
+    final shouldDraw = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('要繪製專案邊界嗎？'),
+        content: const Text(
+          '建議現在就在地圖上畫出專案範圍，'
+          '這樣之後使用智慧模式新增樹木時可以自動匹配到此專案。\n\n'
+          '可以稍後在地圖頁手動補畫，不影響專案已建立的事實。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('稍後再說'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Navigator.pop(ctx, true),
+            icon: const Icon(Icons.draw),
+            label: const Text('立刻繪製'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDraw != true || !mounted) return;
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ProjectBoundaryDrawPage(
+          projectName: projectName,
+          projectCode: projectCode,
+        ),
+      ),
+    );
+    // 回來後重新整理一下邊界快取（讓自動匹配馬上生效）
+    try {
+      await _boundaryService.getAllBoundaries(forceRefresh: true);
+    } catch (_) {}
   }
 
   // 清理臨時新增的專案區位和專案
