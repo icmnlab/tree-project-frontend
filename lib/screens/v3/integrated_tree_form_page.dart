@@ -517,11 +517,12 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
           final commonNames = bestMatch['species'] != null ? bestMatch['species']['commonNames'] as List? : bestMatch['commonNames'] as List?;
           final scoreNum = (bestMatch['score'] as num).toDouble();
           final score = (scoreNum * 100).toStringAsFixed(1);
-          
-          String displayName = speciesName;
-          if (commonNames != null && commonNames.isNotEmpty) {
-            displayName = commonNames.first;
-          }
+
+          // [Policy] 一律以學名為主顯示名，避免中譯/拼音不一致；中文俗名僅做提示輔助
+          final String displayName = (speciesName ?? '').toString();
+          final String? commonHint = (commonNames != null && commonNames.isNotEmpty)
+              ? commonNames.first.toString()
+              : null;
 
           String? matchedId;
           final localMatch = result['localMatch'] as Map<String, dynamic>?;
@@ -574,9 +575,10 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
               _speciesReady = true;
             });
             if (mounted && !_isAutoPilotRunning) {
+              final hint = commonHint != null ? ' / $commonHint' : '';
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('已自動套用: $displayName (信心度: $score%)'),
+                  content: Text('已自動套用: $displayName$hint (信心度: $score%)'),
                   backgroundColor: Colors.green,
                   duration: const Duration(seconds: 3),
                 ),
@@ -586,9 +588,10 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
             // 低信心度：提示使用者確認
             setState(() => _speciesReady = false);
             if (mounted) {
+              final hint = commonHint != null ? ' / $commonHint' : '';
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('辨識結果: $displayName (信心度: $score%)'),
+                  content: Text('辨識結果: $displayName$hint (信心度: $score%)'),
                   action: SnackBarAction(
                     label: '套用',
                     onPressed: () {
@@ -733,86 +736,56 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
     }
   }
 
-  // 顯示新增樹種對話框
-  void _showAddSpeciesDialog(String prefilledName) {
-    final nameController = TextEditingController(text: prefilledName);
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('新增樹種'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: '樹種名稱'),
-                autofocus: true,
-              ),
-              const SizedBox(height: 8),
-              const Text('樹種編號將由系統自動產生',
-                  style: TextStyle(fontSize: 12, color: Colors.grey)),
-            ],
-          ),
-          actions: [
-            TextButton(
-              child: const Text('取消'),
-              onPressed: () {
-                nameController.dispose();
-                Navigator.of(context).pop();
-              },
-            ),
-            ElevatedButton(
-              child: const Text('新增'),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
-              onPressed: () async {
-                if (nameController.text.isNotEmpty) {
-                  final name = nameController.text;
-                  nameController.dispose();
-                  Navigator.of(context).pop();
-                  await _addSpecies(name);
-                }
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
+  /// 提交前確保 _speciesId 已綁定（多人並發安全）。
+  /// 1) 已綁定 → 直接通過。
+  /// 2) Server-side 同義詞搜尋；若有命中 → 採用該 id。
+  /// 3) 否則呼叫 POST /tree_species 自動建檔。後端在 transaction 內以 (LOWER(name)) 互斥，
+  ///    並對 23505 衝突 fallback 回傳既有 id (exists=true)，因此多用戶同時新增同名也安全。
+  Future<bool> _ensureSpeciesId() async {
+    final name = _speciesController.text.trim();
+    if (name.isEmpty) return true; // 由外層必填檢查處理
+    if (_speciesId != null && _speciesId!.isNotEmpty) return true;
 
-  Future<void> _addSpecies(String name) async {
+    // (a) 先以 server-side 搜尋（含同義詞）匹配既有樹種
     try {
-      final response = await _speciesService.addSpecies(name);
-      if (!mounted) return;
+      final matches = await _speciesService.searchSpecies(name);
+      if (matches.isNotEmpty) {
+        final m = matches.first;
+        final mid = (m['id'] ?? m['樹種編號'])?.toString();
+        if (mid != null && mid.isNotEmpty) {
+          _speciesId = mid;
+          return true;
+        }
+      }
+    } catch (_) {/* 容忍搜尋失敗，落到自動建檔 */}
 
-      if (response['success'] == true) {
+    // (b) 自動建檔（後端互斥保證多人安全）
+    try {
+      final r = await _speciesService.addSpecies(name);
+      if (!mounted) return false;
+      if (r['success'] == true && r['id'] != null) {
+        _speciesId = r['id'].toString();
+        // 同步更新本地列表，避免下次再 round-trip
+        if (!_allSpecies.any((s) => s['id']?.toString() == _speciesId)) {
+          _allSpecies.add({
+            'id': r['id'],
+            'name': r['name'] ?? name,
+            'scientific_name': r['scientific_name'],
+          });
+        }
+        return true;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('樹種建檔失敗: ${r['message'] ?? '未知錯誤'}')),
+      );
+      return false;
+    } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('新增樹種成功: $name')),
-        );
-
-        // 更新列表並選中
-        final newSpecies = {
-          'id': response['id'],
-          'name': response['name'],
-        };
-        
-        setState(() {
-          _allSpecies.add(newSpecies);
-          _allSpecies.sort((a, b) => (a['name'] ?? '').toString().compareTo((b['name'] ?? '').toString()));
-          
-          _speciesController.text = name;
-          _speciesId = response['id'].toString();
-          _speciesSearchResults.clear();
-        });
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('新增樹種失敗: ${response['message']}')),
+          SnackBar(content: Text('樹種建檔錯誤: $e')),
         );
       }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('新增樹種錯誤: $e')),
-      );
+      return false;
     }
   }
 
@@ -837,6 +810,13 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       if (dbh == null) {
         _showError('請輸入有效的數值');
         setState(() => _isLoading = false);
+        return;
+      }
+
+      // [Auto-Add] 提交前確保樹種已建檔（取代舊的「新增樹種」按鈕；多人並發安全）
+      final speciesOk = await _ensureSpeciesId();
+      if (!speciesOk) {
+        if (mounted) setState(() => _isLoading = false);
         return;
       }
 
@@ -1376,6 +1356,9 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
                   prefixIcon: Icon(Icons.park),
                 ),
                 onChanged: (value) {
+                  // 使用者手動編輯名稱 → 解除既有的 species_id 綁定
+                  // 提交時若仍未匹配，會由 _ensureSpeciesId() 自動建檔
+                  if (_speciesId != null) _speciesId = null;
                   _speciesSearchDebounce?.cancel();
                   _speciesSearchDebounce = Timer(
                     const Duration(milliseconds: 300),
@@ -1384,13 +1367,6 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
                 },
               ),
             ),
-            if (_speciesSearchResults.isEmpty && _speciesController.text.isNotEmpty && 
-                !_allSpecies.any((s) => s['name'] == _speciesController.text || s['樹種名稱'] == _speciesController.text))
-              IconButton(
-                icon: const Icon(Icons.add_circle_outline, color: Colors.teal),
-                onPressed: () => _showAddSpeciesDialog(_speciesController.text),
-                tooltip: '新增樹種',
-              ),
           ],
         ),
         

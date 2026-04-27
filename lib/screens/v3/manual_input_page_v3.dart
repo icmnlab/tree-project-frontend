@@ -1000,6 +1000,9 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
                   prefixIcon: Icon(Icons.park),
                 ),
                 onChanged: (value) {
+                  // 使用者手動編輯名稱 → 解除既有的 species_id 綁定
+                  // 提交時若仍未匹配，會由 _ensureSpeciesId() 自動建檔
+                  if (_speciesId != null) _speciesId = null;
                   _speciesSearchDebounce?.cancel();
                   _speciesSearchDebounce = Timer(
                     const Duration(milliseconds: 300),
@@ -1008,13 +1011,6 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
                 },
               ),
             ),
-            if (_speciesSearchResults.isEmpty && _speciesController.text.isNotEmpty && 
-                !_allSpecies.any((s) => s['name'] == _speciesController.text || s['樹種名稱'] == _speciesController.text))
-              IconButton(
-                icon: const Icon(Icons.add_circle_outline, color: Colors.teal),
-                onPressed: () => _showAddSpeciesDialog(_speciesController.text),
-                tooltip: '新增樹種',
-              ),
             const SizedBox(width: 8),
             IconButton.filled(
               onPressed: _identifySpeciesWithCamera,
@@ -1100,80 +1096,49 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
     }
   }
 
-  // 顯示新增樹種對話框
-  void _showAddSpeciesDialog(String prefilledName) {
-    final nameController = TextEditingController(text: prefilledName);
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('新增樹種'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: const InputDecoration(labelText: '樹種名稱'),
-                autofocus: true,
-              ),
-              const SizedBox(height: 8),
-              const Text('樹種編號將由系統自動產生',
-                  style: TextStyle(fontSize: 12, color: Colors.grey)),
-            ],
-          ),
-          actions: [
-            TextButton(
-              child: const Text('取消'),
-              onPressed: () {
-                nameController.dispose();
-                Navigator.of(context).pop();
-              },
-            ),
-            ElevatedButton(
-              child: const Text('新增'),
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
-              onPressed: () async {
-                if (nameController.text.isNotEmpty) {
-                  final name = nameController.text;
-                  nameController.dispose();
-                  Navigator.of(context).pop();
-                  await _addSpecies(name);
-                }
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
+  /// 提交前確保 _speciesId 已綁定（多人並發安全）。
+  /// 1) 已綁定 → 直接通過。
+  /// 2) Server-side 同義詞搜尋；若有命中 → 採用該 id。
+  /// 3) 否則呼叫 POST /tree_species 自動建檔。後端在 transaction 內以 LOWER(name) 互斥，
+  ///    並對 23505 衝突 fallback 回傳既有 id (exists=true)，因此多用戶同時新增同名也安全。
+  Future<bool> _ensureSpeciesId() async {
+    final name = _speciesController.text.trim();
+    if (name.isEmpty) return true; // 由外層必填檢查處理
+    if (_speciesId != null && _speciesId!.isNotEmpty) return true;
 
-  Future<void> _addSpecies(String name) async {
+    // (a) 先以 server-side 搜尋（含同義詞）匹配既有樹種
     try {
-      final response = await _speciesService.addSpecies(name);
-      if (!mounted) return;
-
-      if (response['success'] == true) {
-        _showSnackBar('新增樹種成功: $name');
-
-        // 更新列表並選中
-        final newSpecies = {
-          'id': response['id'],
-          'name': response['name'],
-        };
-        
-        setState(() {
-          _allSpecies.add(newSpecies);
-          _allSpecies.sort((a, b) => (a['name'] ?? '').compareTo(b['name'] ?? ''));
-          
-          _speciesController.text = name;
-          _speciesId = response['id'].toString();
-          _speciesSearchResults.clear();
-        });
-      } else {
-        _showSnackBar('新增樹種失敗: ${response['message']}');
+      final matches = await _speciesService.searchSpecies(name);
+      if (matches.isNotEmpty) {
+        final m = matches.first;
+        final mid = (m['id'] ?? m['樹種編號'])?.toString();
+        if (mid != null && mid.isNotEmpty) {
+          _speciesId = mid;
+          return true;
+        }
       }
+    } catch (_) {/* 容忍搜尋失敗，落到自動建檔 */}
+
+    // (b) 自動建檔（後端互斥保證多人安全）
+    try {
+      final r = await _speciesService.addSpecies(name);
+      if (!mounted) return false;
+      if (r['success'] == true && r['id'] != null) {
+        _speciesId = r['id'].toString();
+        if (!_allSpecies.any((s) => s['id']?.toString() == _speciesId)) {
+          _allSpecies.add({
+            'id': r['id'],
+            'name': r['name'] ?? name,
+            'scientific_name': r['scientific_name'],
+          });
+        }
+        return true;
+      }
+      _showSnackBar('樹種建檔失敗: ${r['message'] ?? '未知錯誤'}');
+      return false;
     } catch (e) {
-      _showSnackBar('新增樹種錯誤: $e');
+      if (mounted) _showSnackBar('樹種建檔錯誤: $e');
+      return false;
     }
   }
 
@@ -1202,11 +1167,12 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
           final commonNames = bestMatch['species'] != null ? bestMatch['species']['commonNames'] as List? : bestMatch['commonNames'] as List?;
           final rawScore = bestMatch['score'];
           final score = rawScore != null ? ((rawScore as num).toDouble() * 100).toStringAsFixed(1) : '0.0';
-          
-          String displayName = speciesName ?? '';
-          if (commonNames != null && commonNames.isNotEmpty) {
-            displayName = commonNames.first?.toString() ?? displayName;
-          }
+
+          // [Policy] 一律以學名為主，避免中譯/拼音不一致；中文俗名僅做提示
+          final String displayName = (speciesName ?? '').trim();
+          final String? commonHint = (commonNames != null && commonNames.isNotEmpty)
+              ? commonNames.first?.toString()
+              : null;
           if (displayName.isEmpty) {
             _showSnackBar('辨識結果不完整，請手動輸入樹種');
             return;
@@ -1239,7 +1205,8 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
           }
 
           // 構建提示訊息
-          String snackMsg = '辨識成功: $displayName (信心度 $score%)';
+          final hint = commonHint != null ? ' / $commonHint' : '';
+          String snackMsg = '辨識成功: $displayName$hint (信心度 $score%)';
           if (wasAutoAdded) {
             snackMsg += ' [新樹種已自動建檔]';
           } else if (matchedId != null) {
@@ -1548,6 +1515,13 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
     setState(() => _isLoading = true);
     
     try {
+      // [Auto-Add] 提交前確保樹種已建檔（取代舊的「新增樹種」按鈕；多人並發安全）
+      final speciesOk = await _ensureSpeciesId();
+      if (!speciesOk) {
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
       // 1. 準備提交數據 (相容 V2 API)
       final treeData = {
         "project_name": _projectController.text.isNotEmpty ? _projectController.text : _selectedProjectName,

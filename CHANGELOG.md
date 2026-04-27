@@ -7,7 +7,7 @@
 ## v18.5.0 (2026-03-10) - Self-Hosted Server Support
 
 ### 自架伺服器支援
-- 新增 `Environment.selfHosted` → `https://100.118.203.75/api`（預設）
+- 新增 `Environment.selfHosted` → 自架伺服器（預設；實際主機由 `lib/config/app_config.dart` 決定，不在 repo 中以明碼公開）
 - Admin UI 改為 3 環境切換按鈕（selfHosted / prod / staging）
 - 各環境獨立圖示與顏色標識
 

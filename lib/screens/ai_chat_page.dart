@@ -270,8 +270,10 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   // Animation
   late AnimationController _typingAnimationController;
   
-  // 本地儲存 key
-  static const String _sessionsStorageKey = 'ai_chat_sessions';
+  // 本地儲存 key（依使用者區分，避免不同帳號在同一裝置共用對話紀錄）
+  static const String _sessionsStorageKeyPrefix = 'ai_chat_sessions';
+  String get _sessionsStorageKey =>
+      '${_sessionsStorageKeyPrefix}_${widget.userId}';
 
   @override
   void initState() {
@@ -300,6 +302,10 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   Future<void> _loadSessions() async {
     try {
       final prefs = await SharedPreferences.getInstance();
+      // 一次性遷移：移除舊的全域 key（早期版本所有帳號共用）
+      if (prefs.containsKey(_sessionsStorageKeyPrefix)) {
+        await prefs.remove(_sessionsStorageKeyPrefix);
+      }
       final sessionsJson = prefs.getString(_sessionsStorageKey);
       
       if (sessionsJson != null) {

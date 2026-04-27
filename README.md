@@ -9,6 +9,34 @@ preview. The single companion to the Node backend.
 
 ---
 
+## Architecture overview
+
+```
+        ┌──────────────────── this repo ────────────────────┐
+        │ Flutter app (Mi A1 / Android first; iOS supported)│
+        │  ├ Survey UI (V2 / V3 pages)                      │
+        │  ├ AR + on-device YOLO trunk preview (tflite)     │
+        │  ├ BLE bridge (測距儀 / VLGEO2)                   │
+        │  └ AI chat (SSE) + agent client                   │
+        └───┬───────────────────────────────────┬───────────┘
+            │ HTTPS (Tailscale Funnel)          │ HTTPS + X-ML-API-Key
+            ▼                                   ▼
+   ┌──────────────────────┐             ┌────────────────────────────┐
+   │ Node backend         │             │ ml_service (FastAPI)       │
+   │ (tree-project-       │             │ Depth Pro + SAM 2.1 Tiny   │
+   │  backend repo)       │             │ /api/v1/auto-measure-dbh,  │
+   │ /api/* CRUD + auth   │             │ /ws/scan, …                │
+   │ + Text-to-SQL chat   │             └────────────────────────────┘
+   └──────────────────────┘
+```
+
+The ML service URL + API key are returned by `/login` and stored in
+`SharedPreferences`; subsequent ML requests bypass the Node backend so the
+WebSocket stream and large image POSTs do not pay a proxy hop. The Node
+backend's `/api/ml-service/status` is only used by diagnostics screens.
+
+---
+
 ## Stack
 
 | Concern              | Package(s) |
@@ -57,27 +85,28 @@ The first run takes you to `LoginPage`. After login, JWT is written to
 ### Environment / endpoints (`lib/config/app_config.dart`)
 
 The previous Render staging / prod environments were retired in 2026-04, so
-`Environment` now has **only one value**, `selfHosted`, hardcoded to:
+`Environment` now has **only one value**, `selfHosted`, which points to a
+self-hosted base URL of the form:
 
 ```
-https://richardhualienserver.tail124a1b.ts.net/api
+https://<your-backend-host>/api
 ```
 
-This domain is reachable only from devices joined to the Tailscale tailnet
-(or the public Tailscale Funnel). The `enum` is preserved so older
+The actual hostname is set per-deployment in `app_config.dart` and is **not**
+committed in clear text in this README — replace it with your own reverse
+proxy / tunnel hostname before building. The `enum` is preserved so older
 `SharedPreferences` keys still parse, and so a second environment can be
 added later without renaming files.
 
 ### Self-signed TLS (`lib/main.dart`)
 
-`SelfHostedHttpOverrides` accepts only the following hosts' self-signed
-certificates:
+`SelfHostedHttpOverrides` whitelists self-signed certificates **only** for a
+short, hard-coded list of hosts (your backend host, your ML host, and an
+optional MagicDNS / tailnet suffix). Anything else uses normal TLS
+validation. There is no global override.
 
-- `100.118.203.75` (Ubuntu server in tailnet)
-- `100.81.214.9`   (Windows server in tailnet)
-- any host ending in `.ts.net` (Tailscale MagicDNS)
-
-Anything else uses normal TLS validation. There is no global override.
+The whitelist lives in `lib/main.dart`; update it for your own deployment
+rather than relying on what is checked in.
 
 ### ML service (`lib/config/app_config.dart`)
 
