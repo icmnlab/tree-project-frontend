@@ -14,7 +14,21 @@ class ApiService {
 
   static Future<void> initialize() async {
     try {
-      _jwtToken = await _secureStorage.read(key: _jwtTokenKey);
+      final raw = await _secureStorage.read(key: _jwtTokenKey);
+      // [HOTFIX] Android keystore may silently return garbled bytes after
+      // reinstall / keystore reset (no exception thrown). Validate before use:
+      // a real JWT is pure ASCII printable + 3 dot-separated base64url segments.
+      if (raw != null && _isValidJwt(raw)) {
+        _jwtToken = raw;
+      } else {
+        _jwtToken = null;
+        if (raw != null) {
+          // Corrupted entry — wipe it so next launch is clean.
+          try {
+            await _secureStorage.delete(key: _jwtTokenKey);
+          } catch (_) {}
+        }
+      }
     } catch (e) {
       // flutter_secure_storage may fail with BadPaddingException after
       // reinstall / keystore reset. Clear the corrupted entry and continue so
@@ -32,14 +46,34 @@ class ApiService {
     }
   }
 
-  static Future<void> setJwtToken(String? token) async {
-    _jwtToken = token;
+  // [HOTFIX] JWT format check: 3 segments separated by '.', each base64url ASCII
+  static bool _isValidJwt(String token) {
+    if (token.isEmpty) return false;
+    // Authorization header values must be printable ASCII (0x20-0x7E) + tab.
+    for (final code in token.codeUnits) {
+      if (code != 0x09 && (code < 0x20 || code > 0x7E)) return false;
+    }
+    final parts = token.split('.');
+    if (parts.length != 3) return false;
+    final base64urlRe = RegExp(r'^[A-Za-z0-9_\-]+=*$');
+    return parts.every((p) => p.isNotEmpty && base64urlRe.hasMatch(p));
+  }
 
+  static Future<void> setJwtToken(String? token) async {
     if (token == null || token.isEmpty) {
+      _jwtToken = null;
       await _secureStorage.delete(key: _jwtTokenKey);
       return;
     }
 
+    if (!_isValidJwt(token)) {
+      // Refuse to persist malformed token; treat as logged-out.
+      _jwtToken = null;
+      await _secureStorage.delete(key: _jwtTokenKey);
+      return;
+    }
+
+    _jwtToken = token;
     await _secureStorage.write(key: _jwtTokenKey, value: token);
   }
 

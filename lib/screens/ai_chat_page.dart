@@ -225,6 +225,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   ChatSession? _currentSession;
   bool _isLoading = false;
   bool _isSidebarOpen = false; // 預設收合，避免遮擋內容
+  // [B4] 跟隨全 App 主題（ThemeService），不再有獨立 toggle；每次 build 從 Theme.of(context) 同步
   bool _isDarkMode = false;
   bool _isAgentMode = true; // 預設啟用 Agent 模式
 
@@ -545,6 +546,8 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    // [B4] 從全 App 主題決定明暗，保留 ChatGPT 綠色品牌色
+    _isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final colorScheme = _isDarkMode ? _darkColorScheme : _lightColorScheme;
 
     return Theme(
@@ -990,7 +993,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
 
   Widget _buildTopBar(ColorScheme colorScheme) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
       decoration: BoxDecoration(
         color: colorScheme.surface,
         border: Border(
@@ -999,7 +1002,9 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
           ),
         ),
       ),
-      child: Row(
+      child: SafeArea(
+        bottom: false,
+        child: Row(
         children: [
           // 側邊欄切換
           Material(
@@ -1043,37 +1048,42 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
             ),
           ),
           
-          const Spacer(),
+          const SizedBox(width: 8),
           
-          // 標題
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(6),
-                decoration: BoxDecoration(
-                  color: colorScheme.primary.withValues(alpha:0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  Icons.eco_rounded,
-                  size: 18,
-                  color: colorScheme.primary,
-                ),
+          // 標題——伸縮占中央可用空間，其他按鈕實際寬度不變
+          Expanded(
+            child: Center(
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: colorScheme.primary.withValues(alpha:0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.eco_rounded,
+                      size: 18,
+                      color: colorScheme.primary,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: Text(
+                      '永續碳匯 AI',
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 8),
-              Text(
-                '永續碳匯 AI',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.onSurface,
-                ),
-              ),
-            ],
+            ),
           ),
-          
-          const Spacer(),
 
           // Agent 模式切換
           Material(
@@ -1119,35 +1129,17 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
             ),
           ),
           
-          const SizedBox(width: 4),
+          const SizedBox(width: 6),
 
-          // 深色模式切換
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => setState(() => _isDarkMode = !_isDarkMode),
-              borderRadius: BorderRadius.circular(8),
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                child: Icon(
-                  _isDarkMode ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                  color: colorScheme.onSurfaceVariant,
-                  size: 20,
-                ),
-              ),
-            ),
-          ),
-          
-          const SizedBox(width: 8),
-
-          // 返回按鈕
+          // [B4] 移除獨立深色模式切換，改跟隨全 App ThemeService
+          // 返回按鈕（[N7] 縮成只 icon，避免横向被截）
           Material(
             color: Colors.transparent,
             child: InkWell(
               onTap: () => Navigator.of(context).pop(),
               borderRadius: BorderRadius.circular(8),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
                   color: colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(8),
@@ -1155,29 +1147,16 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
                     color: colorScheme.outline.withValues(alpha:0.15),
                   ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.arrow_back_rounded,
-                      size: 16,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      '返回',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
+                child: Icon(
+                  Icons.arrow_back_rounded,
+                  size: 18,
+                  color: colorScheme.onSurfaceVariant,
                 ),
               ),
             ),
           ),
         ],
+      ),
       ),
     );
   }

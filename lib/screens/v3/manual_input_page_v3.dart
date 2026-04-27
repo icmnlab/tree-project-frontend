@@ -195,6 +195,18 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
     );
     
     if (match.matched && match.projectName != null) {
+      // [N2 fix] 邊界 row 可能未填 project_area（舊資料）→ 以專案名稱補查
+      String? resolvedArea = match.projectArea;
+      if (resolvedArea == null || resolvedArea.isEmpty) {
+        try {
+          final res = await _projectService.getProjectByName(match.projectName!);
+          if (res['success'] == true && res['data'] != null) {
+            final a = res['data']['area'];
+            if (a is String && a.isNotEmpty) resolvedArea = a;
+          }
+        } catch (_) {}
+      }
+
       if (mounted) {
         setState(() {
           _selectedProjectName = match.projectName;
@@ -202,15 +214,20 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
           if (match.projectCode != null) {
             _projectCodeController.text = match.projectCode!;
           }
-          // 自動載入該專案的區位資訊（如果有）
+          if (resolvedArea != null && resolvedArea.isNotEmpty) {
+            _areaController.text = resolvedArea;
+          }
           _isLocationValid = true;
           _locationWarning = null;
         });
-        _showSnackBar('已自動匹配專案: ${match.projectName}');
+        _showSnackBar('已自動匹配專案: ${match.projectName}'
+            '${resolvedArea != null ? ' (區位: $resolvedArea)' : ''}');
       }
       
       // 嘗試載入該專案的區位資訊
-      _updateFilteredProjects(_areaController.text);
+      if (_areaController.text.isNotEmpty) {
+        _updateFilteredProjects(_areaController.text);
+      }
     } else {
       // 雖然沒匹配到，但如果是選擇已有專案，需檢查是否在該專案邊界外
       if (_projectController.text.isNotEmpty) {
@@ -1067,14 +1084,21 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
         final results = result['results'] as List? ?? [];
         if (results.isNotEmpty) {
           final bestMatch = results.first;
-          final speciesName = bestMatch['species'] != null ? bestMatch['species']['scientificNameWithoutAuthor'] : bestMatch['scientificNameWithoutAuthor'];
+          // [N1 fix] PlantNet 可能沒回 scientificNameWithoutAuthor，防 null cast
+          final String? speciesName = bestMatch['species'] != null
+              ? bestMatch['species']['scientificNameWithoutAuthor'] as String?
+              : bestMatch['scientificNameWithoutAuthor'] as String?;
           final commonNames = bestMatch['species'] != null ? bestMatch['species']['commonNames'] as List? : bestMatch['commonNames'] as List?;
           final rawScore = bestMatch['score'];
           final score = rawScore != null ? ((rawScore as num).toDouble() * 100).toStringAsFixed(1) : '0.0';
           
-          String displayName = speciesName;
+          String displayName = speciesName ?? '';
           if (commonNames != null && commonNames.isNotEmpty) {
-            displayName = commonNames.first;
+            displayName = commonNames.first?.toString() ?? displayName;
+          }
+          if (displayName.isEmpty) {
+            _showSnackBar('辨識結果不完整，請手動輸入樹種');
+            return;
           }
           
           // 優先使用後端回傳的 localMatch（含自動新增結果）
@@ -1092,7 +1116,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
                 final dbSciName = (s['scientific_name'] ?? '').toString().toLowerCase();
                 final synonyms = (s['synonyms'] as List?)?.map((e) => e.toString().toLowerCase()).toList() ?? [];
                 final displayLower = displayName.toLowerCase();
-                final sciLower = speciesName.toLowerCase();
+                final sciLower = (speciesName ?? '').toLowerCase();
                 return dbName == displayLower || 
                        (dbSciName.isNotEmpty && dbSciName == sciLower) ||
                        synonyms.contains(displayLower);
@@ -1232,12 +1256,18 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
         final results = result['results'] as List? ?? [];
         if (results.isNotEmpty) {
           final bestMatch = results.first;
-          final speciesName = bestMatch['species'] != null ? bestMatch['species']['scientificNameWithoutAuthor'] : bestMatch['scientificNameWithoutAuthor'];
+          // [N1 fix] 同上，null-safe
+          final String? speciesName = bestMatch['species'] != null
+              ? bestMatch['species']['scientificNameWithoutAuthor'] as String?
+              : bestMatch['scientificNameWithoutAuthor'] as String?;
           final commonNames = bestMatch['species'] != null ? bestMatch['species']['commonNames'] as List? : bestMatch['commonNames'] as List?;
           final rawScore = bestMatch['score'];
           final score = rawScore != null ? ((rawScore as num).toDouble() * 100).toStringAsFixed(1) : '0.0';
-          String displayName = speciesName;
-          if (commonNames != null && commonNames.isNotEmpty) displayName = commonNames.first;
+          String displayName = speciesName ?? '';
+          if (commonNames != null && commonNames.isNotEmpty) {
+            displayName = commonNames.first?.toString() ?? displayName;
+          }
+          if (displayName.isEmpty) return;
 
           // 優先使用後端回傳的 localMatch（含自動新增結果）
           String? matchedId;
@@ -1254,7 +1284,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
                 final dbSciName = (s['scientific_name'] ?? '').toString().toLowerCase();
                 final synonyms = (s['synonyms'] as List?)?.map((e) => e.toString().toLowerCase()).toList() ?? [];
                 final displayLower = displayName.toLowerCase();
-                final sciLower = speciesName.toLowerCase();
+                final sciLower = (speciesName ?? '').toLowerCase();
                 return dbName == displayLower || 
                        (dbSciName.isNotEmpty && dbSciName == sciLower) ||
                        synonyms.contains(displayLower);
