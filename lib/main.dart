@@ -121,6 +121,19 @@ class MyApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeService().themeMode,
+      // [N8 RWD] 限制系統字體放大倍率，避免極大字體在小螢幕擠爆 layout / overflow。
+      // 仍尊重使用者偏好（在 0.85~1.30 之間），無障礙需求極大字仍可讀。
+      builder: (context, child) {
+        final mq = MediaQuery.of(context);
+        final clamped = mq.textScaler.clamp(
+          minScaleFactor: 0.85,
+          maxScaleFactor: 1.30,
+        );
+        return MediaQuery(
+          data: mq.copyWith(textScaler: clamped),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
       initialRoute: '/login',
       routes: {
         '/': (context) =>

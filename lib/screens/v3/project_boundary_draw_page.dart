@@ -702,10 +702,11 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
                 ),
                 
                 // 頂部控制面板
+                // 注意: right 留 64px 給 GoogleMap 內建的「我的位置」定位按鈕 (右上角)
                 Positioned(
                   top: 16,
                   left: 16,
-                  right: 16,
+                  right: 64,
                   child: Card(
                     child: Padding(
                       padding: const EdgeInsets.all(12),

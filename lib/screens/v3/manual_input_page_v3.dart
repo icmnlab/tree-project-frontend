@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show Factory;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -843,7 +845,8 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
       children: [
         if (_currentLocation != null)
           Container(
-            height: 200,
+            // [N8 RWD] 高度依螢幕比例，小螢幕不再硬塞 200px；範圍 160-260。
+            height: (MediaQuery.of(context).size.height * 0.25).clamp(160.0, 260.0),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.grey.shade300),
@@ -862,6 +865,12 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
                   ),
                 },
                 myLocationEnabled: true,
+                // [N6 fix] GoogleMap 在 Stepper 的可滾動容器內，預設 ScrollGesture 會被外層搶走，
+                // 造成「單指拖地圖→放手後地圖回彈到反方向」(實際是 Stepper 在滑)。
+                // 用 EagerGestureRecognizer 讓地圖立刻認領垂直拖動，外層就不會搶。
+                gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+                  Factory<OneSequenceGestureRecognizer>(() => EagerGestureRecognizer()),
+                },
                 onTap: (pos) {
                   setState(() {
                     _currentLocation = pos;
@@ -873,7 +882,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
           )
         else
           Container(
-            height: 200,
+            height: (MediaQuery.of(context).size.height * 0.25).clamp(160.0, 260.0),
             color: Colors.grey.shade100,
             child: const Center(child: CircularProgressIndicator()),
           ),

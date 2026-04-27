@@ -199,8 +199,16 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
   Widget build(BuildContext context) {
     String title = widget.projectName ?? widget.areaName ?? '樹木調查資料';
 
+    // [B5] 暗/亮模式色彩輔助
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppColors.darkCard : Colors.white;
+    final pageBg = isDark ? AppColors.darkBackground : AppColors.surfaceLight;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.neutral900;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.neutral600;
+    final textTertiary = isDark ? AppColors.darkTextTertiary : AppColors.neutral500;
+
     return Scaffold(
-      backgroundColor: AppColors.surfaceLight,
+      backgroundColor: pageBg,
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.transparent,
@@ -251,7 +259,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [AppColors.surfaceLight, Colors.white],
+            colors: [pageBg, cardBg],
           ),
         ),
         child: _isLoading
@@ -262,7 +270,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                   Container(
                     padding: const EdgeInsets.all(20),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: cardBg,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
@@ -281,7 +289,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                   Text(
                     '載入樹木資料中...',
                     style: TextStyle(
-                      color: AppColors.neutral600,
+                      color: textSecondary,
                       fontSize: 16,
                       fontWeight: FontWeight.w500,
                     ),
@@ -295,7 +303,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                     margin: const EdgeInsets.all(24),
                     padding: const EdgeInsets.all(32),
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: cardBg,
                       borderRadius: BorderRadius.circular(20),
                       boxShadow: [
                         BoxShadow(
@@ -326,13 +334,13 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                           style: TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.neutral900,
+                            color: textPrimary,
                           ),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           _errorMessage,
-                          style: TextStyle(color: AppColors.neutral600, fontSize: 14),
+                          style: TextStyle(color: textSecondary, fontSize: 14),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 24),
@@ -361,7 +369,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                         margin: const EdgeInsets.all(24),
                         padding: const EdgeInsets.all(40),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: cardBg,
                           borderRadius: BorderRadius.circular(20),
                           boxShadow: [
                             BoxShadow(
@@ -391,14 +399,14 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                               '尚無樹木資料',
                               style: TextStyle(
                                 fontSize: 20,
-                                color: AppColors.neutral900,
+                                color: textPrimary,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
                             const SizedBox(height: 8),
                             Text(
                               '點擊下方按鈕開始新增第一筆資料',
-                              style: TextStyle(fontSize: 14, color: AppColors.neutral500),
+                              style: TextStyle(fontSize: 14, color: textTertiary),
                             ),
                           ],
                         ),
@@ -414,7 +422,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                                   decoration: BoxDecoration(
-                                    color: Colors.white,
+                                    color: cardBg,
                                     borderRadius: BorderRadius.circular(16),
                                     boxShadow: [
                                       BoxShadow(
@@ -462,7 +470,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                         return Container(
                           margin: const EdgeInsets.only(bottom: 12),
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: cardBg,
                             borderRadius: BorderRadius.circular(20),
                             boxShadow: [
                               BoxShadow(
@@ -535,7 +543,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                                                   style: TextStyle(
                                                     fontWeight: FontWeight.w600,
                                                     fontSize: 16,
-                                                    color: AppColors.neutral900,
+                                                    color: textPrimary,
                                                   ),
                                                 ),
                                               ),
@@ -559,12 +567,12 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                                           const SizedBox(height: 8),
                                           Row(
                                             children: [
-                                              Icon(Icons.location_on_rounded, size: 14, color: AppColors.neutral500),
+                                              Icon(Icons.location_on_rounded, size: 14, color: textTertiary),
                                               const SizedBox(width: 4),
                                               Expanded(
                                                 child: Text(
                                                   '${tree['專案區位']} · ${tree['專案名稱']}',
-                                                  style: TextStyle(color: AppColors.neutral600, fontSize: 13),
+                                                  style: TextStyle(color: textSecondary, fontSize: 13),
                                                   overflow: TextOverflow.ellipsis,
                                                 ),
                                               ),
@@ -629,10 +637,9 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
       ),
       floatingActionButton: _canEdit
           ? Padding(
-              padding: EdgeInsets.only(
-                  bottom: Navigator.canPop(context)
-                      ? 16
-                      : 80), // 如果是 push 進來的(獨立頁面)則不需太高，如果是 Tab 則需避開底部導航
+              // [N5 fix] HomePage 的 BottomNav 在外層 Scaffold，與本頁的 FAB 不會重疊；
+              // 原本「Tab 模式時加 80px」會讓 FAB 浮太高（看起來懸在中間）。統一 16px 即可。
+              padding: const EdgeInsets.only(bottom: 16),
               child: Container(
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
