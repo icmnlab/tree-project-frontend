@@ -88,13 +88,57 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
   
   // Bug #23: 搜尋防抖
   Timer? _speciesSearchDebounce;
-  
+
+  // [N12 fix] V3 輸入頁地圖要顯示既有專案邊界，方便使用者一眼看到目前位置
+  // 是否落在某個專案的邊界內
+  final Set<Polygon> _boundaryPolygons = {};
+
   @override
   void initState() {
     super.initState();
     _loadProjectAreas(); // V3: 載入專案區位列表
     _loadSpecies();
     _getCurrentLocation();
+    _loadBoundariesForMap(); // [N12 fix] 載入並渲染專案邊界
+  }
+
+  // [N12 fix] 載入專案邊界並轉成 Polygon Set 供地圖顯示
+  Future<void> _loadBoundariesForMap() async {
+    try {
+      final boundaries = await _boundaryService.getAllBoundaries();
+      if (!mounted) return;
+      const palette = <Color>[
+        Colors.blue,
+        Colors.green,
+        Colors.orange,
+        Colors.purple,
+        Colors.teal,
+        Colors.pink,
+        Colors.indigo,
+        Colors.amber,
+      ];
+      final polys = <Polygon>{};
+      for (var i = 0; i < boundaries.length; i++) {
+        final b = boundaries[i];
+        final pts = b.coordinates.map((c) => LatLng(c[0], c[1])).toList();
+        if (pts.length < 3) continue;
+        final color = palette[i % palette.length];
+        polys.add(Polygon(
+          polygonId: PolygonId('mi_boundary_${b.projectName}'),
+          points: pts,
+          strokeColor: color,
+          strokeWidth: 2,
+          fillColor: color.withValues(alpha: 0.12),
+        ));
+      }
+      setState(() {
+        _boundaryPolygons
+          ..clear()
+          ..addAll(polys);
+      });
+    } catch (e) {
+      debugPrint('[ManualInputPageV3] 載入邊界失敗: $e');
+    }
   }
 
   Future<void> _loadProjectAreas() async {
@@ -864,6 +908,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
                     position: _currentLocation!,
                   ),
                 },
+                polygons: _boundaryPolygons, // [N12 fix] 顯示既有專案邊界
                 myLocationEnabled: true,
                 // [N6 fix] GoogleMap 在 Stepper 的可滾動容器內，預設 ScrollGesture 會被外層搶走，
                 // 造成「單指拖地圖→放手後地圖回彈到反方向」(實際是 Stepper 在滑)。
