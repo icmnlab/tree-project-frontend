@@ -11,23 +11,15 @@ preview. The single companion to the Node backend.
 
 ## Architecture overview
 
-```
-        ┌──────────────────── this repo ────────────────────┐
-        │ Flutter app (Mi A1 / Android first; iOS supported)│
-        │  ├ Survey UI (V2 / V3 pages)                      │
-        │  ├ AR + on-device YOLO trunk preview (tflite)     │
-        │  ├ BLE bridge (測距儀 / VLGEO2)                   │
-        │  └ AI chat (SSE) + agent client                   │
-        └───┬───────────────────────────────────┬───────────┘
-            │ HTTPS (Tailscale Funnel)          │ HTTPS + X-ML-API-Key
-            ▼                                   ▼
-   ┌──────────────────────┐             ┌────────────────────────────┐
-   │ Node backend         │             │ ml_service (FastAPI)       │
-   │ (tree-project-       │             │ Depth Pro + SAM 2.1 Tiny   │
-   │  backend repo)       │             │ /api/v1/auto-measure-dbh,  │
-   │ /api/* CRUD + auth   │             │ /ws/scan, …                │
-   │ + Text-to-SQL chat   │             └────────────────────────────┘
-   └──────────────────────┘
+```mermaid
+flowchart TB
+  subgraph repo["This repo (Flutter app — Mi A1 / Android first; iOS supported)"]
+    app["· Survey UI (V2 / V3 pages)<br/>· AR + on-device YOLO trunk preview (tflite)<br/>· BLE bridge (測距儀 / VLGEO2)<br/>· AI chat (SSE) + agent client"]
+  end
+  be["Node backend (tree-project-backend repo)<br/>/api/* CRUD + auth + Text-to-SQL chat"]
+  ml["ml_service (FastAPI)<br/>Depth Pro + SAM 2.1 Tiny<br/>/api/v1/auto-measure-dbh · /ws/scan · …"]
+  app -- "HTTPS (Tailscale Funnel)" --> be
+  app -- "HTTPS + X-ML-API-Key" --> ml
 ```
 
 The ML service URL + API key are returned by `/login` and stored in
