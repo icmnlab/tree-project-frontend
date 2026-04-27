@@ -195,17 +195,19 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
     );
     
     if (match.matched && match.projectName != null) {
-      // [N2 fix] 邊界 row 可能未填 project_area（舊資料）→ 以專案名稱補查
-      String? resolvedArea = match.projectArea;
-      if (resolvedArea == null || resolvedArea.isEmpty) {
-        try {
-          final res = await _projectService.getProjectByName(match.projectName!);
-          if (res['success'] == true && res['data'] != null) {
-            final a = res['data']['area'];
-            if (a is String && a.isNotEmpty) resolvedArea = a;
-          }
-        } catch (_) {}
-      }
+      // [N2 fix] 區位以「專案名稱反查 projects 表」為權威來源。
+      // 邊界 row 的 project_area 只是儲存邊界當下的快取（很多舊邊界沒帶
+      // projectCode → 後端 resolve 不到 → 該欄位是 NULL），不可信任。
+      String? resolvedArea;
+      try {
+        final res = await _projectService.getProjectByName(match.projectName!);
+        if (res['success'] == true && res['data'] != null) {
+          final a = res['data']['area'];
+          if (a is String && a.isNotEmpty) resolvedArea = a;
+        }
+      } catch (_) {}
+      // 完全查不到才退回看邊界 row 有沒有附帶（極少數情況）
+      resolvedArea ??= (match.projectArea?.isNotEmpty == true) ? match.projectArea : null;
 
       if (mounted) {
         setState(() {
