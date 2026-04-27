@@ -8,6 +8,10 @@
 
 A Flutter-based field survey app for Taiwan International Ports Corporation (TIPC). Features on-device ML inference (YOLOv8n-seg), AI-powered natural language data queries, automated species identification, and real-time tree trunk measurement via monocular depth estimation.
 
+本 App 為臺灣港務股份有限公司 (TIPC) 開發之現場調查手機應用程式。以 Flutter 跨平台開發，內建裝置端 YOLOv8n-seg 樹幹切割、自然語言 AI 資料查詢、自動樹種辨識，以及以單眼深度估計達成之即時胸徑量測。
+
+> **📖 For a project-wide bilingual overview see the root [README](../../README.md). · 中英雙語完整總覽請見根目錄 [README](../../README.md)。**
+
 ---
 
 ## Table of Contents
@@ -308,11 +312,12 @@ TIPC port-themed design with ecological green accents.
 
 ---
 
-## License
+## License · 授權
 
 [MIT License](LICENSE)
 
-## Related
+## Related · 相關連結
 
-- **Backend:** [tree-project-backend](https://github.com/KyleliuNDHU/tree-project-backend) -- Node.js REST API + ML service
-- **Author:** [@KyleliuNDHU](https://github.com/KyleliuNDHU) -- National Dong Hwa University
+- **Backend:** [tree-project-backend](https://github.com/KyleliuNDHU/tree-project-backend) — Node.js REST API + ML service · 後端 API 與 ML 服務
+- **Root README:** [../../README.md](../../README.md) — Project overview (bilingual) · 專案總覽（中英雙語）
+- **Author:** [@KyleliuNDHU](https://github.com/KyleliuNDHU) — National Dong Hwa University · 國立東華大學
