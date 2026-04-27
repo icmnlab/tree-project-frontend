@@ -91,6 +91,9 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
       if (matchResult.matched && matchResult.projectName != null) {
         _editableData[i]['project_name'] = matchResult.projectName;
         _editableData[i]['project_code'] = matchResult.projectCode;
+        if (matchResult.projectArea != null && matchResult.projectArea!.isNotEmpty) {
+          _editableData[i]['project_area'] = matchResult.projectArea;
+        }
         _editableData[i]['_auto_matched'] = true; // 標記為自動匹配
         matchedCount++;
       }

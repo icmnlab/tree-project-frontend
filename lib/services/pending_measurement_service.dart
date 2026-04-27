@@ -17,9 +17,11 @@ class PendingMeasurementService {
   /// 從 BLE 數據創建待測量記錄
   /// 
   /// [bleData] - BleDataProcessor.parseCsvData() 的結果
-  /// [projectArea] - 專案區位
-  /// [projectCode] - 專案代碼
-  /// [projectName] - 專案名稱
+  /// [projectArea] / [projectCode] / [projectName] - 全域 fallback 指派
+  ///   每筆 record 可以另外帶
+  ///     _assigned_project_area / _assigned_project_code / _assigned_project_name
+  ///     _survey_mode  ('new' | 'maintenance')
+  ///   來覆寫全域值（per-tree 指派優先）。
   /// [createdBy] - 創建者 ID
   List<PendingTreeMeasurement> createFromBleData({
     required List<Map<String, dynamic>> bleData,
@@ -50,39 +52,59 @@ class PendingMeasurementService {
         
         if (horizontalDistance <= 0) continue;
 
-        // 無 GPS 的記錄跳過（通常是校準/測試用，UTM 補救已在 BLE 解析階段處理）
-        if (!hasGps) {
+        // [v21.0] 缺 GPS 處理：若使用者於 BLE import 時選 lax 模式（requires_gps_fix=true），
+        // 仍保留記錄（樹位置先以 0,0 placeholder，等待使用者於 pending 列表手動補座標）；
+        // 否則維持原行為跳過。
+        final requiresGpsFix = metadata['requires_gps_fix'] == true;
+        if (!hasGps && !requiresGpsFix) {
           debugPrint('━━━ 記錄 ID=${record['id']} — 無 GPS 且無 UTM 可補救，跳過 ━━━');
           continue;
         }
 
+        // [v21.0] GPS 來源辨識：'tree' = lat/lon 已是樹位置，不需偏移；
+        //                    'surveyor' / 'gnss' (預設舊行為) = 用 HD+AZ 計算樹位置；
+        //                    'mixed_pending' = 視為 surveyor 處理但下游 UI 提示需確認
         final gpsSource = metadata['gps_source'] as String? ?? 'gnss';
-        debugPrint('━━━ 記錄 ID=${record['id']} (GPS via $gpsSource) ━━━');
-        debugPrint('  測站 GPS: ($lat, $lon)');
+        debugPrint('━━━ 記錄 ID=${record['id']} (GPS via $gpsSource'
+            '${requiresGpsFix ? ", REQUIRES_GPS_FIX" : ""}) ━━━');
+        debugPrint('  GPS 座標: ($lat, $lon)');
         debugPrint('  HD=${horizontalDistance}m  AZ=${azimuth}°  H=${height}m');
-        
-        final treePos = _stationService.calculateTreePosition(
-          stationLat: lat,
-          stationLng: lon,
-          distanceMeters: horizontalDistance,
-          azimuthDegrees: azimuth,
-        );
-        final double treeLat = treePos.latitude;
-        final double treeLon = treePos.longitude;
 
-        final verifyDist = _stationService.getDistance(
-          lat1: lat, lon1: lon,
-          lat2: treeLat, lon2: treeLon,
-        );
-        debugPrint('  計算樹位: (${treeLat.toStringAsFixed(7)}, ${treeLon.toStringAsFixed(7)})');
-        debugPrint('  驗證距離: ${verifyDist.toStringAsFixed(2)}m (應≈${horizontalDistance}m)');
+        double treeLat;
+        double treeLon;
+        if (!hasGps && requiresGpsFix) {
+          // 缺 GPS lax：placeholder 0,0；UI 標紅旗
+          treeLat = 0;
+          treeLon = 0;
+        } else if (gpsSource == 'tree') {
+          // GPS 已是樹位置，不偏移
+          treeLat = lat;
+          treeLon = lon;
+        } else {
+          // 'surveyor' / 'gnss' / 'mixed_pending' / 'utm_recovery' → 用 HD+AZ 偏移
+          final treePos = _stationService.calculateTreePosition(
+            stationLat: lat,
+            stationLng: lon,
+            distanceMeters: horizontalDistance,
+            azimuthDegrees: azimuth,
+          );
+          treeLat = treePos.latitude;
+          treeLon = treePos.longitude;
+
+          final verifyDist = _stationService.getDistance(
+            lat1: lat, lon1: lon,
+            lat2: treeLat, lon2: treeLon,
+          );
+          debugPrint('  計算樹位: (${treeLat.toStringAsFixed(7)}, ${treeLon.toStringAsFixed(7)})');
+          debugPrint('  驗證距離: ${verifyDist.toStringAsFixed(2)}m (應≈${horizontalDistance}m)');
+        }
         
         final pending = PendingTreeMeasurement(
           sessionId: sessionId,
           originalRecordId: record['id']?.toString(),
-          projectArea: projectArea,
-          projectCode: projectCode,
-          projectName: projectName,
+          projectArea: (record['_assigned_project_area'] as String?) ?? projectArea,
+          projectCode: (record['_assigned_project_code'] as String?) ?? projectCode,
+          projectName: (record['_assigned_project_name'] as String?) ?? projectName,
           treeHeight: height,
           dbhCm: bleDia,
           instrumentDbhCm: (dbhSource == 'remote_diameter') ? bleDia : null,
@@ -395,6 +417,29 @@ class PendingMeasurementService {
       }
     } catch (e) {
       debugPrint('批量更新專案資訊失敗: $e');
+      rethrow;
+    }
+  }
+
+  /// [v21.0] 刪除整個 session 的所有 pending 記錄
+  /// 回傳已刪除的筆數
+  Future<int> deleteSession(String sessionId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('$_baseUrl/api/pending-measurements/session/$sessionId'),
+        headers: ApiService.getAuthHeaders(),
+      ).timeout(_timeout);
+
+      if (response.statusCode == 404) {
+        return 0;
+      }
+      if (response.statusCode != 200) {
+        throw Exception('刪除 session 失敗: ${response.statusCode}');
+      }
+      final body = jsonDecode(response.body) as Map<String, dynamic>;
+      return (body['deleted_count'] as num?)?.toInt() ?? 0;
+    } catch (e) {
+      debugPrint('刪除 session 失敗: $e');
       rethrow;
     }
   }

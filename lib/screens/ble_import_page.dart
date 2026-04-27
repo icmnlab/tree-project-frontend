@@ -6,6 +6,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../services/ble_data_processor.dart'; // 引入解析器
 import '../services/ble_packet_decoder.dart'; // 引入封包解碼器
 import '../services/pending_measurement_service.dart'; // 待測量服務
+import '../services/project_service.dart'; // 專案服務（手動指派 dropdown）
 import '../services/v3/data_filter_service.dart'; // V3 數據過濾服務
 import '../services/v3/project_boundary_service.dart'; // 專案邊界服務（自動匹配專案）
 import '../widgets/network_aware_widgets.dart'; // 網路感知元件
@@ -187,7 +188,36 @@ class _BleImportPageState extends State<BleImportPage> {
                 _buildStatRow('重複', stats.duplicateCount, Colors.red),
               if (stats.conflictCount > 0)
                 _buildStatRow('衝突(已解決)', stats.conflictCount, Colors.purple),
-              
+              if (stats.nonTreeDropped > 0)
+                _buildStatRow('非樹木類型已丟棄(DME/空)', stats.nonTreeDropped, Colors.brown),
+              if (stats.missingGpsCount > 0)
+                _buildStatRow('缺 GPS', stats.missingGpsCount, Colors.deepOrange),
+
+              // GPS 品質（HDOP 分級）
+              if (stats.hdopQualityCounts.values.any((v) => v > 0)) ...[
+                const SizedBox(height: 12),
+                const Text('GPS 品質 (HDOP):', style: TextStyle(fontWeight: FontWeight.bold)),
+                _buildStatRow('  良好 (≤2)', stats.hdopQualityCounts['good'] ?? 0, Colors.green),
+                _buildStatRow('  尚可 (≤5)', stats.hdopQualityCounts['fair'] ?? 0, Colors.orange),
+                _buildStatRow('  不佳 (>5)', stats.hdopQualityCounts['poor'] ?? 0, Colors.red),
+                if ((stats.hdopQualityCounts['unknown'] ?? 0) > 0)
+                  _buildStatRow('  未知', stats.hdopQualityCounts['unknown'] ?? 0, Colors.grey),
+              ],
+
+              // [v21.0] Phase C 警告統計
+              if (stats.gpsJumpCount > 0 ||
+                  stats.trphWarningCount > 0 ||
+                  stats.posDriftWarningCount > 0) ...[
+                const SizedBox(height: 12),
+                const Text('資料品質警告:', style: TextStyle(fontWeight: FontWeight.bold)),
+                if (stats.gpsJumpCount > 0)
+                  _buildStatRow('  GPS 跳變 (>100m)', stats.gpsJumpCount, Colors.deepOrange),
+                if (stats.trphWarningCount > 0)
+                  _buildStatRow('  TRPH ≠ 1.3m', stats.trphWarningCount, Colors.amber),
+                if (stats.posDriftWarningCount > 0)
+                  _buildStatRow('  3P 站位漂移 (>5m)', stats.posDriftWarningCount, Colors.deepOrange),
+              ],
+
               if (stats.missingFieldCounts.isNotEmpty) ...[
                 const SizedBox(height: 12),
                 const Text('缺失欄位:', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -1168,6 +1198,18 @@ class _BleImportPageState extends State<BleImportPage> {
       // 合併多 SEQ 記錄（3P 計算淨樹高、1P 取最後 SEQ）
       parsedData = BleDataProcessor.mergeMultiSeqRecords(parsedData);
 
+      // [v21.0] 預覽 + 多選刪除：使用者可在過濾前手動排除不想匯入的記錄
+      final pruned = await _resolveManualRowSelection(parsedData);
+      if (pruned == null) return; // 使用者取消
+      if (pruned.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('已取消所有記錄，無資料可匯入')),
+        );
+        return;
+      }
+      parsedData = pruned;
+
       // V3: 應用數據過濾（不完整資料 + 重複資料）
       final filterResult = DataFilterService.filterBleData(
         parsedData,
@@ -1199,65 +1241,48 @@ class _BleImportPageState extends State<BleImportPage> {
         return;
       }
 
-      // 顯示載入中
-      if (mounted) {
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (ctx) => const Center(
-            child: CircularProgressIndicator(),
-          ),
+      // [v21.0] GPS 來源辨識（batch 級別三選項）
+      // 標記 metadata.gps_source = 'tree' | 'surveyor' | 'mixed_pending'
+      final gpsSourceProceed = await _resolveGpsSourceForBatch(filteredData);
+      if (!gpsSourceProceed) return;
+
+      // [v21.0] 缺 GPS 處理（strict 預設擋下；lax 標記 requires_gps_fix）
+      final missingGpsProceed = await _resolveMissingGps(filteredData);
+      if (!missingGpsProceed) return;
+
+      if (filteredData.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('移除缺 GPS 記錄後無有效資料')),
         );
-        loadingDialogShown = true;
+        return;
+      }
+
+      // 區位/專案指派（4 種情境的互動 UI）
+      // 對每筆 record 標註 _assigned_project_area / _assigned_project_code / _assigned_project_name
+      final proceed = await _resolveBleProjectAssignment(filteredData);
+      if (!proceed) {
+        // 使用者取消
+        return;
       }
 
       if (!mounted) return;
 
-      String? autoProjectArea;
-      String? autoProjectCode;
-      String? autoProjectName;
-      try {
-        final boundaryService = ProjectBoundaryService();
-        await boundaryService.getAllBoundaries();
-        
-        final votes = <String, int>{};
-        final projectInfo = <String, Map<String, String?>>{};
-        
-        for (final tree in filteredData) {
-          final lat = double.tryParse(tree['latitude']?.toString() ?? '');
-          final lon = double.tryParse(tree['longitude']?.toString() ?? '');
-          if (lat == null || lon == null || lat == 0 || lon == 0) continue;
-          
-          final match = boundaryService.findProjectByCoordinate(lat: lat, lng: lon);
-          if (match.matched && match.projectName != null) {
-            final key = match.projectName!;
-            votes[key] = (votes[key] ?? 0) + 1;
-            projectInfo[key] = {
-              'name': match.projectName,
-              'code': match.projectCode,
-            };
-          }
-        }
-        
-        if (votes.isNotEmpty) {
-          final winner = votes.entries.reduce((a, b) => a.value > b.value ? a : b).key;
-          autoProjectName = projectInfo[winner]?['name'];
-          autoProjectCode = projectInfo[winner]?['code'];
-          autoProjectArea = autoProjectName;
-          debugPrint('[BLE] 自動匹配專案 (majority vote ${votes[winner]}/${filteredData.length}): $autoProjectName');
-        }
-      } catch (e) {
-        debugPrint('[BLE] 專案自動匹配失敗（不影響儲存）: $e');
-      }
+      // 顯示載入中
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+      loadingDialogShown = true;
 
-      // 呼叫服務儲存（使用過濾後的資料，附帶自動匹配的專案資訊）
+      // 呼叫服務儲存（每筆 record 已經帶有自己的專案指派）
       final service = PendingMeasurementService();
       final result = await service.createAndUploadFromBle(
         bleData: filteredData,
         batchName: batchName,
-        projectArea: autoProjectArea,
-        projectCode: autoProjectCode,
-        projectName: autoProjectName,
       );
 
       // 關閉載入中
@@ -1317,5 +1342,836 @@ class _BleImportPageState extends State<BleImportPage> {
         ),
       );
     }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // BLE 區位/專案指派（4 種情境）
+  // ─────────────────────────────────────────────────────────────────────────
+  // A) 全部樹木落在同一專案邊界內 → 確認對話框 → 全部自動指派
+  // B) 樹木跨多個專案 → 群組摘要 → 預設「依各自邊界指派」可改「全部指派至某專案」
+  // C) 部分樹木在邊界外 → 詢問外側樹木處理（指派至主要專案 / 手動挑選 / 跳過）
+  // D) 全部樹木在邊界外 → 必須由使用者手動挑選一個可存取專案
+  //
+  // 每筆 record 會被標註：
+  //   _assigned_project_area / _assigned_project_code / _assigned_project_name
+  // 若標註為 null 表示「無指派」（後端會以 NULL 存入 project_*）。
+  Future<bool> _resolveBleProjectAssignment(
+    List<Map<String, dynamic>> filteredData,
+  ) async {
+    final boundaryService = ProjectBoundaryService();
+    try {
+      await boundaryService.getAllBoundaries();
+    } catch (e) {
+      debugPrint('[BLE] 載入邊界失敗，將以「全部邊界外」處理: $e');
+    }
+
+    int outsideCount = 0;
+    final Map<String, int> projectCounts = {};
+    final Map<String, Map<String, String?>> projectInfo = {};
+
+    for (final rec in filteredData) {
+      final lat = (rec['lat'] as num?)?.toDouble();
+      final lon = (rec['lon'] as num?)?.toDouble();
+      if (lat == null || lon == null || lat == 0 || lon == 0) {
+        outsideCount++;
+        continue;
+      }
+      final match =
+          boundaryService.findProjectByCoordinate(lat: lat, lng: lon);
+      if (match.matched && match.projectName != null) {
+        final key = match.projectName!;
+        projectCounts[key] = (projectCounts[key] ?? 0) + 1;
+        projectInfo[key] = {
+          'name': match.projectName,
+          'code': match.projectCode,
+          'area': match.projectArea,
+        };
+        rec['_assigned_project_area'] = match.projectArea;
+        rec['_assigned_project_code'] = match.projectCode;
+        rec['_assigned_project_name'] = match.projectName;
+      } else {
+        outsideCount++;
+        rec['_assigned_project_area'] = null;
+        rec['_assigned_project_code'] = null;
+        rec['_assigned_project_name'] = null;
+      }
+    }
+
+    final total = filteredData.length;
+    final matchedCount = total - outsideCount;
+    final distinctProjects = projectCounts.length;
+
+    debugPrint(
+      '[BLE] 邊界匹配: total=$total matched=$matchedCount outside=$outsideCount '
+      'distinctProjects=$distinctProjects',
+    );
+
+    if (!mounted) return false;
+
+    // ── 情境 A：全部在同一專案內 ──
+    if (distinctProjects == 1 && outsideCount == 0) {
+      final pName = projectCounts.keys.first;
+      final pInfo = projectInfo[pName]!;
+      final ok = await _showSimpleAssignDialog(
+        title: '自動指派專案',
+        message:
+            '全部 $total 棵樹皆位於專案【$pName】邊界內。\n區位：${pInfo['area'] ?? '（未設定）'}\n\n是否確認指派？',
+      );
+      return ok;
+    }
+
+    // ── 情境 D：全部在邊界外 ──
+    if (matchedCount == 0) {
+      final picked = await _showManualProjectPicker(
+        title: '所有樹木皆在已知邊界外',
+        message: '共 $total 棵樹未落在任何已知專案邊界內，請手動指派一個專案：',
+      );
+      if (picked == null) return false; // 使用者取消
+      // picked == "__none__" 代表使用者選擇「不指派任何專案」
+      if (picked['code'] == '__none__') {
+        for (final rec in filteredData) {
+          rec['_assigned_project_area'] = null;
+          rec['_assigned_project_code'] = null;
+          rec['_assigned_project_name'] = null;
+        }
+      } else {
+        for (final rec in filteredData) {
+          rec['_assigned_project_area'] = picked['area'];
+          rec['_assigned_project_code'] = picked['code'];
+          rec['_assigned_project_name'] = picked['name'];
+        }
+      }
+      return true;
+    }
+
+    // ── 情境 B / C：跨多專案 或 部分邊界外 ──
+    final action = await _showMixedAssignmentDialog(
+      total: total,
+      outsideCount: outsideCount,
+      projectCounts: projectCounts,
+      projectInfo: projectInfo,
+    );
+    if (action == null) return false; // 取消
+    if (!mounted) return false;
+
+    switch (action['kind']) {
+      case 'per_tree':
+        // 預設行為：每棵樹依自己的邊界匹配；邊界外的另外處理
+        if (outsideCount > 0) {
+          final outsideAction = await _showOutsideHandlingDialog(
+            outsideCount: outsideCount,
+            matchedProjectInfo: projectInfo,
+            projectCounts: projectCounts,
+          );
+          if (outsideAction == null) return false;
+          await _applyOutsideAction(filteredData, outsideAction);
+        }
+        return true;
+
+      case 'force_one':
+        // 全部指派至同一個專案（覆寫所有 record）
+        final code = action['code'] as String?;
+        final area = action['area'] as String?;
+        final name = action['name'] as String?;
+        for (final rec in filteredData) {
+          rec['_assigned_project_area'] = area;
+          rec['_assigned_project_code'] = code;
+          rec['_assigned_project_name'] = name;
+        }
+        return true;
+    }
+    return false;
+  }
+
+  Future<bool> _showSimpleAssignDialog({
+    required String title,
+    required String message,
+  }) async {
+    if (!mounted) return false;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('確認指派'),
+          ),
+        ],
+      ),
+    );
+    return ok ?? false;
+  }
+
+  Future<Map<String, dynamic>?> _showMixedAssignmentDialog({
+    required int total,
+    required int outsideCount,
+    required Map<String, int> projectCounts,
+    required Map<String, Map<String, String?>> projectInfo,
+  }) async {
+    if (!mounted) return null;
+
+    // 主要專案（最多匹配的）
+    final sortedEntries = projectCounts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('專案指派確認'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('共 $total 棵樹的邊界匹配結果：',
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              ...sortedEntries.map((e) {
+                final info = projectInfo[e.key]!;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  child: Text(
+                    '• ${e.key}（區位：${info['area'] ?? '—'}）：${e.value} 棵',
+                  ),
+                );
+              }),
+              if (outsideCount > 0)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    '• 邊界外/無 GPS：$outsideCount 棵',
+                    style: const TextStyle(color: Colors.orange),
+                  ),
+                ),
+              const Divider(height: 24),
+              const Text('請選擇處理方式：',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, null),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () async {
+              // 全部指派至選定專案 → 二段式 dropdown
+              final picked = await _showManualProjectPicker(
+                title: '選擇要指派的專案',
+                message: '所有 $total 棵樹將指派至此專案：',
+                presetCandidates: sortedEntries
+                    .map((e) => projectInfo[e.key]!)
+                    .toList(),
+              );
+              if (picked != null && ctx.mounted) {
+                Navigator.pop(ctx, {
+                  'kind': 'force_one',
+                  'code': picked['code'],
+                  'area': picked['area'],
+                  'name': picked['name'],
+                });
+              }
+            },
+            child: const Text('全部指派同一專案'),
+          ),
+          ElevatedButton(
+            onPressed: () =>
+                Navigator.pop(ctx, {'kind': 'per_tree'}),
+            child: const Text('每棵樹依邊界指派'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<Map<String, dynamic>?> _showOutsideHandlingDialog({
+    required int outsideCount,
+    required Map<String, Map<String, String?>> matchedProjectInfo,
+    required Map<String, int> projectCounts,
+  }) async {
+    if (!mounted) return null;
+    final dominantName = projectCounts.entries
+        .reduce((a, b) => a.value > b.value ? a : b)
+        .key;
+    final dominantInfo = matchedProjectInfo[dominantName]!;
+
+    return showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('邊界外樹木處理'),
+        content: Text(
+          '有 $outsideCount 棵樹位於已知專案邊界外，要如何處理？',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, null),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, {'kind': 'leave_unassigned'}),
+            child: const Text('保留為無指派'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, {
+              'kind': 'assign_to',
+              'code': dominantInfo['code'],
+              'area': dominantInfo['area'],
+              'name': dominantInfo['name'],
+            }),
+            child: Text('併入主要專案\n($dominantName)',
+                textAlign: TextAlign.center),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final picked = await _showManualProjectPicker(
+                title: '選擇邊界外樹木的專案',
+                message: '$outsideCount 棵邊界外樹木將指派至：',
+              );
+              if (picked != null && ctx.mounted) {
+                Navigator.pop(ctx, {
+                  'kind': 'assign_to',
+                  'code': picked['code'],
+                  'area': picked['area'],
+                  'name': picked['name'],
+                });
+              }
+            },
+            child: const Text('挑選其他專案'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _applyOutsideAction(
+    List<Map<String, dynamic>> filteredData,
+    Map<String, dynamic> action,
+  ) async {
+    if (action['kind'] == 'leave_unassigned') {
+      // 已經是 null 指派，無需動作
+      return;
+    }
+    if (action['kind'] == 'assign_to') {
+      final code = action['code'] as String?;
+      if (code == '__none__') return;
+      final area = action['area'] as String?;
+      final name = action['name'] as String?;
+      for (final rec in filteredData) {
+        if (rec['_assigned_project_code'] == null &&
+            rec['_assigned_project_name'] == null) {
+          rec['_assigned_project_area'] = area;
+          rec['_assigned_project_code'] = code;
+          rec['_assigned_project_name'] = name;
+        }
+      }
+    }
+  }
+
+  /// [v21.0] GPS 來源辨識（batch 級別三選項）
+  /// 寫入每筆 record metadata.gps_source 欄位
+  /// - 'tree'：GPS 是樹位置（測員站樹下）
+  /// - 'surveyor'：GPS 是測員位置（用 HD/AZ 偏移計算樹位置，下游需處理）
+  /// - 'mixed_pending'：混合情況，下游需互動標記每筆
+  /// 回傳 false 代表使用者取消整個流程
+  Future<bool> _resolveGpsSourceForBatch(
+    List<Map<String, dynamic>> filteredData,
+  ) async {
+    final hasGpsCount = filteredData.where((r) => r['hasGps'] == true).length;
+    if (hasGpsCount == 0) {
+      // 全部無 GPS，跳過此 dialog（後續 _resolveMissingGps 會處理）
+      return true;
+    }
+
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('GPS 定位來源'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('共 $hasGpsCount 筆有 GPS 座標。請確認測量時 GPS 紀錄的是：',
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              const Text(
+                '儀器原始設計：GPS = 操作員（按 SEND 當下儀器位置）。'
+                '若採取「站樹下測量」工作流，則 GPS = 樹位置。',
+                style: TextStyle(fontSize: 12, color: Colors.grey),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: const Icon(Icons.park, color: Colors.green),
+                title: const Text('全部都是樹位置'),
+                subtitle: const Text('測員走到每棵樹下後再按 SEND 紀錄'),
+                onTap: () => Navigator.pop(ctx, 'tree'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.person_pin_circle, color: Colors.blue),
+                title: const Text('全部都是測員站位'),
+                subtitle: const Text('使用 HD + 方位角計算樹的實際位置'),
+                onTap: () => Navigator.pop(ctx, 'surveyor'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.help_outline, color: Colors.orange),
+                title: const Text('混合 / 不確定'),
+                subtitle: const Text('進入後續流程逐筆檢視（標記為 pending）'),
+                onTap: () => Navigator.pop(ctx, 'mixed_pending'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, null),
+            child: const Text('取消整個匯入'),
+          ),
+        ],
+      ),
+    );
+
+    if (result == null) return false;
+
+    for (final rec in filteredData) {
+      final meta = rec['metadata'] as Map<String, dynamic>? ?? {};
+      meta['gps_source'] = result;
+      rec['metadata'] = meta;
+    }
+    return true;
+  }
+
+  /// [v21.0] 預覽 + 多選刪除：解析後讓使用者勾選要匯入的記錄
+  ///
+  /// 回傳 null = 取消整個匯入；空 List = 全部不要；否則 = 使用者保留的 records
+  Future<List<Map<String, dynamic>>?> _resolveManualRowSelection(
+    List<Map<String, dynamic>> parsedData,
+  ) async {
+    if (parsedData.isEmpty) return parsedData;
+
+    // 預設全部勾選
+    final selected = List<bool>.filled(parsedData.length, true);
+
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) {
+          final selectedCount = selected.where((v) => v).length;
+          return AlertDialog(
+            title: Row(
+              children: [
+                const Icon(Icons.checklist, color: Colors.indigo),
+                const SizedBox(width: 8),
+                Expanded(child: Text('匯入預覽（$selectedCount / ${parsedData.length}）')),
+              ],
+            ),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    children: [
+                      TextButton.icon(
+                        icon: const Icon(Icons.select_all, size: 18),
+                        label: const Text('全選'),
+                        onPressed: () {
+                          setLocal(() {
+                            for (var i = 0; i < selected.length; i++) {
+                              selected[i] = true;
+                            }
+                          });
+                        },
+                      ),
+                      TextButton.icon(
+                        icon: const Icon(Icons.deselect, size: 18),
+                        label: const Text('全不選'),
+                        onPressed: () {
+                          setLocal(() {
+                            for (var i = 0; i < selected.length; i++) {
+                              selected[i] = false;
+                            }
+                          });
+                        },
+                      ),
+                      const Spacer(),
+                      const Text(
+                        '取消勾選 = 不匯入',
+                        style: TextStyle(fontSize: 11, color: Colors.grey),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 1),
+                  Flexible(
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: parsedData.length,
+                      itemBuilder: (_, i) {
+                        final rec = parsedData[i];
+                        final id = rec['id']?.toString() ?? '?';
+                        final type = (rec['type'] ?? '').toString();
+                        final hd = (rec['horizontalDistance'] as num?)?.toDouble();
+                        final az = (rec['azimuth'] as num?)?.toDouble();
+                        final h = (rec['height'] as num?)?.toDouble();
+                        final dbh = (rec['dbh'] as num?)?.toDouble();
+                        final hasGps = rec['hasGps'] == true;
+                        final summary = StringBuffer();
+                        if (h != null) summary.write('H=${h.toStringAsFixed(1)}m  ');
+                        if (dbh != null) summary.write('DBH=${dbh.toStringAsFixed(1)}cm  ');
+                        if (hd != null) summary.write('HD=${hd.toStringAsFixed(1)}m  ');
+                        if (az != null) summary.write('AZ=${az.toStringAsFixed(0)}°');
+                        return CheckboxListTile(
+                          dense: true,
+                          controlAffinity: ListTileControlAffinity.leading,
+                          value: selected[i],
+                          onChanged: (v) {
+                            setLocal(() => selected[i] = v ?? false);
+                          },
+                          title: Row(
+                            children: [
+                              Text('ID: $id',
+                                  style: const TextStyle(fontWeight: FontWeight.bold)),
+                              const SizedBox(width: 6),
+                              if (type.isNotEmpty)
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: type == 'DME'
+                                        ? Colors.blue.shade50
+                                        : Colors.grey.shade100,
+                                    borderRadius: BorderRadius.circular(3),
+                                  ),
+                                  child: Text(type, style: const TextStyle(fontSize: 11)),
+                                ),
+                              const SizedBox(width: 6),
+                              if (!hasGps)
+                                const Icon(Icons.location_off,
+                                    size: 14, color: Colors.deepOrange),
+                            ],
+                          ),
+                          subtitle: Text(
+                            summary.toString(),
+                            style: const TextStyle(fontSize: 11),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('取消匯入'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: Text('繼續（$selectedCount 筆）'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (result != true) return null;
+    final kept = <Map<String, dynamic>>[];
+    for (var i = 0; i < parsedData.length; i++) {
+      if (selected[i]) kept.add(parsedData[i]);
+    }
+    return kept;
+  }
+
+  /// [v21.0] 缺 GPS 處理：strict（預設）/ lax（保留並標記 requires_gps_fix）
+  /// 回傳 false 代表使用者取消
+  Future<bool> _resolveMissingGps(
+    List<Map<String, dynamic>> filteredData,
+  ) async {
+    final missing = filteredData.where((r) => r['hasGps'] != true).toList();
+    if (missing.isEmpty) return true;
+
+    final action = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: const [
+            Icon(Icons.location_off, color: Colors.deepOrange),
+            SizedBox(width: 8),
+            Text('缺 GPS 處理'),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('${missing.length} 筆記錄缺少 GPS 座標。',
+                  style: const TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              const Text(
+                '處理方式：',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                '• 嚴格模式：直接移除這些記錄，並提示請使用儀器補測。\n'
+                '• 寬鬆模式：保留並標記為「需補 GPS」，匯入後在地圖上手動點選座標，'
+                '或之後用儀器補測時對應 pending ID。',
+                style: TextStyle(fontSize: 12),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                '⚠ 不會自動套用上一筆/中位數座標（避免錯誤位置）。',
+                style: TextStyle(fontSize: 12, color: Colors.red),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, null),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'strict'),
+            child: const Text('嚴格（移除）'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, 'lax'),
+            child: const Text('寬鬆（保留標記）'),
+          ),
+        ],
+      ),
+    );
+
+    if (action == null) return false;
+
+    if (action == 'strict') {
+      filteredData.removeWhere((r) => r['hasGps'] != true);
+    } else if (action == 'lax') {
+      for (final rec in missing) {
+        final meta = rec['metadata'] as Map<String, dynamic>? ?? {};
+        meta['requires_gps_fix'] = true;
+        rec['metadata'] = meta;
+      }
+      // 顯示補測流程指引
+      await _showRetestGuide(missing.length);
+    }
+    return true;
+  }
+
+  /// [v21.0] 顯示「使用儀器補測 GPS」標準流程指引
+  Future<void> _showRetestGuide(int count) async {
+    if (!mounted) return;
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: const [
+            Icon(Icons.help_outline, color: Colors.blue),
+            SizedBox(width: 8),
+            Expanded(child: Text('儀器補測 GPS 流程')),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '已標記 $count 筆需補測 GPS。請依以下步驟使用 VLGEO2 儀器補測：',
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              const Text('1. 清除儀器舊資料：',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const Padding(
+                padding: EdgeInsets.only(left: 12, top: 2),
+                child: Text(
+                  'SETTINGS → MEMORY → FORMAT（清空 DATA.CSV，避免新舊混淆）',
+                  style: TextStyle(fontSize: 13),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text('2. 啟用 GPS：',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const Padding(
+                padding: EdgeInsets.only(left: 12, top: 2),
+                child: Text(
+                  'SETTINGS → GPS → USE GPS ✓，等待 HDOP < 3 才開始測',
+                  style: TextStyle(fontSize: 13),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text('3. 走到第一棵待補樹下測量。',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              const Text('4. 輸入 5 位 ID 對齊 pending：',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const Padding(
+                padding: EdgeInsets.only(left: 12, top: 2),
+                child: Text(
+                  '測完後儀器跳出 5 位 ID 輸入，輸入 = pending ID（不足前面補 0）。\n'
+                  '例：pending ID 42 → 輸入 00042',
+                  style: TextStyle(fontSize: 13),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Text('5. 全部測完後回傳：',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+              const Padding(
+                padding: EdgeInsets.only(left: 12, top: 2),
+                child: Text(
+                  'FILES → SEND 透過 BLE 回傳，或 USB 拷 DATA.CSV',
+                  style: TextStyle(fontSize: 13),
+                ),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.amber.shade50,
+                  borderRadius: BorderRadius.circular(4),
+                  border: Border.all(color: Colors.amber.shade300),
+                ),
+                child: const Text(
+                  '⚠ 補測結果以 ID 對齊覆蓋 pending 記錄（座標、HD、AZ）。\n'
+                  '請確認 ID 輸入正確，否則會覆寫到錯誤的樹。',
+                  style: TextStyle(fontSize: 12, color: Colors.brown),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('我知道了'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 手動專案挑選對話框
+  /// 回傳 {'code','area','name'}；'__none__' 代表「不指派」；null 代表取消
+  Future<Map<String, String?>?> _showManualProjectPicker({
+    required String title,
+    required String message,
+    List<Map<String, String?>>? presetCandidates,
+  }) async {
+    if (!mounted) return null;
+
+    // 載入可存取專案
+    List<Map<String, String?>> candidates =
+        presetCandidates != null ? List.of(presetCandidates) : [];
+    if (candidates.isEmpty) {
+      try {
+        final projectService = ProjectService();
+        final resp = await projectService.getProjects();
+        if (resp['success'] == true && resp['projects'] is List) {
+          for (final p in (resp['projects'] as List)) {
+            if (p is Map) {
+              candidates.add({
+                'code': p['project_code']?.toString(),
+                'area': (p['area_name'] ?? p['project_area'])?.toString(),
+                'name': p['name']?.toString() ?? p['project_name']?.toString(),
+              });
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('[BLE] 載入專案清單失敗: $e');
+      }
+    }
+
+    if (!mounted) return null;
+
+    String? selectedKey;
+    return showDialog<Map<String, String?>>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx2, setStateDialog) => AlertDialog(
+            title: Text(title),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(message),
+                  const SizedBox(height: 12),
+                  if (candidates.isEmpty)
+                    const Text('（無可選擇的專案）',
+                        style: TextStyle(color: Colors.grey))
+                  else
+                    DropdownButton<String>(
+                      isExpanded: true,
+                      hint: const Text('選擇專案…'),
+                      value: selectedKey,
+                      items: [
+                        const DropdownMenuItem<String>(
+                          value: '__none__',
+                          child: Text('— 不指派任何專案 —'),
+                        ),
+                        ...candidates.map((c) {
+                          final key = c['code'] ?? c['name'] ?? '';
+                          return DropdownMenuItem<String>(
+                            value: key,
+                            child: Text(
+                              '${c['name'] ?? '(未命名)'}'
+                              '${c['area'] != null && c['area']!.isNotEmpty ? '（${c['area']}）' : ''}',
+                            ),
+                          );
+                        }),
+                      ],
+                      onChanged: (v) =>
+                          setStateDialog(() => selectedKey = v),
+                    ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, null),
+                child: const Text('取消'),
+              ),
+              ElevatedButton(
+                onPressed: selectedKey == null
+                    ? null
+                    : () {
+                        if (selectedKey == '__none__') {
+                          Navigator.pop(ctx, {
+                            'code': '__none__',
+                            'area': null,
+                            'name': null,
+                          });
+                        } else {
+                          final picked = candidates.firstWhere(
+                            (c) =>
+                                (c['code'] ?? c['name'] ?? '') ==
+                                selectedKey,
+                            orElse: () => {},
+                          );
+                          Navigator.pop(ctx, picked);
+                        }
+                      },
+                child: const Text('確認'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }

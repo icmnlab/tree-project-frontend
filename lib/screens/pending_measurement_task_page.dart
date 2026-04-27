@@ -286,6 +286,83 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     _loadTasks();
   }
 
+  /// [v21.0] 刪除整個批次（session）
+  Future<void> _confirmAndDeleteSession() async {
+    final sessionId = _activeSessionId;
+    if (sessionId == null) return;
+
+    final session = _sessions.firstWhere(
+      (s) => s.sessionId == sessionId,
+      orElse: () => _sessions.first,
+    );
+    final batchName = session.name ?? sessionId;
+    final total = _pendingTrees.length;
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Row(
+          children: const [
+            Icon(Icons.warning_amber, color: Colors.red),
+            SizedBox(width: 8),
+            Text('刪除批次'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('將刪除批次「$batchName」的所有 $total 筆待測量記錄。'),
+            const SizedBox(height: 8),
+            const Text(
+              '⚠ 此操作無法復原，請確認資料已備份或不再需要。',
+              style: TextStyle(color: Colors.red, fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('確定刪除'),
+          ),
+        ],
+      ),
+    );
+
+    if (ok != true) return;
+
+    try {
+      final deleted = await _service.deleteSession(sessionId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('已刪除 $deleted 筆記錄'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      setState(() {
+        _activeSessionId = null;
+      });
+      await _initLoad();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('刪除失敗: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -306,6 +383,13 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
               icon: const Icon(Icons.list),
               tooltip: '返回列表',
               onPressed: _abandonCurrentTask,
+            ),
+          if (_navState == NavigationState.selectingTask &&
+              _activeSessionId != null)
+            IconButton(
+              icon: const Icon(Icons.delete_sweep),
+              tooltip: '刪除整個批次',
+              onPressed: _confirmAndDeleteSession,
             ),
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -736,9 +820,11 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
-      color: task.status == MeasurementStatus.inProgress 
-          ? Colors.teal.shade50 
-          : null,
+      color: task.requiresGpsFix
+          ? Colors.red.shade50
+          : (task.status == MeasurementStatus.inProgress
+              ? Colors.teal.shade50
+              : null),
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: _getPriorityColor(task.priority ?? 3),
@@ -749,6 +835,24 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
           children: [
             Text('ID: ${task.originalRecordId ?? "未知"}'),
             const SizedBox(width: 8),
+            if (task.requiresGpsFix) ...[
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade600,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: const Text(
+                  '⚠ 待補 GPS',
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+            ],
             if (typeLabel.isNotEmpty) ...[
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -800,6 +904,18 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
                 fontWeight: FontWeight.w500,
               ),
             ),
+            if (task.requiresGpsFix)
+              Padding(
+                padding: const EdgeInsets.only(top: 2),
+                child: Text(
+                  '樹位置缺失 — 請依儀器補測流程重測',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.red.shade700,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
             if (task.hasInstrumentDbh)
               Container(
                 margin: const EdgeInsets.only(top: 2),
@@ -1333,6 +1449,41 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   
   Future<void> _startTask(PendingTreeMeasurement task) async {
     if (_isProcessing) return;
+
+    // [v21.0] 紅旗記錄（requires_gps_fix）：HD/AZ/H 已存在但缺 GPS，
+    // 應該用儀器補測整筆覆蓋（依 _showRetestGuide 流程），而非在 app 重新 AR 測量。
+    if (task.requiresGpsFix) {
+      final goAhead = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Row(
+            children: const [
+              Icon(Icons.warning_amber, color: Colors.red),
+              SizedBox(width: 8),
+              Expanded(child: Text('此記錄需以儀器補測 GPS')),
+            ],
+          ),
+          content: const Text(
+            '此記錄缺 GPS 座標，建議使用 VLGEO2 儀器以相同 5 位 ID 補測整筆，'
+            '匯入後會自動覆蓋此 pending 記錄。\n\n'
+            '若仍要在現場用 AR 測 DBH（座標將留空，需稍後手動補上），可選「仍要繼續」。',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('仍要繼續'),
+            ),
+          ],
+        ),
+      );
+      if (goAhead != true) return;
+      if (!mounted) return;
+    }
+
     _isProcessing = true;
     _abandoned = false;
     _hasVibratedArrival = false;

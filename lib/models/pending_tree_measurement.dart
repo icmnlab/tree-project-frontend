@@ -102,6 +102,14 @@ class PendingTreeMeasurement {
     this.rawDataSnapshot,
   });
 
+  /// [v21.0 / Phase B] 是否為 lax 模式保留、需補測 GPS 的待測量。
+  ///
+  /// BLE import 時若使用者選「寬鬆」模式，缺 GPS 的記錄會於 metadata 標記
+  /// `requires_gps_fix=true`，並由 PendingMeasurementService 平鋪寫入
+  /// `rawDataSnapshot`（樹位置同時設為 0,0 placeholder）。
+  /// UI 應據此顯示紅旗並引導使用者依儀器補測流程重測。
+  bool get requiresGpsFix => rawDataSnapshot?['requires_gps_fix'] == true;
+
   /// 計算目前使用者到測站的距離 (公尺)
   double distanceToStation(double userLat, double userLon) {
     return _haversineDistance(

@@ -20,6 +20,7 @@ class ProjectBoundary {
   final int? id;
   final String projectName;
   final String? projectCode;
+  final String? projectArea;
   final List<List<double>> coordinates; // [[lat, lng], ...]
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -28,6 +29,7 @@ class ProjectBoundary {
     this.id,
     required this.projectName,
     this.projectCode,
+    this.projectArea,
     required this.coordinates,
     this.createdAt,
     this.updatedAt,
@@ -54,6 +56,7 @@ class ProjectBoundary {
       id: json['id'] as int?,
       projectName: json['project_name'] as String,
       projectCode: json['project_code'] as String?,
+      projectArea: json['project_area'] as String?,
       coordinates: coords,
       createdAt: json['created_at'] != null 
           ? DateTime.tryParse(json['created_at']) 
@@ -68,6 +71,7 @@ class ProjectBoundary {
     return {
       'projectName': projectName,
       'projectCode': projectCode,
+      'projectArea': projectArea,
       'coordinates': coordinates,
     };
   }
@@ -78,6 +82,7 @@ class CoordinateMatchResult {
   final bool matched;
   final String? projectName;
   final String? projectCode;
+  final String? projectArea;
   final bool multipleMatches;
   final List<ProjectBoundary>? allMatches;
   final String? reason;
@@ -86,6 +91,7 @@ class CoordinateMatchResult {
     required this.matched,
     this.projectName,
     this.projectCode,
+    this.projectArea,
     this.multipleMatches = false,
     this.allMatches,
     this.reason,
@@ -310,6 +316,7 @@ class ProjectBoundaryService {
         matched: true,
         projectName: matchingBoundaries[0].projectName,
         projectCode: matchingBoundaries[0].projectCode,
+        projectArea: matchingBoundaries[0].projectArea,
       );
     }
 
@@ -318,6 +325,7 @@ class ProjectBoundaryService {
       matched: true,
       projectName: matchingBoundaries[0].projectName,
       projectCode: matchingBoundaries[0].projectCode,
+      projectArea: matchingBoundaries[0].projectArea,
       multipleMatches: true,
       allMatches: matchingBoundaries,
     );

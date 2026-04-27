@@ -563,8 +563,16 @@ class _TreeListPageState extends State<TreeListPage> {
 
   @override
   Widget build(BuildContext context) {
+    // [B5] 暗/亮模式色彩輔助變數（AppBar 漸層、按鈕白字保持原樣，因為永遠在彩色背景上）
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppColors.darkCard : Colors.white;
+    final pageBg = isDark ? AppColors.darkBackground : AppColors.surfaceLight;
+    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.neutral900;
+    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.neutral600;
+    final textTertiary = isDark ? AppColors.darkTextTertiary : AppColors.neutral500;
+
     return Scaffold(
-      backgroundColor: AppColors.surfaceLight,
+      backgroundColor: pageBg,
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.transparent,
@@ -698,7 +706,7 @@ class _TreeListPageState extends State<TreeListPage> {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [AppColors.surfaceLight, Colors.white],
+                colors: [pageBg, cardBg],
               ),
             ),
             child: Column(
@@ -710,7 +718,7 @@ class _TreeListPageState extends State<TreeListPage> {
                       Expanded(
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.white,
+                            color: cardBg,
                             borderRadius: BorderRadius.circular(16),
                             boxShadow: [
                               BoxShadow(
@@ -724,14 +732,14 @@ class _TreeListPageState extends State<TreeListPage> {
                             controller: _searchController,
                             decoration: InputDecoration(
                               hintText: '搜尋樹種、專案或區位',
-                              hintStyle: TextStyle(color: AppColors.neutral400, fontSize: 14),
+                              hintStyle: TextStyle(color: textTertiary, fontSize: 14),
                               prefixIcon: Icon(Icons.search_rounded, color: AppColors.portBlue),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16),
                                 borderSide: BorderSide.none,
                               ),
                               filled: true,
-                              fillColor: Colors.white,
+                              fillColor: cardBg,
                               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                             ),
                             onChanged: (value) => _filterAndSortTrees(),
@@ -742,7 +750,7 @@ class _TreeListPageState extends State<TreeListPage> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: cardBg,
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
@@ -761,7 +769,7 @@ class _TreeListPageState extends State<TreeListPage> {
                                 value: project,
                                 child: Text(
                                   project.length > 8 ? '${project.substring(0, 8)}...' : project,
-                                  style: TextStyle(fontSize: 14, color: AppColors.neutral900),
+                                  style: TextStyle(fontSize: 14, color: textPrimary),
                                 ),
                               );
                             }).toList(),
@@ -786,7 +794,7 @@ class _TreeListPageState extends State<TreeListPage> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
-                          color: Colors.white,
+                          color: cardBg,
                           borderRadius: BorderRadius.circular(12),
                           boxShadow: [
                             BoxShadow(
@@ -841,7 +849,7 @@ class _TreeListPageState extends State<TreeListPage> {
                               Container(
                                 padding: const EdgeInsets.all(20),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: cardBg,
                                   borderRadius: BorderRadius.circular(20),
                                   boxShadow: [
                                     BoxShadow(
@@ -859,7 +867,7 @@ class _TreeListPageState extends State<TreeListPage> {
                               const SizedBox(height: 20),
                               Text(
                                 '載入樹木資料中...',
-                                style: TextStyle(color: AppColors.neutral600, fontSize: 15),
+                                style: TextStyle(color: textSecondary, fontSize: 15),
                               ),
                             ],
                           ),
@@ -870,7 +878,7 @@ class _TreeListPageState extends State<TreeListPage> {
                                 margin: const EdgeInsets.all(24),
                                 padding: const EdgeInsets.all(32),
                                 decoration: BoxDecoration(
-                                  color: Colors.white,
+                                  color: cardBg,
                                   borderRadius: BorderRadius.circular(20),
                                   boxShadow: [
                                     BoxShadow(
@@ -899,7 +907,7 @@ class _TreeListPageState extends State<TreeListPage> {
                                     Text(
                                       _errorMessage,
                                       textAlign: TextAlign.center,
-                                      style: TextStyle(color: AppColors.neutral600, fontSize: 14),
+                                      style: TextStyle(color: textSecondary, fontSize: 14),
                                     ),
                                     const SizedBox(height: 20),
                                     ElevatedButton(
@@ -924,7 +932,7 @@ class _TreeListPageState extends State<TreeListPage> {
                                     margin: const EdgeInsets.all(24),
                                     padding: const EdgeInsets.all(40),
                                     decoration: BoxDecoration(
-                                      color: Colors.white,
+                                      color: cardBg,
                                       borderRadius: BorderRadius.circular(20),
                                       boxShadow: [
                                         BoxShadow(
@@ -948,7 +956,7 @@ class _TreeListPageState extends State<TreeListPage> {
                                         const SizedBox(height: 20),
                                         Text(
                                           '沒有符合條件的樹木資料',
-                                          style: TextStyle(fontSize: 16, color: AppColors.neutral700, fontWeight: FontWeight.w500),
+                                          style: TextStyle(fontSize: 16, color: textPrimary, fontWeight: FontWeight.w500),
                                         ),
                                       ],
                                     ),
@@ -965,7 +973,7 @@ class _TreeListPageState extends State<TreeListPage> {
                                       return Container(
                                         margin: const EdgeInsets.only(bottom: 12),
                                         decoration: BoxDecoration(
-                                          color: Colors.white,
+                                          color: cardBg,
                                           borderRadius: BorderRadius.circular(20),
                                           boxShadow: [
                                             BoxShadow(
@@ -1043,18 +1051,18 @@ class _TreeListPageState extends State<TreeListPage> {
                                                           style: TextStyle(
                                                             fontWeight: FontWeight.w600,
                                                             fontSize: 16,
-                                                            color: AppColors.neutral900,
+                                                            color: textPrimary,
                                                           ),
                                                         ),
                                                         const SizedBox(height: 6),
                                                         Row(
                                                           children: [
-                                                            Icon(Icons.folder_outlined, size: 14, color: AppColors.neutral500),
+                                                            Icon(Icons.folder_outlined, size: 14, color: textTertiary),
                                                             const SizedBox(width: 4),
                                                             Expanded(
                                                               child: Text(
                                                                 tree['專案名稱'] ?? '未知專案',
-                                                                style: TextStyle(color: AppColors.neutral600, fontSize: 13),
+                                                                style: TextStyle(color: textSecondary, fontSize: 13),
                                                                 overflow: TextOverflow.ellipsis,
                                                               ),
                                                             ),
@@ -1063,12 +1071,12 @@ class _TreeListPageState extends State<TreeListPage> {
                                                         const SizedBox(height: 4),
                                                         Row(
                                                           children: [
-                                                            Icon(Icons.location_on_rounded, size: 14, color: AppColors.neutral500),
+                                                            Icon(Icons.location_on_rounded, size: 14, color: textTertiary),
                                                             const SizedBox(width: 4),
                                                             Expanded(
                                                               child: Text(
                                                                 tree['專案區位'] ?? '未知區位',
-                                                                style: TextStyle(color: AppColors.neutral600, fontSize: 13),
+                                                                style: TextStyle(color: textSecondary, fontSize: 13),
                                                                 overflow: TextOverflow.ellipsis,
                                                               ),
                                                             ),

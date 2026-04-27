@@ -100,6 +100,25 @@ class DataFilterStats {
   final Map<String, int> missingFieldCounts;
   final List<String> duplicateGroups;
 
+  /// [v21.0] 被丟棄的非樹木類型記錄數（DME / 空 TYPE）
+  final int nonTreeDropped;
+
+  /// [v21.0] HDOP 品質分類計數
+  /// good (≤2) / fair (≤5) / poor (>5) / unknown (無 HDOP)
+  final Map<String, int> hdopQualityCounts;
+
+  /// [v21.0] 缺 GPS 記錄數（hasGps==false 且 UTM recovery 也失敗）
+  final int missingGpsCount;
+
+  /// [v21.0] C2: session 內 GPS 跳變 >100m 警告計數
+  final int gpsJumpCount;
+
+  /// [v21.0] C3: TRPH ≠ 1.3m 警告計數
+  final int trphWarningCount;
+
+  /// [v21.0] C1: 3P 站位漂移 >5m 警告計數
+  final int posDriftWarningCount;
+
   DataFilterStats({
     required this.totalInput,
     required this.validCount,
@@ -108,6 +127,12 @@ class DataFilterStats {
     required this.conflictCount,
     required this.missingFieldCounts,
     required this.duplicateGroups,
+    this.nonTreeDropped = 0,
+    this.hdopQualityCounts = const {},
+    this.missingGpsCount = 0,
+    this.gpsJumpCount = 0,
+    this.trphWarningCount = 0,
+    this.posDriftWarningCount = 0,
   });
 
   @override
@@ -119,6 +144,12 @@ class DataFilterStats {
   不完整: $incompleteCount
   重複: $duplicateCount
   衝突: $conflictCount
+  非樹木類型丟棄: $nonTreeDropped
+  缺 GPS: $missingGpsCount
+  GPS 跳變(>100m): $gpsJumpCount
+  TRPH≠1.3 警告: $trphWarningCount
+  3P 站位漂移>5m 警告: $posDriftWarningCount
+  HDOP 品質: $hdopQualityCounts
   缺失欄位統計: $missingFieldCounts
   重複群組: ${duplicateGroups.length} 組
 ''';
@@ -163,13 +194,106 @@ class DataFilterService {
     final List<DataConflict> conflicts = [];
     final Map<String, int> missingFieldCounts = {};
     final List<String> duplicateGroups = [];
+    int nonTreeDropped = 0;
+    int missingGpsCount = 0;
+    final Map<String, int> hdopQualityCounts = {
+      'good': 0,
+      'fair': 0,
+      'poor': 0,
+      'unknown': 0,
+    };
+
+    // ========================================
+    // [v21.0] Step 0: 標記 GPS 品質 + 丟棄非樹木類型
+    // ========================================
+    final List<Map<String, dynamic>> preFiltered = [];
+    for (final record in rawRecords) {
+      // 非樹木類型丟棄（DME / 空 TYPE）
+      if (options.dropNonTreeTypes) {
+        final t = (record['type']?.toString() ?? '').trim().toUpperCase();
+        if (t == 'DME' || t.isEmpty) {
+          nonTreeDropped++;
+          continue;
+        }
+      }
+
+      // GPS 品質標記
+      final hasGps = record['hasGps'] == true;
+      if (!hasGps) missingGpsCount++;
+
+      final meta = record['metadata'] as Map<String, dynamic>?;
+      final hdop = (meta?['hdop'] as num?)?.toDouble();
+      String quality;
+      if (hdop == null) {
+        quality = 'unknown';
+      } else if (hdop <= 2.0) {
+        quality = 'good';
+      } else if (hdop <= 5.0) {
+        quality = 'fair';
+      } else {
+        quality = 'poor';
+      }
+      hdopQualityCounts[quality] = (hdopQualityCounts[quality] ?? 0) + 1;
+
+      // 寫回 record（不動原型，深拷在 Step 1 中進行）
+      record['_hdop_quality'] = quality;
+      preFiltered.add(record);
+    }
+
+    // ========================================
+    // [v21.0] Step 0.5: GPS 跳變偵測（C2）+ TRPH/3P 警告統計
+    // ========================================
+    int gpsJumpCount = 0;
+    int trphWarningCount = 0;
+    int posDriftWarningCount = 0;
+
+    // 依 timestamp / SEQ 排序後檢查相鄰 GPS > 100m
+    final ordered = List<Map<String, dynamic>>.from(preFiltered);
+    ordered.sort((a, b) {
+      final ta = a['timestamp'];
+      final tb = b['timestamp'];
+      if (ta is DateTime && tb is DateTime) return ta.compareTo(tb);
+      final sa = (a['seq'] as num?)?.toDouble() ?? 0;
+      final sb = (b['seq'] as num?)?.toDouble() ?? 0;
+      return sa.compareTo(sb);
+    });
+    Map<String, dynamic>? prev;
+    for (final r in ordered) {
+      final lat = (r['lat'] as num?)?.toDouble();
+      final lon = (r['lon'] as num?)?.toDouble();
+      if (r['hasGps'] == true && lat != null && lon != null && (lat != 0 || lon != 0)) {
+        if (prev != null) {
+          final pLat = (prev['lat'] as num?)?.toDouble();
+          final pLon = (prev['lon'] as num?)?.toDouble();
+          if (pLat != null && pLon != null) {
+            final d = calculateDistance(pLat, pLon, lat, lon);
+            if (d > 100.0) {
+              final m = r['metadata'] as Map<String, dynamic>?;
+              if (m != null) {
+                m['gps_jump_m'] = double.parse(d.toStringAsFixed(1));
+                m['gps_jump_warning'] = true;
+              }
+              gpsJumpCount++;
+            }
+          }
+        }
+        prev = r;
+      }
+
+      // 累計 TRPH / 3P 漂移警告（metadata flag 由 BleDataProcessor 設）
+      final m = r['metadata'] as Map<String, dynamic>?;
+      if (m != null) {
+        if (m['trph_warning'] == true) trphWarningCount++;
+        if (m['pos_drift_warning'] == true) posDriftWarningCount++;
+      }
+    }
 
     // ========================================
     // Step 1: 檢查不完整資料
     // ========================================
     final List<Map<String, dynamic>> completeRecords = [];
     
-    for (final record in rawRecords) {
+    for (final record in preFiltered) {
       final missingFields = _checkMissingFields(record);
       
       if (missingFields.isNotEmpty) {
@@ -365,6 +489,12 @@ class DataFilterService {
       conflictCount: conflicts.length,
       missingFieldCounts: missingFieldCounts,
       duplicateGroups: duplicateGroups,
+      nonTreeDropped: nonTreeDropped,
+      hdopQualityCounts: Map<String, int>.from(hdopQualityCounts),
+      missingGpsCount: missingGpsCount,
+      gpsJumpCount: gpsJumpCount,
+      trphWarningCount: trphWarningCount,
+      posDriftWarningCount: posDriftWarningCount,
     );
 
     debugPrint('[DataFilterService] ${stats.toString()}');
@@ -556,9 +686,19 @@ class FilterOptions {
   /// 與資料庫比對時，是否優先使用新資料
   final bool preferNewData;
 
+  /// [v21.0] 是否丟棄非樹木類型（TYPE='DME' 或空）
+  /// DME 是超音波測距校準記錄，不是樹木
+  final bool dropNonTreeTypes;
+
+  /// [v21.0] 最大允許 HDOP（>= maxHdop 會被標為 poor 但仍保留）
+  /// null = 不過濾，只計算品質統計
+  final double? maxHdop;
+
   FilterOptions({
     this.keepIncomplete = false,
     this.conflictResolution = ConflictResolution.keepLast,
     this.preferNewData = false,
+    this.dropNonTreeTypes = true,
+    this.maxHdop,
   });
 }

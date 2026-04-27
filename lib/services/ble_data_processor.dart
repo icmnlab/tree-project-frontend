@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'ble_field_validator.dart';
 import '../utils/utm_converter.dart';
@@ -23,6 +24,8 @@ class BleDataProcessor {
   static const int _idxDate = 18;
   static const int _idxTime = 19;
   static const int _idxSeq = 20; // SEQ (測量序號)
+  static const int _idxArea = 21; // AREA (基底面積/橫斷面)
+  static const int _idxVol = 22; // VOL (體積)
   static const int _idxSD = 23; // Slope Distance
   static const int _idxHD = 24; // Horizontal Distance
   static const int _idxH = 25; // Height
@@ -171,6 +174,23 @@ class BleDataProcessor {
         int seq = int.tryParse(seqStr) ?? 1;
         record['seq'] = seq;
 
+        // [v21.0] AREA / VOL - 林業基底面積與體積測量
+        // 儀器 BAF (Basal Area Factor) 模式或體積測量模式才有值
+        if (fields.length > _idxArea) {
+          String areaStr = fields[_idxArea].trim();
+          if (areaStr.isNotEmpty) {
+            final v = double.tryParse(areaStr);
+            if (v != null) metadata['area'] = v;
+          }
+        }
+        if (fields.length > _idxVol) {
+          String volStr = fields[_idxVol].trim();
+          if (volStr.isNotEmpty) {
+            final v = double.tryParse(volStr);
+            if (v != null) metadata['volume'] = v;
+          }
+        }
+
         // [V2 COMPAT] 加入儀器類型到 metadata，供後端 tree_measurement_raw 使用
         // 這樣 V2 batch_import 可以正確寫入 instrument_type 欄位
         if (type.isNotEmpty) {
@@ -210,7 +230,15 @@ class BleDataProcessor {
         // DECL: 磁偏角
         if (fields.length > _idxTrph) {
           String trphStr = fields[_idxTrph].trim();
-          if (trphStr.isNotEmpty) metadata['trph'] = double.tryParse(trphStr);
+          if (trphStr.isNotEmpty) {
+            final trph = double.tryParse(trphStr);
+            metadata['trph'] = trph;
+            // [v21.0] G5: TRPH ≠ 1.3m 警示（台灣林業標準胸高 1.3m）
+            // 不阻擋匯入、不修改 DBH，只標旗供 UI 統計提示
+            if (trph != null && (trph - 1.3).abs() > 0.01) {
+              metadata['trph_warning'] = true;
+            }
+          }
         }
         if (fields.length > _idxRefh) {
           String refhStr = fields[_idxRefh].trim();
@@ -222,7 +250,16 @@ class BleDataProcessor {
         }
         if (fields.length > _idxDecl) {
           String declStr = fields[_idxDecl].trim();
-          if (declStr.isNotEmpty) metadata['declination'] = double.tryParse(declStr);
+          if (declStr.isNotEmpty) {
+            final decl = double.tryParse(declStr);
+            metadata['declination'] = decl;
+            // [v21.0] G2: DECL warn-only（手冊 §5.2 儀器自動套用，app 不重算 AZ）
+            // 標記儀器已套用，並對較大 DECL 提示使用者確認儀器設定
+            metadata['declination_applied_by_instrument'] = true;
+            if (decl != null && decl.abs() > 1.0) {
+              metadata['decl_warning'] = true;
+            }
+          }
         }
 
         // 胸徑 (DIA) - Remote Diameter 功能
@@ -347,12 +384,19 @@ class BleDataProcessor {
 
       final type = group.first['type']?.toString() ?? '';
       final meta0 = group.first['metadata'] as Map<String, dynamic>? ?? {};
-      final hd0 = meta0['horizontal_distance'];
-      final az0 = meta0['azimuth'];
+      final hd0 = (meta0['horizontal_distance'] as num?)?.toDouble();
+      final az0 = (meta0['azimuth'] as num?)?.toDouble();
 
+      // [v21.0] 3P 合併容差：HD ±0.05m / AZ ±0.5° 視為同站位
+      // 因儀器讀數有抖動，嚴格相等會誤判為 1P
+      const double hdTolerance = 0.05;
+      const double azTolerance = 0.5;
       bool allSameHdAz = group.every((r) {
         final m = r['metadata'] as Map<String, dynamic>? ?? {};
-        return m['horizontal_distance'] == hd0 && m['azimuth'] == az0;
+        final hd = (m['horizontal_distance'] as num?)?.toDouble();
+        final az = (m['azimuth'] as num?)?.toDouble();
+        if (hd0 == null || az0 == null || hd == null || az == null) return false;
+        return (hd - hd0).abs() <= hdTolerance && (az - az0).abs() <= azTolerance;
       });
 
       if (type == '3P' && allSameHdAz) {
@@ -373,6 +417,32 @@ class BleDataProcessor {
               base['metadata'] as Map<String, dynamic>? ?? {});
           baseMeta['raw_h_values'] = hValues;
           baseMeta['merge_method'] = '3P_max_min';
+
+          // [v21.0] C1: 3P 站位漂移檢查（手冊 §5.4 三點應同站位）
+          // 計算三筆 lat/lon 的最大兩兩距離，>5m 標警告
+          final coords = group
+              .where((r) => r['lat'] is num && r['lon'] is num)
+              .map((r) => [
+                    (r['lat'] as num).toDouble(),
+                    (r['lon'] as num).toDouble()
+                  ])
+              .where((c) => c[0] != 0 || c[1] != 0)
+              .toList();
+          if (coords.length >= 2) {
+            double maxDrift = 0;
+            for (int i = 0; i < coords.length; i++) {
+              for (int j = i + 1; j < coords.length; j++) {
+                final d = _haversineMeters(
+                    coords[i][0], coords[i][1], coords[j][0], coords[j][1]);
+                if (d > maxDrift) maxDrift = d;
+              }
+            }
+            baseMeta['pos_drift_m'] = double.parse(maxDrift.toStringAsFixed(2));
+            if (maxDrift > 5.0) {
+              baseMeta['pos_drift_warning'] = true;
+            }
+          }
+
           base['metadata'] = baseMeta;
           base['seq'] = 1;
 
@@ -426,5 +496,21 @@ class BleDataProcessor {
     // 目前先假設 UTF8 decode 後的字串是可以處理的
     // 如果有 '?'，通常是 decode 失敗的替代字元
     return rawData.replaceAll('', ''); // 移除 Unicode Replacement Character
+  }
+
+  /// [v21.0] Haversine 距離（公尺）— 用於 3P 站位漂移、session 內 GPS 跳變偵測
+  static double _haversineMeters(
+      double lat1, double lon1, double lat2, double lon2) {
+    const double r = 6371000; // 地球半徑（公尺）
+    const double deg2rad = math.pi / 180.0;
+    final double dLat = (lat2 - lat1) * deg2rad;
+    final double dLon = (lon2 - lon1) * deg2rad;
+    final double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(lat1 * deg2rad) *
+            math.cos(lat2 * deg2rad) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+    final double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+    return r * c;
   }
 }
