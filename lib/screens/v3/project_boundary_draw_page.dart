@@ -6,6 +6,8 @@
 /// 3. 編輯/刪除專案邊界
 /// 4. 驗證新邊界是否涵蓋所有現有樹木
 
+import 'package:flutter/foundation.dart' show Factory;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../services/v3/project_boundary_service.dart';
@@ -691,6 +693,10 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
                     _controller = controller;
                     // [B3 fix] 地圖初始化完成後再嘗試一次 fly camera
                     _flyCameraToInitialView();
+                  },
+                  // [N13 fix] 避免外層拍走手勢造成地圖漂移
+                  gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+                    Factory<OneSequenceGestureRecognizer>(() => EagerGestureRecognizer()),
                   },
                   onTap: _onMapTap,
                   polygons: _polygons,

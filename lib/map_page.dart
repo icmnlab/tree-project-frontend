@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart' show Factory;
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:math';
@@ -785,6 +787,10 @@ class _MapPageState extends State<MapPage> {
             ),
             markers: _markers,
             polygons: _polygons, // V3: 專案邊界多邊形
+            // [N13 fix] 避免外層手勢變裝（如 BottomNavigation / TabBar袈動）拍走地圖的拖動手勢
+            gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
+              Factory<OneSequenceGestureRecognizer>(() => EagerGestureRecognizer()),
+            },
             myLocationEnabled: _hasLocationPermission,
             myLocationButtonEnabled: false,
             zoomControlsEnabled: false, // 移除 Android 預設縮放按鈕
