@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math' show atan, min, max;
 import 'package:flutter/material.dart';
@@ -737,9 +738,29 @@ class _ScannerPageState extends State<ScannerPage>
                 ? _trackedMaskPixelWidth! * previewToPhotoScaleX
                 : null;
 
+        // ── [方案A+] 在拍照後賦染完整二元 PNG mask（同 JPEG 尺寸）──
+        // 讓 backend 能累以「以 mask 為主」採樣 trunk depth，而不是靠 depth edges。
+        String? trunkMaskBase64;
+        if (mappedBbox != null) {
+          try {
+            final pngBytes = await _objectTracker.renderTrunkMaskPng(
+              targetW: imgW.toInt(),
+              targetH: imgH.toInt(),
+            );
+            if (pngBytes != null && pngBytes.isNotEmpty) {
+              trunkMaskBase64 = base64Encode(pngBytes);
+              debugPrint('[Scanner] trunk_mask PNG ready: '
+                  '${pngBytes.lengthInBytes} bytes (${imgW.toInt()}x${imgH.toInt()})');
+            }
+          } catch (e) {
+            debugPrint('[Scanner] renderTrunkMaskPng 失敗: $e');
+          }
+        }
+
         _submitAutoMeasurement(
             localBbox: mappedBbox,
-            maskPixelWidth: scaledMaskPxW);
+            maskPixelWidth: scaledMaskPxW,
+            trunkMaskBase64: trunkMaskBase64);
       }
     } catch (e) {
       debugPrint('拍照失敗: $e');
@@ -881,7 +902,7 @@ class _ScannerPageState extends State<ScannerPage>
   // ===========================================================
 
   Future<void> _submitAutoMeasurement(
-      {Rect? localBbox, double? maskPixelWidth}) async {
+      {Rect? localBbox, double? maskPixelWidth, String? trunkMaskBase64}) async {
     if (_capturedImage == null) return;
 
     setState(() {
@@ -905,6 +926,7 @@ class _ScannerPageState extends State<ScannerPage>
         phoneModel: _phoneModel,
         localBbox: localBbox,
         maskPixelWidth: maskPixelWidth,
+        trunkMaskBase64: trunkMaskBase64,
         returnVisualization: true,
         returnDetectionVisualization: true,
       );

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:tflite_flutter/tflite_flutter.dart';
 import 'package:camera/camera.dart';
+import 'package:image/image.dart' as img;
 
 // ================================================================
 // 資料結構
@@ -56,6 +57,15 @@ class TfliteObjectTrackingService {
   double _lastPreviewPortraitH = 0.0;
   double get lastPreviewPortraitWidth => _lastPreviewPortraitW;
   double get lastPreviewPortraitHeight => _lastPreviewPortraitH;
+
+  // ── 最近一次最佳偵測的 seg coeffs + proto frame snapshot。 ──
+  // 以 portrait-preview 座標空間的 bbox 主動检索 mask，
+  // 供拍照後「renderTrunkMaskPng」採用。
+  List<double>? _lastMaskCoeffs;
+  Rect? _lastDetPreviewBbox; // portrait-preview 座標
+  // 保留一份 proto frame 拷貝，避免下一幀覆蓋。
+  // proto shape: [Ph][Pw][32] (32 個 coefficient channels)
+  List<List<List<double>>>? _lastProtoSnapshot;
 
   // ── 模型幾何 (initialize 時從 tensor shape 偵測) ──
   int _inputSize = 640;
@@ -484,7 +494,7 @@ class TfliteObjectTrackingService {
             'invSX=${invSX.toStringAsFixed(3)} invSY=${invSY.toStringAsFixed(3)}');
       }
 
-      return dets.map((d) {
+      final results = dets.map((d) {
         final rect = Rect.fromLTRB(
           ((d.x1 - _lbPadX) * invSX).clamp(0.0, portraitW),
           ((d.y1 - _lbPadY) * invSY).clamp(0.0, portraitH),
@@ -504,6 +514,23 @@ class TfliteObjectTrackingService {
 
         return TfliteBbox(rect, d.conf, d.label, maskPixelWidth: maskPixelWidth);
       }).toList();
+
+      // ── [trunk_mask_base64] 快取最高信心度的 detection coeffs + proto frame ──
+      // 拍照時可呼叫 renderTrunkMaskPng() 重建完整二元 mask 給後端做精準採樣。
+      if (results.isNotEmpty &&
+          _numOutputs > 1 &&
+          _protoOutputBuf != null &&
+          !_protoOutputDisabled) {
+        // dets[] 已按信心度由高到低排好（_parseAndNms 內排序）
+        final best = dets.first;
+        if (best.maskCoeffs != null) {
+          _lastMaskCoeffs = List<double>.from(best.maskCoeffs!);
+          _lastDetPreviewBbox = results.first.rect;
+          _lastProtoSnapshot = _snapshotProto();
+        }
+      }
+
+      return results;
     } catch (e, st) {
       debugPrint('[TFLite] 推論錯誤: $e');
       debugPrint('[TFLite] 推論錯誤 stack: $st');
@@ -988,5 +1015,119 @@ class TfliteObjectTrackingService {
     final double lbPixelWidth = maxRun * (_inputSize / Pw);
     final double portraitPixelWidth = lbPixelWidth * invSX;
     return portraitPixelWidth;
+  }
+
+  // ================================================================
+  // [trunk_mask_base64] 完整 mask 渲染（拍照時呼叫一次）
+  // ================================================================
+
+  /// 從 _protoOutputBuf 拷貝一份 [Ph][Pw][32] 給後續 renderTrunkMaskPng 使用，
+  /// 避免下一幀推論覆蓋。
+  List<List<List<double>>>? _snapshotProto() {
+    final proto = _protoOutputBuf;
+    if (proto is! List) return null;
+    try {
+      final frame = proto[0] as List;
+      final Ph = frame.length;
+      if (Ph == 0) return null;
+      final Pw = (frame[0] as List).length;
+      if (Pw == 0) return null;
+      final out = List<List<List<double>>>.generate(Ph, (y) {
+        final row = frame[y] as List;
+        return List<List<double>>.generate(Pw, (x) {
+          final vec = row[x] as List;
+          return List<double>.generate(32, (k) => (vec[k] as num).toDouble());
+        });
+      });
+      return out;
+    } catch (e) {
+      debugPrint('[TFLite] proto snapshot 失敗: $e');
+      return null;
+    }
+  }
+
+  /// 將最近一次最高信心度偵測的 trunk mask 轉成 PNG bytes（base64 由呼叫端編碼）。
+  ///
+  /// 輸出維度：targetW × targetH（通常傳入捕獲 JPEG 的尺寸），
+  /// pixel 值：trunk = 255，背景 = 0（單通道灰階 PNG）。
+  ///
+  /// 演算法：對 portrait-preview 空間每個 (x,y) 反推 letterbox px → proto px，
+  /// 取對應 32-channel proto 向量與 coeffs 的內積，>0 即為 trunk。然後縮放到
+  /// (targetW, targetH)。
+  ///
+  /// 在 Mi A1 上 720×1280 portrait + nearest 縮放至 photo dims 約 300–500ms。
+  Future<Uint8List?> renderTrunkMaskPng({
+    required int targetW,
+    required int targetH,
+  }) async {
+    final coeffs = _lastMaskCoeffs;
+    final proto = _lastProtoSnapshot;
+    if (coeffs == null || proto == null) return null;
+    if (_lastPreviewPortraitW <= 0 || _lastPreviewPortraitH <= 0) return null;
+
+    final int Ph = proto.length;
+    final int Pw = proto[0].length;
+
+    // 1) 在 portrait-preview 解析度產生二元 mask
+    final int pw = _lastPreviewPortraitW.round();
+    final int ph = _lastPreviewPortraitH.round();
+    final double invSX = pw / _lbScaledW;
+    final double invSY = ph / _lbScaledH;
+
+    final mask = Uint8List(pw * ph);
+    final double protoXScale = Pw / _inputSize;
+    final double protoYScale = Ph / _inputSize;
+
+    // 預先把 proto frame 攤平成 1D Float32 加速隨機讀取
+    // proto[py][px][k]  flat[(py*Pw + px)*32 + k]
+    final flat = Float32List(Ph * Pw * 32);
+    for (int y = 0; y < Ph; y++) {
+      for (int x = 0; x < Pw; x++) {
+        final vec = proto[y][x];
+        final base = (y * Pw + x) * 32;
+        for (int k = 0; k < 32; k++) {
+          flat[base + k] = vec[k];
+        }
+      }
+    }
+
+    for (int y = 0; y < ph; y++) {
+      // portrait y → letterbox y → proto y
+      final double lbY = y / invSY + _lbPadY;
+      final int py = (lbY * protoYScale).toInt();
+      if (py < 0 || py >= Ph) continue;
+      final int rowOff = y * pw;
+      for (int x = 0; x < pw; x++) {
+        final double lbX = x / invSX + _lbPadX;
+        final int px = (lbX * protoXScale).toInt();
+        if (px < 0 || px >= Pw) continue;
+        final int base = (py * Pw + px) * 32;
+        double logit = 0.0;
+        for (int k = 0; k < 32; k++) {
+          logit += flat[base + k] * coeffs[k];
+        }
+        if (logit > 0.0) mask[rowOff + x] = 255;
+      }
+    }
+
+    // 2) 包成 image 物件（單通道灰階）
+    final src = img.Image.fromBytes(
+      width: pw,
+      height: ph,
+      bytes: mask.buffer,
+      numChannels: 1,
+    );
+
+    // 3) 縮放到 targetW × targetH（與 JPEG 相同維度，供 backend NEAREST resize 對齊）
+    final resized = (pw == targetW && ph == targetH)
+        ? src
+        : img.copyResize(
+            src,
+            width: targetW,
+            height: targetH,
+            interpolation: img.Interpolation.nearest,
+          );
+
+    return Uint8List.fromList(img.encodePng(resized));
   }
 }

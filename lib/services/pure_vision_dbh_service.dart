@@ -242,6 +242,7 @@ class PureVisionDbhService {
     String? distanceSource,
     Rect? localBbox, // [Edge AI] The local tracking bounding box from ML Kit
     double? maskPixelWidth, // [方案A] YOLOv8-seg mask computed trunk pixel width
+    String? trunkMaskBase64, // [方案A+] 完整二元 PNG mask（與 image 尺寸對齊）
     bool returnVisualization = true,
     bool returnDetectionVisualization = true,
   }) async {
@@ -266,6 +267,7 @@ class PureVisionDbhService {
           distanceSource: distanceSource,
           localBbox: localBbox,
           maskPixelWidth: maskPixelWidth,
+          trunkMaskBase64: trunkMaskBase64,
           returnVisualization: returnVisualization,
           returnDetectionVisualization: returnDetectionVisualization,
           attempt: attempt,
@@ -300,6 +302,7 @@ class PureVisionDbhService {
     String? distanceSource,
     Rect? localBbox,
     double? maskPixelWidth,
+    String? trunkMaskBase64,
     bool returnVisualization = true,
     bool returnDetectionVisualization = true,
     int attempt = 1,
@@ -349,6 +352,10 @@ class PureVisionDbhService {
       // [方案A] Seg mask trunk pixel width — overrides depth-edge detection
       if (maskPixelWidth != null && maskPixelWidth > 10) {
         request.fields['mask_pixel_width'] = maskPixelWidth.toStringAsFixed(2);
+      }
+      // [方案A+] 完整二元 PNG mask（與 image 同尺寸）— backend 會依此採樣 trunk depth
+      if (trunkMaskBase64 != null && trunkMaskBase64.isNotEmpty) {
+        request.fields['trunk_mask_base64'] = trunkMaskBase64;
       }
       // [Phase 2] 參考距離校正
       if (referenceDistanceM != null && referenceDistanceM > 0) {
