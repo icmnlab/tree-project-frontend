@@ -741,16 +741,18 @@ class _ScannerPageState extends State<ScannerPage>
         // ── [方案A+] 在拍照後賦染完整二元 PNG mask（同 JPEG 尺寸）──
         // 讓 backend 能累以「以 mask 為主」採樣 trunk depth，而不是靠 depth edges。
         String? trunkMaskBase64;
-        if (mappedBbox != null) {
+        if (mappedBbox != null && _imageSize != null) {
+          final int imgWInt = _imageSize!.width.toInt();
+          final int imgHInt = _imageSize!.height.toInt();
           try {
-            final pngBytes = await _objectTracker.renderTrunkMaskPng(
-              targetW: imgW.toInt(),
-              targetH: imgH.toInt(),
+            final pngBytes = await _tfliteTracker.renderTrunkMaskPng(
+              targetW: imgWInt,
+              targetH: imgHInt,
             );
             if (pngBytes != null && pngBytes.isNotEmpty) {
               trunkMaskBase64 = base64Encode(pngBytes);
               debugPrint('[Scanner] trunk_mask PNG ready: '
-                  '${pngBytes.lengthInBytes} bytes (${imgW.toInt()}x${imgH.toInt()})');
+                  '${pngBytes.lengthInBytes} bytes (${imgWInt}x$imgHInt)');
             }
           } catch (e) {
             debugPrint('[Scanner] renderTrunkMaskPng 失敗: $e');
