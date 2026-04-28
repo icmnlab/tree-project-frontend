@@ -513,16 +513,31 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
         final results = result['results'] as List? ?? [];
         if (results.isNotEmpty) {
           final bestMatch = results.first;
-          final speciesName = bestMatch['species'] != null ? bestMatch['species']['scientificNameWithoutAuthor'] : bestMatch['scientificNameWithoutAuthor'];
-          final commonNames = bestMatch['species'] != null ? bestMatch['species']['commonNames'] as List? : bestMatch['commonNames'] as List?;
-          final scoreNum = (bestMatch['score'] as num).toDouble();
+          final Map<String, dynamic>? speciesObj = bestMatch['species'] is Map
+              ? Map<String, dynamic>.from(bestMatch['species'] as Map)
+              : null;
+          final String? sciNoAuthor = (speciesObj?['scientificNameWithoutAuthor'] ?? bestMatch['scientificNameWithoutAuthor']) as String?;
+          final String? sciFull = (speciesObj?['scientificName'] ?? bestMatch['scientificName']) as String?;
+          final commonNames = (speciesObj?['commonNames'] ?? bestMatch['commonNames']) as List?;
+          final scoreNum = ((bestMatch['score'] as num?) ?? 0).toDouble();
           final score = (scoreNum * 100).toStringAsFixed(1);
 
-          // [Policy] 一律以學名為主顯示名，避免中譯/拼音不一致；中文俗名僅做提示輔助
-          final String displayName = (speciesName ?? '').toString();
+          // [Policy] 學名優先；若無則退回完整學名/俗名。總之先把名字填進去，信心度只做提示
           final String? commonHint = (commonNames != null && commonNames.isNotEmpty)
               ? commonNames.first.toString()
               : null;
+          String displayName = (sciNoAuthor ?? '').trim();
+          if (displayName.isEmpty) displayName = (sciFull ?? '').trim();
+          if (displayName.isEmpty && commonHint != null) displayName = commonHint.trim();
+          if (displayName.isEmpty) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('辨識結果不完整，請手動輸入樹種')),
+              );
+            }
+            return;
+          }
+          final String? speciesName = sciNoAuthor ?? sciFull;
 
           String? matchedId;
           final localMatch = result['localMatch'] as Map<String, dynamic>?;
@@ -547,7 +562,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
                 final dbSciName = (s['scientific_name'] ?? '').toString().toLowerCase();
                 final synonyms = (s['synonyms'] as List?)?.map((e) => e.toString().toLowerCase()).toList() ?? [];
                 final displayLower = displayName.toLowerCase();
-                final sciLower = speciesName.toLowerCase();
+                final sciLower = (speciesName ?? '').toLowerCase();
                 return dbName == displayLower || 
                        (dbSciName.isNotEmpty && dbSciName == sciLower) ||
                        synonyms.contains(displayLower);
@@ -556,56 +571,46 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
             } catch (_) {}
           }
 
+          // [v18.5.2] 不再用信心度當門檻：只要欄位空白就自動填入學名，信心度僅作為提示
+          final bool willAutoFill = _speciesController.text.isEmpty;
           setState(() {
-             _autoIdentifiedSpeciesName = displayName;
-             _autoIdentifiedSpeciesId = matchedId;
-             _aiPredictions = results.cast<Map<String, dynamic>>();
-             _speciesConfidence = score;
+            _autoIdentifiedSpeciesName = displayName;
+            _autoIdentifiedSpeciesId = matchedId;
+            _aiPredictions = results.cast<Map<String, dynamic>>();
+            _speciesConfidence = score;
+            if (willAutoFill) {
+              _speciesController.text = displayName;
+              if (matchedId != null) _speciesId = matchedId;
+              _speciesReady = true;
+            }
           });
 
-          // [Phase 1] 高信心度 (>=50%) 時自動套用，不需手動點「套用」
-          final bool highConfidence = scoreNum >= 0.50;
-          
-          if (highConfidence && _speciesController.text.isEmpty) {
-            setState(() {
-              _speciesController.text = displayName;
-              if (matchedId != null) {
-                _speciesId = matchedId;
-              }
-              _speciesReady = true;
-            });
-            if (mounted && !_isAutoPilotRunning) {
-              final hint = commonHint != null ? ' / $commonHint' : '';
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('已自動套用: $displayName$hint (信心度: $score%)'),
-                  backgroundColor: Colors.green,
-                  duration: const Duration(seconds: 3),
-                ),
-              );
-            }
-          } else {
-            // 低信心度：提示使用者確認
-            setState(() => _speciesReady = false);
-            if (mounted) {
-              final hint = commonHint != null ? ' / $commonHint' : '';
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('辨識結果: $displayName$hint (信心度: $score%)'),
-                  action: SnackBarAction(
-                    label: '套用',
-                    onPressed: () {
-                      setState(() {
-                        _speciesController.text = displayName;
-                        if (matchedId != null) _speciesId = matchedId;
-                        _speciesReady = true;
-                      });
-                    },
-                  ),
-                  duration: const Duration(seconds: 8),
-                ),
-              );
-            }
+          if (mounted && !_isAutoPilotRunning) {
+            final hint = commonHint != null ? ' / $commonHint' : '';
+            final double scorePct = scoreNum * 100;
+            final Color bg = scorePct >= 50
+                ? Colors.green
+                : scorePct >= 20 ? Colors.orange : Colors.red;
+            final String prefix = willAutoFill ? '已自動套用' : '辨識結果';
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('$prefix: $displayName$hint (信心度: $score%)'),
+                backgroundColor: bg,
+                duration: const Duration(seconds: 4),
+                action: willAutoFill
+                    ? null
+                    : SnackBarAction(
+                        label: '覆蓋',
+                        onPressed: () {
+                          setState(() {
+                            _speciesController.text = displayName;
+                            if (matchedId != null) _speciesId = matchedId;
+                            _speciesReady = true;
+                          });
+                        },
+                      ),
+              ),
+            );
           }
         }
       } else {

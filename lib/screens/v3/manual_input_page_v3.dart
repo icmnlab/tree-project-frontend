@@ -1161,22 +1161,28 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
         if (results.isNotEmpty) {
           final bestMatch = results.first;
           // [N1 fix] PlantNet 可能沒回 scientificNameWithoutAuthor，防 null cast
-          final String? speciesName = bestMatch['species'] != null
-              ? bestMatch['species']['scientificNameWithoutAuthor'] as String?
-              : bestMatch['scientificNameWithoutAuthor'] as String?;
-          final commonNames = bestMatch['species'] != null ? bestMatch['species']['commonNames'] as List? : bestMatch['commonNames'] as List?;
+          final Map<String, dynamic>? speciesObj = bestMatch['species'] is Map
+              ? Map<String, dynamic>.from(bestMatch['species'] as Map)
+              : null;
+          final String? sciNoAuthor = (speciesObj?['scientificNameWithoutAuthor'] ?? bestMatch['scientificNameWithoutAuthor']) as String?;
+          final String? sciFull = (speciesObj?['scientificName'] ?? bestMatch['scientificName']) as String?;
+          final commonNames = (speciesObj?['commonNames'] ?? bestMatch['commonNames']) as List?;
           final rawScore = bestMatch['score'];
           final score = rawScore != null ? ((rawScore as num).toDouble() * 100).toStringAsFixed(1) : '0.0';
 
-          // [Policy] 一律以學名為主，避免中譯/拼音不一致；中文俗名僅做提示
-          final String displayName = (speciesName ?? '').trim();
+          // [Policy] 學名優先；若無則退回完整學名/俗名，總之要把名字填進去
           final String? commonHint = (commonNames != null && commonNames.isNotEmpty)
               ? commonNames.first?.toString()
               : null;
+          String displayName = (sciNoAuthor ?? '').trim();
+          if (displayName.isEmpty) displayName = (sciFull ?? '').trim();
+          if (displayName.isEmpty && commonHint != null) displayName = commonHint.trim();
           if (displayName.isEmpty) {
             _showSnackBar('辨識結果不完整，請手動輸入樹種');
             return;
           }
+          // 對外仍以 scientificNameWithoutAuthor 命名變數，方便後續匹配 (fallback 已併入 displayName)
+          final String? speciesName = sciNoAuthor ?? sciFull;
           
           // 優先使用後端回傳的 localMatch（含自動新增結果）
           String? matchedId;
