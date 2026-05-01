@@ -59,4 +59,19 @@ class AiService {
     return ApiService.post(
         'ai/direct-chat', {'message': message, 'systemPrompt': systemPrompt});
   }
+
+  /// 列出當前登入帳號（依 JWT 判定）的所有對話 session 後設資料
+  Future<Map<String, dynamic>> listChatSessions() async {
+    return ApiService.get('chat/sessions');
+  }
+
+  /// 取得單一 session 的完整對話內容
+  Future<Map<String, dynamic>> getChatSession(String sessionId) async {
+    return ApiService.get('chat/sessions/$sessionId');
+  }
+
+  /// 刪除單一對話 session
+  Future<Map<String, dynamic>> deleteChatSession(String sessionId) async {
+    return ApiService.delete('chat/sessions/$sessionId');
+  }
 }

@@ -183,12 +183,18 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
     return id;
   }
 
-  void _showAiAssistant() {
+  void _showAiAssistant() async {
+    final userInfo = await AuthService.getUserInfo();
+    final id = userInfo?['user_id']?.toString()
+        ?? userInfo?['account']?.toString()
+        ?? userInfo?['username']?.toString();
+    final userId = (id == null || id.isEmpty) ? 'anon' : 'u$id';
+    if (!mounted) return;
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (context) => AIChatPage(
-          userId: 'user-${DateTime.now().millisecondsSinceEpoch}',
+          userId: userId,
           selectedProjectAreas: [widget.projectName ?? ''],
         ),
       ),

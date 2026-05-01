@@ -421,18 +421,18 @@ class _MapPageState extends State<MapPage> {
         final y = double.tryParse(tree['Y坐標']?.toString() ?? '0') ?? 0.0;
         final x = double.tryParse(tree['X坐標']?.toString() ?? '0') ?? 0.0;
 
-        if (x != 0.0 && y != 0.0) {
-          if (_isCoordinateInCity(x, y, _selectedCity)) {
-            return true;
+        // [FIX] 區位名稱優先：若名稱對應到具體縣市，必須與 _selectedCity 一致；
+        // 沒有名稱關鍵字時才回退到 bbox。
+        if (tree['專案區位'] != null) {
+          final area = tree['專案區位'].toString();
+          final extractedCity = _extractCityFromArea(area);
+          if (extractedCity != null) {
+            return extractedCity == _selectedCity;
           }
         }
 
-        if (tree['專案區位'] != null) {
-          final area = tree['專案區位'].toString();
-          String? extractedCity = _extractCityFromArea(area);
-          if (extractedCity == _selectedCity) {
-            return true;
-          }
+        if (x != 0.0 && y != 0.0) {
+          return _isCoordinateInCity(x, y, _selectedCity);
         }
         return false;
       }
@@ -490,19 +490,22 @@ class _MapPageState extends State<MapPage> {
       final y = double.tryParse(tree['Y坐標']?.toString() ?? '0') ?? 0.0;
       final x = double.tryParse(tree['X坐標']?.toString() ?? '0') ?? 0.0;
 
-      bool matchesAreaName = false;
+      // [FIX] 區位名稱若有明確對應的縣市，視為權威來源（避免「布袋港」因為 lat 23.378
+      // 同時落在台南 bbox 內而被誤分到台南市）。
+      String? extractedCity;
       if (tree['專案區位'] != null) {
-        final area = tree['專案區位'].toString();
-        String? extractedCity = _extractCityFromArea(area);
-        matchesAreaName = (extractedCity == city);
+        extractedCity = _extractCityFromArea(tree['專案區位'].toString());
       }
 
-      bool matchesCoordinate = false;
+      if (extractedCity != null) {
+        return extractedCity == city;
+      }
+
+      // 沒有區位關鍵字 → 退回坐標 bbox 判斷
       if (x != 0.0 && y != 0.0) {
-        matchesCoordinate = _isCoordinateInCity(x, y, city);
+        return _isCoordinateInCity(x, y, city);
       }
-
-      return matchesAreaName || matchesCoordinate;
+      return false;
     });
 
     final cityProjects = filteredTrees
@@ -544,6 +547,25 @@ class _MapPageState extends State<MapPage> {
   }
 
   String? _extractCityFromArea(String area) {
+    // [FIX] 已知港口/植栽區位 → 權威縣市對應，避免關鍵字誤判
+    // (例如「布袋港」原本不會被任何關鍵字命中，導致退回 bbox 後落入台南範圍)
+    final Map<String, String> knownAreaToCity = {
+      '基隆港': '基隆市',
+      '臺北港': '新北市',
+      '台北港': '新北市',
+      '臺中港': '台中市',
+      '台中港': '台中市',
+      '安平港': '台南市',
+      '布袋港': '嘉義縣',
+      '高雄港': '高雄市',
+      '蘇澳港': '宜蘭縣',
+      '花蓮港': '花蓮縣',
+      '澎湖港': '澎湖縣',
+    };
+    for (final entry in knownAreaToCity.entries) {
+      if (area.contains(entry.key)) return entry.value;
+    }
+
     final Map<String, List<String>> cityKeywords = {
       '台北市': ['台北', '臺北', '北市'],
       '新北市': ['新北'],

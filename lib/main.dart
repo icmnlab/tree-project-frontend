@@ -20,22 +20,29 @@ import 'config/app_config.dart';
 import 'services/theme_service.dart';
 import 'config/global_keys.dart';
 import 'services/api_service.dart';
+import 'services/auth_service.dart';
 import 'services/carbon_sink_service.dart';
 import 'services/v3/ml_data_sync_service.dart';
 import 'services/network_service.dart';
 
-/// 持久化的 AI Chat userId，確保跨導航保留對話歷史
-String _persistentAiUserId = '';
+/// 取得目前已登入帳號的 AI Chat userId。
+/// 改用真實帳號 ID（過去誤用裝置綁定 timestamp ID，導致同一裝置不同帳號共用對話）。
+Future<String> _getCurrentAiUserId() async {
+  final userInfo = await AuthService.getUserInfo();
+  if (userInfo == null) return 'anon';
+  // 優先使用 user_id（資料庫主鍵），其次 account（登入帳號）。
+  final id = userInfo['user_id']?.toString()
+      ?? userInfo['account']?.toString()
+      ?? userInfo['username']?.toString();
+  return (id == null || id.isEmpty) ? 'anon' : 'u$id';
+}
 
-Future<String> _getOrCreateAiUserId() async {
-  if (_persistentAiUserId.isNotEmpty) return _persistentAiUserId;
+/// 一次性清除舊版（裝置綁定）AI Chat userId key，避免共用對話殘留。
+Future<void> _migrateLegacyAiUserId() async {
   final prefs = await SharedPreferences.getInstance();
-  _persistentAiUserId = prefs.getString('ai_chat_user_id') ?? '';
-  if (_persistentAiUserId.isEmpty) {
-    _persistentAiUserId = 'user-${DateTime.now().millisecondsSinceEpoch}';
-    await prefs.setString('ai_chat_user_id', _persistentAiUserId);
+  if (prefs.containsKey('ai_chat_user_id')) {
+    await prefs.remove('ai_chat_user_id');
   }
-  return _persistentAiUserId;
 }
 
 /// 允許自架伺服器的自簽憑證 (僅限 Tailscale 內網 IP / MagicDNS)
@@ -101,10 +108,35 @@ void main() async {
   // 初始化主題服務
   await ThemeService().initialize();
 
-  // 初始化持久化 AI userId
-  await _getOrCreateAiUserId();
+  // 一次性遷移：清除舊版裝置綁定的 AI Chat userId（避免帳號間互看對話）
+  await _migrateLegacyAiUserId();
 
   runApp(const MyApp());
+}
+
+/// 包裝 AIChatPage，確保 userId 來自當前登入帳號（避免裝置綁定共用）。
+class _AIChatRoute extends StatelessWidget {
+  final List<String> selectedProjectAreas;
+  // ignore: unused_element_parameter
+  const _AIChatRoute({this.selectedProjectAreas = const []});
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<String>(
+      future: _getCurrentAiUserId(),
+      builder: (context, snap) {
+        if (snap.connectionState != ConnectionState.done) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        return AIChatPage(
+          userId: snap.data ?? 'anon',
+          selectedProjectAreas: selectedProjectAreas,
+        );
+      },
+    );
+  }
 }
 
 class MyApp extends StatelessWidget {
@@ -148,18 +180,12 @@ class MyApp extends StatelessWidget {
             const AuthGuard(child: StatisticsPage()),
         '/map': (context) => const AuthGuard(child: MapPage()),
         // 舊路由保留兼容，重定向到新版 AI Chat
-        '/ai-assistant': (context) => AuthGuard(
-              child: AIChatPage(
-                userId: _persistentAiUserId,
-                selectedProjectAreas: const [],
-              ),
+        '/ai-assistant': (context) => const AuthGuard(
+              child: _AIChatRoute(),
             ),
         // 新版 AI 聊天頁面 (ChatGPT 風格)
-        '/ai-chat': (context) => AuthGuard(
-              child: AIChatPage(
-                userId: _persistentAiUserId,
-                selectedProjectAreas: const [],
-              ),
+        '/ai-chat': (context) => const AuthGuard(
+              child: _AIChatRoute(),
             ),
         '/ai-sustainability-report': (context) =>
             const AuthGuard(child: AISustainabilityReportScreen()),

@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fl_chart/fl_chart.dart'; // [NEW] 查詢結果視覺化
 import 'dart:async';
-import 'dart:convert';
 import 'dart:math' as math;
 
 import '../services/ai_service.dart';
@@ -298,56 +297,89 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
     super.dispose();
   }
   
-  /// 從本地儲存載入對話歷史
+  /// 從後端載入當前帳號的對話歷史 (列表)
+  /// - 只抓 session 後設資料 (id, title, updatedAt)
+  /// - 訊息內容延後到使用者點擊 session 時才載入 (見 _selectSession)
   Future<void> _loadSessions() async {
     try {
+      // 一次性遷移：清除舊版本本地對話 (新版本由後端持久化)
       final prefs = await SharedPreferences.getInstance();
-      // 一次性遷移：移除舊的全域 key（早期版本所有帳號共用）
-      if (prefs.containsKey(_sessionsStorageKeyPrefix)) {
-        await prefs.remove(_sessionsStorageKeyPrefix);
-      }
-      final sessionsJson = prefs.getString(_sessionsStorageKey);
-      
-      if (sessionsJson != null) {
-        final List<dynamic> decoded = jsonDecode(sessionsJson);
-        final loadedSessions = decoded
-            .map((json) => ChatSession.fromJson(json))
-            .toList();
-        
-        // 只保留最近 7 天的對話
-        final cutoff = DateTime.now().subtract(const Duration(days: 7));
-        final recentSessions = loadedSessions
-            .where((s) => s.updatedAt.isAfter(cutoff))
-            .toList();
-        
-        if (recentSessions.isNotEmpty) {
-          setState(() {
-            _sessions = recentSessions;
-            _currentSession = recentSessions.first;
-          });
-          return;
+      await prefs.remove(_sessionsStorageKeyPrefix);
+      await prefs.remove(_sessionsStorageKey);
+
+      final res = await _aiService.listChatSessions();
+      final list = res['sessions'] as List<dynamic>? ?? [];
+      final loaded = <ChatSession>[];
+      for (final raw in list) {
+        final s = raw as Map<String, dynamic>;
+        final sid = s['session_id']?.toString();
+        if (sid == null || sid.isEmpty) continue;
+        final firstMsg = (s['first_message']?.toString() ?? '新對話').trim();
+        final title = firstMsg.length > 30 ? '${firstMsg.substring(0, 30)}...' : firstMsg;
+        DateTime parseTs(dynamic v) {
+          if (v == null) return DateTime.now();
+          try { return DateTime.parse(v.toString()).toLocal(); } catch (_) { return DateTime.now(); }
         }
+        loaded.add(ChatSession(
+          id: sid,
+          title: title.isEmpty ? '新對話' : title,
+          createdAt: parseTs(s['created_at']),
+          updatedAt: parseTs(s['updated_at']),
+          messages: [],
+        ));
+      }
+
+      if (!mounted) return;
+      if (loaded.isNotEmpty) {
+        setState(() {
+          _sessions = loaded;
+          _currentSession = loaded.first;
+        });
+        // 預先載入第一個 session 的內容，提供更好的開啟體驗
+        await _ensureSessionMessagesLoaded(loaded.first);
+        return;
       }
     } catch (e) {
-      debugPrint('載入對話歷史失敗: $e');
+      debugPrint('載入後端對話歷史失敗: $e');
     }
-    
-    // 如果沒有歷史或載入失敗，建立新對話
+
+    // 沒有歷史 / 後端不可用：建立新對話
     _createNewSession();
   }
-  
-  /// 儲存對話歷史到本地
-  Future<void> _saveSessions() async {
+
+  /// 後端已在每次 /chat 呼叫時自動寫入 chat_logs，這裡保留為 no-op 以維持原呼叫點。
+  Future<void> _saveSessions() async {}
+
+  /// 確保指定 session 的訊息已從後端載入
+  Future<void> _ensureSessionMessagesLoaded(ChatSession session) async {
+    if (session.messages.isNotEmpty) return;
+    // 純前端建立、尚未送出第一則訊息的 session 跳過
+    final isLocalOnly = !RegExp(r'^[A-Za-z]?[0-9_]+').hasMatch(session.id) || session.id.length < 5;
+    if (isLocalOnly && !session.id.contains('_')) return;
     try {
-      final prefs = await SharedPreferences.getInstance();
-      // 只保留最近 10 個對話
-      final sessionsToSave = _sessions.take(10).toList();
-      final sessionsJson = jsonEncode(
-        sessionsToSave.map((s) => s.toJson()).toList()
-      );
-      await prefs.setString(_sessionsStorageKey, sessionsJson);
+      final res = await _aiService.getChatSession(session.id);
+      final exchanges = res['exchanges'] as List<dynamic>? ?? [];
+      final msgs = <ChatMessage>[];
+      for (final raw in exchanges) {
+        final r = raw as Map<String, dynamic>;
+        final ts = (() {
+          try { return DateTime.parse(r['created_at'].toString()).toLocal(); } catch (_) { return DateTime.now(); }
+        })();
+        final userText = (r['message'] ?? '').toString();
+        final aiText = (r['response'] ?? '').toString();
+        if (userText.isNotEmpty) {
+          msgs.add(ChatMessage(content: userText, isUser: true, timestamp: ts));
+        }
+        if (aiText.isNotEmpty) {
+          msgs.add(ChatMessage(content: aiText, isUser: false, timestamp: ts));
+        }
+      }
+      if (!mounted) return;
+      setState(() {
+        session.messages = msgs;
+      });
     } catch (e) {
-      debugPrint('儲存對話歷史失敗: $e');
+      debugPrint('載入對話內容失敗 ($e)');
     }
   }
 
@@ -367,13 +399,22 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
     setState(() {
       _currentSession = session;
     });
-    // 滾動到底部
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToBottom();
+    // 若尚未載入該 session 的訊息，從後端取回
+    _ensureSessionMessagesLoaded(session).then((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _scrollToBottom();
+      });
     });
   }
 
   void _deleteSession(ChatSession session) {
+    // 後端刪除（fire-and-forget；失敗只記 log）
+    if (session.messages.isNotEmpty || _sessions.contains(session)) {
+      _aiService.deleteChatSession(session.id).catchError((e) {
+        debugPrint('刪除後端 session 失敗: $e');
+        return <String, dynamic>{};
+      });
+    }
     setState(() {
       _sessions.remove(session);
       if (_currentSession == session) {
@@ -383,7 +424,6 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
         }
       }
     });
-    _saveSessions(); // 刪除後儲存
   }
 
   // ============================================
