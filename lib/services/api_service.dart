@@ -202,7 +202,16 @@ class ApiService {
   }
 
   // 觸發後端清理任務
+  // [FIX] 加 throttle：清理是維護用工具，不應在每個畫面切換都打。
+  // 同 App 一次啟動內，10 分鐘最多打一次。避免被 nginx rate limit (api zone, 30r/m) 擋掉造成 503。
+  static DateTime? _lastCleanupAt;
   static Future<void> triggerCleanup() async {
+    final now = DateTime.now();
+    if (_lastCleanupAt != null &&
+        now.difference(_lastCleanupAt!).inMinutes < 10) {
+      return; // 靜默略過
+    }
+    _lastCleanupAt = now;
     try {
       // 這是一個 "fire-and-forget" 的請求，我們不在乎它的回應
       // 只需要確保請求被發送即可
