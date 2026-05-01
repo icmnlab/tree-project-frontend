@@ -11,6 +11,7 @@ import 'services/v3/project_boundary_service.dart';
 import 'screens/v3/project_boundary_draw_page.dart';
 import 'services/auth_service.dart'; // [T7] 角色權限
 import 'constants/colors.dart';
+import 'config/global_keys.dart';
 
 class MapPage extends StatefulWidget {
   const MapPage({super.key});
@@ -19,7 +20,7 @@ class MapPage extends StatefulWidget {
   State<MapPage> createState() => _MapPageState();
 }
 
-class _MapPageState extends State<MapPage> {
+class _MapPageState extends State<MapPage> with RouteAware {
   GoogleMapController? _controller;
   final Set<Marker> _markers = {};
   final Set<Polygon> _polygons = {}; // V3: 專案邊界多邊形
@@ -348,8 +349,26 @@ class _MapPageState extends State<MapPage> {
   @override
   void dispose() {
     _disposed = true;
+    GlobalKeys.routeObserver.unsubscribe(this);
     _controller?.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) {
+      GlobalKeys.routeObserver.subscribe(this, route);
+    }
+  }
+
+  // [Bug B 修復] 從別頁返回 MapPage 時強制刷新邊界與樹木資料，避免顯示快取
+  @override
+  void didPopNext() {
+    debugPrint('[MapPage] didPopNext: 強制刷新邊界與樹木資料');
+    _loadMapData();
+    _loadProjectBoundaries();
   }
 
   void _safeSetState(VoidCallback fn) {

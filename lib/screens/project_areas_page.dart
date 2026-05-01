@@ -366,8 +366,12 @@ class _ProjectAreasPageState extends State<ProjectAreasPage> {
 
   Future<void> _fetchProjectsByArea(String area) async {
     try {
+      // [Bug A 修復] 帶上 cityName，後端按樹木座標解析縣市過濾
+      final cityQuery = widget.cityName != null
+          ? '?city=${Uri.encodeComponent(widget.cityName!)}'
+          : '';
       final response =
-          await ApiService.get('projects/by_area/${Uri.encodeComponent(area)}');
+          await ApiService.get('projects/by_area/${Uri.encodeComponent(area)}$cityQuery');
 
       if (response['success'] == true) {
         final data = response;

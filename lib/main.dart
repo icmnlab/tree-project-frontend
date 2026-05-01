@@ -149,6 +149,7 @@ class MyApp extends StatelessWidget {
       builder: (context, _) => MaterialApp(
       title: '永續碳匯管理系統',
       navigatorKey: GlobalKeys.navigatorKey,
+      navigatorObservers: [GlobalKeys.routeObserver],
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       darkTheme: AppTheme.darkTheme,
