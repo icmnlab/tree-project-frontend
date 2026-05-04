@@ -365,62 +365,41 @@ class _ProjectAreasPageState extends State<ProjectAreasPage> {
   }
 
   Future<void> _fetchProjectsByArea(String area) async {
+    List<Map<String, dynamic>> projects = [];
     try {
-      // [Bug A 修復] 帶上 cityName，後端按樹木座標解析縣市過濾
+      // [Bug A 修復] 帶上 cityName，後端按 project_areas.city 或樹木座標解析縣市過濾
       final cityQuery = widget.cityName != null
           ? '?city=${Uri.encodeComponent(widget.cityName!)}'
           : '';
       final response =
           await ApiService.get('projects/by_area/${Uri.encodeComponent(area)}$cityQuery');
 
-      if (response['success'] == true) {
-        final data = response;
-
-        if (data['data'] != null && data['data'] is List) {
-          final List<dynamic> projects = data['data'];
-
-          if (projects.isNotEmpty) {
-            // 如果該區位下有專案，跳轉到顯示該區位下專案的頁面
-            if (mounted) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => _ProjectsByAreaPage(
-                    areaName: area,
-                    projects: List<Map<String, dynamic>>.from(
-                        projects.map((project) => {
-                              'name': project['name'],
-                              'code': project['code'],
-                              'area': project['area'],
-                            })),
-                  ),
-                ),
-              );
-            }
-            return;
-          }
-        }
-      }
-
-      // 如果沒有專案或API調用失敗，直接進入樹木列表頁面
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => TreeSurveyPage(areaName: area),
-          ),
-        );
+      if (response['success'] == true && response['data'] is List) {
+        final List<dynamic> data = response['data'];
+        projects = List<Map<String, dynamic>>.from(data.map((p) => {
+              'name': p['name'],
+              'code': p['code'],
+              'area': p['area'],
+            }));
       }
     } catch (e) {
-      // 發生錯誤時也直接進入樹木列表頁面
-      if (mounted) {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => TreeSurveyPage(areaName: area),
+      // 即便 API 失敗，仍進入專案列表頁顯示空狀態，由使用者決定下一步
+      // (而非自動跳到 TreeSurveyPage 越過區位 → 專案的層級)
+    }
+
+    // [P3 / Bug 3c 修復] 永遠進入 _ProjectsByAreaPage：
+    //   - 不再因為「空清單 / API fail」就 fallback 到 TreeSurveyPage
+    //   - _ProjectsByAreaPage 已支援空狀態 + FAB 可選擇查看所有樹木
+    if (mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => _ProjectsByAreaPage(
+            areaName: area,
+            projects: projects,
           ),
-        );
-      }
+        ),
+      );
     }
   }
 
@@ -579,7 +558,28 @@ class _ProjectsByAreaPage extends StatelessWidget {
       appBar: AppBar(
         title: Text('$areaName專案'),
       ),
-      body: ListView.builder(
+      body: projects.isEmpty
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.folder_off, size: 64, color: Colors.grey.shade400),
+                    const SizedBox(height: 16),
+                    Text('此區位目前沒有可顯示的專案',
+                        style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 8),
+                    Text(
+                      '可能因縣市過濾或權限不足。\n按右下角按鈕直接查看所有樹木。',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey.shade600),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : ListView.builder(
         padding: const EdgeInsets.all(12),
         itemCount: projects.length,
         itemBuilder: (context, index) {
