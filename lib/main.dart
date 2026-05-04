@@ -21,7 +21,6 @@ import 'services/theme_service.dart';
 import 'config/global_keys.dart';
 import 'services/api_service.dart';
 import 'services/auth_service.dart';
-import 'services/carbon_sink_service.dart';
 import 'services/v3/ml_data_sync_service.dart';
 import 'services/network_service.dart';
 
@@ -86,14 +85,9 @@ void main() async {
 
   await ApiService.initialize();
 
-  // Initialize CarbonSinkService to preload tree species data
-  final carbonSinkService = CarbonSinkService();
-  try {
-    await carbonSinkService.initialize();
-    print('樹種資料成功初始化');
-  } catch (e) {
-    print('樹種資料初始化失敗: $e');
-  }
+  // [Stage 0.3] 已移除 CarbonSinkService preload：
+  //   依賴的後端 /carbon-sink/tree-species 路由與 tree_carbon_data 表均已刪除，
+  //   實際也未被任何画面使用。
 
   // V3: 初始化 ML 數據同步服務
   try {

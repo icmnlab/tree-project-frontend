@@ -294,30 +294,9 @@ class ApiService {
     }
   }
 
-  // 獲取樹種資料
-  static Future<Map<String, dynamic>> getTreeSpecies() async {
-    try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/carbon-sink/tree-species'),
-        headers: _getHeaders(),
-      ).timeout(_timeout);
-
-      if (response.statusCode == 200) {
-        return _handleResponse(response);
-      } else {
-        return {
-          'success': false,
-          'message': '獲取樹種資料失敗: ${response.statusCode}'
-        };
-      }
-    } catch (e) {
-      print('Error fetching tree species: $e');
-      return {
-        'success': false,
-        'message': '獲取樹種資料時發生錯誤: $e',
-      };
-    }
-  }
+  // [Stage 0.3] 已移除 getTreeSpecies()：
+  //   後端 /carbon-sink/tree-species 路由隨 tree_carbon_data 表刪除一同移除，
+  //   實際上本函數只被 CarbonSinkService.initialize() 預載使用，未被任何画面使用。
 
   // AI永續碳匯助手 - 計算特定樹種的碳吸收量
   static Future<Map<String, dynamic>> calculateSpeciesCarbon({

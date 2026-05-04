@@ -11,7 +11,6 @@ import 'config/app_config.dart'; // Import AppConfig
 import 'screens/v3/project_boundary_draw_page.dart'; // V3 專案邊界繪製
 import 'screens/csv_import_page.dart'; // [Phase C] CSV 匯入頁面
 import 'screens/ip_blacklist_page.dart'; // [T8.2] IP 黑名單管理
-import '../services/api_service.dart';
 import '../services/auth_service.dart';
 
 class AdminPage extends StatefulWidget {
@@ -1008,66 +1007,13 @@ class _AdminPageState extends State<AdminPage> {
 
             // [T2] Admin Token 輸入框已移除：腳本執行改走 JWT（需系統管理員）
 
-            _buildSectionTitle('知識庫工程 (Knowledge Engineering)'),
-            const SizedBox(height: 16),
-            // 強制垂直排列，每個腳本一張卡片，佔滿寬度
-            Column(
-              children: [
-                _buildScriptCard(
-                  title: '更新調查數據知識庫',
-                  description: '將最新的「實地樹木調查記錄」同步至 AI 知識庫，讓 AI 能回答關於特定樹木的問題。',
-                  icon: Icons.sync,
-                  color: Colors.blue,
-                  scriptName: 'populate_knowledge_from_survey',
-                ),
-                const SizedBox(height: 16),
-                _buildScriptCard(
-                  title: '更新樹種科學數據庫',
-                  description: '將硬性科學指標（如碳吸存量、耐旱性）轉化為 AI 可理解的知識片段。',
-                  icon: Icons.science,
-                  color: Colors.teal,
-                  scriptName: 'generateEmbeddings',
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 32),
-            _buildSectionTitle('AI 內容生成 (Content Generation)'),
-            const SizedBox(height: 16),
-            Column(
-              children: [
-                _buildScriptCard(
-                  title: 'AI 撰寫樹種深度文章',
-                  description: '使用 LLM 為每個樹種自動撰寫詳細的百科全書式介紹文章。(僅針對新樹種生成，耗時較長)',
-                  icon: Icons.auto_awesome,
-                  color: Colors.purple,
-                  scriptName: 'generate_species_knowledge',
-                ),
-                const SizedBox(height: 16),
-                _buildScriptCard(
-                  title: '擴充樹種同義詞索引',
-                  description: '自動補充樹種的學名、別名與多語言名稱，提升搜尋準確度。',
-                  icon: Icons.translate,
-                  color: Colors.indigo,
-                  scriptName: 'enrich_species_synonyms',
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 32),
-            _buildSectionTitle('系統計算 (System Calculation)'),
-            const SizedBox(height: 16),
-            Column(
-              children: [
-                _buildScriptCard(
-                  title: '重算樹種區域評分',
-                  description: '根據樹種特性，重新計算所有樹種在台灣各區域的適植性評分。',
-                  icon: Icons.calculate,
-                  color: Colors.orange,
-                  scriptName: 'populateSpeciesRegionScore',
-                ),
-              ],
-            ),
+            // [Stage 0.2] 已移除「知識庫工程」「AI 內容生成」段：
+            //   knowledge embeddings RAG 在 2025.11 已被 Text-to-SQL 取代，
+            //   後端 routes/knowledge.js + tree_knowledge_embeddings_v2 表 (295 MB)
+            //   均已刪除，本 UI 區塊隨之失效，故移除。
+            // [Stage 0.3] 已移除「系統計算」段：
+            //   populateSpeciesRegionScore 依賴已刪除的 tree_carbon_data 表，
+            //   不再適用。
             const SizedBox(height: 40),
           ],
         ),
@@ -1209,138 +1155,9 @@ class _AdminPageState extends State<AdminPage> {
     }
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Row(
-      children: [
-        Container(
-          width: 4,
-          height: 24,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          // 使用 Expanded 防止標題過長溢出
-          child: Text(
-            title,
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildScriptCard({
-    required String title,
-    required String description,
-    required IconData icon,
-    required Color color,
-    required String scriptName,
-  }) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () => _runBackendScript(scriptName),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha:0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(icon, color: color, size: 28),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      description,
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[700],
-                        height: 1.4,
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: OutlinedButton.icon(
-                        onPressed: () =>
-                            _runBackendScript(scriptName),
-                        icon: Icon(Icons.play_circle_outline,
-                            size: 18, color: color),
-                        label: Text('執行腳本', style: TextStyle(color: color)),
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(color: color.withValues(alpha:0.5)),
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _runBackendScript(String scriptName) async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // [T2] 改走 ApiService.post（JWT 自動帶），不再需 X-Admin-Token。
-      // backend /api/admin/run-script 由 requireRole('系統管理員') 守護。
-      final data = await ApiService.post('admin/run-script', {
-        'scriptName': scriptName,
-      });
-      if (mounted) {
-        if (data['success'] == true) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('腳本執行成功: ${data['message']}')),
-          );
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('腳本執行失敗: ${data['message'] ?? '未知錯誤'}')),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('發生錯誤: $e')),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
+  // [Stage 0.3] 已移除 _buildSectionTitle / _buildScriptCard / _runBackendScript：
+  //   原本只服務「系統計算 (populateSpeciesRegionScore)」卡片，該卡片已移除。
+  //   /api/admin/run-script 後端端點目前無前端入口，保留待未來新增腳本時再接。
 
   @override
   Widget build(BuildContext context) {
