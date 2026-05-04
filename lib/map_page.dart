@@ -428,6 +428,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
   }
 
   // [優化] 從快取資料更新地圖標記
+  // [Stage 1] city 過濾改用伺服器權威 _city 欄位（utils/county.resolveAreaCity 解析）
   void _updateMarkersFromCache() {
     if (_cachedTreeData.isEmpty) return;
 
@@ -435,25 +436,8 @@ class _MapPageState extends State<MapPage> with RouteAware {
       if (_selectedProject != '全部' && tree['專案名稱'] != _selectedProject) {
         return false;
       }
-
       if (_selectedCity != '全部') {
-        final y = double.tryParse(tree['Y坐標']?.toString() ?? '0') ?? 0.0;
-        final x = double.tryParse(tree['X坐標']?.toString() ?? '0') ?? 0.0;
-
-        // [FIX] 區位名稱優先：若名稱對應到具體縣市，必須與 _selectedCity 一致；
-        // 沒有名稱關鍵字時才回退到 bbox。
-        if (tree['專案區位'] != null) {
-          final area = tree['專案區位'].toString();
-          final extractedCity = _extractCityFromArea(area);
-          if (extractedCity != null) {
-            return extractedCity == _selectedCity;
-          }
-        }
-
-        if (x != 0.0 && y != 0.0) {
-          return _isCoordinateInCity(x, y, _selectedCity);
-        }
-        return false;
+        return tree['_city'] == _selectedCity;
       }
       return true;
     }).toList();
@@ -505,27 +489,8 @@ class _MapPageState extends State<MapPage> with RouteAware {
       return;
     }
 
-    final filteredTrees = _cachedTreeData.where((tree) {
-      final y = double.tryParse(tree['Y坐標']?.toString() ?? '0') ?? 0.0;
-      final x = double.tryParse(tree['X坐標']?.toString() ?? '0') ?? 0.0;
-
-      // [FIX] 區位名稱若有明確對應的縣市，視為權威來源（避免「布袋港」因為 lat 23.378
-      // 同時落在台南 bbox 內而被誤分到台南市）。
-      String? extractedCity;
-      if (tree['專案區位'] != null) {
-        extractedCity = _extractCityFromArea(tree['專案區位'].toString());
-      }
-
-      if (extractedCity != null) {
-        return extractedCity == city;
-      }
-
-      // 沒有區位關鍵字 → 退回坐標 bbox 判斷
-      if (x != 0.0 && y != 0.0) {
-        return _isCoordinateInCity(x, y, city);
-      }
-      return false;
-    });
+    // [Stage 1] 使用伺服器權威 _city 欄位，不再自行解析名稱/座標
+    final filteredTrees = _cachedTreeData.where((tree) => tree['_city'] == city);
 
     final cityProjects = filteredTrees
         .map((tree) => tree['專案名稱'] as String?)
@@ -542,16 +507,15 @@ class _MapPageState extends State<MapPage> with RouteAware {
     _updateMarkersFromCache();
   }
 
+  // [Stage 1] 縣市下拉選單：列出資料中出現過的 _city + 完整台灣 22 縣市。
+  // 之前需要自行解析區位名稱，現在直接讀伺服器標註的 _city 欄位即可。
   List<String> _extractCitiesFromData(List<dynamic> data) {
     final Set<String> cities = {};
 
     for (var tree in data) {
-      if (tree['專案區位'] != null) {
-        final area = tree['專案區位'].toString();
-        String? extractedCity = _extractCityFromArea(area);
-        if (extractedCity != null) {
-          cities.add(extractedCity);
-        }
+      final c = tree['_city'];
+      if (c != null && c is String && c.isNotEmpty) {
+        cities.add(c);
       }
     }
 
@@ -565,98 +529,9 @@ class _MapPageState extends State<MapPage> with RouteAware {
     return cities.toList()..sort();
   }
 
-  String? _extractCityFromArea(String area) {
-    // [FIX] 已知港口/植栽區位 → 權威縣市對應，避免關鍵字誤判
-    // (例如「布袋港」原本不會被任何關鍵字命中，導致退回 bbox 後落入台南範圍)
-    final Map<String, String> knownAreaToCity = {
-      '基隆港': '基隆市',
-      '臺北港': '新北市',
-      '台北港': '新北市',
-      '臺中港': '台中市',
-      '台中港': '台中市',
-      '安平港': '台南市',
-      '布袋港': '嘉義縣',
-      '高雄港': '高雄市',
-      '蘇澳港': '宜蘭縣',
-      '花蓮港': '花蓮縣',
-      '澎湖港': '澎湖縣',
-    };
-    for (final entry in knownAreaToCity.entries) {
-      if (area.contains(entry.key)) return entry.value;
-    }
-
-    final Map<String, List<String>> cityKeywords = {
-      '台北市': ['台北', '臺北', '北市'],
-      '新北市': ['新北'],
-      '桃園市': ['桃園'],
-      '台中市': ['台中', '臺中', '中市'],
-      '台南市': ['台南', '臺南', '南市'],
-      '高雄市': ['高雄', '高市'],
-      '基隆市': ['基隆'],
-      '新竹市': ['新竹市', '竹市'],
-      '新竹縣': ['新竹縣', '竹縣'],
-      '苗栗縣': ['苗栗'],
-      '彰化縣': ['彰化'],
-      '南投縣': ['南投'],
-      '雲林縣': ['雲林'],
-      '嘉義市': ['嘉義市', '嘉市'],
-      '嘉義縣': ['嘉義縣', '嘉縣'],
-      '屏東縣': ['屏東'],
-      '宜蘭縣': ['宜蘭', '蘭陽', '羅東', '冬山', '礁溪'],
-      '花蓮縣': ['花蓮'],
-      '台東縣': ['台東', '臺東'],
-      '澎湖縣': ['澎湖'],
-      '金門縣': ['金門'],
-      '連江縣': ['連江', '馬祖'],
-    };
-
-    for (var city in cityKeywords.keys) {
-      if (cityKeywords[city]!.any((keyword) => area.contains(keyword))) {
-        return city;
-      }
-    }
-
-    if (area.contains('蘭') && !area.contains('花蘭')) {
-      return '宜蘭縣';
-    }
-
-    return null;
-  }
-
-  bool _isCoordinateInCity(double x, double y, String city) {
-    if (city == '全部') return true;
-
-    String simplifiedCity = city.replaceAll('市', '').replaceAll('縣', '');
-
-    Map<String, Map<String, double>> cityBounds = {
-      '台北': {'minLat': 25.01, 'maxLat': 25.22, 'minLng': 121.45, 'maxLng': 121.65},
-      '新北': {'minLat': 24.70, 'maxLat': 25.30, 'minLng': 121.28, 'maxLng': 122.05},
-      '桃園': {'minLat': 24.80, 'maxLat': 25.10, 'minLng': 121.10, 'maxLng': 121.45},
-      '台中': {'minLat': 24.05, 'maxLat': 24.40, 'minLng': 120.55, 'maxLng': 121.05},
-      '台南': {'minLat': 22.90, 'maxLat': 23.40, 'minLng': 120.10, 'maxLng': 120.50},
-      '高雄': {'minLat': 22.40, 'maxLat': 23.00, 'minLng': 120.15, 'maxLng': 120.50},
-      '基隆': {'minLat': 25.05, 'maxLat': 25.20, 'minLng': 121.65, 'maxLng': 121.85},
-      '新竹': {'minLat': 24.70, 'maxLat': 24.85, 'minLng': 120.90, 'maxLng': 121.05},
-      '嘉義': {'minLat': 23.45, 'maxLat': 23.55, 'minLng': 120.40, 'maxLng': 120.50},
-      '宜蘭': {'minLat': 24.50, 'maxLat': 24.90, 'minLng': 121.65, 'maxLng': 121.95},
-      '花蓮': {'minLat': 23.30, 'maxLat': 24.40, 'minLng': 121.30, 'maxLng': 121.65},
-      '台東': {'minLat': 22.50, 'maxLat': 23.40, 'minLng': 120.90, 'maxLng': 121.20},
-      '澎湖': {'minLat': 23.45, 'maxLat': 23.70, 'minLng': 119.40, 'maxLng': 119.70},
-      '金門': {'minLat': 24.40, 'maxLat': 24.55, 'minLng': 118.25, 'maxLng': 118.45},
-      '連江': {'minLat': 25.95, 'maxLat': 26.30, 'minLng': 119.90, 'maxLng': 120.20},
-      '苗栗': {'minLat': 24.25, 'maxLat': 24.70, 'minLng': 120.65, 'maxLng': 121.10},
-      '彰化': {'minLat': 23.85, 'maxLat': 24.15, 'minLng': 120.35, 'maxLng': 120.60},
-      '南投': {'minLat': 23.60, 'maxLat': 24.10, 'minLng': 120.75, 'maxLng': 121.15},
-      '雲林': {'minLat': 23.55, 'maxLat': 23.80, 'minLng': 120.15, 'maxLng': 120.50},
-      '屏東': {'minLat': 22.10, 'maxLat': 22.80, 'minLng': 120.40, 'maxLng': 120.80},
-    };
-
-    if (!cityBounds.containsKey(simplifiedCity)) return false;
-
-    var bounds = cityBounds[simplifiedCity]!;
-    return y >= bounds['minLat']! && y <= bounds['maxLat']! &&
-        x >= bounds['minLng']! && x <= bounds['maxLng']!;
-  }
+  // [Stage 1] _extractCityFromArea / _isCoordinateInCity 已移除
+  // 縣市判斷統一在後端 utils/county.resolveAreaCity (座標優先 + areaName fallback)，
+  // 透過 /tree_survey/map 回應的 _city 欄位帶到前端，不再有兩套不一致的邏輯。
 
   void _zoomToMarkers() {
     if (_markers.isEmpty || _controller == null) return;
