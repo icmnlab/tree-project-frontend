@@ -189,17 +189,13 @@ class CitiesPage extends StatelessWidget {
                           ),
                         ),
                         onTap: () {
-                          // 從城市名稱中獲取縣市簡稱，如"台北市"變成"台北"
-                          final String simpleName = city['name']
-                              .toString()
-                              .replaceAll('市', '')
-                              .replaceAll('縣', '');
-
+                          // 傳完整縣市名（含「市/縣」），讓後端 normalizeCityCandidates 精準命中
+                          // 不要砍尾綴，否則嘉義市/嘉義縣、新竹市/新竹縣會被合併成同一個查詢
                           Navigator.push(
                             context,
                             MaterialPageRoute(
                               builder: (context) => ProjectAreasPage(
-                                cityName: simpleName,
+                                cityName: city['name'],
                               ),
                             ),
                           );
