@@ -402,11 +402,12 @@ class _MapPageState extends State<MapPage> with RouteAware {
 
         _safeSetState(() {
           _projects = ['全部', ...projects];
-          _filteredProjects = ['全部', ...projects];
           _cities = ['全部', ...cities];
         });
 
-        _updateMarkersFromCache();
+        // 不直接設 _filteredProjects：交給 _updateProjectsForCity 依當前 _selectedCity
+        // 重算，變 Reload【選了花蓮縣 → 切走別頁 → didPopNext 重載】時不會被全部專案覆寫。
+        _updateProjectsForCity(_selectedCity);
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -481,9 +482,11 @@ class _MapPageState extends State<MapPage> with RouteAware {
 
   void _updateProjectsForCity(String city) {
     if (city == '全部') {
+      // 縣市=全部 → 列出所有專案；若使用者已選的專案還在就保留，不在就回 '全部'
+      final keepSelected = _projects.contains(_selectedProject);
       _safeSetState(() {
         _filteredProjects = _projects;
-        _selectedProject = '全部';
+        if (!keepSelected) _selectedProject = '全部';
       });
       _updateMarkersFromCache();
       return;
@@ -499,9 +502,12 @@ class _MapPageState extends State<MapPage> with RouteAware {
         .toSet()
         .toList();
 
+    final newList = ['全部', ...cityProjects];
+    final keepSelected = newList.contains(_selectedProject);
+
     _safeSetState(() {
-      _filteredProjects = ['全部', ...cityProjects];
-      _selectedProject = '全部';
+      _filteredProjects = newList;
+      if (!keepSelected) _selectedProject = '全部';
     });
 
     _updateMarkersFromCache();
@@ -520,10 +526,10 @@ class _MapPageState extends State<MapPage> with RouteAware {
     }
 
     cities.addAll([
-      '台北市', '新北市', '桃園市', '台中市', '台南市', '高雄市',
+      '臺北市', '新北市', '桃園市', '臺中市', '臺南市', '高雄市',
       '基隆市', '新竹市', '新竹縣', '苗栗縣', '彰化縣', '南投縣',
       '雲林縣', '嘉義市', '嘉義縣', '屏東縣', '宜蘭縣', '花蓮縣',
-      '台東縣', '澎湖縣', '金門縣', '連江縣',
+      '臺東縣', '澎湖縣', '金門縣', '連江縣',
     ]);
 
     return cities.toList()..sort();

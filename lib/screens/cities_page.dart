@@ -9,11 +9,11 @@ class CitiesPage extends StatelessWidget {
   Widget build(BuildContext context) {
     // 台灣縣市列表
     final List<Map<String, dynamic>> cities = [
-      {'name': '台北市', 'icon': Icons.location_city},
+      {'name': '臺北市', 'icon': Icons.location_city},
       {'name': '新北市', 'icon': Icons.location_city},
       {'name': '桃園市', 'icon': Icons.location_city},
-      {'name': '台中市', 'icon': Icons.location_city},
-      {'name': '台南市', 'icon': Icons.location_city},
+      {'name': '臺中市', 'icon': Icons.location_city},
+      {'name': '臺南市', 'icon': Icons.location_city},
       {'name': '高雄市', 'icon': Icons.location_city},
       {'name': '基隆市', 'icon': Icons.location_city},
       {'name': '新竹市', 'icon': Icons.location_city},
@@ -27,7 +27,7 @@ class CitiesPage extends StatelessWidget {
       {'name': '屏東縣', 'icon': Icons.landscape},
       {'name': '宜蘭縣', 'icon': Icons.landscape},
       {'name': '花蓮縣', 'icon': Icons.landscape},
-      {'name': '台東縣', 'icon': Icons.landscape},
+      {'name': '臺東縣', 'icon': Icons.landscape},
       {'name': '澎湖縣', 'icon': Icons.landscape},
       {'name': '金門縣', 'icon': Icons.landscape},
       {'name': '連江縣', 'icon': Icons.landscape},
