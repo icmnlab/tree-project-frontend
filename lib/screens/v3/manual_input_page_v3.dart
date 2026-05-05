@@ -28,7 +28,7 @@ class ManualInputPageV3 extends StatefulWidget {
 class _ManualInputPageV3State extends State<ManualInputPageV3> {
   int _currentStep = 0;
   bool _isLoading = false;
-  
+
   // Services
   final ProjectService _projectService = ProjectService();
   final TreeService _treeService = TreeService();
@@ -43,16 +43,15 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
   final TextEditingController _areaController = TextEditingController();
   LatLng? _currentLocation;
   String? _selectedProjectName;
-  List<String> _availableProjects = []; // ignore: unused_field — 從 _filteredProjects 中獲取，用於自動匹配時的顯示
   bool _isLocationValid = false;
   String? _locationWarning;
-  
+
   // V3: 專案區位和專案列表（類似 V2）
   List<Map<String, dynamic>> _projectAreas = [];
   List<Map<String, dynamic>> _filteredProjects = [];
   bool _loadingAreas = false;
   bool _loadingFilteredProjects = false;
-  
+
   // Cleanup Tracking - 追蹤本次 session 新增的專案區位和專案，以便在退出時清理
   final List<int> _createdAreaIds = [];
   final List<String> _createdProjectCodes = [];
@@ -80,12 +79,20 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
 
   // Step 4: Status
   String _selectedStatus = '正常';
-  final List<String> _statusOptions = ['正常', '枯死', '病蟲害', '傾斜', '斷梢', '空洞', '其他'];
-  
+  final List<String> _statusOptions = [
+    '正常',
+    '枯死',
+    '病蟲害',
+    '傾斜',
+    '斷梢',
+    '空洞',
+    '其他'
+  ];
+
   // Step 5: Photos & Notes
   final TextEditingController _notesController = TextEditingController();
   final List<File> _photos = [];
-  
+
   // Bug #23: 搜尋防抖
   Timer? _speciesSearchDebounce;
 
@@ -166,12 +173,10 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
       if (mounted) {
         setState(() {
           if (response['success'] == true && response['data'] != null) {
-            _filteredProjects = List<Map<String, dynamic>>.from(response['data']);
-            // 同時更新可用專案名稱列表（用於自動匹配）
-            _availableProjects = _filteredProjects.map((p) => p['name'] as String).toList();
+            _filteredProjects =
+                List<Map<String, dynamic>>.from(response['data']);
           } else {
             _filteredProjects = [];
-            _availableProjects = [];
           }
           _loadingFilteredProjects = false;
         });
@@ -181,7 +186,6 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
       if (mounted) {
         setState(() {
           _filteredProjects = [];
-          _availableProjects = [];
           _loadingFilteredProjects = false;
         });
       }
@@ -207,19 +211,18 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
     setState(() => _isLoading = true);
     try {
       final position = await getHighAccuracyPosition();
-      
+
       if (position != null && mounted) {
         setState(() {
           _currentLocation = LatLng(position.latitude, position.longitude);
           _isLoading = false;
         });
-        
+
         // 自動匹配專案
         _autoMatchProject();
       } else if (mounted) {
         setState(() => _isLoading = false);
       }
-      
     } catch (e) {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -230,17 +233,17 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
 
   Future<void> _autoMatchProject() async {
     if (_currentLocation == null) return;
-    
+
     // 確保邊界資料已載入
     await _boundaryService.getAllBoundaries();
-    
+
     if (!mounted) return;
-    
+
     final match = _boundaryService.findProjectByCoordinate(
       lat: _currentLocation!.latitude,
       lng: _currentLocation!.longitude,
     );
-    
+
     if (match.matched && match.projectName != null) {
       // [N2 fix] 區位以「專案名稱反查 projects 表」為權威來源。
       // 邊界 row 的 project_area 只是儲存邊界當下的快取（很多舊邊界沒帶
@@ -254,7 +257,8 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
         }
       } catch (_) {}
       // 完全查不到才退回看邊界 row 有沒有附帶（極少數情況）
-      resolvedArea ??= (match.projectArea?.isNotEmpty == true) ? match.projectArea : null;
+      resolvedArea ??=
+          (match.projectArea?.isNotEmpty == true) ? match.projectArea : null;
 
       if (mounted) {
         setState(() {
@@ -272,7 +276,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
         _showSnackBar('已自動匹配專案: ${match.projectName}'
             '${resolvedArea != null ? ' (區位: $resolvedArea)' : ''}');
       }
-      
+
       // 嘗試載入該專案的區位資訊
       if (_areaController.text.isNotEmpty) {
         _updateFilteredProjects(_areaController.text);
@@ -287,13 +291,13 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
 
   void _validateLocation() {
     if (_currentLocation == null || _projectController.text.isEmpty) return;
-    
+
     final validation = _boundaryService.validateCoordinateForProject(
       projectName: _projectController.text,
       lat: _currentLocation!.latitude,
       lng: _currentLocation!.longitude,
     );
-    
+
     setState(() {
       _isLocationValid = validation.isValid;
       _locationWarning = validation.isValid ? null : validation.message;
@@ -302,7 +306,8 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
 
   void _showSnackBar(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   // 專案區位對話框（類似 V2）
@@ -399,29 +404,28 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
       Position? position;
       try {
         position = await Geolocator.getLastKnownPosition();
-        if (position == null) {
-          position = await getHighAccuracyPosition(timeout: const Duration(seconds: 3));
-        }
+        position ??=
+            await getHighAccuracyPosition(timeout: const Duration(seconds: 3));
       } catch (e) {
         debugPrint('獲取位置失敗 (非致命): $e');
       }
 
       final requestData = {
         'area_name': areaName,
-        'description': areaName + '專案區位',
+        'description': '$areaName專案區位',
         'isSubmit': true,
         if (position != null) 'xCoord': position.longitude,
         if (position != null) 'yCoord': position.latitude,
       };
-      
+
       final response = await _projectAreaService.addProjectArea(requestData);
-      
+
       if (response['success'] == true) {
         // 追蹤新增的專案區位 ID
         if (response['data'] != null && response['data']['id'] != null) {
           _createdAreaIds.add(response['data']['id'] as int);
         }
-        
+
         await _loadProjectAreas();
         setState(() {
           _areaController.text = areaName;
@@ -430,7 +434,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
           _selectedProjectName = null;
         });
         await _updateFilteredProjects(areaName);
-        
+
         if (mounted) {
           _showSnackBar('專案區位新增成功');
         }
@@ -467,7 +471,8 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
                 children: [
                   const Text('選擇專案', style: TextStyle(fontSize: 20)),
                   IconButton(
-                    icon: const Icon(Icons.add_circle_outline, color: Colors.teal),
+                    icon: const Icon(Icons.add_circle_outline,
+                        color: Colors.teal),
                     onPressed: () {
                       Navigator.pop(context);
                       _showAddProjectDialog();
@@ -493,12 +498,16 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
                                     return Card(
                                       child: ListTile(
                                         title: Text(project['name'] ?? '未知專案'),
-                                        subtitle: Text('代碼: ${project['code'] ?? '未知'}'),
+                                        subtitle: Text(
+                                            '代碼: ${project['code'] ?? '未知'}'),
                                         onTap: () {
                                           setState(() {
-                                            _projectController.text = project['name'] ?? '';
-                                            _projectCodeController.text = project['code'] ?? '';
-                                            _selectedProjectName = project['name'];
+                                            _projectController.text =
+                                                project['name'] ?? '';
+                                            _projectCodeController.text =
+                                                project['code'] ?? '';
+                                            _selectedProjectName =
+                                                project['name'];
                                           });
                                           Navigator.pop(context);
                                           _validateLocation();
@@ -558,15 +567,16 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
   Future<void> _addProject(String projectName) async {
     setState(() => _isLoading = true);
     try {
-      final response = await _projectService.addProject(projectName, _areaController.text);
+      final response =
+          await _projectService.addProject(projectName, _areaController.text);
       if (response['success'] == true) {
         final newProject = response['project'];
-        
+
         // 追蹤新增的專案 code
         if (newProject['code'] != null) {
           _createdProjectCodes.add(newProject['code'] as String);
         }
-        
+
         setState(() {
           _projectController.text = newProject['name'];
           _projectCodeController.text = newProject['code'];
@@ -640,19 +650,9 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
   // 清理臨時新增的專案區位和專案
   Future<void> _performCleanup() async {
     if (_createdAreaIds.isEmpty && _createdProjectCodes.isEmpty) return;
-    
+
     debugPrint('[ManualInputPageV3] 執行清理工作...');
-    
-    // 清理新增的專案區位
-    for (var id in _createdAreaIds) {
-      try {
-        await _projectAreaService.deleteProjectArea(id);
-        debugPrint('[ManualInputPageV3] 已刪除專案區位 ID: $id');
-      } catch (e) {
-        debugPrint('[ManualInputPageV3] 刪除專案區位失敗 (ID: $id): $e');
-      }
-    }
-    
+
     // 清理新增的專案
     for (var code in _createdProjectCodes) {
       try {
@@ -662,17 +662,29 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
         debugPrint('[ManualInputPageV3] 刪除專案失敗 (Code: $code): $e');
       }
     }
-    
+
+    // 清理新增的專案區位。必須放在專案清理之後，避免先刪區位導致
+    // projects.area_id 被資料庫設為 NULL，但 project_boundaries 仍保留。
+    for (var id in _createdAreaIds) {
+      try {
+        await _projectAreaService.deleteProjectArea(id);
+        debugPrint('[ManualInputPageV3] 已刪除專案區位 ID: $id');
+      } catch (e) {
+        debugPrint('[ManualInputPageV3] 刪除專案區位失敗 (ID: $id): $e');
+      }
+    }
+
     debugPrint('[ManualInputPageV3] 清理工作完成');
   }
 
   @override
   void dispose() {
     // 如果沒有提交且新增了專案區位/專案，執行清理（fire-and-forget，最佳努力）
-    if (!_hasSubmitted && (_createdAreaIds.isNotEmpty || _createdProjectCodes.isNotEmpty)) {
+    if (!_hasSubmitted &&
+        (_createdAreaIds.isNotEmpty || _createdProjectCodes.isNotEmpty)) {
       _performCleanup(); // async but intentional fire-and-forget
     }
-    
+
     // Bug #20: 清理暫存照片
     for (final photo in _photos) {
       try {
@@ -680,7 +692,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
       } catch (_) {}
     }
     _photos.clear();
-    
+
     _speciesSearchDebounce?.cancel();
     _projectController.dispose();
     _projectCodeController.dispose();
@@ -699,7 +711,8 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
         // 如果新增了專案區位/專案但還沒提交，詢問是否要清理
-        if (!_hasSubmitted && (_createdAreaIds.isNotEmpty || _createdProjectCodes.isNotEmpty)) {
+        if (!_hasSubmitted &&
+            (_createdAreaIds.isNotEmpty || _createdProjectCodes.isNotEmpty)) {
           final shouldPop = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
@@ -718,54 +731,54 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
               ],
             ),
           );
-          
+
           if (shouldPop == true) {
             await _performCleanup();
-            if (mounted) Navigator.of(context).pop();
+            if (context.mounted) Navigator.of(context).pop();
           }
         } else {
-          Navigator.of(context).pop();
+          if (context.mounted) Navigator.of(context).pop();
         }
       },
       child: Scaffold(
-      appBar: AppBar(
-        title: const Text('新增樹木 (V3)'),
-        backgroundColor: Colors.teal,
-        foregroundColor: Colors.white,
-      ),
-      body: Stepper(
-        type: StepperType.horizontal,
-        currentStep: _currentStep,
-        onStepContinue: _handleStepContinue,
-        onStepCancel: _handleStepCancel,
-        controlsBuilder: _buildControls,
-        steps: [
-          Step(
-            title: const Text('位置'),
-            content: _buildLocationStep(),
-            isActive: _currentStep >= 0,
-            state: _currentStep > 0 ? StepState.complete : StepState.editing,
-          ),
-          Step(
-            title: const Text('樹種'),
-            content: _buildSpeciesStep(),
-            isActive: _currentStep >= 1,
-            state: _currentStep > 1 ? StepState.complete : StepState.editing,
-          ),
-          Step(
-            title: const Text('測量'),
-            content: _buildMeasurementStep(),
-            isActive: _currentStep >= 2,
-            state: _currentStep > 2 ? StepState.complete : StepState.editing,
-          ),
-          Step(
-            title: const Text('完成'),
-            content: _buildFinalizeStep(),
-            isActive: _currentStep >= 3,
-            state: _currentStep > 3 ? StepState.complete : StepState.editing,
-          ),
-        ],
-      ),
+        appBar: AppBar(
+          title: const Text('新增樹木 (V3)'),
+          backgroundColor: Colors.teal,
+          foregroundColor: Colors.white,
+        ),
+        body: Stepper(
+          type: StepperType.horizontal,
+          currentStep: _currentStep,
+          onStepContinue: _handleStepContinue,
+          onStepCancel: _handleStepCancel,
+          controlsBuilder: _buildControls,
+          steps: [
+            Step(
+              title: const Text('位置'),
+              content: _buildLocationStep(),
+              isActive: _currentStep >= 0,
+              state: _currentStep > 0 ? StepState.complete : StepState.editing,
+            ),
+            Step(
+              title: const Text('樹種'),
+              content: _buildSpeciesStep(),
+              isActive: _currentStep >= 1,
+              state: _currentStep > 1 ? StepState.complete : StepState.editing,
+            ),
+            Step(
+              title: const Text('測量'),
+              content: _buildMeasurementStep(),
+              isActive: _currentStep >= 2,
+              state: _currentStep > 2 ? StepState.complete : StepState.editing,
+            ),
+            Step(
+              title: const Text('完成'),
+              content: _buildFinalizeStep(),
+              isActive: _currentStep >= 3,
+              state: _currentStep > 3 ? StepState.complete : StepState.editing,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -820,7 +833,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
         _showSnackBar('請選擇專案區位和專案名稱');
         return;
       }
-      
+
       // 如果有選擇專案名稱，驗證位置
       if (_projectController.text.isNotEmpty && !_isLocationValid) {
         // 警告但允許繼續 (V3 原則：Validation Warning)
@@ -830,7 +843,9 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
             title: const Text('位置警告'),
             content: Text(_locationWarning ?? '位置不在專案邊界內'),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(context), child: const Text('返回')),
+              TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('返回')),
               ElevatedButton(
                 onPressed: () {
                   Navigator.pop(context);
@@ -890,7 +905,8 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
         if (_currentLocation != null)
           Container(
             // [N8 RWD] 高度依螢幕比例，小螢幕不再硬塞 200px；範圍 160-260。
-            height: (MediaQuery.of(context).size.height * 0.25).clamp(160.0, 260.0),
+            height:
+                (MediaQuery.of(context).size.height * 0.25).clamp(160.0, 260.0),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               border: Border.all(color: Colors.grey.shade300),
@@ -914,7 +930,8 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
                 // 造成「單指拖地圖→放手後地圖回彈到反方向」(實際是 Stepper 在滑)。
                 // 用 EagerGestureRecognizer 讓地圖立刻認領垂直拖動，外層就不會搶。
                 gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
-                  Factory<OneSequenceGestureRecognizer>(() => EagerGestureRecognizer()),
+                  Factory<OneSequenceGestureRecognizer>(
+                      () => EagerGestureRecognizer()),
                 },
                 onTap: (pos) {
                   setState(() {
@@ -927,13 +944,14 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
           )
         else
           Container(
-            height: (MediaQuery.of(context).size.height * 0.25).clamp(160.0, 260.0),
+            height:
+                (MediaQuery.of(context).size.height * 0.25).clamp(160.0, 260.0),
             color: Colors.grey.shade100,
             child: const Center(child: CircularProgressIndicator()),
           ),
-        
+
         const SizedBox(height: 16),
-        
+
         // 專案區位選擇（類似 V2）
         TextFormField(
           controller: _areaController,
@@ -949,9 +967,9 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
           readOnly: true,
           onTap: _showProjectAreaDialog,
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // 專案名稱選擇（類似 V2）
         TextFormField(
           controller: _projectController,
@@ -961,15 +979,18 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
             prefixIcon: const Icon(Icons.folder),
             suffixIcon: IconButton(
               icon: const Icon(Icons.arrow_drop_down),
-              onPressed: _areaController.text.isNotEmpty ? _showProjectDialog : null,
+              onPressed:
+                  _areaController.text.isNotEmpty ? _showProjectDialog : null,
             ),
           ),
           readOnly: true,
-          onTap: _areaController.text.isNotEmpty ? _showProjectDialog : () {
-            _showSnackBar('請先選擇專案區位');
-          },
+          onTap: _areaController.text.isNotEmpty
+              ? _showProjectDialog
+              : () {
+                  _showSnackBar('請先選擇專案區位');
+                },
         ),
-        
+
         if (_locationWarning != null)
           Padding(
             padding: const EdgeInsets.only(top: 8.0),
@@ -977,7 +998,10 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
               children: [
                 const Icon(Icons.warning, color: Colors.orange, size: 16),
                 const SizedBox(width: 8),
-                Expanded(child: Text(_locationWarning!, style: const TextStyle(color: Colors.orange, fontSize: 12))),
+                Expanded(
+                    child: Text(_locationWarning!,
+                        style: const TextStyle(
+                            color: Colors.orange, fontSize: 12))),
               ],
             ),
           ),
@@ -1014,14 +1038,17 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
             const SizedBox(width: 8),
             IconButton.filled(
               onPressed: _identifySpeciesWithCamera,
-              icon: _isIdentifying 
-                  ? const SizedBox(width: 24, height: 24, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+              icon: _isIdentifying
+                  ? const SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2))
                   : const Icon(Icons.camera_enhance),
               tooltip: '拍照辨識',
             ),
           ],
         ),
-        
         if (_speciesSearchResults.isNotEmpty)
           Container(
             height: 150,
@@ -1039,7 +1066,8 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
                 return ListTile(
                   leading: Icon(
                     matchType == 'synonym' ? Icons.swap_horiz : Icons.park,
-                    color: matchType == 'synonym' ? Colors.orange : Colors.green,
+                    color:
+                        matchType == 'synonym' ? Colors.orange : Colors.green,
                     size: 20,
                   ),
                   title: Text(species['name'] ?? ''),
@@ -1069,7 +1097,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
       setState(() => _speciesSearchResults = []);
       return;
     }
-    
+
     // 先嘗試 server-side 搜尋（含同義詞）
     try {
       final serverResults = await _speciesService.searchSpecies(query);
@@ -1078,7 +1106,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
         return;
       }
     } catch (_) {}
-    
+
     // Fallback: 從已載入的樹種列表中搜尋（含同義詞）
     final results = _allSpecies.where((s) {
       final name = (s['name'] ?? s['樹種名稱']).toString().toLowerCase();
@@ -1086,7 +1114,10 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
       final sciName = (s['scientific_name'] ?? '').toString().toLowerCase();
       final synonyms = (s['synonyms'] as List?)?.join(' ').toLowerCase() ?? '';
       final q = query.toLowerCase();
-      return name.contains(q) || id.contains(q) || sciName.contains(q) || synonyms.contains(q);
+      return name.contains(q) ||
+          id.contains(q) ||
+          sciName.contains(q) ||
+          synonyms.contains(q);
     }).toList();
 
     if (mounted) {
@@ -1150,12 +1181,13 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
         setState(() => _isIdentifying = false);
         return;
       }
-      
+
       // 添加到照片列表
       _photos.add(image);
-      
-      final result = await SpeciesIdentificationService.identifyFromFile(image, lang: 'zh');
-      
+
+      final result = await SpeciesIdentificationService.identifyFromFile(image,
+          lang: 'zh');
+
       if (result['success'] == true && mounted) {
         final results = result['results'] as List? ?? [];
         if (results.isNotEmpty) {
@@ -1164,31 +1196,40 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
           final Map<String, dynamic>? speciesObj = bestMatch['species'] is Map
               ? Map<String, dynamic>.from(bestMatch['species'] as Map)
               : null;
-          final String? sciNoAuthor = (speciesObj?['scientificNameWithoutAuthor'] ?? bestMatch['scientificNameWithoutAuthor']) as String?;
-          final String? sciFull = (speciesObj?['scientificName'] ?? bestMatch['scientificName']) as String?;
-          final commonNames = (speciesObj?['commonNames'] ?? bestMatch['commonNames']) as List?;
+          final String? sciNoAuthor =
+              (speciesObj?['scientificNameWithoutAuthor'] ??
+                  bestMatch['scientificNameWithoutAuthor']) as String?;
+          final String? sciFull = (speciesObj?['scientificName'] ??
+              bestMatch['scientificName']) as String?;
+          final commonNames =
+              (speciesObj?['commonNames'] ?? bestMatch['commonNames']) as List?;
           final rawScore = bestMatch['score'];
-          final score = rawScore != null ? ((rawScore as num).toDouble() * 100).toStringAsFixed(1) : '0.0';
+          final score = rawScore != null
+              ? ((rawScore as num).toDouble() * 100).toStringAsFixed(1)
+              : '0.0';
 
           // [Policy] 學名優先；若無則退回完整學名/俗名，總之要把名字填進去
-          final String? commonHint = (commonNames != null && commonNames.isNotEmpty)
-              ? commonNames.first?.toString()
-              : null;
+          final String? commonHint =
+              (commonNames != null && commonNames.isNotEmpty)
+                  ? commonNames.first?.toString()
+                  : null;
           String displayName = (sciNoAuthor ?? '').trim();
           if (displayName.isEmpty) displayName = (sciFull ?? '').trim();
-          if (displayName.isEmpty && commonHint != null) displayName = commonHint.trim();
+          if (displayName.isEmpty && commonHint != null) {
+            displayName = commonHint.trim();
+          }
           if (displayName.isEmpty) {
             _showSnackBar('辨識結果不完整，請手動輸入樹種');
             return;
           }
           // 對外仍以 scientificNameWithoutAuthor 命名變數，方便後續匹配 (fallback 已併入 displayName)
           final String? speciesName = sciNoAuthor ?? sciFull;
-          
+
           // 優先使用後端回傳的 localMatch（含自動新增結果）
           String? matchedId;
           final localMatch = result['localMatch'] as Map<String, dynamic>?;
           final wasAutoAdded = result['autoAdded'] == true;
-          
+
           if (localMatch != null && localMatch['id'] != null) {
             matchedId = localMatch['id'].toString();
           } else {
@@ -1196,13 +1237,17 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
             try {
               final match = _allSpecies.firstWhere((s) {
                 final dbName = (s['name'] ?? '').toString().toLowerCase();
-                final dbSciName = (s['scientific_name'] ?? '').toString().toLowerCase();
-                final synonyms = (s['synonyms'] as List?)?.map((e) => e.toString().toLowerCase()).toList() ?? [];
+                final dbSciName =
+                    (s['scientific_name'] ?? '').toString().toLowerCase();
+                final synonyms = (s['synonyms'] as List?)
+                        ?.map((e) => e.toString().toLowerCase())
+                        .toList() ??
+                    [];
                 final displayLower = displayName.toLowerCase();
                 final sciLower = (speciesName ?? '').toLowerCase();
-                return dbName == displayLower || 
-                       (dbSciName.isNotEmpty && dbSciName == sciLower) ||
-                       synonyms.contains(displayLower);
+                return dbName == displayLower ||
+                    (dbSciName.isNotEmpty && dbSciName == sciLower) ||
+                    synonyms.contains(displayLower);
               });
               matchedId = match['id']?.toString() ?? match['樹種編號']?.toString();
             } catch (_) {
@@ -1224,7 +1269,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
             if (matchedId != null) {
               _speciesId = matchedId;
             }
-            
+
             // 將自動新增的樹種加入列表（在 setState 內，修復 Bug #18）
             if (wasAutoAdded && localMatch != null) {
               _allSpecies.add({
@@ -1233,7 +1278,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
                 'scientific_name': localMatch['scientificName'] ?? speciesName,
               });
             }
-            
+
             // [ML Data Collection]
             _autoIdentifiedSpeciesName = displayName;
             _autoIdentifiedSpeciesId = matchedId;
@@ -1274,7 +1319,8 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
             ElevatedButton(
               onPressed: _startDBHMeasurement,
               style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                 backgroundColor: Colors.teal.shade50,
                 foregroundColor: Colors.teal,
               ),
@@ -1287,9 +1333,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
             ),
           ],
         ),
-        
         const SizedBox(height: 16),
-        
         TextFormField(
           controller: _heightController,
           keyboardType: TextInputType.number,
@@ -1335,7 +1379,8 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
   Future<void> _identifySpeciesFromImage(File image) async {
     setState(() => _isIdentifying = true);
     try {
-      final result = await SpeciesIdentificationService.identifyFromFile(image, lang: 'zh');
+      final result = await SpeciesIdentificationService.identifyFromFile(image,
+          lang: 'zh');
       if (result['success'] == true && mounted) {
         final results = result['results'] as List? ?? [];
         if (results.isNotEmpty) {
@@ -1344,9 +1389,13 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
           final String? speciesName = bestMatch['species'] != null
               ? bestMatch['species']['scientificNameWithoutAuthor'] as String?
               : bestMatch['scientificNameWithoutAuthor'] as String?;
-          final commonNames = bestMatch['species'] != null ? bestMatch['species']['commonNames'] as List? : bestMatch['commonNames'] as List?;
+          final commonNames = bestMatch['species'] != null
+              ? bestMatch['species']['commonNames'] as List?
+              : bestMatch['commonNames'] as List?;
           final rawScore = bestMatch['score'];
-          final score = rawScore != null ? ((rawScore as num).toDouble() * 100).toStringAsFixed(1) : '0.0';
+          final score = rawScore != null
+              ? ((rawScore as num).toDouble() * 100).toStringAsFixed(1)
+              : '0.0';
           String displayName = speciesName ?? '';
           if (commonNames != null && commonNames.isNotEmpty) {
             displayName = commonNames.first?.toString() ?? displayName;
@@ -1357,7 +1406,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
           String? matchedId;
           final localMatch = result['localMatch'] as Map<String, dynamic>?;
           final wasAutoAdded = result['autoAdded'] == true;
-          
+
           if (localMatch != null && localMatch['id'] != null) {
             matchedId = localMatch['id'].toString();
             // Bug #19 fix: 將 _allSpecies.add 移入下方 setState
@@ -1365,13 +1414,17 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
             try {
               final match = _allSpecies.firstWhere((s) {
                 final dbName = (s['name'] ?? '').toString().toLowerCase();
-                final dbSciName = (s['scientific_name'] ?? '').toString().toLowerCase();
-                final synonyms = (s['synonyms'] as List?)?.map((e) => e.toString().toLowerCase()).toList() ?? [];
+                final dbSciName =
+                    (s['scientific_name'] ?? '').toString().toLowerCase();
+                final synonyms = (s['synonyms'] as List?)
+                        ?.map((e) => e.toString().toLowerCase())
+                        .toList() ??
+                    [];
                 final displayLower = displayName.toLowerCase();
                 final sciLower = (speciesName ?? '').toLowerCase();
-                return dbName == displayLower || 
-                       (dbSciName.isNotEmpty && dbSciName == sciLower) ||
-                       synonyms.contains(displayLower);
+                return dbName == displayLower ||
+                    (dbSciName.isNotEmpty && dbSciName == sciLower) ||
+                    synonyms.contains(displayLower);
               });
               matchedId = match['id']?.toString() ?? match['樹種編號']?.toString();
             } catch (_) {}
@@ -1430,9 +1483,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
             );
           }).toList(),
         ),
-        
         const SizedBox(height: 16),
-        
         TextFormField(
           controller: _notesController,
           maxLines: 3,
@@ -1442,9 +1493,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
             prefixIcon: Icon(Icons.note),
           ),
         ),
-        
         const SizedBox(height: 16),
-        
         const Text('照片記錄', style: TextStyle(fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         SizedBox(
@@ -1476,7 +1525,8 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
                       padding: const EdgeInsets.only(right: 8),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(8),
-                        child: Image.file(_photos[index], width: 80, height: 80, fit: BoxFit.cover),
+                        child: Image.file(_photos[index],
+                            width: 80, height: 80, fit: BoxFit.cover),
                       ),
                     );
                   },
@@ -1498,28 +1548,29 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
 
   Future<void> _submitForm() async {
     if (_isLoading) return; // 防止重複提交
-    
+
     // 驗證必要欄位
     if (_currentLocation == null) {
       _showSnackBar('尚未取得 GPS 定位，無法提交');
       return;
     }
-    
+
     final dbhValue = double.tryParse(_dbhController.text);
     if (dbhValue == null || dbhValue <= 0) {
       _showSnackBar('請輸入有效的胸徑 (DBH > 0)');
       return;
     }
-    
+
     final heightValue = double.tryParse(_heightController.text);
     // 樹高為選填但不可為負
-    if (_heightController.text.isNotEmpty && (heightValue == null || heightValue < 0)) {
+    if (_heightController.text.isNotEmpty &&
+        (heightValue == null || heightValue < 0)) {
       _showSnackBar('請輸入有效的樹高');
       return;
     }
-    
+
     setState(() => _isLoading = true);
-    
+
     try {
       // [Auto-Add] 提交前確保樹種已建檔（取代舊的「新增樹種」按鈕；多人並發安全）
       final speciesOk = await _ensureSpeciesId();
@@ -1530,24 +1581,26 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
 
       // 1. 準備提交數據 (相容 V2 API)
       final treeData = {
-        "project_name": _projectController.text.isNotEmpty ? _projectController.text : _selectedProjectName,
+        "project_name": _projectController.text.isNotEmpty
+            ? _projectController.text
+            : _selectedProjectName,
         "project_code": _projectCodeController.text,
         "project_area": _areaController.text,
-        
+
         "species_name": _speciesController.text,
         "species_id": _speciesId, // Optional
-        
+
         "x_coord": _currentLocation!.longitude,
         "y_coord": _currentLocation!.latitude,
-        
+
         "dbh_cm": dbhValue,
         "tree_height_m": heightValue ?? 0,
-        
+
         "status": _selectedStatus,
         "note": _notesController.text,
-        
+
         "survey_time": DateTime.now().toIso8601String(),
-        
+
         // V3 額外元數據 (如果 API 支援)
         "v3_metadata": {
           "measurement_method": _measurementMethod ?? "manual",
@@ -1555,16 +1608,17 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
           "is_ar_measured": _measurementMethod != null,
         }
       };
-      
+
       // 2. 呼叫 API 創建樹木
       final response = await _treeService.createTreeV2(treeData);
-      
+
       if (response['success'] == true) {
         // 標記為已提交，這樣 dispose 時就不會清理新增的專案/區位
         _hasSubmitted = true;
-        
-        final treeId = (response['id'] ?? response['data']?['id'] ?? 'unknown').toString();
-        
+
+        final treeId =
+            (response['id'] ?? response['data']?['id'] ?? 'unknown').toString();
+
         // 3. 儲存照片 (關聯到新創建的 treeId)
         for (var photo in _photos) {
           await _imageService.saveMeasurementImage(
@@ -1596,23 +1650,26 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
             autoIdentifiedSpeciesName: _autoIdentifiedSpeciesName!,
             userSelectedSpeciesId: _speciesId ?? 'unknown',
             userSelectedSpeciesName: _speciesController.text,
-            confidence: _speciesConfidence != null ? (double.tryParse(_speciesConfidence!) ?? 0) / 100.0 : null,
+            confidence: _speciesConfidence != null
+                ? (double.tryParse(_speciesConfidence!) ?? 0) / 100.0
+                : null,
             topPredictions: _aiPredictions,
             imagePath: _identificationImage?.path,
           );
         }
-        
+
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('新增成功!')));
+          ScaffoldMessenger.of(context)
+              .showSnackBar(const SnackBar(content: Text('新增成功!')));
           Navigator.pop(context, true); // 返回成功
         }
       } else {
         throw Exception(response['message'] ?? '提交失敗');
       }
-      
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('錯誤: $e')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text('錯誤: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
