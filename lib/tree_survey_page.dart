@@ -45,6 +45,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
   }
 
   Future<void> _fetchTrees() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _errorMessage = '';
@@ -56,7 +57,8 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
       if (widget.projectName != null) {
         // 如果有專案名稱，則按專案名稱過濾
         _logDebug('按專案名稱過濾: ${widget.projectName}');
-        response = await _treeService.getTreesByProjectName(widget.projectName!);
+        response =
+            await _treeService.getTreesByProjectName(widget.projectName!);
       } else if (widget.areaName != null) {
         // 如果有區位名稱，則按區位名稱過濾
         _logDebug('按區位名稱過濾: ${widget.areaName}');
@@ -68,6 +70,8 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
       }
 
       _logDebug('API 響應成功');
+
+      if (!mounted) return;
 
       if (response['success'] == true && response['data'] != null) {
         final data = response['data'] as List;
@@ -130,6 +134,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
       }
     } catch (e) {
       _logDebug('發生錯誤: $e');
+      if (!mounted) return;
       setState(() {
         _errorMessage = '發生錯誤: $e';
         _isLoading = false;
@@ -185,9 +190,9 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
 
   void _showAiAssistant() async {
     final userInfo = await AuthService.getUserInfo();
-    final id = userInfo?['user_id']?.toString()
-        ?? userInfo?['account']?.toString()
-        ?? userInfo?['username']?.toString();
+    final id = userInfo?['user_id']?.toString() ??
+        userInfo?['account']?.toString() ??
+        userInfo?['username']?.toString();
     final userId = (id == null || id.isEmpty) ? 'anon' : 'u$id';
     if (!mounted) return;
     Navigator.push(
@@ -209,9 +214,12 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardBg = isDark ? AppColors.darkCard : Colors.white;
     final pageBg = isDark ? AppColors.darkBackground : AppColors.surfaceLight;
-    final textPrimary = isDark ? AppColors.darkTextPrimary : AppColors.neutral900;
-    final textSecondary = isDark ? AppColors.darkTextSecondary : AppColors.neutral600;
-    final textTertiary = isDark ? AppColors.darkTextTertiary : AppColors.neutral500;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.neutral900;
+    final textSecondary =
+        isDark ? AppColors.darkTextSecondary : AppColors.neutral600;
+    final textTertiary =
+        isDark ? AppColors.darkTextTertiary : AppColors.neutral500;
 
     return Scaffold(
       backgroundColor: pageBg,
@@ -223,7 +231,10 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppColors.portBlue, AppColors.portBlue.withValues(alpha: 0.8)],
+              colors: [
+                AppColors.portBlue,
+                AppColors.portBlue.withValues(alpha: 0.8)
+              ],
             ),
             boxShadow: [
               BoxShadow(
@@ -269,156 +280,169 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
           ),
         ),
         child: _isLoading
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: cardBg,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.portBlue.withValues(alpha: 0.1),
-                          blurRadius: 20,
-                          spreadRadius: 5,
-                        ),
-                      ],
-                    ),
-                    child: CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(AppColors.portBlue),
-                      strokeWidth: 3,
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    '載入樹木資料中...',
-                    style: TextStyle(
-                      color: textSecondary,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            )
-          : _errorMessage.isNotEmpty
-              ? Center(
-                  child: Container(
-                    margin: const EdgeInsets.all(24),
-                    padding: const EdgeInsets.all(32),
-                    decoration: BoxDecoration(
-                      color: cardBg,
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.05),
-                          blurRadius: 20,
-                          spreadRadius: 5,
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: AppColors.error.withValues(alpha: 0.1),
-                            shape: BoxShape.circle,
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: cardBg,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.portBlue.withValues(alpha: 0.1),
+                            blurRadius: 20,
+                            spreadRadius: 5,
                           ),
-                          child: const Icon(
-                            Icons.error_outline_rounded,
-                            size: 48,
-                            color: AppColors.error,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        Text(
-                          '載入失敗',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: textPrimary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _errorMessage,
-                          style: TextStyle(color: textSecondary, fontSize: 14),
-                          textAlign: TextAlign.center,
-                        ),
-                        const SizedBox(height: 24),
-                        ElevatedButton.icon(
-                          icon: const Icon(Icons.refresh_rounded, color: Colors.white),
-                          label: const Text('重新整理', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600)),
-                          onPressed: () {
-                            _cleanupUnusedData().then((_) => _fetchTrees());
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.portBlue,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-                            elevation: 0,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              : _trees.isEmpty
-                  ? Center(
-                      child: Container(
-                        margin: const EdgeInsets.all(24),
-                        padding: const EdgeInsets.all(40),
-                        decoration: BoxDecoration(
-                          color: cardBg,
-                          borderRadius: BorderRadius.circular(20),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.05),
-                              blurRadius: 20,
-                              spreadRadius: 5,
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(24),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [AppColors.forestGreen.withValues(alpha: 0.1), AppColors.leafGreen.withValues(alpha: 0.1)],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                ),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(Icons.park_outlined, size: 56, color: AppColors.forestGreen),
-                            ),
-                            const SizedBox(height: 24),
-                            Text(
-                              '尚無樹木資料',
-                              style: TextStyle(
-                                fontSize: 20,
-                                color: textPrimary,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              '點擊下方按鈕開始新增第一筆資料',
-                              style: TextStyle(fontSize: 14, color: textTertiary),
-                            ),
-                          ],
-                        ),
+                        ],
                       ),
-                    )
-                  : Column(
+                      child: const CircularProgressIndicator(
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(AppColors.portBlue),
+                        strokeWidth: 3,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    Text(
+                      '載入樹木資料中...',
+                      style: TextStyle(
+                        color: textSecondary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            : _errorMessage.isNotEmpty
+                ? Center(
+                    child: Container(
+                      margin: const EdgeInsets.all(24),
+                      padding: const EdgeInsets.all(32),
+                      decoration: BoxDecoration(
+                        color: cardBg,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.05),
+                            blurRadius: 20,
+                            spreadRadius: 5,
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: AppColors.error.withValues(alpha: 0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.error_outline_rounded,
+                              size: 48,
+                              color: AppColors.error,
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                          Text(
+                            '載入失敗',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w600,
+                              color: textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _errorMessage,
+                            style:
+                                TextStyle(color: textSecondary, fontSize: 14),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: 24),
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.refresh_rounded,
+                                color: Colors.white),
+                            label: const Text('重新整理',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600)),
+                            onPressed: () {
+                              _cleanupUnusedData().then((_) => _fetchTrees());
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.portBlue,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 28, vertical: 14),
+                              elevation: 0,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : _trees.isEmpty
+                    ? Center(
+                        child: Container(
+                          margin: const EdgeInsets.all(24),
+                          padding: const EdgeInsets.all(40),
+                          decoration: BoxDecoration(
+                            color: cardBg,
+                            borderRadius: BorderRadius.circular(20),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 20,
+                                spreadRadius: 5,
+                              ),
+                            ],
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(24),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      AppColors.forestGreen
+                                          .withValues(alpha: 0.1),
+                                      AppColors.leafGreen.withValues(alpha: 0.1)
+                                    ],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(Icons.park_outlined,
+                                    size: 56, color: AppColors.forestGreen),
+                              ),
+                              const SizedBox(height: 24),
+                              Text(
+                                '尚無樹木資料',
+                                style: TextStyle(
+                                  fontSize: 20,
+                                  color: textPrimary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                '點擊下方按鈕開始新增第一筆資料',
+                                style: TextStyle(
+                                    fontSize: 14, color: textTertiary),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : Column(
                         children: [
                           // 樹木數量標籤
                           Padding(
@@ -426,13 +450,15 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                             child: Row(
                               children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 16, vertical: 10),
                                   decoration: BoxDecoration(
                                     color: cardBg,
                                     borderRadius: BorderRadius.circular(16),
                                     boxShadow: [
                                       BoxShadow(
-                                        color: AppColors.forestGreen.withValues(alpha: 0.1),
+                                        color: AppColors.forestGreen
+                                            .withValues(alpha: 0.1),
                                         blurRadius: 10,
                                         offset: const Offset(0, 2),
                                       ),
@@ -444,10 +470,14 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                                       Container(
                                         padding: const EdgeInsets.all(6),
                                         decoration: BoxDecoration(
-                                          color: AppColors.forestGreen.withValues(alpha: 0.1),
-                                          borderRadius: BorderRadius.circular(8),
+                                          color: AppColors.forestGreen
+                                              .withValues(alpha: 0.1),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
                                         ),
-                                        child: const Icon(Icons.park_rounded, size: 18, color: AppColors.forestGreen),
+                                        child: const Icon(Icons.park_rounded,
+                                            size: 18,
+                                            color: AppColors.forestGreen),
                                       ),
                                       const SizedBox(width: 10),
                                       Text(
@@ -466,180 +496,228 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                           ),
                           Expanded(
                             child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      itemCount: _trees.length,
-                      itemBuilder: (context, index) {
-                        final tree = _trees[index];
-                        final systemTreeId = tree['系統樹木'] ?? '未知';
-                        final projectTreeId = tree['專案樹木'] ?? '未知';
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 8),
+                              itemCount: _trees.length,
+                              itemBuilder: (context, index) {
+                                final tree = _trees[index];
+                                final systemTreeId = tree['系統樹木'] ?? '未知';
+                                final projectTreeId = tree['專案樹木'] ?? '未知';
 
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          decoration: BoxDecoration(
-                            color: cardBg,
-                            borderRadius: BorderRadius.circular(20),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withValues(alpha: 0.04),
-                                blurRadius: 12,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: Material(
-                            color: Colors.transparent,
-                            borderRadius: BorderRadius.circular(20),
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(20),
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => TreeSurveyDetailPage(
-                                      treeData: tree,
+                                return Container(
+                                  margin: const EdgeInsets.only(bottom: 12),
+                                  decoration: BoxDecoration(
+                                    color: cardBg,
+                                    borderRadius: BorderRadius.circular(20),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black
+                                            .withValues(alpha: 0.04),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    borderRadius: BorderRadius.circular(20),
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(20),
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                TreeSurveyDetailPage(
+                                              treeData: tree,
+                                            ),
+                                          ),
+                                        ).then((_) => _fetchTrees());
+                                      },
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(16),
+                                        child: Row(
+                                          children: [
+                                            // Leading icon
+                                            Container(
+                                              width: 52,
+                                              height: 52,
+                                              decoration: BoxDecoration(
+                                                gradient: const LinearGradient(
+                                                  colors: [
+                                                    AppColors.leafGreen,
+                                                    AppColors.forestGreen
+                                                  ],
+                                                  begin: Alignment.topLeft,
+                                                  end: Alignment.bottomRight,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(14),
+                                                boxShadow: [
+                                                  BoxShadow(
+                                                    color: AppColors.forestGreen
+                                                        .withValues(alpha: 0.3),
+                                                    blurRadius: 8,
+                                                    offset: const Offset(0, 3),
+                                                  ),
+                                                ],
+                                              ),
+                                              child: Center(
+                                                child: Text(
+                                                  _getLastPartOfId(
+                                                      systemTreeId),
+                                                  style: const TextStyle(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.bold,
+                                                    fontSize: 14,
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 16),
+                                            // Content
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment:
+                                                    CrossAxisAlignment.start,
+                                                children: [
+                                                  Row(
+                                                    children: [
+                                                      Expanded(
+                                                        child: Text(
+                                                          tree['樹種名稱'] ??
+                                                              '未知樹種',
+                                                          style: TextStyle(
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            fontSize: 16,
+                                                            color: textPrimary,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                      Container(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                horizontal: 10,
+                                                                vertical: 4),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: AppColors
+                                                              .portBlue
+                                                              .withValues(
+                                                                  alpha: 0.1),
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(10),
+                                                        ),
+                                                        child: Text(
+                                                          systemTreeId
+                                                              .toString(),
+                                                          style:
+                                                              const TextStyle(
+                                                            color: AppColors
+                                                                .portBlue,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                            fontSize: 12,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  Row(
+                                                    children: [
+                                                      Icon(
+                                                          Icons
+                                                              .location_on_rounded,
+                                                          size: 14,
+                                                          color: textTertiary),
+                                                      const SizedBox(width: 4),
+                                                      Expanded(
+                                                        child: Text(
+                                                          '${tree['專案區位']} · ${tree['專案名稱']}',
+                                                          style: TextStyle(
+                                                              color:
+                                                                  textSecondary,
+                                                              fontSize: 13),
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                  const SizedBox(height: 6),
+                                                  Row(
+                                                    children: [
+                                                      _buildInfoChip(
+                                                        Icons.height_rounded,
+                                                        '${(tree['樹高（公尺）'] ?? 0).toString()}m',
+                                                        AppColors.forestGreen,
+                                                      ),
+                                                      const SizedBox(width: 8),
+                                                      _buildInfoChip(
+                                                        Icons.circle_outlined,
+                                                        '${(tree['胸徑（公分）'] ?? 0).toString()}cm',
+                                                        AppColors.warmOrange,
+                                                      ),
+                                                      const Spacer(),
+                                                      Container(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                .symmetric(
+                                                                horizontal: 8,
+                                                                vertical: 3),
+                                                        decoration:
+                                                            BoxDecoration(
+                                                          color: AppColors
+                                                              .accentSurface,
+                                                          borderRadius:
+                                                              BorderRadius
+                                                                  .circular(8),
+                                                        ),
+                                                        child: Text(
+                                                          '專案: ${_getLastPartOfId(projectTreeId)}',
+                                                          style:
+                                                              const TextStyle(
+                                                            color: AppColors
+                                                                .forestGreen,
+                                                            fontSize: 11,
+                                                            fontWeight:
+                                                                FontWeight.w500,
+                                                          ),
+                                                        ),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            // Trailing
+                                            Container(
+                                              padding: const EdgeInsets.all(8),
+                                              decoration: const BoxDecoration(
+                                                color: AppColors.surfaceLight,
+                                                shape: BoxShape.circle,
+                                              ),
+                                              child: const Icon(
+                                                  Icons.chevron_right_rounded,
+                                                  color: AppColors.neutral500,
+                                                  size: 20),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
                                     ),
                                   ),
-                                ).then((_) => _fetchTrees());
+                                );
                               },
-                              child: Padding(
-                                padding: const EdgeInsets.all(16),
-                                child: Row(
-                                  children: [
-                                    // Leading icon
-                                    Container(
-                                      width: 52,
-                                      height: 52,
-                                      decoration: BoxDecoration(
-                                        gradient: LinearGradient(
-                                          colors: [AppColors.leafGreen, AppColors.forestGreen],
-                                          begin: Alignment.topLeft,
-                                          end: Alignment.bottomRight,
-                                        ),
-                                        borderRadius: BorderRadius.circular(14),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: AppColors.forestGreen.withValues(alpha: 0.3),
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 3),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Center(
-                                        child: Text(
-                                          _getLastPartOfId(systemTreeId),
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    // Content
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Row(
-                                            children: [
-                                              Expanded(
-                                                child: Text(
-                                                  tree['樹種名稱'] ?? '未知樹種',
-                                                  style: TextStyle(
-                                                    fontWeight: FontWeight.w600,
-                                                    fontSize: 16,
-                                                    color: textPrimary,
-                                                  ),
-                                                ),
-                                              ),
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                                decoration: BoxDecoration(
-                                                  color: AppColors.portBlue.withValues(alpha: 0.1),
-                                                  borderRadius: BorderRadius.circular(10),
-                                                ),
-                                                child: Text(
-                                                  systemTreeId.toString(),
-                                                  style: TextStyle(
-                                                    color: AppColors.portBlue,
-                                                    fontWeight: FontWeight.w600,
-                                                    fontSize: 12,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Row(
-                                            children: [
-                                              Icon(Icons.location_on_rounded, size: 14, color: textTertiary),
-                                              const SizedBox(width: 4),
-                                              Expanded(
-                                                child: Text(
-                                                  '${tree['專案區位']} · ${tree['專案名稱']}',
-                                                  style: TextStyle(color: textSecondary, fontSize: 13),
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 6),
-                                          Row(
-                                            children: [
-                                              _buildInfoChip(
-                                                Icons.height_rounded,
-                                                '${(tree['樹高（公尺）'] ?? 0).toString()}m',
-                                                AppColors.forestGreen,
-                                              ),
-                                              const SizedBox(width: 8),
-                                              _buildInfoChip(
-                                                Icons.circle_outlined,
-                                                '${(tree['胸徑（公分）'] ?? 0).toString()}cm',
-                                                AppColors.warmOrange,
-                                              ),
-                                              const Spacer(),
-                                              Container(
-                                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                                decoration: BoxDecoration(
-                                                  color: AppColors.accentSurface,
-                                                  borderRadius: BorderRadius.circular(8),
-                                                ),
-                                                child: Text(
-                                                  '專案: ${_getLastPartOfId(projectTreeId)}',
-                                                  style: TextStyle(
-                                                    color: AppColors.forestGreen,
-                                                    fontSize: 11,
-                                                    fontWeight: FontWeight.w500,
-                                                  ),
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    // Trailing
-                                    Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: AppColors.surfaceLight,
-                                        shape: BoxShape.circle,
-                                      ),
-                                      child: Icon(Icons.chevron_right_rounded, color: AppColors.neutral500, size: 20),
-                                    ),
-                                  ],
-                                ),
-                              ),
                             ),
                           ),
-                        );
-                      },
-                    ),
-                  ),
-              ],
-            ),
+                        ],
+                      ),
       ),
       floatingActionButton: _canEdit
           ? Padding(
@@ -652,7 +730,10 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [AppColors.portBlue, AppColors.portBlue.withValues(alpha: 0.85)],
+                    colors: [
+                      AppColors.portBlue,
+                      AppColors.portBlue.withValues(alpha: 0.85)
+                    ],
                   ),
                   boxShadow: [
                     BoxShadow(
@@ -680,7 +761,8 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                   backgroundColor: Colors.transparent,
                   elevation: 0,
                   tooltip: '新增樹木資料',
-                  child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
+                  child: const Icon(Icons.add_rounded,
+                      color: Colors.white, size: 28),
                 ),
               ),
             )
@@ -702,7 +784,8 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
           const SizedBox(width: 4),
           Text(
             text,
-            style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w500),
+            style: TextStyle(
+                color: color, fontSize: 11, fontWeight: FontWeight.w500),
           ),
         ],
       ),
