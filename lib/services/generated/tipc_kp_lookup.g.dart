@@ -1,0 +1,151 @@
+// GENERATED FILE - DO NOT EDIT.
+// Source: backend/scripts/build_tipc_kp_lookup.py
+// Origin: backend/database/initial_data/tree_survey_data.csv
+// Formula: carbon_storage_kg = round(K_sp · DBH_cm² · H_m, 2)
+// Reference: 環境部 AR-TMS0001 / 林業署森林碳匯調查與監測手冊式 6-4
+
+/// TIPC species K_sp coefficient (kg CO₂ per cm² · m).
+class TipcKspEntry {
+  final double kSp;
+  final double f;
+  final double dWood;
+  final int nSamples;
+  final String source;
+  const TipcKspEntry({
+    required this.kSp,
+    required this.f,
+    required this.dWood,
+    required this.nSamples,
+    required this.source,
+  });
+}
+
+const double kTipcDefaultKspBroadleaf = 0.0562603;
+const double kTipcDefaultKspConifer   = 0.0625114;
+const double kTipcDefaultDWood        = 0.53;
+const double kTipcFBroadleaf          = 0.45;
+const double kTipcFConifer            = 0.5;
+
+const Set<String> kTipcConiferNames = {
+  '刺柏',
+  '台灣五葉松',
+  '台灣杉',
+  '台灣肖楠',
+  '圓柏',
+  '小葉南洋杉',
+  '柳杉',
+  '琉球松',
+  '紅檜',
+  '羅漢松',
+  '肯氏南洋杉',
+  '臺灣五葉松',
+  '臺灣杉',
+  '臺灣肖楠',
+  '華山松',
+  '落羽松',
+  '蘭嶼羅漢松',
+  '黑松',
+  '龍柏',
+};
+
+/// Sanity check at build time: strict match 6917/7044 (<0.005 kg), loose match 6994/7044 (<0.01 kg).
+const Map<String, TipcKspEntry> kTipcKspLookup = {
+  '欖仁': TipcKspEntry(kSp: 0.0522433, f: 0.45, dWood: 0.4922, nSamples: 1093, source: 'tipc_reverse_engineered'),
+  '臺灣欒樹': TipcKspEntry(kSp: 0.0640218, f: 0.45, dWood: 0.6031, nSamples: 996, source: 'tipc_reverse_engineered'),
+  '木賊葉木麻黃': TipcKspEntry(kSp: 0.070255, f: 0.45, dWood: 0.6618, nSamples: 591, source: 'tipc_reverse_engineered'),
+  '白樹仔': TipcKspEntry(kSp: 0.0562424, f: 0.45, dWood: 0.5298, nSamples: 391, source: 'tipc_default_0.530'),
+  '水黃皮': TipcKspEntry(kSp: 0.0779992, f: 0.45, dWood: 0.7348, nSamples: 382, source: 'tipc_reverse_engineered'),
+  '黃槿': TipcKspEntry(kSp: 0.046842, f: 0.45, dWood: 0.4413, nSamples: 366, source: 'tipc_reverse_engineered'),
+  '苦楝': TipcKspEntry(kSp: 0.0566478, f: 0.45, dWood: 0.5337, nSamples: 331, source: 'tipc_reverse_engineered'),
+  '中東海棗': TipcKspEntry(kSp: 0.0562424, f: 0.45, dWood: 0.5298, nSamples: 287, source: 'tipc_default_0.530'),
+  '小葉南洋杉': TipcKspEntry(kSp: 0.0539927, f: 0.5, dWood: 0.4578, nSamples: 226, source: 'tipc_reverse_engineered'),
+  '阿勒勃': TipcKspEntry(kSp: 0.0871802, f: 0.45, dWood: 0.8213, nSamples: 218, source: 'tipc_reverse_engineered'),
+  '榕樹': TipcKspEntry(kSp: 0.0418389, f: 0.45, dWood: 0.3941, nSamples: 140, source: 'tipc_reverse_engineered'),
+  '黃金風鈴木': TipcKspEntry(kSp: 0.0910848, f: 0.45, dWood: 0.8581, nSamples: 139, source: 'tipc_reverse_engineered'),
+  '蒲葵': TipcKspEntry(kSp: 0.0562423, f: 0.45, dWood: 0.5298, nSamples: 111, source: 'tipc_default_0.530'),
+  '孟加拉榕': TipcKspEntry(kSp: 0.0562424, f: 0.45, dWood: 0.5298, nSamples: 93, source: 'tipc_default_0.530'),
+  '肯氏南洋杉': TipcKspEntry(kSp: 0.0506181, f: 0.5, dWood: 0.4292, nSamples: 92, source: 'tipc_reverse_engineered'),
+  '銀合歡': TipcKspEntry(kSp: 0.0741032, f: 0.45, dWood: 0.6981, nSamples: 76, source: 'tipc_reverse_engineered'),
+  '大葉桃花心木': TipcKspEntry(kSp: 0.0531603, f: 0.45, dWood: 0.5008, nSamples: 73, source: 'tipc_reverse_engineered'),
+  '蘭嶼羅漢松': TipcKspEntry(kSp: 0.0525492, f: 0.5, dWood: 0.4455, nSamples: 66, source: 'tipc_reverse_engineered'),
+  '烏臼': TipcKspEntry(kSp: 0.0595384, f: 0.45, dWood: 0.5609, nSamples: 65, source: 'tipc_reverse_engineered'),
+  '菲島福木': TipcKspEntry(kSp: 0.0832386, f: 0.45, dWood: 0.7841, nSamples: 62, source: 'tipc_reverse_engineered'),
+  '木棉': TipcKspEntry(kSp: 0.0291461, f: 0.45, dWood: 0.2746, nSamples: 62, source: 'tipc_reverse_engineered'),
+  '金龜樹': TipcKspEntry(kSp: 0.0741032, f: 0.45, dWood: 0.6981, nSamples: 59, source: 'tipc_reverse_engineered'),
+  '鴨腳木': TipcKspEntry(kSp: 0.0562424, f: 0.45, dWood: 0.5298, nSamples: 58, source: 'tipc_default_0.530'),
+  '無葉檉柳': TipcKspEntry(kSp: 0.066367, f: 0.45, dWood: 0.6252, nSamples: 51, source: 'tipc_reverse_engineered'),
+  '月橘': TipcKspEntry(kSp: 0.0798775, f: 0.45, dWood: 0.7525, nSamples: 50, source: 'tipc_reverse_engineered'),
+  '其他': TipcKspEntry(kSp: 0.0562424, f: 0.45, dWood: 0.5298, nSamples: 48, source: 'tipc_default_0.530'),
+  '瓊崖海棠': TipcKspEntry(kSp: 0.0643147, f: 0.45, dWood: 0.6059, nSamples: 47, source: 'tipc_reverse_engineered'),
+  '美人樹': TipcKspEntry(kSp: 0.0301869, f: 0.45, dWood: 0.2844, nSamples: 47, source: 'tipc_reverse_engineered'),
+  '雨豆樹': TipcKspEntry(kSp: 0.0762826, f: 0.45, dWood: 0.7186, nSamples: 43, source: 'tipc_reverse_engineered'),
+  '小葉欖仁': TipcKspEntry(kSp: 0.0620389, f: 0.45, dWood: 0.5844, nSamples: 41, source: 'tipc_reverse_engineered'),
+  '菩提樹': TipcKspEntry(kSp: 0.0562424, f: 0.45, dWood: 0.5298, nSamples: 38, source: 'tipc_default_0.530'),
+  '黑板樹': TipcKspEntry(kSp: 0.0427869, f: 0.45, dWood: 0.4031, nSamples: 32, source: 'tipc_reverse_engineered'),
+  '海檬果': TipcKspEntry(kSp: 0.0423256, f: 0.45, dWood: 0.3987, nSamples: 32, source: 'tipc_reverse_engineered'),
+  '刺桐': TipcKspEntry(kSp: 0.0305131, f: 0.45, dWood: 0.2874, nSamples: 30, source: 'tipc_reverse_engineered'),
+  '構樹': TipcKspEntry(kSp: 0.0305655, f: 0.45, dWood: 0.2879, nSamples: 29, source: 'tipc_reverse_engineered'),
+  '盾柱木': TipcKspEntry(kSp: 0.062118, f: 0.45, dWood: 0.5852, nSamples: 29, source: 'tipc_reverse_engineered'),
+  '火焰木': TipcKspEntry(kSp: 0.0386609, f: 0.45, dWood: 0.3642, nSamples: 27, source: 'tipc_reverse_engineered'),
+  '緬梔': TipcKspEntry(kSp: 0.0556915, f: 0.45, dWood: 0.5246, nSamples: 26, source: 'tipc_reverse_engineered'),
+  '錫蘭肉桂': TipcKspEntry(kSp: 0.0524751, f: 0.45, dWood: 0.4943, nSamples: 26, source: 'tipc_reverse_engineered'),
+  '毛柿': TipcKspEntry(kSp: 0.0705839, f: 0.45, dWood: 0.6649, nSamples: 25, source: 'tipc_reverse_engineered'),
+  '牛油果': TipcKspEntry(kSp: 0.0562424, f: 0.45, dWood: 0.5298, nSamples: 25, source: 'tipc_default_0.530'),
+  '落羽松': TipcKspEntry(kSp: 0.0479428, f: 0.5, dWood: 0.4065, nSamples: 25, source: 'tipc_reverse_engineered'),
+  '鐵色': TipcKspEntry(kSp: 0.0776158, f: 0.45, dWood: 0.7312, nSamples: 24, source: 'tipc_reverse_engineered'),
+  '洋紅風鈴木': TipcKspEntry(kSp: 0.0562422, f: 0.45, dWood: 0.5298, nSamples: 23, source: 'tipc_default_0.530'),
+  '洋紫荊': TipcKspEntry(kSp: 0.0562424, f: 0.45, dWood: 0.5298, nSamples: 23, source: 'tipc_default_0.530'),
+  '黃連木': TipcKspEntry(kSp: 0.0684428, f: 0.45, dWood: 0.6448, nSamples: 22, source: 'tipc_reverse_engineered'),
+  '大王椰子': TipcKspEntry(kSp: 0.0562424, f: 0.45, dWood: 0.5298, nSamples: 18, source: 'tipc_default_0.530'),
+  '芒果樹': TipcKspEntry(kSp: 0.0553582, f: 0.45, dWood: 0.5215, nSamples: 18, source: 'tipc_reverse_engineered'),
+  '白榕': TipcKspEntry(kSp: 0.0522482, f: 0.45, dWood: 0.4922, nSamples: 18, source: 'tipc_reverse_engineered'),
+  '大葉山欖': TipcKspEntry(kSp: 0.055848, f: 0.45, dWood: 0.5261, nSamples: 16, source: 'tipc_reverse_engineered'),
+  '白千層': TipcKspEntry(kSp: 0.0665046, f: 0.45, dWood: 0.6265, nSamples: 15, source: 'tipc_reverse_engineered'),
+  '竹柏': TipcKspEntry(kSp: 0.0525492, f: 0.45, dWood: 0.495, nSamples: 14, source: 'tipc_reverse_engineered'),
+  '茄苳': TipcKspEntry(kSp: 0.0583647, f: 0.45, dWood: 0.5498, nSamples: 11, source: 'tipc_reverse_engineered'),
+  '鐵刀木': TipcKspEntry(kSp: 0.0719236, f: 0.45, dWood: 0.6776, nSamples: 11, source: 'tipc_reverse_engineered'),
+  '酒瓶蘭': TipcKspEntry(kSp: 0.0562424, f: 0.45, dWood: 0.5298, nSamples: 11, source: 'tipc_default_0.530'),
+  '墨水樹': TipcKspEntry(kSp: 0.0562424, f: 0.45, dWood: 0.5298, nSamples: 10, source: 'tipc_default_0.530'),
+  '風鈴木': TipcKspEntry(kSp: 0.0562424, f: 0.45, dWood: 0.5298, nSamples: 10, source: 'tipc_default_0.530'),
+  '白玉蘭': TipcKspEntry(kSp: 0.05179, f: 0.45, dWood: 0.4879, nSamples: 9, source: 'tipc_reverse_engineered'),
+  '印度橡膠樹': TipcKspEntry(kSp: 0.0562424, f: 0.45, dWood: 0.5298, nSamples: 9, source: 'tipc_default_0.530'),
+  '鳳凰木': TipcKspEntry(kSp: 0.0632056, f: 0.45, dWood: 0.5954, nSamples: 9, source: 'tipc_reverse_engineered'),
+  '陰香': TipcKspEntry(kSp: 0.0514249, f: 0.45, dWood: 0.4844, nSamples: 9, source: 'tipc_reverse_engineered'),
+  '血桐': TipcKspEntry(kSp: 0.0480485, f: 0.45, dWood: 0.4526, nSamples: 8, source: 'tipc_reverse_engineered'),
+  '稜果榕': TipcKspEntry(kSp: 0.0428591, f: 0.45, dWood: 0.4038, nSamples: 8, source: 'tipc_reverse_engineered'),
+  '檄樹': TipcKspEntry(kSp: 0.0562431, f: 0.45, dWood: 0.5298, nSamples: 7, source: 'tipc_default_0.530'),
+  '朴樹': TipcKspEntry(kSp: 0.0624749, f: 0.45, dWood: 0.5885, nSamples: 6, source: 'tipc_reverse_engineered'),
+  '小葉桑': TipcKspEntry(kSp: 0.0621848, f: 0.45, dWood: 0.5858, nSamples: 6, source: 'tipc_reverse_engineered'),
+  '臺灣海棗': TipcKspEntry(kSp: 0.0562422, f: 0.45, dWood: 0.5298, nSamples: 6, source: 'tipc_default_0.530'),
+  '欖仁舅': TipcKspEntry(kSp: 0.0689054, f: 0.45, dWood: 0.6491, nSamples: 5, source: 'tipc_reverse_engineered'),
+  '楊桃': TipcKspEntry(kSp: 0.0562424, f: 0.45, dWood: 0.5298, nSamples: 5, source: 'tipc_default_0.530'),
+  '潺槁樹': TipcKspEntry(kSp: 0.0562413, f: 0.45, dWood: 0.5298, nSamples: 4, source: 'tipc_default_0.530'),
+  '馬拉巴栗': TipcKspEntry(kSp: 0.0499638, f: 0.45, dWood: 0.4707, nSamples: 4, source: 'tipc_reverse_engineered'),
+  '樟樹': TipcKspEntry(kSp: 0.0539252, f: 0.45, dWood: 0.508, nSamples: 3, source: 'tipc_reverse_engineered'),
+  '赤桉': TipcKspEntry(kSp: 0.0562423, f: 0.45, dWood: 0.5298, nSamples: 3, source: 'tipc_default_0.530'),
+  '可可椰子': TipcKspEntry(kSp: 0.0562421, f: 0.45, dWood: 0.5298, nSamples: 3, source: 'tipc_default_0.530'),
+  '白水木': TipcKspEntry(kSp: 0.0562426, f: 0.45, dWood: 0.5298, nSamples: 3, source: 'tipc_default_0.530'),
+  '紅刺露兜': TipcKspEntry(kSp: 0.0562431, f: 0.45, dWood: 0.5298, nSamples: 3, source: 'tipc_default_0.530'),
+  '龍眼': TipcKspEntry(kSp: 0.074692, f: 0.45, dWood: 0.7036, nSamples: 2, source: 'tipc_reverse_engineered'),
+  '楓香': TipcKspEntry(kSp: 0.0539046, f: 0.45, dWood: 0.5078, nSamples: 2, source: 'tipc_reverse_engineered'),
+  '土肉桂': TipcKspEntry(kSp: 0.0577087, f: 0.45, dWood: 0.5436, nSamples: 2, source: 'tipc_reverse_engineered'),
+  '棋盤腳': TipcKspEntry(kSp: 0.0434838, f: 0.45, dWood: 0.4096, nSamples: 2, source: 'tipc_reverse_engineered'),
+  '大葉合歡': TipcKspEntry(kSp: 0.056244, f: 0.45, dWood: 0.5298, nSamples: 2, source: 'tipc_default_0.530'),
+  '龍柏': TipcKspEntry(kSp: 0.0563008, f: 0.5, dWood: 0.4773, nSamples: 2, source: 'tipc_reverse_engineered'),
+  '大葉羅漢松/羅漢松': TipcKspEntry(kSp: 0.0536203, f: 0.45, dWood: 0.5051, nSamples: 2, source: 'tipc_reverse_engineered'),
+  '櫸': TipcKspEntry(kSp: 0.078271, f: 0.45, dWood: 0.7374, nSamples: 2, source: 'tipc_reverse_engineered'),
+  '艷紫荊': TipcKspEntry(kSp: 0.0828215, f: 0.45, dWood: 0.7802, nSamples: 2, source: 'tipc_reverse_engineered'),
+  '臺灣胡桃/野核桃': TipcKspEntry(kSp: 0.0505318, f: 0.45, dWood: 0.476, nSamples: 1, source: 'tipc_reverse_engineered'),
+  '小葉桃花心木': TipcKspEntry(kSp: 0.0562426, f: 0.45, dWood: 0.5298, nSamples: 1, source: 'tipc_default_0.530'),
+  '破布子': TipcKspEntry(kSp: 0.0472765, f: 0.45, dWood: 0.4454, nSamples: 1, source: 'tipc_reverse_engineered'),
+  '雞蛋花': TipcKspEntry(kSp: 0.0562401, f: 0.45, dWood: 0.5298, nSamples: 1, source: 'tipc_default_0.530'),
+  '巴西乳香': TipcKspEntry(kSp: 0.0562367, f: 0.45, dWood: 0.5298, nSamples: 1, source: 'tipc_default_0.530'),
+  '西印度櫻桃': TipcKspEntry(kSp: 0.0337445, f: 0.45, dWood: 0.3179, nSamples: 1, source: 'tipc_reverse_engineered'),
+  '釋迦': TipcKspEntry(kSp: 0.056253, f: 0.45, dWood: 0.5299, nSamples: 1, source: 'tipc_default_0.530'),
+  '蓮霧': TipcKspEntry(kSp: 0.0685673, f: 0.45, dWood: 0.6459, nSamples: 1, source: 'tipc_reverse_engineered'),
+  '流蘇': TipcKspEntry(kSp: 0.0717493, f: 0.45, dWood: 0.6759, nSamples: 1, source: 'tipc_reverse_engineered'),
+  '雀榕': TipcKspEntry(kSp: 0.043895, f: 0.45, dWood: 0.4135, nSamples: 1, source: 'tipc_reverse_engineered'),
+  '大花紫薇': TipcKspEntry(kSp: 0.0557731, f: 0.45, dWood: 0.5254, nSamples: 1, source: 'tipc_reverse_engineered'),
+  '雞冠刺桐': TipcKspEntry(kSp: 0.0294207, f: 0.45, dWood: 0.2772, nSamples: 1, source: 'tipc_reverse_engineered'),
+  '番石榴': TipcKspEntry(kSp: 0.0675275, f: 0.45, dWood: 0.6361, nSamples: 1, source: 'tipc_reverse_engineered'),
+};

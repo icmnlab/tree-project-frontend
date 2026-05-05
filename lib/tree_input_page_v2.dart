@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
-import 'dart:math';
 import 'dart:convert';
 import 'utils/location_helper.dart';
 
@@ -10,6 +9,7 @@ import 'services/project_service.dart';
 import 'services/project_area_service.dart';
 import 'services/location_service.dart';
 import 'services/species_service.dart';
+import 'services/carbon_calculation_service.dart';
 import 'services/v3/project_boundary_service.dart'; // V3: 專案邊界驗證
 import 'screens/v3/project_boundary_draw_page.dart'; // [新功能] 新增專案 → 引導畫邊界
 import 'widgets/conflict_resolution_dialog.dart';
@@ -23,18 +23,11 @@ void logDebug(String message) {
 }
 
 // 創建碳儲存量計算函數 (kg CO2-eq)
-double calculateCarbonStorage(double dbh) {
-  if (dbh <= 0) return 0;
-  double aboveGroundBiomass = exp(-2.48 + 2.4835 * log(dbh));
-  double totalBiomass = 1.24 * aboveGroundBiomass;
-  double carbonContent = 0.50 * totalBiomass;
-  return carbonContent * 3.67; // 碳儲存量 (kg CO2-eq)
-}
-
-// 創建年碳吸存量計算函數 (kg CO2-eq/yr)
-double calculateCarbonSequestration(
-    double carbonStorage, double? growthFactor) {
-  return carbonStorage * (growthFactor ?? 0.03);
+// Delegates to TIPC-aligned [CarbonCalculationService] (AR-TMS0001 / 林業署
+// 森林碳匯調查與監測手冊式 6-4); both species and height are required to
+// produce a number consistent with the TIPC platform.
+double calculateCarbonStorage(String species, double height, double dbh) {
+  return CarbonCalculationService.calculateCarbonStorage(species, height, dbh);
 }
 
 class TreeInputPageV2 extends StatefulWidget {
@@ -209,13 +202,14 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
     try {
       double height = double.tryParse(treeHeightController.text) ?? 0.0;
       double dbh = double.tryParse(dbhController.text) ?? 0.0;
+      String species = treeNameController.text.trim();
 
-      if (height > 0 && dbh > 0) {
-        double carbonStorage = calculateCarbonStorage(dbh);
-        double annualCarbon = calculateCarbonSequestration(carbonStorage, null);
-
+      if (height > 0 && dbh > 0 && species.isNotEmpty) {
+        double carbonStorage = calculateCarbonStorage(species, height, dbh);
         carbonstorageController.text = carbonStorage.toStringAsFixed(2);
-        annualcarbonController.text = annualCarbon.toStringAsFixed(2);
+        // Annual is read from DB on display; client cannot recompute (TIPC
+        // 年固碳量公式未公開). Leave the controller blank for new entries.
+        annualcarbonController.text = '';
       }
     } catch (e) {
       logDebug('碳計算錯誤: $e');

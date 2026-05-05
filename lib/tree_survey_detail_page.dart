@@ -151,23 +151,20 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
     String projectTreeId = _f('project_tree_id', '專案樹木');
 
     final species = _f('species_name', '樹種名稱');
-    final height = double.tryParse(_f('tree_height_m', '樹高（公尺）')) ?? 5.0;
-    final dbh = double.tryParse(_f('dbh_cm', '胸徑（公分）')) ?? 15.0;
+    final height = double.tryParse(_f('tree_height_m', '樹高（公尺）')) ?? 0.0;
+    final dbh = double.tryParse(_f('dbh_cm', '胸徑（公分）')) ?? 0.0;
 
-    // 估算樹齡
-    int estimatedAge = 10; // 預設值
-    if (dbh > 30) {
-      estimatedAge = 40;
-    } else if (dbh > 20)
-      estimatedAge = 25;
-    else if (dbh > 10) estimatedAge = 15;
-
-    // 使用新的服務計算碳數據
-    final carbonStorage =
+    // Storage: prefer DB-stored TIPC value; fall back to TIPC K_sp recompute when absent
+    final dbStorage =
+        double.tryParse(_f('carbon_storage', '碳儲存量'));
+    final carbonStorage = dbStorage ??
         CarbonCalculationService.calculateCarbonStorage(species, height, dbh);
-    final annualSequestration =
-        CarbonCalculationService.calculateAnnualCarbonSequestration(
-            species, height, dbh, estimatedAge);
+
+    // Annual: TIPC platform's internal formula uses tree age and is not public;
+    // we display the DB-stored value only. 0 代表 “—” (unavailable).
+    final annualSequestration = double.tryParse(
+            _f('carbon_sequestration_per_year', '年存碳量')) ??
+        0.0;
 
     // [B5] 暗/亮模式輔助
     final isDark = Theme.of(context).brightness == Brightness.dark;

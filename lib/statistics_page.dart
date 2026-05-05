@@ -109,23 +109,21 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
 
     for (var tree in _treeData) {
       final species = tree['樹種名稱'] ?? '其他';
-      final height = double.tryParse(tree['樹高（公尺）'].toString()) ?? 5.0;
-      final dbh = double.tryParse(tree['胸徑（公分）'].toString()) ?? 15.0;
+      final height = double.tryParse(tree['樹高（公尺）'].toString()) ?? 0.0;
+      final dbh = double.tryParse(tree['胸徑（公分）'].toString()) ?? 0.0;
 
-      int estimatedAge = 10;
-      if (dbh > 30) {
-        estimatedAge = 40;
-      } else if (dbh > 20) {
-        estimatedAge = 25;
-      } else if (dbh > 10) {
-        estimatedAge = 15;
-      }
-
-      final carbonStorage =
+      // Storage: prefer DB-stored TIPC value; fall back to recompute via TIPC K_sp lookup
+      final dbStorage = double.tryParse(
+          (tree['碳儲存量'] ?? tree['carbon_storage'] ?? '').toString());
+      final carbonStorage = dbStorage ??
           CarbonCalculationService.calculateCarbonStorage(species, height, dbh);
-      final annualSequestration =
-          CarbonCalculationService.calculateAnnualCarbonSequestration(
-              species, height, dbh, estimatedAge);
+
+      // Annual: read DB-stored TIPC value only; client-side recompute is unsafe
+      // because TIPC's annual formula is not publicly documented.
+      final annualSequestration = double.tryParse(
+              (tree['年存碳量'] ?? tree['carbon_sequestration_per_year'] ?? '')
+                  .toString()) ??
+          0.0;
 
       totalStorage += carbonStorage;
       totalAnnual += annualSequestration;

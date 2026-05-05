@@ -1,150 +1,101 @@
-import 'dart:math' as Math;
+import 'generated/tipc_kp_lookup.g.dart';
 
-/// Carbon storage & sequestration calculator.
+/// Carbon storage calculator aligned with the TIPC platform.
 ///
-/// Methodology — Chave et al. (2014) pantropical allometric equation:
-///   Full model  : AGB = 0.0673 × (ρ × D² × H)^0.976  [kg]
-///   Simplified  : AGB = exp(−2.48 + 2.4835 × ln(D))   [kg]  (DBH-only)
-///   Total Biomass = 1.24 × AGB  (root-to-shoot ratio 0.24)
-///   Carbon        = 0.50 × TB   (IPCC 2006 default carbon fraction)
-///   CO₂e          = C × 3.67    (molecular weight ratio 44 / 12)
+/// Methodology — 環境部 AR-TMS0001 / 林業署森林碳匯調查與監測手冊式 6-4:
+///   carbon_storage_kg = round(K_sp · DBH_cm² · H_m, 2)
+///   K_sp = F · (π/4) · BEF · (1+R) · CF · (44/12) · 0.1 · D_wood
+///
+/// Constants (from TIPC reverse engineering, validated against 7044 rows):
+///   F          = 0.45 broadleaf | 0.50 conifer   stem form factor
+///   π/4 ≈ 0.79  cross-section coefficient
+///   BEF        = 1.40                            biomass expansion factor
+///   R          = 0.24                            root-to-shoot ratio
+///   CF         = 0.4691                          carbon fraction
+///   44/12 ≈ 3.667                                CO₂ / C molar ratio
+///   0.1                                          unit factor (cm²·m → m³, t → kg)
+///   D_wood     = species basic specific gravity (oven-dry / green volume)
+///
+/// Per-species K_sp values are recovered from
+/// `backend/database/initial_data/tree_survey_data.csv` and embedded in
+/// [kTipcKspLookup] (see `generated/tipc_kp_lookup.g.dart`).
+///
+/// Annual sequestration is **not computed client-side**: the TIPC platform
+/// uses an internal formula incorporating tree age that is not publicly
+/// documented. UI should display the DB-stored
+/// `carbon_sequestration_per_year` value, or "—" when absent.
 ///
 /// References:
-///   [1] Chave, J. et al. (2014). Improved allometric models to estimate the
-///       aboveground biomass of tropical trees. Global Change Biology, 20(10),
-///       3177–3190. https://doi.org/10.1111/gcb.12629
-///   [2] IPCC (2006). Guidelines for National Greenhouse Gas Inventories.
-///       Vol. 4, Ch. 4, Table 4.3.
-///   [3] Mokany, K. et al. (2006). Critical analysis of root:shoot ratios in
-///       terrestrial biomes. Global Change Biology, 12(1), 84–96.
-///   [4] Zanne, A.E. et al. (2009). Global Wood Density Database. Dryad.
+///   [1] 環境部 (2023). 溫室氣體減量方法學 AR-TMS0001 造林與植林碳匯專案.
+///   [2] 農業部林業及自然保育署 (2024). 森林碳匯調查與監測手冊, 表 6-4.
 class CarbonCalculationService {
-  static const double _carbonFraction = 0.50; // IPCC 2006
-  static const double _rootShootExpansion = 1.24; // Mokany et al. 2006
-  static const double _co2ConversionFactor = 3.67; // 44/12
-  static const double _defaultGrowthRate = 0.03; // 3 % yr⁻¹
+  /// Look up the TIPC K_sp coefficient for [species]. Falls back to the
+  /// broadleaf default (D_wood = 0.530) when the species is unknown, or to
+  /// the conifer default when [species] matches a known conifer name.
+  static double getKsp(String species) {
+    final entry = _findEntry(species);
+    if (entry != null) return entry.kSp;
+    return kTipcConiferNames.contains(species)
+        ? kTipcDefaultKspConifer
+        : kTipcDefaultKspBroadleaf;
+  }
 
-  // Wood density ρ (g/cm³) — cross-referenced with Zanne et al. (2009) GWDD.
-  // Values represent basic specific gravity (oven-dry mass / green volume).
-  // Verified against: wood-database.com, ICRAF Agroforestry Tree Database,
-  // and Taiwan Forestry Bureau published tables where available.
-  // Unverified entries retain the tree_carbon_data DB average ((min+max)/2).
-  static final Map<String, double> speciesWoodDensity = {
-    // --- 74 species from tree_carbon_data DB (id 1–74) ---
-    // Ficus spp. corrected: DB values were ~0.10 above GWDD median
-    '榕樹': 0.55, '小葉欖仁': 0.58, '樟樹': 0.52, '白千層': 0.65,
-    '鳳凰木': 0.50, '臺灣欒樹': 0.58, '羅漢松': 0.57, '構樹': 0.40,
-    '黑板樹': 0.35, '銀合歡': 0.65, '欖仁': 0.56, '大葉桃花心木': 0.55,
-    '苦楝': 0.48, '印度橡膠樹': 0.50, '赤桉': 0.70, '茄苳': 0.64,
-    '楓香': 0.58, '黃槿': 0.52, '蒲葵': 0.48, '流蘇': 0.60,
-    '木賊葉木麻黃': 0.83, '瓊崖海棠': 0.68, '白榕': 0.52, '雞蛋花': 0.53,
-    '龍柏': 0.53, '肯氏南洋杉': 0.59, '菩提樹': 0.49, '可可椰子': 0.43,
-    '白水木': 0.66, '土肉桂': 0.56, '大葉山欖': 0.72, '小葉桃花心木': 0.55,
-    '海檬果': 0.52, '水黃皮': 0.70, '洋紅風鈴木': 0.59, '檄樹': 0.53,
-    '毛柿': 0.68, '鐵色': 0.78, '馬拉巴栗': 0.46, '金龜樹': 0.68,
-    '棋盤腳': 0.56, '破布子': 0.54, '大葉合歡': 0.63, '菲島福木': 0.72,
-    '楊桃': 0.50, '芒果樹': 0.59, '緬梔': 0.52, '黃連木': 0.66,
-    '潺槁樹': 0.57, '阿勒勃': 0.54, '欖仁舅': 0.62, '蘭嶼羅漢松': 0.54,
-    '無葉檉柳': 0.70, '月橘': 0.78, '鴨腳木': 0.53, '鐵刀木': 0.73,
-    '巴西乳香': 0.59, '西印度櫻桃': 0.70, '釋迦': 0.53, '蓮霧': 0.66,
-    '白玉蘭': 0.56, '臺灣胡桃': 0.72, '龍眼': 0.69, '墨水樹': 0.54,
-    '中東海棗': 0.48, '小葉南洋杉': 0.55, '人心果': 0.64, '九丁榕': 0.52,
-    '雀榕': 0.52, '大花紫薇': 0.68, '大王椰子': 0.43, '雨豆樹': 0.54,
-    '櫸': 0.68, '血桐': 0.48,
-    // --- Additional common species not yet in DB ---
-    '相思樹': 0.65, '台灣杉': 0.32, '台灣櫸': 0.68, '光蠟樹': 0.56,
-    '牛樟': 0.52, '桂花': 0.72, '台灣肖楠': 0.45, '柳杉': 0.35,
-  };
+  /// Provenance tag (`tipc_reverse_engineered`, `tipc_default_0.530`,
+  /// `tipc_non_uniform_median`, or `default_fallback`).
+  static String getKspSource(String species) {
+    final entry = _findEntry(species);
+    if (entry != null) return entry.source;
+    return 'default_fallback';
+  }
 
-  // Scientific name → Chinese common name (for PlantNet integration)
-  static final Map<String, String> _scientificToCommon = {
-    'Ficus microcarpa': '榕樹', 'Terminalia mantaly': '小葉欖仁',
-    'Cinnamomum camphora': '樟樹', 'Melaleuca leucadendra': '白千層',
-    'Delonix regia': '鳳凰木', 'Koelreuteria elegans': '臺灣欒樹',
-    'Podocarpus macrophyllus': '羅漢松', 'Broussonetia papyrifera': '構樹',
-    'Alstonia scholaris': '黑板樹', 'Leucaena leucocephala': '銀合歡',
-    'Swietenia macrophylla': '大葉桃花心木', 'Melia azedarach': '苦楝',
-    'Ficus elastica': '印度橡膠樹', 'Eucalyptus camaldulensis': '赤桉',
-    'Bischofia javanica': '茄苳', 'Liquidambar formosana': '楓香',
-    'Hibiscus tiliaceus': '黃槿', 'Livistona chinensis': '蒲葵',
-    'Casuarina equisetifolia': '木賊葉木麻黃', 'Calophyllum inophyllum': '瓊崖海棠',
-    'Ficus religiosa': '菩提樹', 'Cocos nucifera': '可可椰子',
-    'Cinnamomum osmophloeum': '土肉桂', 'Murraya paniculata': '月橘',
-    'Cassia siamea': '鐵刀木', 'Roystonea regia': '大王椰子',
-    'Samanea saman': '雨豆樹', 'Zelkova serrata': '櫸',
-    'Macaranga tanarius': '血桐', 'Mangifera indica': '芒果樹',
-    'Dimocarpus longan': '龍眼', 'Syzygium samarangense': '蓮霧',
-    'Pachira macrocarpa': '馬拉巴栗', 'Lagerstroemia speciosa': '大花紫薇',
-    'Acacia confusa': '相思樹', 'Taiwania cryptomerioides': '台灣杉',
-    'Araucaria cunninghamii': '肯氏南洋杉', 'Ficus benjamina': '九丁榕',
-    'Ficus superba': '雀榕', 'Annona squamosa': '釋迦',
-    'Schefflera octophylla': '鴨腳木', 'Plumeria rubra': '雞蛋花',
-  };
-
-  static const double _defaultWoodDensity = 0.58; // tropical mean (Chave 2014)
-
-  /// Look up wood density by species name (Chinese or scientific).
-  static double getWoodDensity(String species) {
-    // Direct Chinese name lookup
-    if (speciesWoodDensity.containsKey(species)) {
-      return speciesWoodDensity[species]!;
-    }
-    // Scientific name lookup
-    final common = _scientificToCommon[species];
-    if (common != null && speciesWoodDensity.containsKey(common)) {
-      return speciesWoodDensity[common]!;
-    }
-    // Partial match (e.g., "台灣欒樹" vs "臺灣欒樹")
-    for (final key in speciesWoodDensity.keys) {
-      if (key.contains(species) || species.contains(key)) {
-        return speciesWoodDensity[key]!;
+  static TipcKspEntry? _findEntry(String species) {
+    if (species.isEmpty) return null;
+    final hit = kTipcKspLookup[species];
+    if (hit != null) return hit;
+    // Tolerant match (e.g., '台灣欒樹' vs '臺灣欒樹')
+    for (final entry in kTipcKspLookup.entries) {
+      if (entry.key.contains(species) || species.contains(entry.key)) {
+        return entry.value;
       }
     }
-    return _defaultWoodDensity;
+    return null;
   }
 
-  // 計算樹木碳儲存量（單位：kg CO₂e）
-  // Chave et al. (2014) — uses full model when height available
+  /// Compute carbon storage in kg CO₂.
+  ///
+  /// Returns 0 when [dbh] or [height] are non-positive: the TIPC formula
+  /// requires both DBH and tree height; without height we cannot produce a
+  /// number consistent with the TIPC platform output.
   static double calculateCarbonStorage(
       String species, double height, double dbh) {
-    if (dbh <= 0) return 0;
-
-    final density = getWoodDensity(species);
-
-    double agb;
-    if (height > 0 && density > 0) {
-      // Full Chave 2014: AGB = 0.0673 × (ρ × D² × H)^0.976
-      agb = 0.0673 * Math.pow(density * dbh * dbh * height, 0.976);
-    } else {
-      // Simplified: AGB = exp(−2.48 + 2.4835 × ln(D))
-      agb = Math.exp(-2.48 + 2.4835 * Math.log(dbh));
-    }
-
-    final totalBiomass = _rootShootExpansion * agb;
-    final carbonStock = _carbonFraction * totalBiomass;
-    return carbonStock * _co2ConversionFactor;
+    if (dbh <= 0 || height <= 0) return 0;
+    final kSp = getKsp(species);
+    final raw = kSp * dbh * dbh * height;
+    // Match TIPC rounding (2 decimals)
+    return double.parse(raw.toStringAsFixed(2));
   }
 
-  // 計算年碳吸收量（單位：kg CO₂e/年）
-  // Mean annual increment = total storage / age, or default 3 % yr⁻¹
+  /// **Deprecated.** Always returns 0.
+  ///
+  /// The TIPC platform's annual sequestration formula is not publicly
+  /// documented and depends on tree age in a non-trivial way. UI must read
+  /// the persisted `carbon_sequestration_per_year` field directly and show
+  /// "—" when absent. Kept for source-compatibility with existing callers.
+  @Deprecated('Read carbon_sequestration_per_year from DB instead. '
+      'TIPC annual formula is not publicly available; client-side '
+      'recomputation is unsafe.')
   static double calculateAnnualCarbonSequestration(
       String species, double height, double dbh, int ageYears) {
-    final totalStorage = calculateCarbonStorage(species, height, dbh);
-    if (totalStorage <= 0) return 0;
-
-    if (ageYears > 0) {
-      return totalStorage / ageYears;
-    }
-    return totalStorage * _defaultGrowthRate;
+    return 0;
   }
 
-  // 計算抵換碳足跡所需樹木數量
-  static int calculateTreesNeededForOffset(double carbonFootprint,
-      String species, double avgHeight, double avgDbh, int avgAge) {
-    final annualSequestration =
-        calculateAnnualCarbonSequestration(species, avgHeight, avgDbh, avgAge);
-    if (annualSequestration <= 0) return 0;
-    return (carbonFootprint / annualSequestration).ceil();
+  // 計算抵換碳足跡所需樹木數量。
+  // Requires [annualPerTree] (kg CO₂/年) supplied by caller — usually the
+  // average of DB-stored `carbon_sequestration_per_year` for a project area.
+  static int calculateTreesNeededForOffset(
+      double carbonFootprint, double annualPerTree) {
+    if (annualPerTree <= 0) return 0;
+    return (carbonFootprint / annualPerTree).ceil();
   }
 
   // 計算碳足跡（簡易版）

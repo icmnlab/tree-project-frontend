@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:math';
 import 'dart:convert';
 import 'utils/location_helper.dart';
 
@@ -11,6 +10,7 @@ import 'services/project_service.dart';
 import 'services/project_area_service.dart';
 // location_service import removed - unused in edit mode
 import 'services/species_service.dart';
+import 'services/carbon_calculation_service.dart';
 import 'services/v3/ml_data_collector.dart'; // V3 ML 數據收集
 import 'widgets/conflict_resolution_dialog.dart';
 
@@ -24,18 +24,10 @@ void logDebug(String message) {
   }());
 }
 
-// Carbon calculation functions can be shared or moved to a utility file
-double calculateCarbonStorage(double dbh) {
-  if (dbh <= 0) return 0;
-  double aboveGroundBiomass = exp(-2.48 + 2.4835 * log(dbh));
-  double totalBiomass = 1.24 * aboveGroundBiomass;
-  double carbonContent = 0.50 * totalBiomass;
-  return carbonContent * 3.67;
-}
-
-double calculateCarbonSequestration(
-    double carbonStorage, double? growthFactor) {
-  return carbonStorage * (growthFactor ?? 0.03);
+// Delegates to TIPC-aligned [CarbonCalculationService] (AR-TMS0001 / 林業署
+// 森林碳匯調查與監測手冊式 6-4).
+double calculateCarbonStorage(String species, double height, double dbh) {
+  return CarbonCalculationService.calculateCarbonStorage(species, height, dbh);
 }
 
 class TreeEditPageV2 extends StatefulWidget {
@@ -241,11 +233,13 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
     if (!_autoCalculateEnabled) return;
     try {
       double dbh = double.tryParse(dbhController.text) ?? 0.0;
-      if (dbh > 0) {
-        double carbonStorage = calculateCarbonStorage(dbh);
-        double annualCarbon = calculateCarbonSequestration(carbonStorage, null);
+      double height = double.tryParse(treeHeightController.text) ?? 0.0;
+      String species = treeNameController.text.trim();
+      if (dbh > 0 && height > 0 && species.isNotEmpty) {
+        double carbonStorage = calculateCarbonStorage(species, height, dbh);
         carbonstorageController.text = carbonStorage.toStringAsFixed(2);
-        annualcarbonController.text = annualCarbon.toStringAsFixed(2);
+        // Annual is sourced from DB (TIPC 年固碳量公式未公開，client 不重算).
+        // Leave existing controller text alone so DB-loaded value persists.
       }
     } catch (e) {
       logDebug('Carbon calculation error: $e');
@@ -327,8 +321,15 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
       // 條件：用戶曾經關閉自動計算，且數值與自動計算結果不同
       if (!_carbonWasAutoCalculated && _originalDbh != null) {
         // 計算如果用自動計算會得到的值
-        final double autoCalculatedStorage = calculateCarbonStorage(currentDbh);
-        final double autoCalculatedAnnual = calculateCarbonSequestration(autoCalculatedStorage, null);
+        final double currentHeight =
+            double.tryParse(treeHeightController.text) ?? 0.0;
+        final String species = treeNameController.text.trim();
+        final double autoCalculatedStorage =
+            calculateCarbonStorage(species, currentHeight, currentDbh);
+        // Annual cannot be auto-calculated (TIPC 年固碳量公式未公開).
+        // Use 0 as the auto-calculated baseline so user-input values are
+        // recorded as deltas relative to “unknown”.
+        const double autoCalculatedAnnual = 0.0;
         
         // 如果用戶修改的值與自動計算值有差異，記錄 ML 數據
         final double storageDiff = (currentCarbonStorage - autoCalculatedStorage).abs();
