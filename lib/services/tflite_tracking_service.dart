@@ -84,7 +84,7 @@ class TfliteObjectTrackingService {
 
   // 當 GPU delegate 無法處理多輸出時停用 proto output
   // (某些裝置 GPU delegate 只看到 1 個 output tensor)
-  bool _protoOutputDisabled = false;
+  final bool _protoOutputDisabled = false;
 
   // ── Debug: 第一幀診斷 ──
   bool _firstFrameDiagDone = false;
@@ -335,6 +335,15 @@ class TfliteObjectTrackingService {
     return List.generate(shape[0], (_) => _buildOutputBuffer(shape.sublist(1)));
   }
 
+  void _runAndCopyRequestedOutputs(Object input, Map<int, Object> outputs) {
+    final interp = _interpreter!;
+    interp.runInference([input]);
+    final outputTensors = interp.getOutputTensors();
+    for (final entry in outputs.entries) {
+      outputTensors[entry.key].copyTo(entry.value);
+    }
+  }
+
   void dispose() {
     _interpreter?.close();
     _isInitialized = false;
@@ -452,7 +461,7 @@ class TfliteObjectTrackingService {
 
       // 3. 執行推論
       try {
-        _interpreter!.runForMultipleInputs([inputBuf], outputsMap);
+        _runAndCopyRequestedOutputs(inputBuf, outputsMap);
         if (!_inferenceSuccessLogged) {
           _inferenceSuccessLogged = true;
           debugPrint('[TFLite] ✓ 推論成功 (GPU=$_useGpuDelegate, '
@@ -580,7 +589,7 @@ class TfliteObjectTrackingService {
       }
 
       try {
-        _interpreter!.runForMultipleInputs([inputBuf], outputsMap);
+        _runAndCopyRequestedOutputs(inputBuf, outputsMap);
       } catch (e, st) {
         debugPrint('[TFLite] 靜態照片推論失敗: $e');
         debugPrint('[TFLite] 靜態照片推論 stack: $st');
@@ -1139,21 +1148,24 @@ class TfliteObjectTrackingService {
 
     final proto = _protoOutputBuf as List; // [1][Ph][Pw][32]
     final protoFrame = proto[0] as List; // [Ph][Pw][32]
-    final int Ph = protoFrame.length;
-    if (Ph == 0) return null;
-    final int Pw = (protoFrame[0] as List).length;
-    if (Pw == 0) return null;
+    final int protoHeight = protoFrame.length;
+    if (protoHeight == 0) return null;
+    final int protoWidth = (protoFrame[0] as List).length;
+    if (protoWidth == 0) return null;
 
     final coeffs = det.maskCoeffs!;
 
     // bbox 中央行 (letterbox 空間 0.._inputSize)
     final double midY = (det.y1 + det.y2) / 2.0;
     // letterbox  proto 座標
-    final int py = ((midY / _inputSize) * Ph).round().clamp(0, Ph - 1);
+    final int py =
+        ((midY / _inputSize) * protoHeight).round().clamp(0, protoHeight - 1);
 
     // x 範圍：bbox letterbox x1..x2  proto x
-    final int pxLeft = ((det.x1 / _inputSize) * Pw).floor().clamp(0, Pw - 1);
-    final int pxRight = ((det.x2 / _inputSize) * Pw).ceil().clamp(0, Pw - 1);
+    final int pxLeft =
+        ((det.x1 / _inputSize) * protoWidth).floor().clamp(0, protoWidth - 1);
+    final int pxRight =
+        ((det.x2 / _inputSize) * protoWidth).ceil().clamp(0, protoWidth - 1);
 
     // dot product; logit > 0  sigmoid > 0.5
     int maxRun = 0, curRun = 0;
@@ -1174,7 +1186,7 @@ class TfliteObjectTrackingService {
     if (maxRun == 0) return null;
 
     // proto pixels  letterbox pixels  portrait pixels
-    final double lbPixelWidth = maxRun * (_inputSize / Pw);
+    final double lbPixelWidth = maxRun * (_inputSize / protoWidth);
     final double portraitPixelWidth = lbPixelWidth * invSX;
     return portraitPixelWidth;
   }
@@ -1190,13 +1202,13 @@ class TfliteObjectTrackingService {
     if (proto is! List) return null;
     try {
       final frame = proto[0] as List;
-      final Ph = frame.length;
-      if (Ph == 0) return null;
-      final Pw = (frame[0] as List).length;
-      if (Pw == 0) return null;
-      final out = List<List<List<double>>>.generate(Ph, (y) {
+      final protoHeight = frame.length;
+      if (protoHeight == 0) return null;
+      final protoWidth = (frame[0] as List).length;
+      if (protoWidth == 0) return null;
+      final out = List<List<List<double>>>.generate(protoHeight, (y) {
         final row = frame[y] as List;
-        return List<List<double>>.generate(Pw, (x) {
+        return List<List<double>>.generate(protoWidth, (x) {
           final vec = row[x] as List;
           return List<double>.generate(32, (k) => (vec[k] as num).toDouble());
         });
@@ -1227,8 +1239,8 @@ class TfliteObjectTrackingService {
     if (coeffs == null || proto == null) return null;
     if (_lastPreviewPortraitW <= 0 || _lastPreviewPortraitH <= 0) return null;
 
-    final int Ph = proto.length;
-    final int Pw = proto[0].length;
+    final int protoHeight = proto.length;
+    final int protoWidth = proto[0].length;
 
     // 1) 在 portrait-preview 解析度產生二元 mask
     final int pw = _lastPreviewPortraitW.round();
@@ -1237,16 +1249,16 @@ class TfliteObjectTrackingService {
     final double invSY = ph / _lbScaledH;
 
     final mask = Uint8List(pw * ph);
-    final double protoXScale = Pw / _inputSize;
-    final double protoYScale = Ph / _inputSize;
+    final double protoXScale = protoWidth / _inputSize;
+    final double protoYScale = protoHeight / _inputSize;
 
     // 預先把 proto frame 攤平成 1D Float32 加速隨機讀取
-    // proto[py][px][k]  flat[(py*Pw + px)*32 + k]
-    final flat = Float32List(Ph * Pw * 32);
-    for (int y = 0; y < Ph; y++) {
-      for (int x = 0; x < Pw; x++) {
+    // proto[py][px][k]  flat[(py*protoWidth + px)*32 + k]
+    final flat = Float32List(protoHeight * protoWidth * 32);
+    for (int y = 0; y < protoHeight; y++) {
+      for (int x = 0; x < protoWidth; x++) {
         final vec = proto[y][x];
-        final base = (y * Pw + x) * 32;
+        final base = (y * protoWidth + x) * 32;
         for (int k = 0; k < 32; k++) {
           flat[base + k] = vec[k];
         }
@@ -1257,13 +1269,13 @@ class TfliteObjectTrackingService {
       // portrait y → letterbox y → proto y
       final double lbY = y / invSY + _lbPadY;
       final int py = (lbY * protoYScale).toInt();
-      if (py < 0 || py >= Ph) continue;
+      if (py < 0 || py >= protoHeight) continue;
       final int rowOff = y * pw;
       for (int x = 0; x < pw; x++) {
         final double lbX = x / invSX + _lbPadX;
         final int px = (lbX * protoXScale).toInt();
-        if (px < 0 || px >= Pw) continue;
-        final int base = (py * Pw + px) * 32;
+        if (px < 0 || px >= protoWidth) continue;
+        final int base = (py * protoWidth + px) * 32;
         double logit = 0.0;
         for (int k = 0; k < 32; k++) {
           logit += flat[base + k] * coeffs[k];
