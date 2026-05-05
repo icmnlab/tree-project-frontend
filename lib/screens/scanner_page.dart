@@ -1,17 +1,14 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
 import 'dart:math' show atan, min, max;
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:flutter/services.dart';
 import 'package:exif/exif.dart';
-import 'package:google_mlkit_object_detection/google_mlkit_object_detection.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import '../services/pure_vision_dbh_service.dart';
 import '../services/ar_measurement_service.dart';
 import '../services/tflite_tracking_service.dart';
-import '../config/app_config.dart';
 
 /// 純視覺 DBH 測量頁面 (ScannerPage)
 ///
@@ -33,8 +30,7 @@ class ScannerPage extends StatefulWidget {
 
 enum _PageStep { camera, drawBbox, processing, result }
 
-class _ScannerPageState extends State<ScannerPage>
-    with WidgetsBindingObserver {
+class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
   // Camera
   CameraController? _cameraController;
   bool _isCameraInitialized = false;
@@ -69,22 +65,18 @@ class _ScannerPageState extends State<ScannerPage>
   final PureVisionDbhService _service = PureVisionDbhService();
   bool _serviceAvailable = false;
 
-  // ML Kit Object Detection
-  ObjectDetector? _objectDetector;
+  // YOLOv8n-seg edge tracking
+  final TfliteObjectTrackingService _tfliteTracker =
+      TfliteObjectTrackingService();
   bool _isDetecting = false;
   int _lastInferenceMs = 0; // 推論節流：上次推論完成時間
   // 自適應推論冷卻：根據實際推論時間動態調整，避免針對特定手機
   int _inferCooldownMs = 300; // 初始值，會自動調整
   int _lastInferenceDurationMs = 0; // 用於自適應
   int _inferCount = 0; // 推論計數器（debug 用）
-  Rect? _trackedBbox; // Current tracked bbox from ML Kit
-
-  // TFLite YOLOv8n-seg 樹幹偵測
-  final TfliteObjectTrackingService _tfliteTracker = TfliteObjectTrackingService();
-  bool _useTflite = true; // true = YOLOv8n-seg 樹幹偵測, false = ML Kit 通用偵測
+  Rect? _trackedBbox; // Current tracked bbox from YOLO
   double? _trackedConfidence; // 最新偵測信心度
   String? _trackedLabel; // 最新偵測標籤
-  double? _trackedMaskPixelWidth; // 方案A: seg mask 計算的像素寬度
 
   // 方向感測器：偵測手機是否橫拿
   StreamSubscription? _accelSubscription;
@@ -95,7 +87,7 @@ class _ScannerPageState extends State<ScannerPage>
 
   // 重試 ML 服務連線
   bool _isRetryingService = false;
-  
+
   @override
   void initState() {
     super.initState();
@@ -104,7 +96,6 @@ class _ScannerPageState extends State<ScannerPage>
     SystemChrome.setPreferredOrientations([
       DeviceOrientation.portraitUp,
     ]);
-    _initializeDetector();
     _initializeTflite();
     _initializeCamera();
     _checkService();
@@ -114,20 +105,13 @@ class _ScannerPageState extends State<ScannerPage>
   Future<void> _initializeTflite() async {
     await _tfliteTracker.initialize();
     if (!_tfliteTracker.isInitialized) {
-      debugPrint('[Scanner] TFLite 初始化失敗，自動切換至 ML Kit');
+      debugPrint('[Scanner] YOLO 初始化失敗，即時偵測停用');
       if (mounted) {
-        setState(() { _useTflite = false; });
+        setState(() {
+          _liveDetectionAvailable = false;
+        });
       }
     }
-  }
-
-  void _initializeDetector() {
-    final options = ObjectDetectorOptions(
-      mode: DetectionMode.stream,
-      classifyObjects: true,
-      multipleObjects: true,
-    );
-    _objectDetector = ObjectDetector(options: options);
   }
 
   @override
@@ -147,7 +131,6 @@ class _ScannerPageState extends State<ScannerPage>
       }
     } catch (_) {}
     _cameraController?.dispose();
-    _objectDetector?.close();
     _tfliteTracker.dispose();
     super.dispose();
   }
@@ -245,7 +228,11 @@ class _ScannerPageState extends State<ScannerPage>
 
       // 嘗試不同解析度初始化（某些裝置在高解析度下可能失敗）
       CameraController? controller;
-      for (final preset in [ResolutionPreset.high, ResolutionPreset.medium, ResolutionPreset.low]) {
+      for (final preset in [
+        ResolutionPreset.high,
+        ResolutionPreset.medium,
+        ResolutionPreset.low
+      ]) {
         try {
           controller = CameraController(
             camera,
@@ -260,7 +247,9 @@ class _ScannerPageState extends State<ScannerPage>
           break;
         } catch (e) {
           debugPrint('[ScannerPage] 相機初始化失敗 (preset: $preset): $e');
-          try { controller?.dispose(); } catch (_) {}
+          try {
+            controller?.dispose();
+          } catch (_) {}
           controller = null;
         }
       }
@@ -272,7 +261,8 @@ class _ScannerPageState extends State<ScannerPage>
       _cameraController = controller;
 
       try {
-        await _cameraController!.lockCaptureOrientation(DeviceOrientation.portraitUp);
+        await _cameraController!
+            .lockCaptureOrientation(DeviceOrientation.portraitUp);
       } catch (e) {
         debugPrint('[ScannerPage] lockCaptureOrientation 失敗（繼續）: $e');
       }
@@ -315,7 +305,8 @@ class _ScannerPageState extends State<ScannerPage>
         );
         try {
           await _cameraController!.initialize();
-          await _cameraController!.lockCaptureOrientation(DeviceOrientation.portraitUp);
+          await _cameraController!
+              .lockCaptureOrientation(DeviceOrientation.portraitUp);
           debugPrint('[ScannerPage] 相機重新初始化成功（無即時偵測模式）');
         } catch (e2) {
           debugPrint('[ScannerPage] 相機重新初始化也失敗: $e2');
@@ -353,131 +344,72 @@ class _ScannerPageState extends State<ScannerPage>
     // Note: _isDetecting is set to true by the caller (startImageStream callback)
     // so we do NOT check it here again — the caller already ensures single-entry.
     try {
-      if (_useTflite) {
-        // --- 引擎 B: TFLite (YOLO/MobileNet SSD) ---
-        // 影像串流持續運行；_isDetecting 旗標確保同一時間只有一幀在推論，
-        // 其餘幀在 callback 中直接 return（不累積、不重建 Camera2 session）。
-        final sensorOrientation = camera.sensorOrientation;
-        var rotationCompensation = 0;
-        if (Platform.isAndroid) {
-            if (sensorOrientation == 90) rotationCompensation = 90;
-            if (sensorOrientation == 270) rotationCompensation = 270;
-        }
+      // 影像串流持續運行；_isDetecting 旗標確保同一時間只有一幀在推論，
+      // 其餘幀在 callback 中直接 return（不累積、不重建 Camera2 session）。
+      final sensorOrientation = camera.sensorOrientation;
+      var rotationCompensation = 0;
+      if (Platform.isAndroid) {
+        if (sensorOrientation == 90) rotationCompensation = 90;
+        if (sensorOrientation == 270) rotationCompensation = 270;
+      }
 
-        final sw = Stopwatch()..start();
-        final bboxes = _tfliteTracker.processCameraImage(image, rotationCompensation);
-        sw.stop();
-        _inferCount++;
-        _lastInferenceDurationMs = sw.elapsedMilliseconds;
+      final sw = Stopwatch()..start();
+      final bboxes =
+          _tfliteTracker.processCameraImage(image, rotationCompensation);
+      sw.stop();
+      _inferCount++;
+      _lastInferenceDurationMs = sw.elapsedMilliseconds;
 
-        // 自適應冷卻：推論時間的 1.5 倍
-        // 快手機 (S22U ~50ms) → 200ms 冷卻，流暢
-        // 慢手機 (Mi A1 ~7000ms) → 5000ms 冷卻，避免 UI 卡死
-        _inferCooldownMs = (sw.elapsedMilliseconds * 1.5).round().clamp(200, 5000);
+      // 自適應冷卻：推論時間的 1.5 倍
+      // 快手機 (S22U ~50ms) → 200ms 冷卻，流暢
+      // 慢手機 (Mi A1 ~7000ms) → 5000ms 冷卻，避免 UI 卡死
+      _inferCooldownMs =
+          (sw.elapsedMilliseconds * 1.5).round().clamp(200, 5000);
 
-        // 首幀效能回報：讓 TFLite service 判斷是否需要 GPU→CPU fallback
-        // 注意：不自動切換至 ML Kit，YOLO 座標修復後應能正常運作
-        if (_inferCount == 1 && _useTflite) {
-          _tfliteTracker.notifyInferenceTime(sw.elapsedMilliseconds);
-        }
+      if (_inferCount == 1) {
+        _tfliteTracker.notifyInferenceTime(sw.elapsedMilliseconds);
+      }
 
-        // 前 10 次每次都記錄，之後每 10 次
-        if (_inferCount <= 10 || _inferCount % 10 == 0) {
-          debugPrint('[ScannerPage] 推論 #$_inferCount  ${sw.elapsedMilliseconds}ms  '
-              'bbox=${bboxes.length}  cooldown=${_inferCooldownMs}ms');
-        }
-        if (mounted && _step == _PageStep.camera) {
-          setState(() {
-            if (bboxes.isNotEmpty) {
-              bboxes.sort((a, b) => b.confidence.compareTo(a.confidence));
-              final bestBbox = bboxes.first;
-              
-              if (bestBbox.rect.width > 10 && bestBbox.rect.height > 10) {
-                 _trackedBbox = bestBbox.rect;
-                 _trackedConfidence = bestBbox.confidence;
-                 _trackedLabel = bestBbox.label;
-                 _trackedMaskPixelWidth = bestBbox.maskPixelWidth;
-                 if (_inferCount <= 5 || _inferCount % 10 == 0) {
-                   debugPrint('[ScannerPage-UI] bbox SET: '
-                       'L=${bestBbox.rect.left.toStringAsFixed(0)} '
-                       'T=${bestBbox.rect.top.toStringAsFixed(0)} '
-                       'R=${bestBbox.rect.right.toStringAsFixed(0)} '
-                       'B=${bestBbox.rect.bottom.toStringAsFixed(0)} '
-                       'W=${bestBbox.rect.width.toStringAsFixed(0)} '
-                       'H=${bestBbox.rect.height.toStringAsFixed(0)} '
-                       'conf=${bestBbox.confidence.toStringAsFixed(3)}');
-                 }
-              } else {
-                 _trackedBbox = null;
-                 _trackedConfidence = null;
-                 _trackedLabel = null;
-                 _trackedMaskPixelWidth = null;
-                 debugPrint('[ScannerPage-UI] bbox TOO SMALL: '
-                     'W=${bestBbox.rect.width.toStringAsFixed(0)} '
-                     'H=${bestBbox.rect.height.toStringAsFixed(0)}');
+      // 前 10 次每次都記錄，之後每 10 次
+      if (_inferCount <= 10 || _inferCount % 10 == 0) {
+        debugPrint(
+            '[ScannerPage] 推論 #$_inferCount  ${sw.elapsedMilliseconds}ms  '
+            'bbox=${bboxes.length}  cooldown=${_inferCooldownMs}ms');
+      }
+      if (mounted && _step == _PageStep.camera) {
+        setState(() {
+          if (bboxes.isNotEmpty) {
+            bboxes.sort((a, b) => b.confidence.compareTo(a.confidence));
+            final bestBbox = bboxes.first;
+
+            if (bestBbox.rect.width > 10 && bestBbox.rect.height > 10) {
+              _trackedBbox = bestBbox.rect;
+              _trackedConfidence = bestBbox.confidence;
+              _trackedLabel = bestBbox.label;
+              if (_inferCount <= 5 || _inferCount % 10 == 0) {
+                debugPrint('[ScannerPage-UI] bbox SET: '
+                    'L=${bestBbox.rect.left.toStringAsFixed(0)} '
+                    'T=${bestBbox.rect.top.toStringAsFixed(0)} '
+                    'R=${bestBbox.rect.right.toStringAsFixed(0)} '
+                    'B=${bestBbox.rect.bottom.toStringAsFixed(0)} '
+                    'W=${bestBbox.rect.width.toStringAsFixed(0)} '
+                    'H=${bestBbox.rect.height.toStringAsFixed(0)} '
+                    'conf=${bestBbox.confidence.toStringAsFixed(3)}');
               }
             } else {
               _trackedBbox = null;
               _trackedConfidence = null;
               _trackedLabel = null;
-              _trackedMaskPixelWidth = null;
+              debugPrint('[ScannerPage-UI] bbox TOO SMALL: '
+                  'W=${bestBbox.rect.width.toStringAsFixed(0)} '
+                  'H=${bestBbox.rect.height.toStringAsFixed(0)}');
             }
-          });
-        }
-      } else {
-        // --- 引擎 A: Google ML Kit ---
-        if (_objectDetector == null) {
-          debugPrint('[ScannerPage-MLKit] objectDetector 為 null，跳過');
-          return;
-        }
-        final inputImage = _inputImageFromCameraImage(image, camera);
-        if (inputImage == null) {
-          debugPrint('[ScannerPage-MLKit] inputImage 轉換失敗');
-          return;
-        }
-
-        final mlSw = Stopwatch()..start();
-        final objects = await _objectDetector!.processImage(inputImage);
-        mlSw.stop();
-        _inferCount++;
-        _lastInferenceDurationMs = mlSw.elapsedMilliseconds;
-        // ML Kit 通常很快 (~30-100ms)，冷卻設短一點
-        _inferCooldownMs = (mlSw.elapsedMilliseconds * 1.5).round().clamp(100, 500);
-
-        // Debug: 前 20 次每次都記錄
-        if (_inferCount <= 20 || _inferCount % 10 == 0) {
-          final labels = objects.map((o) =>
-              '${o.labels.map((l) => '${l.text}(${(l.confidence * 100).toStringAsFixed(0)}%)').join(',')} '
-              'bbox=${o.boundingBox.width.toStringAsFixed(0)}x${o.boundingBox.height.toStringAsFixed(0)}'
-          ).join(' | ');
-          debugPrint('[ScannerPage-MLKit] #$_inferCount ${mlSw.elapsedMilliseconds}ms '
-              'objects=${objects.length} $labels');
-        }
-
-        if (mounted && _step == _PageStep.camera) {
-          setState(() {
-            if (objects.isNotEmpty) {
-              final obj = objects.first;
-              if (obj.boundingBox.width > 10 && obj.boundingBox.height > 10) {
-                _trackedBbox = obj.boundingBox;
-                _trackedConfidence = obj.labels.isNotEmpty
-                    ? obj.labels.first.confidence.toDouble()
-                    : null;
-                _trackedLabel = obj.labels.isNotEmpty
-                    ? obj.labels.first.text
-                    : null;
-              } else {
-                _trackedBbox = null;
-                _trackedConfidence = null;
-                _trackedLabel = null;
-              }
-            } else {
-              _trackedBbox = null;
-              _trackedConfidence = null;
-              _trackedLabel = null;
-            }
-          });
-        }
+          } else {
+            _trackedBbox = null;
+            _trackedConfidence = null;
+            _trackedLabel = null;
+          }
+        });
       }
     } catch (e) {
       debugPrint('物件偵測錯誤: $e');
@@ -488,82 +420,7 @@ class _ScannerPageState extends State<ScannerPage>
     }
   }
 
-  InputImage? _inputImageFromCameraImage(
-      CameraImage image, CameraDescription camera) {
-    final sensorOrientation = camera.sensorOrientation;
-    InputImageRotation? rotation;
-    if (Platform.isIOS) {
-      rotation = InputImageRotationValue.fromRawValue(sensorOrientation);
-    } else if (Platform.isAndroid) {
-      var rotationCompensation = 0;
-      if (sensorOrientation == 90) rotationCompensation = 90;
-      if (sensorOrientation == 270) rotationCompensation = 270;
-      rotation = InputImageRotationValue.fromRawValue(rotationCompensation);
-    }
-    if (rotation == null) {
-      debugPrint('[ScannerPage-MLKit] rotation 為 null (sensorOrientation=$sensorOrientation)');
-      return null;
-    }
-
-    final format = InputImageFormatValue.fromRawValue(image.format.raw);
-
-    if (Platform.isAndroid &&
-        image.format.raw == 35 &&
-        image.planes.length == 3) {
-      final yPlane = image.planes[0].bytes;
-      final uPlane = image.planes[1].bytes;
-      final vPlane = image.planes[2].bytes;
-
-      final ySize = yPlane.length;
-      final uvSize = uPlane.length;
-      final nv21Bytes = Uint8List(ySize + uvSize * 2);
-
-      nv21Bytes.setRange(0, ySize, yPlane);
-      nv21Bytes.setRange(ySize, ySize + vPlane.length, vPlane);
-      final currentPos = ySize + vPlane.length;
-      final remaining = nv21Bytes.length - currentPos;
-      if (remaining > 0) {
-        nv21Bytes.setRange(
-            currentPos,
-            currentPos + min(remaining, uPlane.length),
-            uPlane.sublist(0, min(remaining, uPlane.length)));
-      }
-
-      return InputImage.fromBytes(
-        bytes: nv21Bytes,
-        metadata: InputImageMetadata(
-          size: Size(image.width.toDouble(), image.height.toDouble()),
-          rotation: rotation,
-          format: InputImageFormat.nv21,
-          bytesPerRow: image.planes[0].bytesPerRow,
-        ),
-      );
-    }
-
-    if (format == null ||
-        (Platform.isAndroid && format != InputImageFormat.nv21) ||
-        (Platform.isIOS && format != InputImageFormat.bgra8888)) {
-      return null;
-    }
-
-    if (image.planes.isEmpty) return null;
-
-    return InputImage.fromBytes(
-      bytes: image.planes[0].bytes,
-      metadata: InputImageMetadata(
-        size: Size(image.width.toDouble(), image.height.toDouble()),
-        rotation: rotation,
-        format: format,
-        bytesPerRow: image.planes[0].bytesPerRow,
-      ),
-    );
-  }
-
-  // ===========================================================
-  // 步驟 1: 拍照
-  // ===========================================================
-
-  Future<void> _capturePhoto() async {
+  Future<void> _takePhoto() async {
     if (_cameraController == null || !_cameraController!.value.isInitialized) {
       return;
     }
@@ -608,7 +465,8 @@ class _ScannerPageState extends State<ScannerPage>
         if (focalTag != null) {
           final ratio = focalTag.values;
           if (ratio is IfdRatios && ratio.ratios.isNotEmpty) {
-            focalMm = ratio.ratios.first.numerator / ratio.ratios.first.denominator;
+            focalMm =
+                ratio.ratios.first.numerator / ratio.ratios.first.denominator;
           } else {
             // printable 可能包含單位 / 空白 / 分數表示法 (例如 "5.4 mm", "27/5")
             // 先嘗試分數，再做保守的數字抽取
@@ -659,7 +517,6 @@ class _ScannerPageState extends State<ScannerPage>
 
       if (_isAutoMode) {
         Rect? mappedBbox;
-        double? previewToPhotoScaleX; // saved bboxSX for mask scaling
         if (_trackedBbox != null && _cameraController != null) {
           final previewSize = _cameraController!.value.previewSize!;
           final double imgW = _imageSize!.width;
@@ -667,28 +524,17 @@ class _ScannerPageState extends State<ScannerPage>
 
           // ─── 座標系統說明 ───
           //
-          // _trackedBbox 的座標空間取決於使用的偵測引擎：
-          //
-          //  ① TFLite (YOLOv8n-seg):
-          //     _fillInputBuffer 已在採樣時旋轉影像為直向，
-          //     processCameraImage 的輸出座標在「直向 portrait」空間：
-          //       X ∈ [0, portraitW]  (portraitW = sensorH = previewSize.height)
-          //       Y ∈ [0, portraitH]  (portraitH = sensorW = previewSize.width)
-          //
-          //  ② ML Kit:
-          //     ML Kit 接收 InputImageRotation，內部旋轉後辨識，
-          //     回傳座標也在「直向 portrait」空間（同上）。
-          //
+          // TFLite YOLO 在 _fillInputBuffer 已把影像採樣成直向，輸出座標在
+          // 「直向 portrait」空間：
+          //   X ∈ [0, portraitW]  (portraitW = sensorH = previewSize.height)
+          //   Y ∈ [0, portraitH]  (portraitH = sensorW = previewSize.width)
           // 拍攝的照片 (decoded) 經 EXIF 旋轉後也是直向 (imgW < imgH)。
-          //
           // 因此 portrait → photo 只需要等比縮放，不需要旋轉映射。
 
           final bool isPortraitImage = imgH > imgW;
           final bool isSensorLandscape = previewSize.width > previewSize.height;
 
           // bboxSX: scale factor from portrait-preview-space → photo-space.
-          // Applied to maskPixelWidth too (Bug fix: mask was in preview pixels,
-          // but focal_length_px on the server is in photo/processed-image pixels).
           double bboxSX;
 
           if (isPortraitImage && isSensorLandscape) {
@@ -696,7 +542,7 @@ class _ScannerPageState extends State<ScannerPage>
             // 照片也是直向 (imgW × imgH)
             // 直接等比縮放
             final double portraitW = previewSize.height.toDouble(); // sensorH
-            final double portraitH = previewSize.width.toDouble();  // sensorW
+            final double portraitH = previewSize.width.toDouble(); // sensorW
             bboxSX = imgW / portraitW;
             final double sY = imgH / portraitH;
 
@@ -718,8 +564,6 @@ class _ScannerPageState extends State<ScannerPage>
             );
           }
 
-          previewToPhotoScaleX = bboxSX; // save for mask scaling below
-
           // 確保不超出圖片範圍
           mappedBbox = Rect.fromLTRB(
             mappedBbox.left.clamp(0, imgW),
@@ -729,40 +573,7 @@ class _ScannerPageState extends State<ScannerPage>
           );
         }
 
-        // Scale maskPixelWidth: preview-portrait pixels → photo pixels.
-        // previewToPhotoScaleX ≈ photo_width / sensor_height (e.g. 3024/720 ≈ 4.2).
-        // The backend will further scale by its resize factor (photo→processed).
-        // Only send mask width when we also have a localBbox (same detection).
-        final double? scaledMaskPxW =
-            (mappedBbox != null && _trackedMaskPixelWidth != null && previewToPhotoScaleX != null)
-                ? _trackedMaskPixelWidth! * previewToPhotoScaleX
-                : null;
-
-        // ── [方案A+] 在拍照後賦染完整二元 PNG mask（同 JPEG 尺寸）──
-        // 讓 backend 能累以「以 mask 為主」採樣 trunk depth，而不是靠 depth edges。
-        String? trunkMaskBase64;
-        if (mappedBbox != null && _imageSize != null) {
-          final int imgWInt = _imageSize!.width.toInt();
-          final int imgHInt = _imageSize!.height.toInt();
-          try {
-            final pngBytes = await _tfliteTracker.renderTrunkMaskPng(
-              targetW: imgWInt,
-              targetH: imgHInt,
-            );
-            if (pngBytes != null && pngBytes.isNotEmpty) {
-              trunkMaskBase64 = base64Encode(pngBytes);
-              debugPrint('[Scanner] trunk_mask PNG ready: '
-                  '${pngBytes.lengthInBytes} bytes (${imgWInt}x$imgHInt)');
-            }
-          } catch (e) {
-            debugPrint('[Scanner] renderTrunkMaskPng 失敗: $e');
-          }
-        }
-
-        _submitAutoMeasurement(
-            localBbox: mappedBbox,
-            maskPixelWidth: scaledMaskPxW,
-            trunkMaskBase64: trunkMaskBase64);
+        _submitAutoMeasurement(localBbox: mappedBbox);
       }
     } catch (e) {
       debugPrint('拍照失敗: $e');
@@ -903,8 +714,7 @@ class _ScannerPageState extends State<ScannerPage>
   // 步驟 3b: 自動偵測 + 量測 (Auto Mode)
   // ===========================================================
 
-  Future<void> _submitAutoMeasurement(
-      {Rect? localBbox, double? maskPixelWidth, String? trunkMaskBase64}) async {
+  Future<void> _submitAutoMeasurement({Rect? localBbox}) async {
     if (_capturedImage == null) return;
 
     setState(() {
@@ -927,8 +737,7 @@ class _ScannerPageState extends State<ScannerPage>
         phoneMake: _phoneMake,
         phoneModel: _phoneModel,
         localBbox: localBbox,
-        maskPixelWidth: maskPixelWidth,
-        trunkMaskBase64: trunkMaskBase64,
+        useServerYoloMask: true,
         returnVisualization: true,
         returnDetectionVisualization: true,
       );
@@ -1101,7 +910,8 @@ class _ScannerPageState extends State<ScannerPage>
                     left: 8,
                     bottom: 8,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 3),
                       decoration: BoxDecoration(
                         color: Colors.black54,
                         borderRadius: BorderRadius.circular(4),
@@ -1141,7 +951,7 @@ class _ScannerPageState extends State<ScannerPage>
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.red.withValues(alpha:0.8),
+                color: Colors.red.withValues(alpha: 0.8),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -1150,27 +960,35 @@ class _ScannerPageState extends State<ScannerPage>
                   const SizedBox(width: 8),
                   const Expanded(
                     child: Text(
-                      'ML 服務未連線\n模型載入中或伺服器未啟動',
-                      style: TextStyle(color: Colors.white, fontSize: 13, height: 1.3),
+                      'ML 服務未連線\n請重新登入或確認手機可連到 ML 位址',
+                      style: TextStyle(
+                          color: Colors.white, fontSize: 13, height: 1.3),
                     ),
                   ),
                   const SizedBox(width: 8),
                   GestureDetector(
                     onTap: _retryServiceCheck,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.25),
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: _isRetryingService
                           ? const SizedBox(
-                              width: 16, height: 16,
+                              width: 16,
+                              height: 16,
                               child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white,
+                                strokeWidth: 2,
+                                color: Colors.white,
                               ),
                             )
-                          : const Text('重試', style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.bold)),
+                          : const Text('重試',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],
@@ -1187,18 +1005,20 @@ class _ScannerPageState extends State<ScannerPage>
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.orange.shade900.withValues(alpha:0.9),
+                color: Colors.orange.shade900.withValues(alpha: 0.9),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.orangeAccent, width: 1.5),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.screen_rotation, color: Colors.orangeAccent, size: 22),
+                  Icon(Icons.screen_rotation,
+                      color: Colors.orangeAccent, size: 22),
                   SizedBox(width: 10),
                   Expanded(
                     child: Text(
                       '請將手機直立拿著拍攝\n橫向拍攝會影響測量精度',
-                      style: TextStyle(color: Colors.white, fontSize: 13, height: 1.4),
+                      style: TextStyle(
+                          color: Colors.white, fontSize: 13, height: 1.4),
                     ),
                   ),
                 ],
@@ -1233,8 +1053,8 @@ class _ScannerPageState extends State<ScannerPage>
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 color: _isAutoMode
-                    ? Colors.tealAccent.withValues(alpha:0.2)
-                    : Colors.grey.withValues(alpha:0.3),
+                    ? Colors.tealAccent.withValues(alpha: 0.2)
+                    : Colors.grey.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: _isAutoMode ? Colors.tealAccent : Colors.grey,
@@ -1271,14 +1091,17 @@ class _ScannerPageState extends State<ScannerPage>
           right: 0,
           child: Center(
             child: GestureDetector(
-              onTap: (_serviceAvailable && !_isLandscapeHeld) ? _capturePhoto : null,
+              onTap:
+                  (_serviceAvailable && !_isLandscapeHeld) ? _takePhoto : null,
               child: Container(
                 width: 72,
                 height: 72,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: (_serviceAvailable && !_isLandscapeHeld) ? Colors.white : Colors.grey,
+                    color: (_serviceAvailable && !_isLandscapeHeld)
+                        ? Colors.white
+                        : Colors.grey,
                     width: 4,
                   ),
                 ),
@@ -1286,7 +1109,9 @@ class _ScannerPageState extends State<ScannerPage>
                   margin: const EdgeInsets.all(4),
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: (_serviceAvailable && !_isLandscapeHeld) ? Colors.white : Colors.grey,
+                    color: (_serviceAvailable && !_isLandscapeHeld)
+                        ? Colors.white
+                        : Colors.grey,
                   ),
                 ),
               ),
@@ -1315,7 +1140,6 @@ class _ScannerPageState extends State<ScannerPage>
               width: double.infinity,
               height: double.infinity,
             ),
-
           GestureDetector(
             onPanStart: (details) {
               setState(() {
@@ -1344,14 +1168,12 @@ class _ScannerPageState extends State<ScannerPage>
               child: Container(color: Colors.transparent),
             ),
           ),
-
           Positioned(
             top: 0,
             left: 0,
             right: 0,
             child: _buildAppBar('框選樹幹'),
           ),
-
           Positioned(
             bottom: 100,
             left: 0,
@@ -1361,14 +1183,17 @@ class _ScannerPageState extends State<ScannerPage>
               children: [
                 if (_errorMessage != null)
                   Container(
-                    margin: const EdgeInsets.only(bottom: 8, left: 16, right: 16),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    margin:
+                        const EdgeInsets.only(bottom: 8, left: 16, right: 16),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
-                      color: Colors.red.shade900.withValues(alpha:0.85),
+                      color: Colors.red.shade900.withValues(alpha: 0.85),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(_errorMessage!,
-                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                        style:
+                            const TextStyle(color: Colors.white, fontSize: 13),
                         textAlign: TextAlign.center),
                   ),
                 _buildInstructionChip(
@@ -1378,7 +1203,6 @@ class _ScannerPageState extends State<ScannerPage>
               ],
             ),
           ),
-
           Positioned(
             bottom: 24,
             left: 16,
@@ -1417,9 +1241,11 @@ class _ScannerPageState extends State<ScannerPage>
                   onPressed: _currentBbox != null
                       ? () => _submitMeasurement(displaySize)
                       : null,
-                  backgroundColor: _currentBbox != null ? Colors.green : Colors.grey,
+                  backgroundColor:
+                      _currentBbox != null ? Colors.green : Colors.grey,
                   icon: const Icon(Icons.send, color: Colors.white),
-                  label: const Text('AI 分析', style: TextStyle(color: Colors.white)),
+                  label: const Text('AI 分析',
+                      style: TextStyle(color: Colors.white)),
                 ),
               ],
             ),
@@ -1459,9 +1285,7 @@ class _ScannerPageState extends State<ScannerPage>
             ),
             const SizedBox(height: 8),
             Text(
-              _isAutoMode
-                  ? '正在自動辨識樹幹並計算胸徑'
-                  : '正在使用 Depth Anything V2 分析影像',
+              _isAutoMode ? '正在自動辨識樹幹並計算胸徑' : '正在使用 Depth Anything V2 分析影像',
               style: TextStyle(color: Colors.grey[400], fontSize: 14),
             ),
             const SizedBox(height: 4),
@@ -1482,7 +1306,8 @@ class _ScannerPageState extends State<ScannerPage>
                 });
                 if (_isAutoMode) _restartImageStream();
               },
-              icon: const Icon(Icons.cancel_outlined, color: Colors.white54, size: 18),
+              icon: const Icon(Icons.cancel_outlined,
+                  color: Colors.white54, size: 18),
               label: const Text('取消', style: TextStyle(color: Colors.white54)),
             ),
           ],
@@ -1513,16 +1338,17 @@ class _ScannerPageState extends State<ScannerPage>
       child: Column(
         children: [
           _buildAppBar('自動偵測結果'),
-
           if (r.distanceStatus != 'ok' && r.distanceMessage.isNotEmpty)
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
               decoration: BoxDecoration(
-                color: _distanceStatusColor(r.distanceStatus).withValues(alpha:0.15),
+                color: _distanceStatusColor(r.distanceStatus)
+                    .withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(
-                  color: _distanceStatusColor(r.distanceStatus).withValues(alpha:0.5),
+                  color: _distanceStatusColor(r.distanceStatus)
+                      .withValues(alpha: 0.5),
                 ),
               ),
               child: Row(
@@ -1546,7 +1372,6 @@ class _ScannerPageState extends State<ScannerPage>
                 ],
               ),
             ),
-
           if (r.detectionVisualizationBytes != null)
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -1562,20 +1387,24 @@ class _ScannerPageState extends State<ScannerPage>
                     fit: BoxFit.contain,
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     color: Colors.grey[900],
                     child: Row(
                       children: [
-                        const Icon(Icons.auto_awesome, color: Colors.tealAccent, size: 16),
+                        const Icon(Icons.auto_awesome,
+                            color: Colors.tealAccent, size: 16),
                         const SizedBox(width: 6),
                         Text(
                           '自動偵測 · 信心度 ${(r.detectionConfidence * 100).toStringAsFixed(0)}%',
-                          style: const TextStyle(color: Colors.white70, fontSize: 12),
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 12),
                         ),
                         const Spacer(),
                         Text(
                           '${r.allTrunks.length} 棵樹幹',
-                          style: const TextStyle(color: Colors.white54, fontSize: 12),
+                          style: const TextStyle(
+                              color: Colors.white54, fontSize: 12),
                         ),
                       ],
                     ),
@@ -1583,7 +1412,6 @@ class _ScannerPageState extends State<ScannerPage>
                 ],
               ),
             ),
-
           if (r.visualizationBytes != null)
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -1597,7 +1425,6 @@ class _ScannerPageState extends State<ScannerPage>
                 fit: BoxFit.contain,
               ),
             ),
-
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             padding: const EdgeInsets.all(20),
@@ -1612,9 +1439,11 @@ class _ScannerPageState extends State<ScannerPage>
                 const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.auto_awesome, color: Colors.tealAccent, size: 18),
+                    Icon(Icons.auto_awesome,
+                        color: Colors.tealAccent, size: 18),
                     SizedBox(width: 6),
-                    Text('自動偵測 DBH (胸徑)', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                    Text('自動偵測 DBH (胸徑)',
+                        style: TextStyle(color: Colors.white70, fontSize: 14)),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -1632,15 +1461,18 @@ class _ScannerPageState extends State<ScannerPage>
                   runSpacing: 4,
                   alignment: WrapAlignment.center,
                   children: [
-                    _buildBadge('信心度: ${r.confidenceLevel}', _confidenceColor(conf)),
-                    _buildBadge('深度: ${r.trunkDepthM?.toStringAsFixed(2) ?? "?"}m', Colors.blueGrey),
-                    _buildBadge(_distanceStatusLabel(r.distanceStatus), _distanceStatusColor(r.distanceStatus)),
+                    _buildBadge(
+                        '信心度: ${r.confidenceLevel}', _confidenceColor(conf)),
+                    _buildBadge(
+                        '深度: ${r.trunkDepthM?.toStringAsFixed(2) ?? "?"}m',
+                        Colors.blueGrey),
+                    _buildBadge(_distanceStatusLabel(r.distanceStatus),
+                        _distanceStatusColor(r.distanceStatus)),
                   ],
                 ),
               ],
             ),
           ),
-
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             padding: const EdgeInsets.all(16),
@@ -1651,34 +1483,45 @@ class _ScannerPageState extends State<ScannerPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('詳細資料', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                const Text('詳細資料',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold)),
                 const Divider(color: Colors.grey),
                 _buildDetailRow('偵測方式', '自動 (深度分析)'),
                 if (r.trunkPixelWidth != null)
-                  _buildDetailRow('樹幹像素寬度', '${r.trunkPixelWidth!.toStringAsFixed(0)} px'),
+                  _buildDetailRow(
+                      '樹幹像素寬度', '${r.trunkPixelWidth!.toStringAsFixed(0)} px'),
                 if (r.chordLengthM != null)
-                  _buildDetailRow('弦長', '${r.chordLengthM!.toStringAsFixed(4)} m'),
+                  _buildDetailRow(
+                      '弦長', '${r.chordLengthM!.toStringAsFixed(4)} m'),
                 if (r.focalLengthPx != null)
-                  _buildDetailRow('焦距', '${r.focalLengthPx!.toStringAsFixed(1)} px'),
+                  _buildDetailRow(
+                      '焦距', '${r.focalLengthPx!.toStringAsFixed(1)} px'),
                 if (r.method != null) _buildDetailRow('測量方法', r.method!),
-                _buildDetailRow('深度估計耗時', '${r.depthEstimationMs.toStringAsFixed(0)} ms'),
-                _buildDetailRow('偵測耗時', '${r.detectionMs.toStringAsFixed(0)} ms'),
-                _buildDetailRow('DBH 計算耗時', '${r.dbhCalculationMs.toStringAsFixed(0)} ms'),
+                _buildDetailRow(
+                    '深度估計耗時', '${r.depthEstimationMs.toStringAsFixed(0)} ms'),
+                _buildDetailRow(
+                    '偵測耗時', '${r.detectionMs.toStringAsFixed(0)} ms'),
+                _buildDetailRow(
+                    'DBH 計算耗時', '${r.dbhCalculationMs.toStringAsFixed(0)} ms'),
                 _buildDetailRow('總耗時', '${r.totalMs.toStringAsFixed(0)} ms'),
                 if (r.notes.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  const Text('備註:', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                  const Text('備註:',
+                      style: TextStyle(color: Colors.white70, fontSize: 12)),
                   ...r.notes.map((n) => Padding(
                         padding: const EdgeInsets.only(left: 8, top: 2),
-                        child: Text('• $n', style: const TextStyle(color: Colors.white60, fontSize: 12)),
+                        child: Text('• $n',
+                            style: const TextStyle(
+                                color: Colors.white60, fontSize: 12)),
                       )),
                 ],
               ],
             ),
           ),
-
           const SizedBox(height: 16),
-
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
@@ -1733,7 +1576,6 @@ class _ScannerPageState extends State<ScannerPage>
       child: Column(
         children: [
           _buildAppBar('測量結果'),
-
           if (r.visualizationBytes != null)
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1747,7 +1589,6 @@ class _ScannerPageState extends State<ScannerPage>
                 fit: BoxFit.contain,
               ),
             ),
-
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             padding: const EdgeInsets.all(20),
@@ -1759,7 +1600,8 @@ class _ScannerPageState extends State<ScannerPage>
             ),
             child: Column(
               children: [
-                const Text('DBH (胸徑)', style: TextStyle(color: Colors.white70, fontSize: 14)),
+                const Text('DBH (胸徑)',
+                    style: TextStyle(color: Colors.white70, fontSize: 14)),
                 const SizedBox(height: 4),
                 Text(
                   '${r.dbhCm.toStringAsFixed(1)} cm',
@@ -1773,15 +1615,16 @@ class _ScannerPageState extends State<ScannerPage>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    _buildBadge('信心度: ${r.confidenceLevel}', _confidenceColor(r.confidence)),
+                    _buildBadge('信心度: ${r.confidenceLevel}',
+                        _confidenceColor(r.confidence)),
                     const SizedBox(width: 8),
-                    _buildBadge('深度: ${r.trunkDepthM.toStringAsFixed(2)}m', Colors.blueGrey),
+                    _buildBadge('深度: ${r.trunkDepthM.toStringAsFixed(2)}m',
+                        Colors.blueGrey),
                   ],
                 ),
               ],
             ),
           ),
-
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             padding: const EdgeInsets.all(16),
@@ -1792,28 +1635,37 @@ class _ScannerPageState extends State<ScannerPage>
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('詳細資料', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                const Text('詳細資料',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold)),
                 const Divider(color: Colors.grey),
-                _buildDetailRow('樹幹像素寬度', '${r.trunkPixelWidth.toStringAsFixed(0)} px'),
+                _buildDetailRow(
+                    '樹幹像素寬度', '${r.trunkPixelWidth.toStringAsFixed(0)} px'),
                 _buildDetailRow('弦長', '${r.chordLengthM.toStringAsFixed(4)} m'),
-                _buildDetailRow('焦距', '${r.focalLengthPx.toStringAsFixed(1)} px'),
+                _buildDetailRow(
+                    '焦距', '${r.focalLengthPx.toStringAsFixed(1)} px'),
                 _buildDetailRow('測量方法', r.method),
-                _buildDetailRow('深度估計耗時', '${r.depthEstimationMs.toStringAsFixed(0)} ms'),
-                _buildDetailRow('DBH 計算耗時', '${r.dbhCalculationMs.toStringAsFixed(0)} ms'),
+                _buildDetailRow(
+                    '深度估計耗時', '${r.depthEstimationMs.toStringAsFixed(0)} ms'),
+                _buildDetailRow(
+                    'DBH 計算耗時', '${r.dbhCalculationMs.toStringAsFixed(0)} ms'),
                 if (r.notes.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  const Text('備註:', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                  const Text('備註:',
+                      style: TextStyle(color: Colors.white70, fontSize: 12)),
                   ...r.notes.map((n) => Padding(
                         padding: const EdgeInsets.only(left: 8, top: 2),
-                        child: Text('• $n', style: const TextStyle(color: Colors.white60, fontSize: 12)),
+                        child: Text('• $n',
+                            style: const TextStyle(
+                                color: Colors.white60, fontSize: 12)),
                       )),
                 ],
               ],
             ),
           ),
-
           const SizedBox(height: 16),
-
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
@@ -1894,197 +1746,33 @@ class _ScannerPageState extends State<ScannerPage>
   }
 
   Widget _buildCameraAppBar() {
-    final config = AppConfig();
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       color: Colors.black54,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
+      child: Row(
         children: [
-          Row(
-            children: [
-              IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-              const Expanded(
-                child: Text(
-                  '純視覺 AI 測量',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              IconButton(
-                icon: Icon(
-                  Icons.dns_rounded,
-                  color: config.useSelfHostedMl ? Colors.tealAccent : Colors.white,
-                ),
-                tooltip: 'ML 服務設定',
-                onPressed: _showMlServiceSettings,
-              ),
-              IconButton(
-                icon: const Icon(Icons.help_outline, color: Colors.white),
-                onPressed: _showHelp,
-              ),
-            ],
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.white),
+            onPressed: () => Navigator.of(context).pop(),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+          const Expanded(
             child: Text(
-              'ML: ${config.mlServiceSource}',
+              '純視覺 AI 測量',
+              textAlign: TextAlign.center,
               style: TextStyle(
-                color: config.useSelfHostedMl ? Colors.tealAccent.withValues(alpha:0.8) : Colors.white54,
-                fontSize: 11,
+                color: Colors.white,
+                fontSize: 17,
+                fontWeight: FontWeight.bold,
               ),
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.help_outline, color: Colors.white),
+            onPressed: _showHelp,
           ),
         ],
       ),
     );
-  }
-
-  Future<void> _showMlServiceSettings() async {
-    final config = AppConfig();
-    final urlController = TextEditingController(
-      text: config.useSelfHostedMl ? config.mlServiceUrl.replaceAll('/api/v1', '') : '',
-    );
-    final apiKeyController = TextEditingController(
-      text: config.mlApiKey ?? '',
-    );
-    bool useSelfHosted = config.useSelfHostedMl;
-
-    await showDialog(
-      context: context,
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setDialogState) {
-            return AlertDialog(
-              title: const Text('設定與除錯'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('邊緣追蹤引擎 (Edge Tracking)', style: TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    SegmentedButton<bool>(
-                      segments: const [
-                        ButtonSegment(value: false, label: Text('ML Kit')),
-                        ButtonSegment(value: true, label: Text('YOLO')),
-                      ],
-                      selected: {_useTflite},
-                      onSelectionChanged: (Set<bool> newSelection) {
-                        setDialogState(() {
-                          _useTflite = newSelection.first;
-                        });
-                        setState(() {
-                          _useTflite = newSelection.first;
-                        });
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    const Divider(),
-                    const SizedBox(height: 16),
-                    SwitchListTile(
-                      title: const Text('使用自架 ML 服務'),
-                      subtitle: Text(
-                        useSelfHosted ? '連接到自己的電腦' : '使用後端預設 ML 服務',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      value: useSelfHosted,
-                      activeColor: Colors.teal,
-                      contentPadding: EdgeInsets.zero,
-                      onChanged: (val) {
-                        setDialogState(() => useSelfHosted = val);
-                      },
-                    ),
-                    const SizedBox(height: 8),
-                    if (useSelfHosted) ...[
-                      const Text('ngrok URL:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                      const SizedBox(height: 4),
-                      TextField(
-                        controller: urlController,
-                        decoration: const InputDecoration(
-                          hintText: 'https://xxxx.ngrok-free.app',
-                          hintStyle: TextStyle(fontSize: 13),
-                          border: OutlineInputBorder(),
-                          isDense: true,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        ),
-                        style: const TextStyle(fontSize: 13),
-                        keyboardType: TextInputType.url,
-                      ),
-                      const SizedBox(height: 12),
-                      const Text('API Key (認證金鑰):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                      const SizedBox(height: 4),
-                      TextField(
-                        controller: apiKeyController,
-                        decoration: const InputDecoration(
-                          hintText: '輸入 ML_API_KEY',
-                          hintStyle: TextStyle(fontSize: 13),
-                          border: OutlineInputBorder(),
-                          isDense: true,
-                          contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                        ),
-                        style: const TextStyle(fontSize: 13),
-                        obscureText: true,
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        '在 MacBook 上啟動 ML Service 後，\n用 ngrok 產生的 URL 和 ML_API_KEY 填在這裡',
-                        style: TextStyle(fontSize: 11, color: Colors.grey),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('取消'),
-                ),
-                FilledButton(
-                  onPressed: () async {
-                    if (useSelfHosted) {
-                      final url = urlController.text.trim();
-                      if (url.isEmpty) {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('請輸入 ngrok URL')));
-                        return;
-                      }
-                      await config.setSelfHostedMlUrl(url);
-                      await config.setMlApiKey(
-                        apiKeyController.text.trim().isNotEmpty ? apiKeyController.text.trim() : null,
-                      );
-                    } else {
-                      await config.setSelfHostedMlUrl(null);
-                      await config.setMlApiKey(null);
-                    }
-                    if (ctx.mounted) Navigator.pop(ctx);
-                    _checkService();
-                    setState(() {});
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(useSelfHosted ? '已切換至自架 ML 服務' : '已切換至 Render 雲端'),
-                          backgroundColor: Colors.teal,
-                        ),
-                      );
-                    }
-                  },
-                  child: const Text('儲存'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-    urlController.dispose();
-    apiKeyController.dispose();
   }
 
   Widget _buildInstructionChip(String text, {String? subtitle}) {
@@ -2098,10 +1786,12 @@ class _ScannerPageState extends State<ScannerPage>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(text, style: const TextStyle(color: Colors.white, fontSize: 15)),
+            Text(text,
+                style: const TextStyle(color: Colors.white, fontSize: 15)),
             if (subtitle != null) ...[
               const SizedBox(height: 2),
-              Text(subtitle, style: const TextStyle(color: Colors.white60, fontSize: 12)),
+              Text(subtitle,
+                  style: const TextStyle(color: Colors.white60, fontSize: 12)),
             ],
           ],
         ),
@@ -2113,11 +1803,13 @@ class _ScannerPageState extends State<ScannerPage>
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withValues(alpha:0.3),
+        color: color.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha:0.6)),
+        border: Border.all(color: color.withValues(alpha: 0.6)),
       ),
-      child: Text(text, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.bold)),
+      child: Text(text,
+          style: TextStyle(
+              color: color, fontSize: 12, fontWeight: FontWeight.bold)),
     );
   }
 
@@ -2127,8 +1819,10 @@ class _ScannerPageState extends State<ScannerPage>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 13)),
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 13)),
+          Text(label,
+              style: const TextStyle(color: Colors.white70, fontSize: 13)),
+          Text(value,
+              style: const TextStyle(color: Colors.white, fontSize: 13)),
         ],
       ),
     );
@@ -2142,31 +1836,46 @@ class _ScannerPageState extends State<ScannerPage>
 
   Color _distanceStatusColor(String status) {
     switch (status) {
-      case 'ok': return Colors.green;
-      case 'warning': return Colors.orange;
-      case 'too_close': return Colors.red;
-      case 'too_far': return Colors.red;
-      default: return Colors.grey;
+      case 'ok':
+        return Colors.green;
+      case 'warning':
+        return Colors.orange;
+      case 'too_close':
+        return Colors.red;
+      case 'too_far':
+        return Colors.red;
+      default:
+        return Colors.grey;
     }
   }
 
   IconData _distanceStatusIcon(String status) {
     switch (status) {
-      case 'ok': return Icons.check_circle;
-      case 'warning': return Icons.warning_amber;
-      case 'too_close': return Icons.zoom_in;
-      case 'too_far': return Icons.zoom_out;
-      default: return Icons.info_outline;
+      case 'ok':
+        return Icons.check_circle;
+      case 'warning':
+        return Icons.warning_amber;
+      case 'too_close':
+        return Icons.zoom_in;
+      case 'too_far':
+        return Icons.zoom_out;
+      default:
+        return Icons.info_outline;
     }
   }
 
   String _distanceStatusLabel(String status) {
     switch (status) {
-      case 'ok': return '距離適中';
-      case 'warning': return '距離偏遠';
-      case 'too_close': return '距離過近';
-      case 'too_far': return '距離過遠';
-      default: return '距離未知';
+      case 'ok':
+        return '距離適中';
+      case 'warning':
+        return '距離偏遠';
+      case 'too_close':
+        return '距離過近';
+      case 'too_far':
+        return '距離過遠';
+      default:
+        return '距離未知';
     }
   }
 
@@ -2213,8 +1922,10 @@ class _BboxOverlayPainter extends CustomPainter {
 
     final Path fullPath = Path()..addRect(Offset.zero & size);
     final Path bboxPath = Path()..addRect(bbox!);
-    final Path dimPath = Path.combine(PathOperation.difference, fullPath, bboxPath);
-    canvas.drawPath(dimPath, Paint()..color = Colors.black.withValues(alpha:0.45));
+    final Path dimPath =
+        Path.combine(PathOperation.difference, fullPath, bboxPath);
+    canvas.drawPath(
+        dimPath, Paint()..color = Colors.black.withValues(alpha: 0.45));
 
     final borderPaint = Paint()
       ..color = Colors.tealAccent
@@ -2230,7 +1941,12 @@ class _BboxOverlayPainter extends CustomPainter {
       ..strokeWidth = cornerWidth
       ..strokeCap = StrokeCap.round;
 
-    final corners = [bbox!.topLeft, bbox!.topRight, bbox!.bottomLeft, bbox!.bottomRight];
+    final corners = [
+      bbox!.topLeft,
+      bbox!.topRight,
+      bbox!.bottomLeft,
+      bbox!.bottomRight
+    ];
     final dirs = [
       [const Offset(1, 0), const Offset(0, 1)],
       [const Offset(-1, 0), const Offset(0, 1)],
@@ -2247,7 +1963,7 @@ class _BboxOverlayPainter extends CustomPainter {
     final cx = bbox!.center.dx;
     final cy = bbox!.center.dy;
     final crossPaint = Paint()
-      ..color = Colors.white.withValues(alpha:0.5)
+      ..color = Colors.white.withValues(alpha: 0.5)
       ..strokeWidth = 1;
     canvas.drawLine(Offset(cx - 12, cy), Offset(cx + 12, cy), crossPaint);
     canvas.drawLine(Offset(cx, cy - 12), Offset(cx, cy + 12), crossPaint);
@@ -2264,7 +1980,9 @@ class _BboxOverlayPainter extends CustomPainter {
         color: Colors.tealAccent,
         fontSize: 12,
         fontWeight: FontWeight.bold,
-        shadows: [Shadow(offset: Offset(1, 1), blurRadius: 2, color: Colors.black)],
+        shadows: [
+          Shadow(offset: Offset(1, 1), blurRadius: 2, color: Colors.black)
+        ],
       ),
     );
     final tp = TextPainter(text: ts, textDirection: TextDirection.ltr);
@@ -2309,7 +2027,8 @@ class _LiveBboxPainter extends CustomPainter {
       (bbox.bottom * scaleY).clamp(0.0, size.height),
     );
 
-    debugPrint('[LiveBbox-PAINT] canvas=${size.width.toStringAsFixed(0)}x${size.height.toStringAsFixed(0)} '
+    debugPrint(
+        '[LiveBbox-PAINT] canvas=${size.width.toStringAsFixed(0)}x${size.height.toStringAsFixed(0)} '
         'preview=${previewSize.width.toStringAsFixed(0)}x${previewSize.height.toStringAsFixed(0)} '
         'portraitWH=${portraitW.toStringAsFixed(0)}x${portraitH.toStringAsFixed(0)} '
         'bbox=L${bbox.left.toStringAsFixed(0)},T${bbox.top.toStringAsFixed(0)},'
@@ -2320,7 +2039,7 @@ class _LiveBboxPainter extends CustomPainter {
     // 半透明填充
     final fillPaint = Paint()
       ..style = PaintingStyle.fill
-      ..color = Colors.greenAccent.withValues(alpha:0.25);
+      ..color = Colors.greenAccent.withValues(alpha: 0.25);
     canvas.drawRect(rect, fillPaint);
 
     // 邊框（加粗以確保可見）
@@ -2332,7 +2051,8 @@ class _LiveBboxPainter extends CustomPainter {
 
     // 標籤 + 信心度
     if (confidence != null) {
-      final text = '${label ?? "trunk"} ${(confidence! * 100).toStringAsFixed(0)}%';
+      final text =
+          '${label ?? "trunk"} ${(confidence! * 100).toStringAsFixed(0)}%';
       final tp = TextPainter(
         text: TextSpan(
           text: text,
@@ -2357,7 +2077,7 @@ class _LiveBboxPainter extends CustomPainter {
       );
       canvas.drawRRect(
         RRect.fromRectAndRadius(bgRect, const Radius.circular(4)),
-        Paint()..color = Colors.greenAccent.withValues(alpha:0.85),
+        Paint()..color = Colors.greenAccent.withValues(alpha: 0.85),
       );
       tp.paint(canvas, Offset(rect.left + 4, rect.top - tp.height - 2));
     }

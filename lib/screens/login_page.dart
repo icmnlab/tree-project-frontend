@@ -12,7 +12,8 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMixin {
+class _LoginPageState extends State<LoginPage>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _accountController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -84,20 +85,18 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
 
         await AuthService.saveUserInfo(data['user']);
 
-        // 自動套用後端下發的 ML Service 設定（自架 ngrok URL + API Key）
+        // 自動套用後端下發的 ML Service endpoint。
         final mlConfig = data['mlConfig'];
         if (mlConfig is Map) {
           final config = AppConfig();
           if (mlConfig['url'] is String) {
-            await config.setSelfHostedMlUrl(mlConfig['url'] as String);
-          }
-          if (mlConfig['apiKey'] is String) {
-            await config.setMlApiKey(mlConfig['apiKey'] as String);
+            await config.setMlServiceUrl(mlConfig['url'] as String);
           }
         }
 
         if (_loginType == 'admin') {
-          Navigator.pushNamedAndRemoveUntil(context, '/admin', (route) => false);
+          Navigator.pushNamedAndRemoveUntil(
+              context, '/admin', (route) => false);
         } else {
           Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
         }
@@ -107,7 +106,8 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
             content: Text(data['message']),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             margin: const EdgeInsets.all(16),
           ),
         );
@@ -119,7 +119,8 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
             content: const Text('登入時發生錯誤，請稍後再試'),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             margin: const EdgeInsets.all(16),
           ),
         );
@@ -162,12 +163,12 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                       // Logo 區域
                       _buildLogoSection(),
                       const SizedBox(height: 40),
-                      
+
                       // 登入卡片
                       _buildLoginCard(),
-                      
+
                       const SizedBox(height: 24),
-                      
+
                       // 底部資訊
                       _buildFooter(),
                     ],
@@ -190,10 +191,10 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
           height: 100,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: Colors.white.withValues(alpha:0.15),
+            color: Colors.white.withValues(alpha: 0.15),
             boxShadow: [
               BoxShadow(
-                color: Colors.white.withValues(alpha:0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 blurRadius: 30,
                 spreadRadius: 5,
               ),
@@ -220,7 +221,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
           'Tree Survey Management System',
           style: TextStyle(
             fontSize: 12,
-            color: Colors.white.withValues(alpha:0.8),
+            color: Colors.white.withValues(alpha: 0.8),
             letterSpacing: 1,
           ),
         ),
@@ -345,7 +346,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: AppColors.portBlue.withValues(alpha:0.3),
+                    color: AppColors.portBlue.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 4),
                   ),
@@ -358,13 +359,21 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
             Icon(
               icon,
               size: 18,
-              color: isSelected ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? AppColors.darkTextSecondary : Colors.grey.shade500),
+              color: isSelected
+                  ? Colors.white
+                  : (Theme.of(context).brightness == Brightness.dark
+                      ? AppColors.darkTextSecondary
+                      : Colors.grey.shade500),
             ),
             const SizedBox(width: 8),
             Text(
               label,
               style: TextStyle(
-                color: isSelected ? Colors.white : (Theme.of(context).brightness == Brightness.dark ? AppColors.darkTextSecondary : Colors.grey.shade600),
+                color: isSelected
+                    ? Colors.white
+                    : (Theme.of(context).brightness == Brightness.dark
+                        ? AppColors.darkTextSecondary
+                        : Colors.grey.shade600),
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
               ),
@@ -386,7 +395,9 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
     return TextFormField(
       controller: controller,
       obscureText: isPassword && !_isPasswordVisible,
-      style: TextStyle(fontSize: 16, color: isDark ? AppColors.darkTextPrimary : Colors.black87),
+      style: TextStyle(
+          fontSize: 16,
+          color: isDark ? AppColors.darkTextPrimary : Colors.black87),
       decoration: InputDecoration(
         labelText: label,
         labelStyle: TextStyle(
@@ -400,7 +411,9 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
                   _isPasswordVisible
                       ? Icons.visibility_off_rounded
                       : Icons.visibility_rounded,
-                  color: isDark ? AppColors.darkTextTertiary : Colors.grey.shade500,
+                  color: isDark
+                      ? AppColors.darkTextTertiary
+                      : Colors.grey.shade500,
                   size: 22,
                 ),
                 onPressed: () {
@@ -418,7 +431,9 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide(color: isDark ? AppColors.darkBorder : Colors.grey.shade200, width: 1),
+          borderSide: BorderSide(
+              color: isDark ? AppColors.darkBorder : Colors.grey.shade200,
+              width: 1),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
@@ -432,7 +447,8 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
           borderRadius: BorderRadius.circular(14),
           borderSide: const BorderSide(color: AppColors.error, width: 2),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
       ),
       validator: validator,
     );
@@ -448,7 +464,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
         ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.forestGreen.withValues(alpha:0.4),
+            color: AppColors.forestGreen.withValues(alpha: 0.4),
             blurRadius: 12,
             offset: const Offset(0, 6),
           ),
@@ -499,7 +515,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
         Text(
           '© 2012-$currentYear 臺灣港務公司',
           style: TextStyle(
-            color: Colors.white.withValues(alpha:0.7),
+            color: Colors.white.withValues(alpha: 0.7),
             fontSize: 12,
           ),
         ),
@@ -507,7 +523,7 @@ class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMix
         Text(
           'Taiwan International Ports Corporation',
           style: TextStyle(
-            color: Colors.white.withValues(alpha:0.5),
+            color: Colors.white.withValues(alpha: 0.5),
             fontSize: 10,
           ),
         ),

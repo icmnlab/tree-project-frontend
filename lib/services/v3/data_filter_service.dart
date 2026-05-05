@@ -1,10 +1,10 @@
 /// V3 數據過濾服務
-/// 
+///
 /// 功能：
 /// 1. 不完整資料過濾 - 標記缺少必要欄位的記錄
-/// 2. 重複資料過濾 - 比對經緯度（考量南北半球及東西半球後的絕對座標）
+/// 2. 重複資料過濾 - 比對記錄 ID + 經緯度（避免同一測站多棵樹被誤刪）
 /// 3. 衝突檢測 - 座標相同但其他欄位不同的處理
-/// 
+///
 /// 設計原則：
 /// - 保留最後一筆重複資料
 /// - 經緯度比對使用處理後的座標值（已按 N/S, E/W 給予正負號）
@@ -19,16 +19,16 @@ import 'package:flutter/foundation.dart';
 class DataFilterResult {
   /// 過濾後的有效資料
   final List<Map<String, dynamic>> validRecords;
-  
+
   /// 被標記為不完整的資料
   final List<Map<String, dynamic>> incompleteRecords;
-  
+
   /// 被過濾的重複資料（完全相同）
   final List<Map<String, dynamic>> duplicateRecords;
-  
+
   /// 衝突資料（座標相同但其他欄位不同）
   final List<DataConflict> conflicts;
-  
+
   /// 統計資訊
   final DataFilterStats stats;
 
@@ -45,17 +45,17 @@ class DataFilterResult {
 class DataConflict {
   /// 衝突群組中的所有記錄
   final List<Map<String, dynamic>> records;
-  
+
   /// 共同座標
   final double lat;
   final double lon;
-  
+
   /// 不一致的欄位
   final Map<String, List<dynamic>> conflictingFields;
-  
+
   /// 最終保留的記錄（最後一筆）
   final Map<String, dynamic> keptRecord;
-  
+
   /// 衝突解決策略
   final ConflictResolution resolution;
 
@@ -71,7 +71,7 @@ class DataConflict {
   @override
   String toString() {
     return 'DataConflict(座標: $lat,$lon, 衝突欄位: ${conflictingFields.keys.toList()}, '
-           '記錄數: ${records.length}, 策略: $resolution)';
+        '記錄數: ${records.length}, 策略: $resolution)';
   }
 }
 
@@ -79,13 +79,13 @@ class DataConflict {
 enum ConflictResolution {
   /// 保留最後一筆（預設）
   keepLast,
-  
+
   /// 保留第一筆
   keepFirst,
-  
+
   /// 保留最完整的記錄
   keepMostComplete,
-  
+
   /// 標記為需要人工審核
   requireManualReview,
 }
@@ -176,7 +176,7 @@ class DataFilterService {
   ];
 
   /// 過濾並處理 BLE 數據
-  /// 
+  ///
   /// [rawRecords] - BleDataProcessor.parseCsvData 的結果
   ///               （座標已經過處理：絕對值 + N/S E/W 正負號）
   /// [existingRecords] - 已存在的資料（用於比對重複）
@@ -187,7 +187,7 @@ class DataFilterService {
     FilterOptions? options,
   }) {
     options ??= FilterOptions();
-    
+
     final List<Map<String, dynamic>> validRecords = [];
     final List<Map<String, dynamic>> incompleteRecords = [];
     final List<Map<String, dynamic>> duplicateRecords = [];
@@ -261,7 +261,10 @@ class DataFilterService {
     for (final r in ordered) {
       final lat = (r['lat'] as num?)?.toDouble();
       final lon = (r['lon'] as num?)?.toDouble();
-      if (r['hasGps'] == true && lat != null && lon != null && (lat != 0 || lon != 0)) {
+      if (r['hasGps'] == true &&
+          lat != null &&
+          lon != null &&
+          (lat != 0 || lon != 0)) {
         if (prev != null) {
           final pLat = (prev['lat'] as num?)?.toDouble();
           final pLon = (prev['lon'] as num?)?.toDouble();
@@ -292,27 +295,27 @@ class DataFilterService {
     // Step 1: 檢查不完整資料
     // ========================================
     final List<Map<String, dynamic>> completeRecords = [];
-    
+
     for (final record in preFiltered) {
       final missingFields = _checkMissingFields(record);
-      
+
       if (missingFields.isNotEmpty) {
         final taggedRecord = Map<String, dynamic>.from(record);
         taggedRecord['_incomplete'] = true;
         taggedRecord['_missing_fields'] = missingFields;
         incompleteRecords.add(taggedRecord);
-        
+
         // 統計缺失欄位
         for (final field in missingFields) {
           missingFieldCounts[field] = (missingFieldCounts[field] ?? 0) + 1;
         }
-        
+
         // 根據選項決定是否繼續處理
         if (!options.keepIncomplete) {
           continue;
         }
       }
-      
+
       completeRecords.add(record);
     }
 
@@ -321,11 +324,11 @@ class DataFilterService {
     // 使用處理後的座標值（BleDataProcessor 已經處理過 N/S, E/W）
     // ========================================
     final Map<String, List<Map<String, dynamic>>> coordGroups = {};
-    
+
     for (final record in completeRecords) {
       final coordKey = _generateCoordinateKey(record);
       if (coordKey == null) continue;
-      
+
       coordGroups.putIfAbsent(coordKey, () => []);
       coordGroups[coordKey]!.add(record);
     }
@@ -336,16 +339,16 @@ class DataFilterService {
     for (final entry in coordGroups.entries) {
       final group = entry.value;
       final coordKey = entry.key;
-      
+
       if (group.length == 1) {
         // 無重複，直接加入有效列表
         validRecords.add(group.first);
         continue;
       }
-      
+
       // 有多筆同座標記錄，需要進一步分析
       duplicateGroups.add('座標群組 $coordKey: ${group.length} 筆');
-      
+
       // 根據時間戳排序（最舊到最新）
       group.sort((a, b) {
         final timeA = a['timestamp'] as DateTime?;
@@ -355,10 +358,10 @@ class DataFilterService {
         }
         return 0;
       });
-      
+
       // 檢查是否有衝突（座標相同但其他欄位不同）
       final conflictingFields = _detectConflicts(group);
-      
+
       if (conflictingFields.isEmpty) {
         // 完全相同的重複記錄，保留最後一筆
         for (int i = 0; i < group.length - 1; i++) {
@@ -373,10 +376,10 @@ class DataFilterService {
         // 有衝突的記錄
         final lat = _parseDouble(group.first['lat']) ?? 0;
         final lon = _parseDouble(group.first['lon']) ?? 0;
-        
+
         // 根據解決策略處理
         final keptRecord = _resolveConflict(group, options.conflictResolution);
-        
+
         // 記錄衝突
         final conflict = DataConflict(
           records: List.from(group),
@@ -387,9 +390,10 @@ class DataFilterService {
           resolution: options.conflictResolution,
         );
         conflicts.add(conflict);
-        
+
         // 根據策略決定是否加入有效列表
-        if (options.conflictResolution != ConflictResolution.requireManualReview) {
+        if (options.conflictResolution !=
+            ConflictResolution.requireManualReview) {
           // 將非保留的記錄標記為重複
           for (final record in group) {
             if (record != keptRecord) {
@@ -397,7 +401,8 @@ class DataFilterService {
               taggedRecord['_duplicate'] = true;
               taggedRecord['_duplicate_type'] = 'conflict_resolved';
               taggedRecord['_kept_record_id'] = keptRecord['id'];
-              taggedRecord['_conflicting_fields'] = conflictingFields.keys.toList();
+              taggedRecord['_conflicting_fields'] =
+                  conflictingFields.keys.toList();
               duplicateRecords.add(taggedRecord);
             }
           }
@@ -407,7 +412,8 @@ class DataFilterService {
           for (final record in group) {
             final taggedRecord = Map<String, dynamic>.from(record);
             taggedRecord['_needs_review'] = true;
-            taggedRecord['_conflicting_fields'] = conflictingFields.keys.toList();
+            taggedRecord['_conflicting_fields'] =
+                conflictingFields.keys.toList();
           }
         }
       }
@@ -424,18 +430,19 @@ class DataFilterService {
           existingCoordKeys[key] = record;
         }
       }
-      
+
       final newValidRecords = <Map<String, dynamic>>[];
-      
+
       for (final record in validRecords) {
         final coordKey = _generateCoordinateKey(record);
-        
+
         if (coordKey != null && existingCoordKeys.containsKey(coordKey)) {
           final existingRecord = existingCoordKeys[coordKey]!;
-          
+
           // 檢查是否有衝突
-          final conflictingFields = _detectConflictsBetweenTwo(record, existingRecord);
-          
+          final conflictingFields =
+              _detectConflictsBetweenTwo(record, existingRecord);
+
           if (conflictingFields.isEmpty) {
             final taggedRecord = Map<String, dynamic>.from(record);
             taggedRecord['_exists_in_database'] = true;
@@ -447,7 +454,7 @@ class DataFilterService {
             // 座標相同但數據不同，記錄衝突
             final lat = _parseDouble(record['lat']) ?? 0;
             final lon = _parseDouble(record['lon']) ?? 0;
-            
+
             final conflict = DataConflict(
               records: [record, existingRecord],
               lat: lat,
@@ -457,7 +464,7 @@ class DataFilterService {
               resolution: options.conflictResolution,
             );
             conflicts.add(conflict);
-            
+
             // 根據選項決定是保留新資料還是跳過
             if (options.preferNewData) {
               final taggedRecord = Map<String, dynamic>.from(record);
@@ -475,7 +482,7 @@ class DataFilterService {
           newValidRecords.add(record);
         }
       }
-      
+
       validRecords.clear();
       validRecords.addAll(newValidRecords);
     }
@@ -511,7 +518,7 @@ class DataFilterService {
   /// 檢查缺失欄位
   static List<String> _checkMissingFields(Map<String, dynamic> record) {
     final missing = <String>[];
-    
+
     for (final field in requiredFields) {
       if (!record.containsKey(field) || record[field] == null) {
         missing.add(field);
@@ -519,56 +526,57 @@ class DataFilterService {
         missing.add(field);
       }
     }
-    
+
     return missing;
   }
 
-  /// 生成座標唯一鍵
-  /// 
+  /// 生成記錄唯一鍵
+  ///
   /// 設計說明：
   /// - BleDataProcessor.parseCsvData 已經處理過座標：
   ///   1. 取絕對值
   ///   2. 根據 N/S 給緯度正負號（S = 負）
   ///   3. 根據 E/W 給經度正負號（W = 負）
   /// - 這裡直接使用處理後的值，精確到小數點後 6 位
-  /// - 6 位小數 = 約 0.1 公尺精度
+  /// - 同一測站可量多棵樹，所以不同 ID 不應只因座標相同就被合併
   static String? _generateCoordinateKey(Map<String, dynamic> record) {
     final lat = _parseDouble(record['lat']);
     final lon = _parseDouble(record['lon']);
-    
+    final id = record['id']?.toString().trim();
+
     if (lat == null || lon == null) return null;
 
     // 無 GPS 記錄用 ID 作為唯一鍵（避免所有 0,0 被歸為同一組）
     if (lat == 0.0 && lon == 0.0) {
-      final id = record['id']?.toString() ?? '';
-      return 'no_gps_$id';
+      return 'no_gps_${id ?? ''}';
     }
-    
+
     final latKey = lat.toStringAsFixed(coordinatePrecision);
     final lonKey = lon.toStringAsFixed(coordinatePrecision);
-    
-    return '$latKey,$lonKey';
+
+    return '${id ?? ''}:$latKey,$lonKey';
   }
 
   /// 檢測群組內的衝突欄位
-  static Map<String, List<dynamic>> _detectConflicts(List<Map<String, dynamic>> group) {
+  static Map<String, List<dynamic>> _detectConflicts(
+      List<Map<String, dynamic>> group) {
     final conflicts = <String, List<dynamic>>{};
-    
+
     for (final field in conflictCheckFields) {
       final values = <dynamic>{};
-      
+
       for (final record in group) {
         if (record.containsKey(field) && record[field] != null) {
           values.add(record[field]);
         }
       }
-      
+
       // 如果有多個不同的值，則為衝突
       if (values.length > 1) {
         conflicts[field] = values.toList();
       }
     }
-    
+
     return conflicts;
   }
 
@@ -578,11 +586,11 @@ class DataFilterService {
     Map<String, dynamic> record2,
   ) {
     final conflicts = <String, List<dynamic>>{};
-    
+
     for (final field in conflictCheckFields) {
       final val1 = record1[field];
       final val2 = record2[field];
-      
+
       // 只有當兩者都有值且不同時才算衝突
       if (val1 != null && val2 != null) {
         // 對於數值，考慮浮點精度
@@ -595,7 +603,7 @@ class DataFilterService {
         }
       }
     }
-    
+
     return conflicts;
   }
 
@@ -607,12 +615,12 @@ class DataFilterService {
     switch (resolution) {
       case ConflictResolution.keepFirst:
         return group.first;
-      
+
       case ConflictResolution.keepMostComplete:
         // 選擇非空欄位最多的記錄
         int maxNonNull = 0;
         Map<String, dynamic> mostComplete = group.first;
-        
+
         for (final record in group) {
           int nonNullCount = 0;
           for (final field in conflictCheckFields) {
@@ -626,7 +634,7 @@ class DataFilterService {
           }
         }
         return mostComplete;
-      
+
       case ConflictResolution.keepLast:
       case ConflictResolution.requireManualReview:
         return group.last;
@@ -644,28 +652,33 @@ class DataFilterService {
   /// 計算兩點之間的距離（公尺）
   /// 使用 Haversine 公式
   static double calculateDistance(
-    double lat1, double lon1,
-    double lat2, double lon2,
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2,
   ) {
     const double R = 6371000; // 地球半徑（公尺）
-    
+
     final double dLat = _toRadians(lat2 - lat1);
     final double dLon = _toRadians(lon2 - lon1);
-    
-    final double a = 
-        math.sin(dLat / 2) * math.sin(dLat / 2) +
-        math.cos(_toRadians(lat1)) * math.cos(_toRadians(lat2)) *
-        math.sin(dLon / 2) * math.sin(dLon / 2);
-    
+
+    final double a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+        math.cos(_toRadians(lat1)) *
+            math.cos(_toRadians(lat2)) *
+            math.sin(dLon / 2) *
+            math.sin(dLon / 2);
+
     final double c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
-    
+
     return R * c;
   }
 
   /// 檢查兩個座標是否在容差範圍內
   static bool isCoordinateMatch(
-    double lat1, double lon1,
-    double lat2, double lon2, {
+    double lat1,
+    double lon1,
+    double lat2,
+    double lon2, {
     double toleranceMeters = 1.0,
   }) {
     final distance = calculateDistance(lat1, lon1, lat2, lon2);
@@ -679,10 +692,10 @@ class DataFilterService {
 class FilterOptions {
   /// 是否保留不完整記錄（標記但不移除）
   final bool keepIncomplete;
-  
+
   /// 衝突解決策略
   final ConflictResolution conflictResolution;
-  
+
   /// 與資料庫比對時，是否優先使用新資料
   final bool preferNewData;
 

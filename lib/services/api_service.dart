@@ -91,18 +91,17 @@ class ApiService {
     return headers;
   }
 
-  // Fetch ML Service Config from Backend
+  // Fetch ML Service endpoint from Backend
   static Future<void> fetchMlServiceConfig() async {
     try {
       final response = await get('ml-service/status');
       if (response['success'] == true && response['configured'] == true) {
         final String? url = response['ml_service_url'];
-        final String? apiKey = response['ml_api_key'];
-        
+
         if (url != null) {
-          await AppConfig().setSelfHostedMlUrl(url);
-          await AppConfig().setMlApiKey(apiKey);
-          print('[ApiService] Successfully updated ML config from backend: $url');
+          await AppConfig().setMlServiceUrl(url);
+          print(
+              '[ApiService] Successfully updated ML service endpoint from backend: $url');
         }
       }
     } catch (e) {
@@ -115,10 +114,12 @@ class ApiService {
   // HTTP GET 請求
   static Future<Map<String, dynamic>> get(String endpoint) async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/$endpoint'),
-        headers: _getHeaders(),
-      ).timeout(_timeout);
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/$endpoint'),
+            headers: _getHeaders(),
+          )
+          .timeout(_timeout);
 
       return _handleResponse(response);
     } catch (e) {
@@ -133,11 +134,13 @@ class ApiService {
   static Future<Map<String, dynamic>> post(
       String endpoint, dynamic data) async {
     try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/$endpoint'),
-        headers: _getHeaders(),
-        body: json.encode(data),
-      ).timeout(_timeout);
+      final response = await http
+          .post(
+            Uri.parse('$baseUrl/$endpoint'),
+            headers: _getHeaders(),
+            body: json.encode(data),
+          )
+          .timeout(_timeout);
 
       return _handleResponse(response);
     } catch (e) {
@@ -151,11 +154,13 @@ class ApiService {
   // HTTP PUT 請求
   static Future<Map<String, dynamic>> put(String endpoint, dynamic data) async {
     try {
-      final response = await http.put(
-        Uri.parse('$baseUrl/$endpoint'),
-        headers: _getHeaders(),
-        body: json.encode(data),
-      ).timeout(_timeout);
+      final response = await http
+          .put(
+            Uri.parse('$baseUrl/$endpoint'),
+            headers: _getHeaders(),
+            body: json.encode(data),
+          )
+          .timeout(_timeout);
 
       return _handleResponse(response);
     } catch (e) {
@@ -167,13 +172,16 @@ class ApiService {
   }
 
   // HTTP PATCH 請求
-  static Future<Map<String, dynamic>> patch(String endpoint, dynamic data) async {
+  static Future<Map<String, dynamic>> patch(
+      String endpoint, dynamic data) async {
     try {
-      final response = await http.patch(
-        Uri.parse('$baseUrl/$endpoint'),
-        headers: _getHeaders(),
-        body: json.encode(data),
-      ).timeout(_timeout);
+      final response = await http
+          .patch(
+            Uri.parse('$baseUrl/$endpoint'),
+            headers: _getHeaders(),
+            body: json.encode(data),
+          )
+          .timeout(_timeout);
 
       return _handleResponse(response);
     } catch (e) {
@@ -187,10 +195,12 @@ class ApiService {
   // HTTP DELETE 請求
   static Future<Map<String, dynamic>> delete(String endpoint) async {
     try {
-      final response = await http.delete(
-        Uri.parse('$baseUrl/$endpoint'),
-        headers: _getHeaders(),
-      ).timeout(_timeout);
+      final response = await http
+          .delete(
+            Uri.parse('$baseUrl/$endpoint'),
+            headers: _getHeaders(),
+          )
+          .timeout(_timeout);
 
       return _handleResponse(response);
     } catch (e) {
@@ -215,10 +225,12 @@ class ApiService {
     try {
       // 這是一個 "fire-and-forget" 的請求，我們不在乎它的回應
       // 只需要確保請求被發送即可
-      await http.post(
-        Uri.parse('$baseUrl/project_areas/cleanup'),
-        headers: _getHeaders(),
-      ).timeout(_timeout);
+      await http
+          .post(
+            Uri.parse('$baseUrl/project_areas/cleanup'),
+            headers: _getHeaders(),
+          )
+          .timeout(_timeout);
       print('[ApiService] Cleanup process triggered.');
     } catch (e) {
       // 即使失敗了也不需要打斷使用者操作，只需在控制台記錄即可
@@ -231,8 +243,9 @@ class ApiService {
     // 處理 401 Unauthorized
     if (response.statusCode == 401) {
       AuthService.clearSession();
-      GlobalKeys.navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
-      
+      GlobalKeys.navigatorKey.currentState
+          ?.pushNamedAndRemoveUntil('/login', (route) => false);
+
       return {
         'success': false,
         'message': '認證失效，請重新登入',
@@ -240,7 +253,8 @@ class ApiService {
     }
 
     // 當我們看到成功登入/有新 token，就去抓取最新的 ML 網址
-    if (response.request?.url.path.endsWith('/login') == true && response.statusCode == 200) {
+    if (response.request?.url.path.endsWith('/login') == true &&
+        response.statusCode == 200) {
       // 在背景更新，不卡住登入流程
       Future.microtask(() => ApiService.fetchMlServiceConfig());
     }
@@ -276,10 +290,12 @@ class ApiService {
 
   Future<List<Map<String, dynamic>>> fetchTreeSurveyData() async {
     try {
-      final response = await http.get(
-        Uri.parse('$baseUrl/tree_survey'),
-        headers: _getHeaders(),
-      ).timeout(_timeout);
+      final response = await http
+          .get(
+            Uri.parse('$baseUrl/tree_survey'),
+            headers: _getHeaders(),
+          )
+          .timeout(_timeout);
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);

@@ -71,8 +71,7 @@ dependencies:
   exif: ^3.3.0  # EXIF 焦距提取 (純 Dart，無原生依賴)
   web_socket_channel: ^3.0.1  # WebSocket for scan mode
   image: 4.3.0  # Image resize for scan streaming
-  google_mlkit_object_detection: ^0.14.0  # Edge AI Object tracking
-  tflite_flutter: ^0.12.1  # Edge AI TFLite YOLO/MobileNet Object tracking (LiteRT 1.4.0)
+  tflite_flutter: ^0.12.1  # Edge AI TFLite YOLO object tracking (LiteRT 1.4.0)
 
 dev_dependencies:
   flutter_test:

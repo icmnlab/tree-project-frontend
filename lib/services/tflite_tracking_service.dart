@@ -16,6 +16,7 @@ class TfliteBbox {
   final Rect rect; // 感測器座標空間中的 bounding box
   final double confidence;
   final String label;
+
   /// 方案 A: seg mask 測出的精確樹幹像素寬度（portrait 空間，可能為 null）
   final double? maskPixelWidth;
 
@@ -28,6 +29,7 @@ class _RawDet {
   final double conf;
   final int cls;
   final String label;
+
   /// YOLOv8-seg mask coefficients (32 values); null if not a seg model
   final List<double>? maskCoeffs;
 
@@ -52,17 +54,15 @@ class TfliteObjectTrackingService {
   bool _isInitialized = false;
   bool get isInitialized => _isInitialized;
 
-  // ── 最近一次 camera preview 的 portrait 尺寸 (供 backend mask_pixel_width 座標對齊) ──
+  // ── 最近一次 camera preview 的 portrait 尺寸 ──
   double _lastPreviewPortraitW = 0.0;
   double _lastPreviewPortraitH = 0.0;
   double get lastPreviewPortraitWidth => _lastPreviewPortraitW;
   double get lastPreviewPortraitHeight => _lastPreviewPortraitH;
 
   // ── 最近一次最佳偵測的 seg coeffs + proto frame snapshot。 ──
-  // 以 portrait-preview 座標空間的 bbox 主動检索 mask，
-  // 供拍照後「renderTrunkMaskPng」採用。
+  // 保留給診斷/回退用；ScannerPage 正式流程只使用 bbox，mask 由後端 YOLO 產生。
   List<double>? _lastMaskCoeffs;
-  Rect? _lastDetPreviewBbox; // portrait-preview 座標
   // 保留一份 proto frame 拷貝，避免下一幀覆蓋。
   // proto shape: [Ph][Pw][32] (32 個 coefficient channels)
   List<List<List<double>>>? _lastProtoSnapshot;
@@ -89,8 +89,8 @@ class TfliteObjectTrackingService {
   // ── Debug: 第一幀診斷 ──
   bool _firstFrameDiagDone = false;
   bool _inferenceSuccessLogged = false;
-  bool _useGpuDelegate = false;  // 記錄是否使用了 GPU delegate
-  Uint8List? _modelBuffer;  // 保留模型 buffer 供 CPU fallback 重載
+  bool _useGpuDelegate = false; // 記錄是否使用了 GPU delegate
+  Uint8List? _modelBuffer; // 保留模型 buffer 供 CPU fallback 重載
 
   // ── 預配置輸入 buffer ──
   Float32List? _inputFloat;
@@ -146,8 +146,7 @@ class TfliteObjectTrackingService {
       // 標籤
       final raw =
           await rootBundle.loadString('assets/ml/tree_trunk_labels.txt');
-      _labels =
-          raw.split('\n').where((l) => l.trim().isNotEmpty).toList();
+      _labels = raw.split('\n').where((l) => l.trim().isNotEmpty).toList();
       _numClasses = _labels!.length;
 
       _introspectModel();
@@ -183,7 +182,7 @@ class TfliteObjectTrackingService {
     );
     debugPrint('[TFLite] 模型大小: ${buffer.length} bytes  '
         'magic: ${buffer.length >= 8 ? String.fromCharCodes(buffer.sublist(4, 8)) : "?"}');
-    _modelBuffer = buffer;  // 保留 buffer 供 CPU fallback 使用
+    _modelBuffer = buffer; // 保留 buffer 供 CPU fallback 使用
 
     // 動態決定最佳 thread 數（CPU 核心數的一半，至少 1，最多 4）
     final int cpuCores = Platform.numberOfProcessors;
@@ -333,8 +332,7 @@ class TfliteObjectTrackingService {
   static Object _buildOutputBuffer(List<int> shape) {
     if (shape.isEmpty) return <double>[];
     if (shape.length == 1) return List<double>.filled(shape[0], 0.0);
-    return List.generate(
-        shape[0], (_) => _buildOutputBuffer(shape.sublist(1)));
+    return List.generate(shape[0], (_) => _buildOutputBuffer(shape.sublist(1)));
   }
 
   void dispose() {
@@ -373,7 +371,7 @@ class TfliteObjectTrackingService {
       // 重新 introspect 和分配 buffer
       _introspectModel();
       _allocateBuffers();
-      _firstFrameDiagDone = false;  // 讓 CPU 模式也做一次診斷
+      _firstFrameDiagDone = false; // 讓 CPU 模式也做一次診斷
 
       debugPrint('[TFLite-RELOAD] ✓ CPU interpreter 重載成功 '
           '(threads=$optimalThreads, outputs=$_numOutputs)');
@@ -399,8 +397,13 @@ class TfliteObjectTrackingService {
   ///   - Y ∈ [0, portraitH]  (portraitH = sensorW)
   /// 與 _LiveBboxPainter 的 scaleX/scaleY 映射一致。
   List<TfliteBbox> processCameraImage(
-      CameraImage image, int rotationDegrees) {
-    if (!_isInitialized || _interpreter == null || _cpuReloadInProgress) return [];
+    CameraImage image,
+    int rotationDegrees, {
+    bool captureMaskArtifacts = false,
+  }) {
+    if (!_isInitialized || _interpreter == null || _cpuReloadInProgress) {
+      return [];
+    }
 
     try {
       // ── DEBUG: 第一幀影像格式診斷（在 _fillInputBuffer 之前）──
@@ -440,7 +443,10 @@ class TfliteObjectTrackingService {
 
       // 2. 每幀建立新的 outputs map（避免 GPU delegate reuse 問題）
       final Map<int, Object> outputsMap = {0: _detOutputBuf!};
-      if (_numOutputs > 1 && _protoOutputBuf != null && !_protoOutputDisabled) {
+      if (captureMaskArtifacts &&
+          _numOutputs > 1 &&
+          _protoOutputBuf != null &&
+          !_protoOutputDisabled) {
         outputsMap[1] = _protoOutputBuf!;
       }
 
@@ -471,7 +477,7 @@ class TfliteObjectTrackingService {
       final double portraitW, portraitH;
       if (rotationDegrees == 90 || rotationDegrees == 270) {
         portraitW = image.height.toDouble(); // sensorH
-        portraitH = image.width.toDouble();  // sensorW
+        portraitH = image.width.toDouble(); // sensorW
       } else {
         portraitW = image.width.toDouble();
         portraitH = image.height.toDouble();
@@ -502,22 +508,26 @@ class TfliteObjectTrackingService {
           ((d.y2 - _lbPadY) * invSY).clamp(0.0, portraitH),
         );
 
-        // ── 方案 A: 從 seg mask 計算精確像素寬度 ──
+        // ── 診斷/回退：從 seg mask 計算精確像素寬度 ──
         // 利用 proto output (output[1]) + detection coefficients 重建 mask
         // 並在 letterbox 空間取 bbox 中心行的 mask 寬度，再逆映射到 portrait 空間
         double? maskPixelWidth;
-        if (_numOutputs > 1 && _protoOutputBuf != null && !_protoOutputDisabled) {
+        if (captureMaskArtifacts &&
+            _numOutputs > 1 &&
+            _protoOutputBuf != null &&
+            !_protoOutputDisabled) {
           try {
             maskPixelWidth = _computeMaskWidth(d, invSX);
           } catch (_) {}
         }
 
-        return TfliteBbox(rect, d.conf, d.label, maskPixelWidth: maskPixelWidth);
+        return TfliteBbox(rect, d.conf, d.label,
+            maskPixelWidth: maskPixelWidth);
       }).toList();
 
-      // ── [trunk_mask_base64] 快取最高信心度的 detection coeffs + proto frame ──
-      // 拍照時可呼叫 renderTrunkMaskPng() 重建完整二元 mask 給後端做精準採樣。
-      if (results.isNotEmpty &&
+      // ── 診斷/回退：快取最高信心度的 detection coeffs + proto frame ──
+      if (captureMaskArtifacts &&
+          results.isNotEmpty &&
           _numOutputs > 1 &&
           _protoOutputBuf != null &&
           !_protoOutputDisabled) {
@@ -525,7 +535,6 @@ class TfliteObjectTrackingService {
         final best = dets.first;
         if (best.maskCoeffs != null) {
           _lastMaskCoeffs = List<double>.from(best.maskCoeffs!);
-          _lastDetPreviewBbox = results.first.rect;
           _lastProtoSnapshot = _snapshotProto();
         }
       }
@@ -538,9 +547,153 @@ class TfliteObjectTrackingService {
     }
   }
 
+  /// 從已拍攝的 JPEG/PNG 檔案偵測樹幹 bbox。
+  ///
+  /// 回傳座標與 EXIF 方向校正後的影像一致，可直接送給後端
+  /// `auto-measure-dbh`；後端也會套用 EXIF transpose 到同一座標系。
+  Future<List<TfliteBbox>> processImageFile(
+    File imageFile, {
+    bool captureMaskArtifacts = false,
+  }) async {
+    if (!_isInitialized || _interpreter == null || _cpuReloadInProgress) {
+      return [];
+    }
+
+    try {
+      final bytes = await imageFile.readAsBytes();
+      final decoded = img.decodeImage(bytes);
+      if (decoded == null) {
+        debugPrint('[TFLite] 靜態照片解析失敗: ${imageFile.path}');
+        return [];
+      }
+      final oriented = img.bakeOrientation(decoded);
+
+      final inputBuf = _fillInputBufferFromRgbImage(oriented);
+      if (inputBuf == null) return [];
+
+      final Map<int, Object> outputsMap = {0: _detOutputBuf!};
+      if (captureMaskArtifacts &&
+          _numOutputs > 1 &&
+          _protoOutputBuf != null &&
+          !_protoOutputDisabled) {
+        outputsMap[1] = _protoOutputBuf!;
+      }
+
+      try {
+        _interpreter!.runForMultipleInputs([inputBuf], outputsMap);
+      } catch (e, st) {
+        debugPrint('[TFLite] 靜態照片推論失敗: $e');
+        debugPrint('[TFLite] 靜態照片推論 stack: $st');
+        _scheduleReloadWithCpu();
+        return [];
+      }
+
+      final dets = _parseAndNms();
+      if (dets.isEmpty) return [];
+
+      final imageWidth = oriented.width.toDouble();
+      final imageHeight = oriented.height.toDouble();
+      final invSX = imageWidth / _lbScaledW;
+      final invSY = imageHeight / _lbScaledH;
+
+      _lastPreviewPortraitW = imageWidth;
+      _lastPreviewPortraitH = imageHeight;
+
+      return dets.map((det) {
+        final rect = Rect.fromLTRB(
+          ((det.x1 - _lbPadX) * invSX).clamp(0.0, imageWidth),
+          ((det.y1 - _lbPadY) * invSY).clamp(0.0, imageHeight),
+          ((det.x2 - _lbPadX) * invSX).clamp(0.0, imageWidth),
+          ((det.y2 - _lbPadY) * invSY).clamp(0.0, imageHeight),
+        );
+
+        double? maskPixelWidth;
+        if (captureMaskArtifacts &&
+            _numOutputs > 1 &&
+            _protoOutputBuf != null &&
+            !_protoOutputDisabled) {
+          try {
+            maskPixelWidth = _computeMaskWidth(det, invSX);
+          } catch (_) {}
+        }
+
+        return TfliteBbox(rect, det.conf, det.label,
+            maskPixelWidth: maskPixelWidth);
+      }).toList();
+    } catch (e, st) {
+      debugPrint('[TFLite] 靜態照片偵測錯誤: $e');
+      debugPrint('[TFLite] 靜態照片偵測 stack: $st');
+      return [];
+    }
+  }
+
   // ================================================================
   // 輸入前處理
   // ================================================================
+
+  ByteBuffer? _fillInputBufferFromRgbImage(img.Image image) {
+    final sourceWidth = image.width;
+    final sourceHeight = image.height;
+    final dst = _inputSize;
+
+    final letterboxScale = min(dst / sourceWidth, dst / sourceHeight);
+    final scaledWidth = (sourceWidth * letterboxScale).round().clamp(1, dst);
+    final scaledHeight = (sourceHeight * letterboxScale).round().clamp(1, dst);
+    final padX = (dst - scaledWidth) ~/ 2;
+    final padY = (dst - scaledHeight) ~/ 2;
+
+    _lbPadX = padX;
+    _lbPadY = padY;
+    _lbScaledW = scaledWidth;
+    _lbScaledH = scaledHeight;
+
+    final stepX = sourceWidth / scaledWidth;
+    final stepY = sourceHeight / scaledHeight;
+    const padFloat = 114.0 / 255.0;
+    const padByte = 114;
+
+    int inputIndex = 0;
+    for (int outputY = 0; outputY < dst; outputY++) {
+      for (int outputX = 0; outputX < dst; outputX++) {
+        if (outputX < padX ||
+            outputX >= padX + scaledWidth ||
+            outputY < padY ||
+            outputY >= padY + scaledHeight) {
+          if (_inputIsFloat) {
+            _inputFloat![inputIndex++] = padFloat;
+            _inputFloat![inputIndex++] = padFloat;
+            _inputFloat![inputIndex++] = padFloat;
+          } else {
+            _inputUint8![inputIndex++] = padByte;
+            _inputUint8![inputIndex++] = padByte;
+            _inputUint8![inputIndex++] = padByte;
+          }
+          continue;
+        }
+
+        final sourceX =
+            ((outputX - padX) * stepX).toInt().clamp(0, sourceWidth - 1);
+        final sourceY =
+            ((outputY - padY) * stepY).toInt().clamp(0, sourceHeight - 1);
+        final pixel = image.getPixel(sourceX, sourceY);
+        final red = pixel.r.toInt().clamp(0, 255);
+        final green = pixel.g.toInt().clamp(0, 255);
+        final blue = pixel.b.toInt().clamp(0, 255);
+
+        if (_inputIsFloat) {
+          _inputFloat![inputIndex++] = red / 255.0;
+          _inputFloat![inputIndex++] = green / 255.0;
+          _inputFloat![inputIndex++] = blue / 255.0;
+        } else {
+          _inputUint8![inputIndex++] = red;
+          _inputUint8![inputIndex++] = green;
+          _inputUint8![inputIndex++] = blue;
+        }
+      }
+    }
+
+    return _inputIsFloat ? _inputFloat!.buffer : _inputUint8!.buffer;
+  }
 
   /// 高效率 YUV/BGRA → RGB letterbox + 旋轉。
   ///
@@ -558,15 +711,15 @@ class TfliteObjectTrackingService {
   /// Letterbox 參數儲存至 _lbPadX/_lbPadY/_lbScaledW/_lbScaledH，
   /// 供 processCameraImage 做座標逆映射。
   ByteBuffer? _fillInputBuffer(CameraImage image, int rotationDegrees) {
-    final srcW = image.width;   // 感測器原始寬 (通常是橫向較大值)
-    final srcH = image.height;  // 感測器原始高
+    final srcW = image.width; // 感測器原始寬 (通常是橫向較大值)
+    final srcH = image.height; // 感測器原始高
     final dst = _inputSize;
 
     // 旋轉後的「直向」尺寸
     final int portraitW, portraitH;
     if (rotationDegrees == 90 || rotationDegrees == 270) {
-      portraitW = srcH;  // 感測器高 → 直向寬
-      portraitH = srcW;  // 感測器寬 → 直向高
+      portraitW = srcH; // 感測器高 → 直向寬
+      portraitH = srcW; // 感測器寬 → 直向高
     } else {
       portraitW = srcW;
       portraitH = srcH;
@@ -602,8 +755,10 @@ class TfliteObjectTrackingService {
       for (int dy = 0; dy < dst; dy++) {
         for (int dx = 0; dx < dst; dx++) {
           // 判斷是否在 padding 區域
-          if (dx < padX || dx >= padX + scaledW ||
-              dy < padY || dy >= padY + scaledH) {
+          if (dx < padX ||
+              dx >= padX + scaledW ||
+              dy < padY ||
+              dy >= padY + scaledH) {
             if (_inputIsFloat) {
               _inputFloat![idx++] = padFloat;
               _inputFloat![idx++] = padFloat;
@@ -668,8 +823,10 @@ class TfliteObjectTrackingService {
         int idx = 0;
         for (int dy = 0; dy < dst; dy++) {
           for (int dx = 0; dx < dst; dx++) {
-            if (dx < padX || dx >= padX + scaledW ||
-                dy < padY || dy >= padY + scaledH) {
+            if (dx < padX ||
+                dx >= padX + scaledW ||
+                dy < padY ||
+                dy >= padY + scaledH) {
               if (_inputIsFloat) {
                 _inputFloat![idx++] = padFloat;
                 _inputFloat![idx++] = padFloat;
@@ -710,7 +867,8 @@ class TfliteObjectTrackingService {
 
             int r = (yVal + 1.402 * (vVal - 128)).round().clamp(0, 255);
             int g = (yVal - 0.344136 * (uVal - 128) - 0.714136 * (vVal - 128))
-                .round().clamp(0, 255);
+                .round()
+                .clamp(0, 255);
             int b = (yVal + 1.772 * (uVal - 128)).round().clamp(0, 255);
 
             if (_inputIsFloat) {
@@ -725,80 +883,82 @@ class TfliteObjectTrackingService {
           }
         }
       } else {
-      // 2 or 3 planes — standard YUV420 / NV21 with separate planes
-      final yPlane = image.planes[0].bytes;
-      final uPlane = image.planes[1].bytes;
-      // plane[2] 可能不存在 (NV21 2-plane: Y + VU interleaved)
-      final vPlane = (numPlanes >= 3) ? image.planes[2].bytes : image.planes[1].bytes;
-      final yRowStride = image.planes[0].bytesPerRow;
-      final uvRowStride = image.planes[1].bytesPerRow;
-      final uvPixelStride = image.planes[1].bytesPerPixel ?? 1;
-      final uLen = uPlane.length;
-      final vLen = vPlane.length;
+        // 2 or 3 planes — standard YUV420 / NV21 with separate planes
+        final yPlane = image.planes[0].bytes;
+        final uPlane = image.planes[1].bytes;
+        // plane[2] 可能不存在 (NV21 2-plane: Y + VU interleaved)
+        final vPlane =
+            (numPlanes >= 3) ? image.planes[2].bytes : image.planes[1].bytes;
+        final yRowStride = image.planes[0].bytesPerRow;
+        final uvRowStride = image.planes[1].bytesPerRow;
+        final uvPixelStride = image.planes[1].bytesPerPixel ?? 1;
+        final uLen = uPlane.length;
+        final vLen = vPlane.length;
 
-      int idx = 0;
-      for (int dy = 0; dy < dst; dy++) {
-        for (int dx = 0; dx < dst; dx++) {
-          // 判斷是否在 padding 區域
-          if (dx < padX || dx >= padX + scaledW ||
-              dy < padY || dy >= padY + scaledH) {
-            if (_inputIsFloat) {
-              _inputFloat![idx++] = padFloat;
-              _inputFloat![idx++] = padFloat;
-              _inputFloat![idx++] = padFloat;
-            } else {
-              _inputUint8![idx++] = padByte;
-              _inputUint8![idx++] = padByte;
-              _inputUint8![idx++] = padByte;
+        int idx = 0;
+        for (int dy = 0; dy < dst; dy++) {
+          for (int dx = 0; dx < dst; dx++) {
+            // 判斷是否在 padding 區域
+            if (dx < padX ||
+                dx >= padX + scaledW ||
+                dy < padY ||
+                dy >= padY + scaledH) {
+              if (_inputIsFloat) {
+                _inputFloat![idx++] = padFloat;
+                _inputFloat![idx++] = padFloat;
+                _inputFloat![idx++] = padFloat;
+              } else {
+                _inputUint8![idx++] = padByte;
+                _inputUint8![idx++] = padByte;
+                _inputUint8![idx++] = padByte;
+              }
+              continue;
             }
-            continue;
-          }
 
-          // 內容區域：從 letterbox 座標映射到 portrait 座標
-          final px = ((dx - padX) * stepPX).toInt();
-          final py = ((dy - padY) * stepPY).toInt();
+            // 內容區域：從 letterbox 座標映射到 portrait 座標
+            final px = ((dx - padX) * stepPX).toInt();
+            final py = ((dy - padY) * stepPY).toInt();
 
-          // portrait → sensor 座標轉換
-          int sx, sy;
-          if (rotationDegrees == 90) {
-            sx = py.clamp(0, srcW - 1);
-            sy = (srcH - 1 - px).clamp(0, srcH - 1);
-          } else if (rotationDegrees == 270) {
-            sx = (srcW - 1 - py).clamp(0, srcW - 1);
-            sy = px.clamp(0, srcH - 1);
-          } else {
-            sx = px.clamp(0, srcW - 1);
-            sy = py.clamp(0, srcH - 1);
-          }
+            // portrait → sensor 座標轉換
+            int sx, sy;
+            if (rotationDegrees == 90) {
+              sx = py.clamp(0, srcW - 1);
+              sy = (srcH - 1 - px).clamp(0, srcH - 1);
+            } else if (rotationDegrees == 270) {
+              sx = (srcW - 1 - py).clamp(0, srcW - 1);
+              sy = px.clamp(0, srcH - 1);
+            } else {
+              sx = px.clamp(0, srcW - 1);
+              sy = py.clamp(0, srcH - 1);
+            }
 
-          // 邊界檢查避免越界 crash
-          final yIdx = sy * yRowStride + sx;
-          final uvOff = (sy >> 1) * uvRowStride + (sx >> 1) * uvPixelStride;
+            // 邊界檢查避免越界 crash
+            final yIdx = sy * yRowStride + sx;
+            final uvOff = (sy >> 1) * uvRowStride + (sx >> 1) * uvPixelStride;
 
-          final yVal = (yIdx < yPlane.length) ? yPlane[yIdx] : 128;
-          final uVal = (uvOff < uLen) ? uPlane[uvOff] : 128;
-          final vVal = (uvOff < vLen) ? vPlane[uvOff] : 128;
+            final yVal = (yIdx < yPlane.length) ? yPlane[yIdx] : 128;
+            final uVal = (uvOff < uLen) ? uPlane[uvOff] : 128;
+            final vVal = (uvOff < vLen) ? vPlane[uvOff] : 128;
 
-          int r = (yVal + 1.402 * (vVal - 128)).round();
-          int g =
-              (yVal - 0.344136 * (uVal - 128) - 0.714136 * (vVal - 128))
-                  .round();
-          int b = (yVal + 1.772 * (uVal - 128)).round();
-          r = r.clamp(0, 255);
-          g = g.clamp(0, 255);
-          b = b.clamp(0, 255);
+            int r = (yVal + 1.402 * (vVal - 128)).round();
+            int g = (yVal - 0.344136 * (uVal - 128) - 0.714136 * (vVal - 128))
+                .round();
+            int b = (yVal + 1.772 * (uVal - 128)).round();
+            r = r.clamp(0, 255);
+            g = g.clamp(0, 255);
+            b = b.clamp(0, 255);
 
-          if (_inputIsFloat) {
-            _inputFloat![idx++] = r / 255.0;
-            _inputFloat![idx++] = g / 255.0;
-            _inputFloat![idx++] = b / 255.0;
-          } else {
-            _inputUint8![idx++] = r;
-            _inputUint8![idx++] = g;
-            _inputUint8![idx++] = b;
+            if (_inputIsFloat) {
+              _inputFloat![idx++] = r / 255.0;
+              _inputFloat![idx++] = g / 255.0;
+              _inputFloat![idx++] = b / 255.0;
+            } else {
+              _inputUint8![idx++] = r;
+              _inputUint8![idx++] = g;
+              _inputUint8![idx++] = b;
+            }
           }
         }
-      }
       } // end else (2-3 planes)
     } else {
       return null;
@@ -830,11 +990,13 @@ class TfliteObjectTrackingService {
       // cx 值域判定：如果最大 cx < 2.0 → 正規化；否則像素
       if (maxCx < 2.0) {
         _outputNormalized = true;
-        debugPrint('[TFLite-FORMAT] 正規化格式 (0~1)，maxCx=${maxCx.toStringAsFixed(4)}，'
+        debugPrint(
+            '[TFLite-FORMAT] 正規化格式 (0~1)，maxCx=${maxCx.toStringAsFixed(4)}，'
             '乘以 $_inputSize 轉換');
       } else {
         _outputNormalized = false;
-        debugPrint('[TFLite-FORMAT] 像素格式 (0~$_inputSize)，maxCx=${maxCx.toStringAsFixed(1)}');
+        debugPrint(
+            '[TFLite-FORMAT] 像素格式 (0~$_inputSize)，maxCx=${maxCx.toStringAsFixed(1)}');
       }
     }
     final bool norm = (_outputNormalized == true);
@@ -874,10 +1036,9 @@ class TfliteObjectTrackingService {
 
       if (w <= 0 || h <= 0) continue;
 
-      final label =
-          (_labels != null && bestCls < _labels!.length)
-              ? _labels![bestCls]
-              : 'tree_trunk';
+      final label = (_labels != null && bestCls < _labels!.length)
+          ? _labels![bestCls]
+          : 'tree_trunk';
 
       // 提取 mask coefficients (channels 4+nc … 4+nc+31)
       final int numMaskCoeffs = _detChannels - 4 - _numClasses;
@@ -921,7 +1082,8 @@ class TfliteObjectTrackingService {
     }
 
     // Debug: 印出 NMS 後的 raw bbox 值（前 10 次 + 每 5 次）
-    if (kept.isNotEmpty && (_parseCallCount <= 10 || _parseCallCount % 5 == 0)) {
+    if (kept.isNotEmpty &&
+        (_parseCallCount <= 10 || _parseCallCount % 5 == 0)) {
       for (int k = 0; k < kept.length && k < 3; k++) {
         final d = kept[k];
         debugPrint('[TFLite-RAW] kept[$k] '
@@ -976,7 +1138,7 @@ class TfliteObjectTrackingService {
     if (det.maskCoeffs == null || _protoOutputBuf == null) return null;
 
     final proto = _protoOutputBuf as List; // [1][Ph][Pw][32]
-    final protoFrame = proto[0] as List;   // [Ph][Pw][32]
+    final protoFrame = proto[0] as List; // [Ph][Pw][32]
     final int Ph = protoFrame.length;
     if (Ph == 0) return null;
     final int Pw = (protoFrame[0] as List).length;
@@ -990,7 +1152,7 @@ class TfliteObjectTrackingService {
     final int py = ((midY / _inputSize) * Ph).round().clamp(0, Ph - 1);
 
     // x 範圍：bbox letterbox x1..x2  proto x
-    final int pxLeft  = ((det.x1 / _inputSize) * Pw).floor().clamp(0, Pw - 1);
+    final int pxLeft = ((det.x1 / _inputSize) * Pw).floor().clamp(0, Pw - 1);
     final int pxRight = ((det.x2 / _inputSize) * Pw).ceil().clamp(0, Pw - 1);
 
     // dot product; logit > 0  sigmoid > 0.5
@@ -1018,7 +1180,7 @@ class TfliteObjectTrackingService {
   }
 
   // ================================================================
-  // [trunk_mask_base64] 完整 mask 渲染（拍照時呼叫一次）
+  // Legacy diagnostic path: render a full phone-side mask if explicitly requested.
   // ================================================================
 
   /// 從 _protoOutputBuf 拷貝一份 [Ph][Pw][32] 給後續 renderTrunkMaskPng 使用，

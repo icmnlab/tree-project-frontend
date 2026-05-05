@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import '../config/app_config.dart';
@@ -20,31 +19,19 @@ class ScannerService {
 
   /// 取得 scan WebSocket URL
   ///
-  /// - 預設: ws://localhost:8100/ws/scan
-  /// - 使用 ngrok 自架時: 從 mlServiceUrl 衍生 wss 位址
+  /// 從固定 ML service endpoint 衍生，例如
+  /// http://host:8100/api/v1 -> ws://host:8100/ws/scan
   String get _wsUrl {
     final config = AppConfig();
-    String url = 'ws://localhost:8100/ws/scan';
-    
-    if (config.useSelfHostedMl && config.mlServiceUrl.isNotEmpty) {
-      // https://xxx.ngrok-free.app/api/v1 -> wss://xxx.ngrok-free.app/ws/scan
-      try {
-        final uri = Uri.parse(config.mlServiceUrl);
-        final scheme = uri.scheme == 'https' ? 'wss' : 'ws';
-        url = '$scheme://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}/ws/scan';
-      } catch (e) {
-        debugPrint('[ScannerService] ngrok URL parse error: $e');
-      }
+    if (!config.hasMlServiceUrl) return '';
+    try {
+      final uri = Uri.parse(config.mlServiceUrl);
+      final scheme = uri.scheme == 'https' ? 'wss' : 'ws';
+      return '$scheme://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}/ws/scan';
+    } catch (e) {
+      debugPrint('[ScannerService] ML service URL parse error: $e');
+      return '';
     }
-    
-    // 從 Render 取得的 API Key 動態附加
-    final apiKey = config.mlApiKey;
-    if (apiKey != null && apiKey.isNotEmpty) {
-      final separator = url.contains('?') ? '&' : '?';
-      url = '$url${separator}api_key=$apiKey';
-    }
-    
-    return url;
   }
 
   /// 是否已連線
@@ -61,6 +48,9 @@ class ScannerService {
     if (_channel != null) return;
 
     final url = _wsUrl;
+    if (url.isEmpty) {
+      throw StateError('ML Service URL 未設定');
+    }
     debugPrint('[ScannerService] Connecting to $url');
 
     try {

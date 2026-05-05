@@ -56,6 +56,11 @@ class PendingTreeMeasurement {
   final String? measurementMethod; // 測量方法
   final String? measurementNotes; // 測量備註
 
+  // 任務語意
+  final String? surveyMode; // new / maintenance
+  final int? targetTreeId; // 維護既有樹木時對應 tree_survey.id
+  final String? matchStatus; // no_candidate / suggested / user_selected_new
+
   // 儀器參數 (來自 VLGEO2 擴展欄位)
   final double? gpsHdop; // GPS HDOP 精度指標
   final String? deviceSn; // 儀器序號
@@ -95,6 +100,9 @@ class PendingTreeMeasurement {
     this.measurementConfidence,
     this.measurementMethod,
     this.measurementNotes,
+    this.surveyMode,
+    this.targetTreeId,
+    this.matchStatus,
     this.gpsHdop,
     this.deviceSn,
     this.refHeight,
@@ -110,10 +118,52 @@ class PendingTreeMeasurement {
   /// UI 應據此顯示紅旗並引導使用者依儀器補測流程重測。
   bool get requiresGpsFix => rawDataSnapshot?['requires_gps_fix'] == true;
 
+  String get gpsSource {
+    final source = rawDataSnapshot?['gps_source']?.toString();
+    if (source == 'tree' || source == 'surveyor' || source == 'mixed_pending') {
+      return source!;
+    }
+    return 'surveyor';
+  }
+
+  bool get isTreeGpsSource => gpsSource == 'tree';
+  bool get isSurveyorGpsSource => gpsSource == 'surveyor';
+  bool get isMixedGpsSource => gpsSource == 'mixed_pending';
+
+  String get normalizedSurveyMode =>
+      surveyMode == 'maintenance' ? 'maintenance' : 'new';
+  bool get isMaintenanceTask => normalizedSurveyMode == 'maintenance';
+
+  String get surveyModeLabel => isMaintenanceTask ? '維護既有樹' : '新增樹木';
+
+  String get gpsSourceLabel {
+    switch (gpsSource) {
+      case 'tree':
+        return '樹位 GPS';
+      case 'mixed_pending':
+        return 'GPS 待確認';
+      default:
+        return '測站 GPS';
+    }
+  }
+
+  bool get hasTreeGps => treeLatitude != 0 || treeLongitude != 0;
+  bool get hasStationGps => stationLatitude != 0 || stationLongitude != 0;
+
   /// 計算目前使用者到測站的距離 (公尺)
   double distanceToStation(double userLat, double userLon) {
     return _haversineDistance(
         userLat, userLon, stationLatitude, stationLongitude);
+  }
+
+  double distanceToTree(double userLat, double userLon) {
+    return _haversineDistance(userLat, userLon, treeLatitude, treeLongitude);
+  }
+
+  double distanceToNavigationTarget(double userLat, double userLon) {
+    return isTreeGpsSource
+        ? distanceToTree(userLat, userLon)
+        : distanceToStation(userLat, userLon);
   }
 
   /// 測站到樹木的方位角 (度)
@@ -256,8 +306,10 @@ class PendingTreeMeasurement {
       azimuth: _toDouble(json['azimuth']),
       pitch: _toDouble(json['pitch']),
       altitude: _toDoubleOrNull(json['altitude']),
-      status: MeasurementStatus.fromString(json['status']?.toString() ?? 'pending'),
-      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.now(),
+      status:
+          MeasurementStatus.fromString(json['status']?.toString() ?? 'pending'),
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ??
+          DateTime.now(),
       updatedAt: json['updated_at'] != null
           ? DateTime.tryParse(json['updated_at'].toString())
           : null,
@@ -271,6 +323,9 @@ class PendingTreeMeasurement {
       measurementConfidence: _toDoubleOrNull(json['measurement_confidence']),
       measurementMethod: json['measurement_method']?.toString(),
       measurementNotes: json['measurement_notes']?.toString(),
+      surveyMode: json['survey_mode']?.toString(),
+      targetTreeId: _toInt(json['target_tree_id']),
+      matchStatus: json['match_status']?.toString(),
       gpsHdop: _toDoubleOrNull(json['gps_hdop']),
       deviceSn: json['device_sn']?.toString(),
       refHeight: _toDoubleOrNull(json['ref_height']),
@@ -317,6 +372,9 @@ class PendingTreeMeasurement {
         'measurement_confidence': measurementConfidence,
       if (measurementMethod != null) 'measurement_method': measurementMethod,
       if (measurementNotes != null) 'measurement_notes': measurementNotes,
+      if (surveyMode != null) 'survey_mode': surveyMode,
+      if (targetTreeId != null) 'target_tree_id': targetTreeId,
+      if (matchStatus != null) 'match_status': matchStatus,
       if (gpsHdop != null) 'gps_hdop': gpsHdop,
       if (deviceSn != null) 'device_sn': deviceSn,
       if (refHeight != null) 'ref_height': refHeight,
@@ -327,18 +385,16 @@ class PendingTreeMeasurement {
 
   /// 複製並更新部分欄位
   /// 是否已有儀器 Remote Diameter 數據
-  bool get hasInstrumentDbh =>
-      instrumentDbhCm != null && instrumentDbhCm! > 0;
+  bool get hasInstrumentDbh => instrumentDbhCm != null && instrumentDbhCm! > 0;
 
   /// 是否需要 DBH 補測（沒有任何 DBH 來源）
   bool get needsDbhMeasurement =>
       !hasInstrumentDbh && (measuredDbhCm == null || measuredDbhCm == 0);
 
   /// 最佳可用 DBH 值（優先: 影像/手動測量 > 儀器 Remote Diameter）
-  double? get bestAvailableDbh =>
-      (measuredDbhCm != null && measuredDbhCm! > 0)
-          ? measuredDbhCm
-          : instrumentDbhCm;
+  double? get bestAvailableDbh => (measuredDbhCm != null && measuredDbhCm! > 0)
+      ? measuredDbhCm
+      : instrumentDbhCm;
 
   PendingTreeMeasurement copyWith({
     int? id,
@@ -372,6 +428,9 @@ class PendingTreeMeasurement {
     double? measurementConfidence,
     String? measurementMethod,
     String? measurementNotes,
+    String? surveyMode,
+    int? targetTreeId,
+    String? matchStatus,
     double? gpsHdop,
     String? deviceSn,
     double? refHeight,
@@ -411,6 +470,9 @@ class PendingTreeMeasurement {
           measurementConfidence ?? this.measurementConfidence,
       measurementMethod: measurementMethod ?? this.measurementMethod,
       measurementNotes: measurementNotes ?? this.measurementNotes,
+      surveyMode: surveyMode ?? this.surveyMode,
+      targetTreeId: targetTreeId ?? this.targetTreeId,
+      matchStatus: matchStatus ?? this.matchStatus,
       gpsHdop: gpsHdop ?? this.gpsHdop,
       deviceSn: deviceSn ?? this.deviceSn,
       refHeight: refHeight ?? this.refHeight,
@@ -477,7 +539,8 @@ class MeasurementSession {
       name: json['name']?.toString(),
       description: json['description']?.toString(),
       createdBy: json['created_by']?.toString() ?? '',
-      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ?? DateTime.now(),
+      createdAt: DateTime.tryParse(json['created_at']?.toString() ?? '') ??
+          DateTime.now(),
       totalTrees: _jsonToInt(json['total_trees']),
       completedTrees: _jsonToInt(json['completed_trees']),
       projectArea: json['project_area']?.toString(),

@@ -9,33 +9,39 @@ import '../config/app_config.dart';
 
 /// 純視覺 DBH 測量服務
 ///
-/// 透過後端 ML Service (FastAPI + Depth Anything V2) 進行：
+/// 透過後端 ML Service (FastAPI + DA3 / server-side YOLO) 進行：
 /// 1. 上傳照片 + 樹幹 bounding box
 /// 2. 伺服器執行深度估計 + DBH 計算
 /// 3. 回傳 DBH (cm)、信心度、視覺化結果
 class PureVisionDbhService {
-  static final PureVisionDbhService _instance = PureVisionDbhService._internal();
+  static final PureVisionDbhService _instance =
+      PureVisionDbhService._internal();
   factory PureVisionDbhService() => _instance;
   PureVisionDbhService._internal();
 
   String get _baseUrl => AppConfig().mlServiceUrl;
 
-  /// 取得 ML API Key 認證 headers
-  Map<String, String> get _authHeaders {
-    final headers = <String, String>{
-      'ngrok-skip-browser-warning': 'true',
-    };
-    final apiKey = AppConfig().mlApiKey;
-    if (apiKey != null && apiKey.isNotEmpty) {
-      headers['X-ML-API-Key'] = apiKey;
+  Map<String, String> get _authHeaders => const {};
+
+  String _requireBaseUrl() {
+    final url = _baseUrl.trim();
+    if (url.isEmpty) {
+      throw PureVisionException(
+        'ML Service URL 未設定，請重新登入或確認後端 ML_SERVICE_PUBLIC_URL',
+      );
     }
-    return headers;
+    return url;
   }
 
   /// 檢查 ML Service 是否可用
-  /// 增加重試機制，避免 ngrok 或冷啟動導致誤判
+  /// 增加重試機制，避免本機服務剛啟動或模型載入時誤判
   Future<bool> isServiceAvailable() async {
-    final url = '$_baseUrl/health';
+    final baseUrl = _baseUrl.trim();
+    if (baseUrl.isEmpty) {
+      debugPrint('[PureVisionDbhService] ML Service URL 未設定');
+      return false;
+    }
+    final url = '$baseUrl/health';
     debugPrint('[PureVisionDbhService] 檢查 ML Service: $url');
 
     // 嘗試兩次，第一次 10 秒，第二次 15 秒
@@ -48,7 +54,8 @@ class PureVisionDbhService {
         if (response.statusCode == 200) {
           final data = json.decode(response.body);
           if (data['status'] == 'ok') {
-            debugPrint('[PureVisionDbhService] ML Service 可用 (attempt $attempt)');
+            debugPrint(
+                '[PureVisionDbhService] ML Service 可用 (attempt $attempt)');
             return true;
           }
         }
@@ -88,10 +95,9 @@ class PureVisionDbhService {
     bool returnVisualization = true,
   }) async {
     try {
-      final uri = Uri.parse('$_baseUrl/measure-dbh');
+      final uri = Uri.parse('${_requireBaseUrl()}/measure-dbh');
       final request = http.MultipartRequest('POST', uri);
 
-      // 添加 ML API Key 認證
       request.headers.addAll(_authHeaders);
 
       // 添加圖片
@@ -130,8 +136,8 @@ class PureVisionDbhService {
           '${focalLengthMm != null ? " (focal: ${focalLengthMm}mm)" : ""}'
           '${focalLength35mm != null ? " (35eq: ${focalLength35mm}mm)" : ""}');
       final streamedResponse = await request.send().timeout(
-        const Duration(seconds: 120),
-      );
+            const Duration(seconds: 120),
+          );
       final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode != 200) {
@@ -147,7 +153,7 @@ class PureVisionDbhService {
 
       return PureVisionDbhResult.fromJson(data);
     } on SocketException {
-      throw PureVisionException('無法連接 ML 服務，請確認服務已啟動');
+      throw PureVisionException('無法連接 ML 服務，請確認手機可連線至後端下發的 ML 位址');
     } on TimeoutException {
       throw PureVisionException('請求逾時，伺服器可能正在喚醒，請稍後再試');
     } on http.ClientException catch (e) {
@@ -162,9 +168,8 @@ class PureVisionDbhService {
     required int y,
   }) async {
     try {
-      final uri = Uri.parse('$_baseUrl/debug/depth-at-point');
+      final uri = Uri.parse('${_requireBaseUrl()}/debug/depth-at-point');
       final request = http.MultipartRequest('POST', uri);
-      // 添加 ML API Key 認證
       request.headers.addAll(_authHeaders);
       request.files.add(
         await http.MultipartFile.fromPath('image', imageFile.path),
@@ -173,8 +178,8 @@ class PureVisionDbhService {
       request.fields['y'] = y.toString();
 
       final streamedResponse = await request.send().timeout(
-        const Duration(seconds: 30),
-      );
+            const Duration(seconds: 30),
+          );
       final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode != 200) {
@@ -199,7 +204,7 @@ class PureVisionDbhService {
   /// 回傳 [MlServiceConfig] 包含可用的精度模式、模型名稱等
   Future<MlServiceConfig?> fetchMlConfig() async {
     try {
-      final uri = Uri.parse('$_baseUrl/config');
+      final uri = Uri.parse('${_requireBaseUrl()}/config');
       final response = await http
           .get(uri, headers: _authHeaders)
           .timeout(const Duration(seconds: 10));
@@ -207,7 +212,8 @@ class PureVisionDbhService {
         final data = json.decode(response.body);
         return MlServiceConfig.fromJson(data);
       }
-      debugPrint('[PureVisionDbhService] Config fetch failed: ${response.statusCode}');
+      debugPrint(
+          '[PureVisionDbhService] Config fetch failed: ${response.statusCode}');
       return null;
     } catch (e) {
       debugPrint('[PureVisionDbhService] Config fetch error: $e');
@@ -222,11 +228,8 @@ class PureVisionDbhService {
   ///
   /// [mode] 精度模式：'fast'(~1.5s), 'balanced'(~3-6s), 'accurate'(~5-10s)
   ///        預設 null 時由 ML Service 決定（通常為 balanced）
-  /// [tapX], [tapY] 使用者點擊的樹幹位置（SAM 分割 prompt，Phase 2+）
-  /// [referenceDistanceM] 已知的參考距離（公尺），用於校正深度估計
-  ///        例如手機 GPS 到樹的距離，ML Service 可用此校正 Depth Anything 的相對深度
-  /// [instrumentDistanceM] 儀器水平距離 HD（公尺），作為備用參考距離
-  /// [distanceSource] 距離來源：'gps'|'instrument'|'none'，讓 ML Service 選擇最佳策略
+  /// [tapX], [tapY] legacy prompt coordinates; the current production scanner
+  /// uses phone-side bbox plus server-side YOLO masks instead.
   Future<AutoMeasureResult> autoMeasureDbh({
     required File imageFile,
     double? focalLengthMm,
@@ -237,16 +240,15 @@ class PureVisionDbhService {
     String? mode,
     int? tapX,
     int? tapY,
-    double? referenceDistanceM,
-    double? instrumentDistanceM,
-    String? distanceSource,
-    Rect? localBbox, // [Edge AI] The local tracking bounding box from ML Kit
-    double? maskPixelWidth, // [方案A] YOLOv8-seg mask computed trunk pixel width
-    String? trunkMaskBase64, // [方案A+] 完整二元 PNG mask（與 image 尺寸對齊）
+    Rect? localBbox, // [Edge AI] The local YOLO tracking bounding box
+    double? maskPixelWidth, // legacy phone-side YOLO mask width
+    String? trunkMaskBase64, // legacy phone-side binary PNG mask
+    bool useServerYoloMask = false,
+    double? serverYoloConf,
     bool returnVisualization = true,
     bool returnDetectionVisualization = true,
   }) async {
-    // ngrok 免費版連線不穩，加重試邏輯
+    // ML service 啟動/載入模型時可能短暫不穩，加重試邏輯
     const maxRetries = 2;
     Exception? lastError;
 
@@ -262,12 +264,11 @@ class PureVisionDbhService {
           mode: mode,
           tapX: tapX,
           tapY: tapY,
-          referenceDistanceM: referenceDistanceM,
-          instrumentDistanceM: instrumentDistanceM,
-          distanceSource: distanceSource,
           localBbox: localBbox,
           maskPixelWidth: maskPixelWidth,
           trunkMaskBase64: trunkMaskBase64,
+          useServerYoloMask: useServerYoloMask,
+          serverYoloConf: serverYoloConf,
           returnVisualization: returnVisualization,
           returnDetectionVisualization: returnDetectionVisualization,
           attempt: attempt,
@@ -297,23 +298,22 @@ class PureVisionDbhService {
     String? mode,
     int? tapX,
     int? tapY,
-    double? referenceDistanceM,
-    double? instrumentDistanceM,
-    String? distanceSource,
     Rect? localBbox,
     double? maskPixelWidth,
     String? trunkMaskBase64,
+    bool useServerYoloMask = false,
+    double? serverYoloConf,
     bool returnVisualization = true,
     bool returnDetectionVisualization = true,
     int attempt = 1,
   }) async {
     try {
-      final uri = Uri.parse('$_baseUrl/auto-measure-dbh');
+      final uri = Uri.parse('${_requireBaseUrl()}/auto-measure-dbh');
       final request = http.MultipartRequest('POST', uri);
 
       request.headers.addAll(_authHeaders);
 
-      // 明確設定 content type，避免 ngrok 或伺服器誤判
+      // 明確設定 content type，避免伺服器誤判
       request.files.add(
         await http.MultipartFile.fromPath(
           'image',
@@ -357,18 +357,13 @@ class PureVisionDbhService {
       if (trunkMaskBase64 != null && trunkMaskBase64.isNotEmpty) {
         request.fields['trunk_mask_base64'] = trunkMaskBase64;
       }
-      // [Phase 2] 參考距離校正
-      if (referenceDistanceM != null && referenceDistanceM > 0) {
-        request.fields['reference_distance'] = referenceDistanceM.toString();
+      if (useServerYoloMask) {
+        request.fields['use_server_yolo_mask'] = 'true';
       }
-      // 儀器水平距離（ML Service 用於交叉驗證與 fallback）
-      if (instrumentDistanceM != null && instrumentDistanceM > 0) {
-        request.fields['instrument_distance'] = instrumentDistanceM.toString();
+      if (serverYoloConf != null) {
+        request.fields['server_yolo_conf'] = serverYoloConf.toString();
       }
-      if (distanceSource != null) {
-        request.fields['distance_source'] = distanceSource;
-      }
-      // SAM 分割觸碰點 (Phase 2+)
+      // Legacy prompt coordinates.
       if (tapX != null) {
         request.fields['tap_x'] = tapX.toString();
       }
@@ -380,8 +375,8 @@ class PureVisionDbhService {
           '${mode != null ? " (mode: $mode)" : ""}'
           ' [attempt $attempt]');
       final streamedResponse = await request.send().timeout(
-        const Duration(seconds: 120),
-      );
+            const Duration(seconds: 120),
+          );
       final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode != 200) {
@@ -414,12 +409,10 @@ class PureVisionDbhService {
     double? fovDegrees,
     String? phoneMake,
     String? phoneModel,
-    double? referenceDistanceM,
-    double? instrumentDistanceM,
     String? mode,
   }) async {
     try {
-      final uri = Uri.parse('$_baseUrl/auto-measure-dbh-multi');
+      final uri = Uri.parse('${_requireBaseUrl()}/auto-measure-dbh-multi');
       final request = http.MultipartRequest('POST', uri);
       request.headers.addAll(_authHeaders);
 
@@ -438,18 +431,13 @@ class PureVisionDbhService {
       }
       if (phoneMake != null) request.fields['phone_make'] = phoneMake;
       if (phoneModel != null) request.fields['phone_model'] = phoneModel;
-      if (referenceDistanceM != null && referenceDistanceM > 0) {
-        request.fields['reference_distance'] = referenceDistanceM.toString();
-      }
-      if (instrumentDistanceM != null && instrumentDistanceM > 0) {
-        request.fields['instrument_distance'] = instrumentDistanceM.toString();
-      }
       if (mode != null) request.fields['mode'] = mode;
 
-      debugPrint('[PureVisionDbhService] Multi-shot request (${imageFiles.length} images)');
+      debugPrint(
+          '[PureVisionDbhService] Multi-shot request (${imageFiles.length} images)');
       final streamedResponse = await request.send().timeout(
-        const Duration(seconds: 300),
-      );
+            const Duration(seconds: 300),
+          );
       final response = await http.Response.fromStream(streamedResponse);
 
       if (response.statusCode != 200) {
@@ -566,7 +554,8 @@ class PureVisionDbhResult {
       notes: notesList is List
           ? notesList.map((e) => e.toString()).toList()
           : <String>[],
-      depthEstimationMs: (timing['depth_estimation_ms'] as num?)?.toDouble() ?? 0,
+      depthEstimationMs:
+          (timing['depth_estimation_ms'] as num?)?.toDouble() ?? 0,
       dbhCalculationMs: (timing['dbh_calculation_ms'] as num?)?.toDouble() ?? 0,
       totalMs: (timing['total_ms'] as num?)?.toDouble() ?? 0,
       imageWidth: (imageSize['width'] as num?)?.toInt() ?? 0,
@@ -602,7 +591,7 @@ class AutoMeasureResult {
   final List<String> notes;
 
   // 距離驗證
-  final String distanceStatus;   // "ok", "too_close", "too_far", "warning"
+  final String distanceStatus; // "ok", "too_close", "too_far", "warning"
   final String distanceMessage;
 
   // 偵測到的框
@@ -686,7 +675,9 @@ class AutoMeasureResult {
       trunkPixelWidth: (json['trunk_pixel_width'] as num?)?.toDouble(),
       chordLengthM: (json['chord_length_m'] as num?)?.toDouble(),
       focalLengthPx: (json['focal_length_px'] as num?)?.toDouble(),
-      measurementRow: json['measurement_row'] != null ? PureVisionDbhResult._i(json['measurement_row']) : null,
+      measurementRow: json['measurement_row'] != null
+          ? PureVisionDbhResult._i(json['measurement_row'])
+          : null,
       method: json['method']?.toString(),
       notes: notesList is List
           ? notesList.map((e) => e.toString()).toList()
@@ -694,9 +685,11 @@ class AutoMeasureResult {
       distanceStatus: json['distance_status']?.toString() ?? 'unknown',
       distanceMessage: json['distance_message']?.toString() ?? '',
       detectedBbox: bbox,
-      detectionConfidence: (json['detection_confidence'] as num?)?.toDouble() ?? 0,
+      detectionConfidence:
+          (json['detection_confidence'] as num?)?.toDouble() ?? 0,
       allTrunks: trunksList.map((t) => DetectedTrunkInfo.fromJson(t)).toList(),
-      depthEstimationMs: (timing['depth_estimation_ms'] as num?)?.toDouble() ?? 0,
+      depthEstimationMs:
+          (timing['depth_estimation_ms'] as num?)?.toDouble() ?? 0,
       detectionMs: (timing['detection_ms'] as num?)?.toDouble() ?? 0,
       dbhCalculationMs: (timing['dbh_calculation_ms'] as num?)?.toDouble() ?? 0,
       totalMs: (timing['total_ms'] as num?)?.toDouble() ?? 0,
@@ -717,8 +710,7 @@ class AutoMeasureResult {
   }
 
   /// 距離狀態是否正常
-  bool get isDistanceOk =>
-      distanceStatus == 'ok';
+  bool get isDistanceOk => distanceStatus == 'ok';
 
   /// 距離狀態 icon 顏色
   bool get isDistanceWarning =>
@@ -862,8 +854,12 @@ class MlAccuracyMode {
 
   /// 預估時間的中文描述
   String get estimatedTimeLabel {
-    if (estimatedTimeS < 2) return '~${estimatedTimeS.toStringAsFixed(1)}秒 (快速)';
-    if (estimatedTimeS < 8) return '~${estimatedTimeS.toStringAsFixed(0)}秒 (適中)';
+    if (estimatedTimeS < 2) {
+      return '~${estimatedTimeS.toStringAsFixed(1)}秒 (快速)';
+    }
+    if (estimatedTimeS < 8) {
+      return '~${estimatedTimeS.toStringAsFixed(0)}秒 (適中)';
+    }
     return '~${estimatedTimeS.toStringAsFixed(0)}秒 (較慢)';
   }
 }

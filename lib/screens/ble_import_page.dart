@@ -5,8 +5,10 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../services/ble_data_processor.dart'; // 引入解析器
 import '../services/ble_packet_decoder.dart'; // 引入封包解碼器
+import '../models/pending_tree_measurement.dart';
 import '../services/pending_measurement_service.dart'; // 待測量服務
 import '../services/project_service.dart'; // 專案服務（手動指派 dropdown）
+import '../services/tree_service.dart';
 import '../services/v3/data_filter_service.dart'; // V3 數據過濾服務
 import '../services/v3/project_boundary_service.dart'; // 專案邊界服務（自動匹配專案）
 import '../widgets/network_aware_widgets.dart'; // 網路感知元件
@@ -40,8 +42,7 @@ class _BleImportPageState extends State<BleImportPage> {
 
   // 關鍵 UUID (Nordic UART Service)
   final String _serviceUuid = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
-  final String _txCharacteristicUuid =
-      "6E400003-B5A3-F393-E0A9-E50E24DCCA9E";
+  final String _txCharacteristicUuid = "6E400003-B5A3-F393-E0A9-E50E24DCCA9E";
 
   final List<int> _eotSignal = [0x5A, 0xBF, 0xFB];
 
@@ -189,19 +190,26 @@ class _BleImportPageState extends State<BleImportPage> {
               if (stats.conflictCount > 0)
                 _buildStatRow('衝突(已解決)', stats.conflictCount, Colors.purple),
               if (stats.nonTreeDropped > 0)
-                _buildStatRow('非樹木類型已丟棄(DME/空)', stats.nonTreeDropped, Colors.brown),
+                _buildStatRow(
+                    '非樹木類型已丟棄(DME/空)', stats.nonTreeDropped, Colors.brown),
               if (stats.missingGpsCount > 0)
-                _buildStatRow('缺 GPS', stats.missingGpsCount, Colors.deepOrange),
+                _buildStatRow(
+                    '缺 GPS', stats.missingGpsCount, Colors.deepOrange),
 
               // GPS 品質（HDOP 分級）
               if (stats.hdopQualityCounts.values.any((v) => v > 0)) ...[
                 const SizedBox(height: 12),
-                const Text('GPS 品質 (HDOP):', style: TextStyle(fontWeight: FontWeight.bold)),
-                _buildStatRow('  良好 (≤2)', stats.hdopQualityCounts['good'] ?? 0, Colors.green),
-                _buildStatRow('  尚可 (≤5)', stats.hdopQualityCounts['fair'] ?? 0, Colors.orange),
-                _buildStatRow('  不佳 (>5)', stats.hdopQualityCounts['poor'] ?? 0, Colors.red),
+                const Text('GPS 品質 (HDOP):',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                _buildStatRow('  良好 (≤2)', stats.hdopQualityCounts['good'] ?? 0,
+                    Colors.green),
+                _buildStatRow('  尚可 (≤5)', stats.hdopQualityCounts['fair'] ?? 0,
+                    Colors.orange),
+                _buildStatRow('  不佳 (>5)', stats.hdopQualityCounts['poor'] ?? 0,
+                    Colors.red),
                 if ((stats.hdopQualityCounts['unknown'] ?? 0) > 0)
-                  _buildStatRow('  未知', stats.hdopQualityCounts['unknown'] ?? 0, Colors.grey),
+                  _buildStatRow('  未知', stats.hdopQualityCounts['unknown'] ?? 0,
+                      Colors.grey),
               ],
 
               // [v21.0] Phase C 警告統計
@@ -209,70 +217,83 @@ class _BleImportPageState extends State<BleImportPage> {
                   stats.trphWarningCount > 0 ||
                   stats.posDriftWarningCount > 0) ...[
                 const SizedBox(height: 12),
-                const Text('資料品質警告:', style: TextStyle(fontWeight: FontWeight.bold)),
+                const Text('資料品質警告:',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
                 if (stats.gpsJumpCount > 0)
-                  _buildStatRow('  GPS 跳變 (>100m)', stats.gpsJumpCount, Colors.deepOrange),
+                  _buildStatRow('  GPS 跳變 (>100m)', stats.gpsJumpCount,
+                      Colors.deepOrange),
                 if (stats.trphWarningCount > 0)
-                  _buildStatRow('  TRPH ≠ 1.3m', stats.trphWarningCount, Colors.amber),
+                  _buildStatRow(
+                      '  TRPH ≠ 1.3m', stats.trphWarningCount, Colors.amber),
                 if (stats.posDriftWarningCount > 0)
-                  _buildStatRow('  3P 站位漂移 (>5m)', stats.posDriftWarningCount, Colors.deepOrange),
+                  _buildStatRow('  3P 站位漂移 (>5m)', stats.posDriftWarningCount,
+                      Colors.deepOrange),
               ],
 
               if (stats.missingFieldCounts.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                const Text('缺失欄位:', style: TextStyle(fontWeight: FontWeight.bold)),
-                ...stats.missingFieldCounts.entries.map((e) => 
-                  Padding(
+                const Text('缺失欄位:',
+                    style: TextStyle(fontWeight: FontWeight.bold)),
+                ...stats.missingFieldCounts.entries.map(
+                  (e) => Padding(
                     padding: const EdgeInsets.only(left: 16, top: 4),
                     child: Text('• ${e.key}: ${e.value} 筆'),
                   ),
                 ),
               ],
-              
+
               // 顯示衝突詳情
               if (result.conflicts.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                Text('衝突詳情 (${result.conflicts.length}):', 
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.purple)),
-                ...result.conflicts.take(3).map((c) => 
-                  Padding(
-                    padding: const EdgeInsets.only(left: 16, top: 4),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('• 座標: ${c.lat.toStringAsFixed(6)}, ${c.lon.toStringAsFixed(6)}', 
-                          style: const TextStyle(fontSize: 12)),
-                        Text('  衝突欄位: ${c.conflictingFields.keys.join(", ")}',
-                          style: TextStyle(fontSize: 11, color: Colors.grey[600])),
-                        Text('  保留記錄: ${c.keptRecord['id']}',
-                          style: TextStyle(fontSize: 11, color: Colors.green[700])),
-                      ],
+                Text('衝突詳情 (${result.conflicts.length}):',
+                    style: const TextStyle(
+                        fontWeight: FontWeight.bold, color: Colors.purple)),
+                ...result.conflicts.take(3).map(
+                      (c) => Padding(
+                        padding: const EdgeInsets.only(left: 16, top: 4),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                                '• 座標: ${c.lat.toStringAsFixed(6)}, ${c.lon.toStringAsFixed(6)}',
+                                style: const TextStyle(fontSize: 12)),
+                            Text(
+                                '  衝突欄位: ${c.conflictingFields.keys.join(", ")}',
+                                style: TextStyle(
+                                    fontSize: 11, color: Colors.grey[600])),
+                            Text('  保留記錄: ${c.keptRecord['id']}',
+                                style: TextStyle(
+                                    fontSize: 11, color: Colors.green[700])),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
-                ),
                 if (result.conflicts.length > 3)
                   Padding(
                     padding: const EdgeInsets.only(left: 16, top: 4),
                     child: Text('... 還有 ${result.conflicts.length - 3} 組衝突',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                        style:
+                            TextStyle(fontSize: 12, color: Colors.grey[600])),
                   ),
               ],
-              
+
               if (stats.duplicateGroups.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                Text('重複群組 (${stats.duplicateGroups.length}):', 
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
-                ...stats.duplicateGroups.take(5).map((g) => 
-                  Padding(
-                    padding: const EdgeInsets.only(left: 16, top: 4),
-                    child: Text('• $g', style: const TextStyle(fontSize: 12)),
-                  ),
-                ),
+                Text('重複群組 (${stats.duplicateGroups.length}):',
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                ...stats.duplicateGroups.take(5).map(
+                      (g) => Padding(
+                        padding: const EdgeInsets.only(left: 16, top: 4),
+                        child:
+                            Text('• $g', style: const TextStyle(fontSize: 12)),
+                      ),
+                    ),
                 if (stats.duplicateGroups.length > 5)
                   Padding(
                     padding: const EdgeInsets.only(left: 16, top: 4),
                     child: Text('... 還有 ${stats.duplicateGroups.length - 5} 組',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                        style:
+                            TextStyle(fontSize: 12, color: Colors.grey[600])),
                   ),
               ],
             ],
@@ -298,7 +319,7 @@ class _BleImportPageState extends State<BleImportPage> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
             decoration: BoxDecoration(
-              color: color.withValues(alpha:0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Text(
@@ -747,7 +768,8 @@ class _BleImportPageState extends State<BleImportPage> {
 
   /// 藍牙關閉/不支援時顯示的全頁面引導
   Widget _buildBluetoothOffView() {
-    final bool isUnsupported = _adapterState == BluetoothAdapterState.unavailable;
+    final bool isUnsupported =
+        _adapterState == BluetoothAdapterState.unavailable;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -755,7 +777,9 @@ class _BleImportPageState extends State<BleImportPage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              isUnsupported ? Icons.bluetooth_disabled : Icons.bluetooth_disabled,
+              isUnsupported
+                  ? Icons.bluetooth_disabled
+                  : Icons.bluetooth_disabled,
               size: 80,
               color: isUnsupported ? Colors.grey : Colors.orange,
             ),
@@ -785,7 +809,8 @@ class _BleImportPageState extends State<BleImportPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.blue,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   textStyle: const TextStyle(fontSize: 16),
                 ),
               ),
@@ -813,49 +838,51 @@ class _BleImportPageState extends State<BleImportPage> {
       body: _adapterState != BluetoothAdapterState.on
           ? _buildBluetoothOffView()
           : Column(
-        children: [
-          // 狀態指示條
-          if (_isConnecting)
-            const LinearProgressIndicator()
-          else if (_isScanning)
-            const LinearProgressIndicator(),
-
-          // 頂部操作區
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
               children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _isScanning || _connectedDevice != null
-                        ? null
-                        : _startScan,
-                    icon: const Icon(Icons.search),
-                    label: Text(_isScanning ? '掃描中...' : '掃描 VLGEO 設備'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _isScanning ? Colors.grey : Colors.blue,
-                      foregroundColor: Colors.white,
-                    ),
+                // 狀態指示條
+                if (_isConnecting)
+                  const LinearProgressIndicator()
+                else if (_isScanning)
+                  const LinearProgressIndicator(),
+
+                // 頂部操作區
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _isScanning || _connectedDevice != null
+                              ? null
+                              : _startScan,
+                          icon: const Icon(Icons.search),
+                          label: Text(_isScanning ? '掃描中...' : '掃描 VLGEO 設備'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor:
+                                _isScanning ? Colors.grey : Colors.blue,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      if (_isScanning)
+                        ElevatedButton(
+                          onPressed: _stopScan,
+                          child: const Text('停止'),
+                        ),
+                    ],
                   ),
                 ),
-                const SizedBox(width: 10),
-                if (_isScanning)
-                  ElevatedButton(
-                    onPressed: _stopScan,
-                    child: const Text('停止'),
-                  ),
+
+                // 設備列表或數據顯示
+                Expanded(
+                  child:
+                      (_connectedDevice != null || _receivedCsvLines.isNotEmpty)
+                          ? _buildDataView()
+                          : _buildScanResultList(),
+                ),
               ],
             ),
-          ),
-
-          // 設備列表或數據顯示
-          Expanded(
-            child: (_connectedDevice != null || _receivedCsvLines.isNotEmpty)
-                ? _buildDataView()
-                : _buildScanResultList(),
-          ),
-        ],
-      ),
     );
   }
 
@@ -973,9 +1000,11 @@ class _BleImportPageState extends State<BleImportPage> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text('已接收 ${_dataBuffer.length} bytes',
-                          style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                          style: const TextStyle(
+                              fontSize: 12, color: Colors.grey)),
                       Text('封包解碼中...',
-                          style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                          style:
+                              TextStyle(fontSize: 12, color: Colors.grey[600])),
                     ],
                   ),
                 ],
@@ -1034,13 +1063,14 @@ class _BleImportPageState extends State<BleImportPage> {
                               }
 
                               // V3: 應用數據過濾（不完整資料 + 重複資料）
-                              final filterResult = DataFilterService.filterBleData(
+                              final filterResult =
+                                  DataFilterService.filterBleData(
                                 parsedData,
                                 options: FilterOptions(keepIncomplete: false),
                               );
 
                               // 顯示過濾結果
-                              if (filterResult.stats.incompleteCount > 0 || 
+                              if (filterResult.stats.incompleteCount > 0 ||
                                   filterResult.stats.duplicateCount > 0) {
                                 _showFilterResultDialog(filterResult);
                               }
@@ -1058,19 +1088,17 @@ class _BleImportPageState extends State<BleImportPage> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) =>
-                                      ManualInputPageV2(importedData: filteredData),
+                                  builder: (context) => ManualInputPageV2(
+                                      importedData: filteredData),
                                 ),
                               ).then((_) {
                                 _resetState();
                               });
                             }
                           : null,
-                      child: Text(
-                          '解析並匯入數據 (${_receivedCsvLines.length}筆)',
+                      child: Text('解析並匯入數據 (${_receivedCsvLines.length}筆)',
                           style: const TextStyle(
-                              color: Colors.teal,
-                              fontWeight: FontWeight.bold)),
+                              color: Colors.teal, fontWeight: FontWeight.bold)),
                     ),
                   ),
                 ],
@@ -1218,16 +1246,14 @@ class _BleImportPageState extends State<BleImportPage> {
 
       // 使用過濾後的資料
       final filteredData = filterResult.validRecords;
-      
+
       // 如果有過濾，顯示摘要
-      if (filterResult.stats.incompleteCount > 0 || 
+      if (filterResult.stats.incompleteCount > 0 ||
           filterResult.stats.duplicateCount > 0) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              '過濾: ${filterResult.stats.incompleteCount} 筆不完整, '
-              '${filterResult.stats.duplicateCount} 筆重複'
-            ),
+            content: Text('過濾: ${filterResult.stats.incompleteCount} 筆不完整, '
+                '${filterResult.stats.duplicateCount} 筆重複'),
             backgroundColor: Colors.orange,
             duration: const Duration(seconds: 2),
           ),
@@ -1266,6 +1292,9 @@ class _BleImportPageState extends State<BleImportPage> {
         return;
       }
 
+      final surveyModeProceed = await _resolveSurveyModeForBatch(filteredData);
+      if (!surveyModeProceed) return;
+
       if (!mounted) return;
 
       // 顯示載入中
@@ -1294,7 +1323,7 @@ class _BleImportPageState extends State<BleImportPage> {
       if (result['success'] == true) {
         final count = result['count'] ?? filteredData.length;
         final sessionId = result['sessionId'] as String?;
-        
+
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1333,7 +1362,7 @@ class _BleImportPageState extends State<BleImportPage> {
       if (mounted && loadingDialogShown) {
         Navigator.of(context).pop();
       }
-      
+
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -1370,14 +1399,16 @@ class _BleImportPageState extends State<BleImportPage> {
     final Map<String, Map<String, String?>> projectInfo = {};
 
     for (final rec in filteredData) {
-      final lat = (rec['lat'] as num?)?.toDouble();
-      final lon = (rec['lon'] as num?)?.toDouble();
+      final treePos = _estimateTreePosition(rec);
+      final lat = treePos?.lat;
+      final lon = treePos?.lon;
       if (lat == null || lon == null || lat == 0 || lon == 0) {
         outsideCount++;
         continue;
       }
-      final match =
-          boundaryService.findProjectByCoordinate(lat: lat, lng: lon);
+      rec['_computed_tree_lat'] = lat;
+      rec['_computed_tree_lon'] = lon;
+      final match = boundaryService.findProjectByCoordinate(lat: lat, lng: lon);
       if (match.matched && match.projectName != null) {
         final key = match.projectName!;
         projectCounts[key] = (projectCounts[key] ?? 0) + 1;
@@ -1483,6 +1514,302 @@ class _BleImportPageState extends State<BleImportPage> {
     return false;
   }
 
+  ({double lat, double lon})? _estimateTreePosition(Map<String, dynamic> rec) {
+    final lat = (rec['lat'] as num?)?.toDouble();
+    final lon = (rec['lon'] as num?)?.toDouble();
+    if (lat == null || lon == null || lat == 0 || lon == 0) return null;
+
+    final metadata = rec['metadata'] as Map<String, dynamic>? ?? {};
+    final gpsSource = metadata['gps_source']?.toString() ?? 'surveyor';
+    if (gpsSource == 'tree') {
+      return (lat: lat, lon: lon);
+    }
+
+    final horizontalDistance =
+        (metadata['horizontal_distance'] as num?)?.toDouble() ?? 0;
+    final azimuth = (metadata['azimuth'] as num?)?.toDouble() ?? 0;
+    if (horizontalDistance <= 0) return (lat: lat, lon: lon);
+    return PendingTreeMeasurement.calculateTreePositionFromStation(
+      stationLat: lat,
+      stationLon: lon,
+      horizontalDistance: horizontalDistance,
+      azimuth: azimuth,
+    );
+  }
+
+  Future<bool> _resolveSurveyModeForBatch(
+    List<Map<String, dynamic>> filteredData,
+  ) async {
+    final treeService = TreeService();
+    final projectTreeCache = <String, List<Map<String, dynamic>>>{};
+    final candidatesByIndex = <int, List<Map<String, dynamic>>>{};
+    final actions = List<String>.filled(filteredData.length, 'new');
+    final targets =
+        List<Map<String, dynamic>?>.filled(filteredData.length, null);
+
+    for (var i = 0; i < filteredData.length; i++) {
+      final rec = filteredData[i];
+      final projectCode = rec['_assigned_project_code']?.toString();
+      final treePos = _estimateTreePosition(rec);
+      if (projectCode == null || projectCode.isEmpty || treePos == null) {
+        continue;
+      }
+
+      final existingTrees = projectTreeCache.putIfAbsent(projectCode, () => []);
+      if (existingTrees.isEmpty &&
+          !projectTreeCache.containsKey('${projectCode}__loaded')) {
+        final response = await treeService.getTreesByProjectCode(projectCode);
+        if (!mounted) return false;
+        projectTreeCache['${projectCode}__loaded'] = const [];
+        if (response['success'] == true && response['data'] is List) {
+          existingTrees.addAll(
+            List<Map<String, dynamic>>.from(response['data'] as List),
+          );
+        } else {
+          final message = response['message']?.toString() ?? '無法讀取既有樹木資料';
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('既有樹比對失敗：$message'),
+              backgroundColor: Colors.red,
+            ),
+          );
+          return false;
+        }
+      }
+
+      final candidates = existingTrees
+          .map((tree) {
+            final treeLat = _treeLat(tree);
+            final treeLon = _treeLon(tree);
+            if (treeLat == null || treeLon == null) return null;
+            final distance = DataFilterService.calculateDistance(
+              treePos.lat,
+              treePos.lon,
+              treeLat,
+              treeLon,
+            );
+            if (distance > 10) return null;
+            return {
+              ...tree,
+              '_distance_m': distance,
+            };
+          })
+          .whereType<Map<String, dynamic>>()
+          .toList()
+        ..sort((a, b) => ((a['_distance_m'] as num).toDouble())
+            .compareTo((b['_distance_m'] as num).toDouble()));
+
+      if (candidates.isNotEmpty) {
+        candidatesByIndex[i] = candidates.take(3).toList();
+        targets[i] = candidates.first;
+        if (((candidates.first['_distance_m'] as num?)?.toDouble() ?? 999) <=
+            5) {
+          actions[i] = 'maintenance';
+        }
+      }
+    }
+
+    if (candidatesByIndex.isEmpty) {
+      for (final rec in filteredData) {
+        _writeSurveyModeMetadata(rec, 'new', null, 'no_candidate');
+      }
+      return true;
+    }
+
+    if (!mounted) return false;
+    final result = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: const Text('新增 / 維護確認'),
+          content: SizedBox(
+            width: 560,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '系統依樹位座標尋找附近既有樹。請確認每筆要新增，或是維護既有樹。',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 8),
+                  ...filteredData.asMap().entries.map((entry) {
+                    final i = entry.key;
+                    final rec = entry.value;
+                    final candidates =
+                        candidatesByIndex[i] ?? const <Map<String, dynamic>>[];
+                    final id = rec['id']?.toString() ?? '未知';
+                    final nearest =
+                        candidates.isNotEmpty ? candidates.first : null;
+                    final nearestText = nearest == null
+                        ? '無 10m 內既有樹'
+                        : '${nearest['專案樹木'] ?? nearest['系統樹木'] ?? nearest['id']} '
+                            '距離 ${((nearest['_distance_m'] as num).toDouble()).toStringAsFixed(1)}m';
+                    return Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('ID: $id',
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold)),
+                          const SizedBox(height: 2),
+                          Text(nearestText,
+                              style: TextStyle(
+                                  fontSize: 12, color: Colors.grey.shade700)),
+                          const SizedBox(height: 8),
+                          DropdownButtonFormField<String>(
+                            initialValue: actions[i],
+                            decoration: const InputDecoration(
+                              isDense: true,
+                              labelText: '處理方式',
+                              border: OutlineInputBorder(),
+                            ),
+                            items: [
+                              const DropdownMenuItem(
+                                value: 'new',
+                                child: Text('新增樹木'),
+                              ),
+                              if (candidates.isNotEmpty)
+                                const DropdownMenuItem(
+                                  value: 'maintenance',
+                                  child: Text('維護既有樹'),
+                                ),
+                            ],
+                            onChanged: (value) {
+                              if (value == null) return;
+                              setLocal(() {
+                                actions[i] = value;
+                                if (value == 'maintenance' &&
+                                    targets[i] == null &&
+                                    candidates.isNotEmpty) {
+                                  targets[i] = candidates.first;
+                                }
+                              });
+                            },
+                          ),
+                          if (actions[i] == 'maintenance' &&
+                              candidates.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            DropdownButtonFormField<String>(
+                              initialValue: targets[i]?['id']?.toString() ??
+                                  candidates.first['id']?.toString(),
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                labelText: '既有樹',
+                                border: OutlineInputBorder(),
+                              ),
+                              items: candidates.map((tree) {
+                                final treeId = tree['id']?.toString() ?? '';
+                                final label =
+                                    '${tree['專案樹木'] ?? tree['系統樹木'] ?? treeId} '
+                                    '${tree['樹種名稱'] ?? ''} '
+                                    '${((tree['_distance_m'] as num).toDouble()).toStringAsFixed(1)}m';
+                                return DropdownMenuItem(
+                                    value: treeId, child: Text(label));
+                              }).toList(),
+                              onChanged: (treeId) {
+                                if (treeId == null) return;
+                                setLocal(() {
+                                  targets[i] = candidates.firstWhere(
+                                    (tree) => tree['id']?.toString() == treeId,
+                                    orElse: () => candidates.first,
+                                  );
+                                });
+                              },
+                            ),
+                          ],
+                        ],
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, null),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'all_new'),
+              child: const Text('全部當新增'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, 'ok'),
+              child: const Text('確認'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (result == null) return false;
+    if (result == 'all_new') {
+      for (final rec in filteredData) {
+        _writeSurveyModeMetadata(rec, 'new', null, 'user_selected_new');
+      }
+      return true;
+    }
+
+    for (var i = 0; i < filteredData.length; i++) {
+      final action = actions[i];
+      final target = targets[i];
+      final matchStatus = action == 'maintenance'
+          ? 'matched_nearby_tree'
+          : (candidatesByIndex.containsKey(i)
+              ? 'user_selected_new'
+              : 'no_candidate');
+      _writeSurveyModeMetadata(
+        filteredData[i],
+        action,
+        action == 'maintenance' ? target : null,
+        matchStatus,
+      );
+    }
+    return true;
+  }
+
+  double? _treeLat(Map<String, dynamic> tree) =>
+      (tree['Y坐標'] as num?)?.toDouble() ??
+      double.tryParse(tree['Y坐標']?.toString() ?? '');
+
+  double? _treeLon(Map<String, dynamic> tree) =>
+      (tree['X坐標'] as num?)?.toDouble() ??
+      double.tryParse(tree['X坐標']?.toString() ?? '');
+
+  void _writeSurveyModeMetadata(
+    Map<String, dynamic> rec,
+    String surveyMode,
+    Map<String, dynamic>? target,
+    String matchStatus,
+  ) {
+    final meta = rec['metadata'] as Map<String, dynamic>? ?? {};
+    meta['survey_mode'] = surveyMode;
+    meta['match_status'] = matchStatus;
+    if (target != null) {
+      meta['target_tree_id'] = target['id'];
+      meta['target_project_tree_id'] = target['專案樹木'];
+      meta['target_system_tree_id'] = target['系統樹木'];
+    } else {
+      meta.remove('target_tree_id');
+      meta.remove('target_project_tree_id');
+      meta.remove('target_system_tree_id');
+    }
+    rec['metadata'] = meta;
+    rec['_survey_mode'] = surveyMode;
+    rec['_target_tree_id'] = target?['id'];
+    rec['_match_status'] = matchStatus;
+  }
+
   Future<bool> _showSimpleAssignDialog({
     required String title,
     required String message,
@@ -1566,9 +1893,8 @@ class _BleImportPageState extends State<BleImportPage> {
               final picked = await _showManualProjectPicker(
                 title: '選擇要指派的專案',
                 message: '所有 $total 棵樹將指派至此專案：',
-                presetCandidates: sortedEntries
-                    .map((e) => projectInfo[e.key]!)
-                    .toList(),
+                presetCandidates:
+                    sortedEntries.map((e) => projectInfo[e.key]!).toList(),
               );
               if (picked != null && ctx.mounted) {
                 Navigator.pop(ctx, {
@@ -1582,8 +1908,7 @@ class _BleImportPageState extends State<BleImportPage> {
             child: const Text('全部指派同一專案'),
           ),
           ElevatedButton(
-            onPressed: () =>
-                Navigator.pop(ctx, {'kind': 'per_tree'}),
+            onPressed: () => Navigator.pop(ctx, {'kind': 'per_tree'}),
             child: const Text('每棵樹依邊界指派'),
           ),
         ],
@@ -1597,9 +1922,8 @@ class _BleImportPageState extends State<BleImportPage> {
     required Map<String, int> projectCounts,
   }) async {
     if (!mounted) return null;
-    final dominantName = projectCounts.entries
-        .reduce((a, b) => a.value > b.value ? a : b)
-        .key;
+    final dominantName =
+        projectCounts.entries.reduce((a, b) => a.value > b.value ? a : b).key;
     final dominantInfo = matchedProjectInfo[dominantName]!;
 
     return showDialog<Map<String, dynamic>>(
@@ -1625,8 +1949,7 @@ class _BleImportPageState extends State<BleImportPage> {
               'area': dominantInfo['area'],
               'name': dominantInfo['name'],
             }),
-            child: Text('併入主要專案\n($dominantName)',
-                textAlign: TextAlign.center),
+            child: Text('併入主要專案\n($dominantName)', textAlign: TextAlign.center),
           ),
           ElevatedButton(
             onPressed: () async {
@@ -1715,7 +2038,8 @@ class _BleImportPageState extends State<BleImportPage> {
                 onTap: () => Navigator.pop(ctx, 'tree'),
               ),
               ListTile(
-                leading: const Icon(Icons.person_pin_circle, color: Colors.blue),
+                leading:
+                    const Icon(Icons.person_pin_circle, color: Colors.blue),
                 title: const Text('全部都是測員站位'),
                 subtitle: const Text('使用 HD + 方位角計算樹的實際位置'),
                 onTap: () => Navigator.pop(ctx, 'surveyor'),
@@ -1740,9 +2064,131 @@ class _BleImportPageState extends State<BleImportPage> {
 
     if (result == null) return false;
 
+    if (result == 'mixed_pending') {
+      return _resolveMixedGpsSourcePerRecord(filteredData);
+    }
+
     for (final rec in filteredData) {
       final meta = rec['metadata'] as Map<String, dynamic>? ?? {};
       meta['gps_source'] = result;
+      rec['metadata'] = meta;
+    }
+    return true;
+  }
+
+  Future<bool> _resolveMixedGpsSourcePerRecord(
+    List<Map<String, dynamic>> filteredData,
+  ) async {
+    final gpsRows =
+        filteredData.where((r) => r['hasGps'] == true).toList(growable: false);
+    if (gpsRows.isEmpty) return true;
+
+    final selections = <Map<String, dynamic>, String>{
+      for (final rec in gpsRows) rec: 'surveyor',
+    };
+
+    final ok = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: const Text('逐筆確認 GPS 來源'),
+          content: SizedBox(
+            width: 520,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    '請依每筆紀錄按 SEND 時人的位置選擇。預設為測站。',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 8),
+                  ...gpsRows.map((rec) {
+                    final meta = rec['metadata'] as Map<String, dynamic>? ?? {};
+                    final id = rec['id']?.toString() ?? '未知';
+                    final type = rec['type']?.toString() ?? '';
+                    final hd =
+                        (meta['horizontal_distance'] as num?)?.toDouble();
+                    final az = (meta['azimuth'] as num?)?.toDouble();
+                    final subtitle = [
+                      if (type.isNotEmpty) type,
+                      if (hd != null) 'HD ${hd.toStringAsFixed(1)}m',
+                      if (az != null) 'AZ ${az.toStringAsFixed(0)}°',
+                    ].join('  ');
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.grey.shade300),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('ID: $id',
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold)),
+                            if (subtitle.isNotEmpty)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Text(subtitle,
+                                    style: TextStyle(
+                                        fontSize: 12,
+                                        color: Colors.grey.shade600)),
+                              ),
+                            const SizedBox(height: 8),
+                            DropdownButtonFormField<String>(
+                              initialValue: selections[rec],
+                              decoration: const InputDecoration(
+                                isDense: true,
+                                labelText: 'GPS 來源',
+                                border: OutlineInputBorder(),
+                              ),
+                              items: const [
+                                DropdownMenuItem(
+                                  value: 'surveyor',
+                                  child: Text('測站位置：按 SEND 時人在測量站位'),
+                                ),
+                                DropdownMenuItem(
+                                  value: 'tree',
+                                  child: Text('樹木位置：按 SEND 時人在樹下'),
+                                ),
+                              ],
+                              onChanged: (value) {
+                                if (value == null) return;
+                                setLocal(() => selections[rec] = value);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('取消'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('確認'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (ok != true) return false;
+    for (final rec in gpsRows) {
+      final meta = rec['metadata'] as Map<String, dynamic>? ?? {};
+      meta['gps_source'] = selections[rec];
       rec['metadata'] = meta;
     }
     return true;
@@ -1770,7 +2216,8 @@ class _BleImportPageState extends State<BleImportPage> {
               children: [
                 const Icon(Icons.checklist, color: Colors.indigo),
                 const SizedBox(width: 8),
-                Expanded(child: Text('匯入預覽（$selectedCount / ${parsedData.length}）')),
+                Expanded(
+                    child: Text('匯入預覽（$selectedCount / ${parsedData.length}）')),
               ],
             ),
             content: SizedBox(
@@ -1818,16 +2265,25 @@ class _BleImportPageState extends State<BleImportPage> {
                         final rec = parsedData[i];
                         final id = rec['id']?.toString() ?? '?';
                         final type = (rec['type'] ?? '').toString();
-                        final hd = (rec['horizontalDistance'] as num?)?.toDouble();
+                        final hd =
+                            (rec['horizontalDistance'] as num?)?.toDouble();
                         final az = (rec['azimuth'] as num?)?.toDouble();
                         final h = (rec['height'] as num?)?.toDouble();
                         final dbh = (rec['dbh'] as num?)?.toDouble();
                         final hasGps = rec['hasGps'] == true;
                         final summary = StringBuffer();
-                        if (h != null) summary.write('H=${h.toStringAsFixed(1)}m  ');
-                        if (dbh != null) summary.write('DBH=${dbh.toStringAsFixed(1)}cm  ');
-                        if (hd != null) summary.write('HD=${hd.toStringAsFixed(1)}m  ');
-                        if (az != null) summary.write('AZ=${az.toStringAsFixed(0)}°');
+                        if (h != null) {
+                          summary.write('H=${h.toStringAsFixed(1)}m  ');
+                        }
+                        if (dbh != null) {
+                          summary.write('DBH=${dbh.toStringAsFixed(1)}cm  ');
+                        }
+                        if (hd != null) {
+                          summary.write('HD=${hd.toStringAsFixed(1)}m  ');
+                        }
+                        if (az != null) {
+                          summary.write('AZ=${az.toStringAsFixed(0)}°');
+                        }
                         return CheckboxListTile(
                           dense: true,
                           controlAffinity: ListTileControlAffinity.leading,
@@ -1838,18 +2294,21 @@ class _BleImportPageState extends State<BleImportPage> {
                           title: Row(
                             children: [
                               Text('ID: $id',
-                                  style: const TextStyle(fontWeight: FontWeight.bold)),
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold)),
                               const SizedBox(width: 6),
                               if (type.isNotEmpty)
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 4, vertical: 1),
                                   decoration: BoxDecoration(
                                     color: type == 'DME'
                                         ? Colors.blue.shade50
                                         : Colors.grey.shade100,
                                     borderRadius: BorderRadius.circular(3),
                                   ),
-                                  child: Text(type, style: const TextStyle(fontSize: 11)),
+                                  child: Text(type,
+                                      style: const TextStyle(fontSize: 11)),
                                 ),
                               const SizedBox(width: 6),
                               if (!hasGps)
@@ -2135,8 +2594,7 @@ class _BleImportPageState extends State<BleImportPage> {
                           );
                         }),
                       ],
-                      onChanged: (v) =>
-                          setStateDialog(() => selectedKey = v),
+                      onChanged: (v) => setStateDialog(() => selectedKey = v),
                     ),
                 ],
               ),
@@ -2159,8 +2617,7 @@ class _BleImportPageState extends State<BleImportPage> {
                         } else {
                           final picked = candidates.firstWhere(
                             (c) =>
-                                (c['code'] ?? c['name'] ?? '') ==
-                                selectedKey,
+                                (c['code'] ?? c['name'] ?? '') == selectedKey,
                             orElse: () => {},
                           );
                           Navigator.pop(ctx, picked);
