@@ -854,6 +854,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
             image: _mainImage!,
             type: TreeImageType.trunk,
             metadata: {
+              'source': 'pending',
               'task_id': widget.task.id,
               'session_id': widget.task.sessionId,
               'original_record_id': widget.task.originalRecordId,

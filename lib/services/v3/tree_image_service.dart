@@ -15,6 +15,7 @@ import 'dart:io';
 import 'dart:convert';
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:image_picker/image_picker.dart';
 import '../api_service.dart';
@@ -125,6 +126,7 @@ class TreeImageService {
 
   // 同步互斥鎖 — 防止 fire-and-forget syncImage 與 syncAllPendingImages 並行
   Completer<void>? _syncLock;
+  Timer? _periodicSyncTimer;
 
   /// 取得影像儲存根目錄
   Future<Directory> get _imageRootDir async {
@@ -406,8 +408,7 @@ class TreeImageService {
       final bytes = await file.readAsBytes();
       final base64Image = base64Encode(bytes);
 
-      // 上傳到後端
-      // source 參數告知後端 tree_id 屬於哪張表，避免 SERIAL PK 碰撞誤連
+      // 上傳到後端。source 參數告知後端 tree_id 屬於哪張表，避免 SERIAL PK 碰撞誤連。
       final response = await ApiService.post('/tree-images/upload', {
         'tree_id': image.treeId,
         'image_id': image.id,
@@ -415,7 +416,7 @@ class TreeImageService {
         'captured_at': image.capturedAt.toIso8601String(),
         'metadata': image.metadata,
         'image_data': base64Image,
-        'source': 'pending',
+        'source': _inferOwnerSource(image),
       });
 
       if (response['success'] == true) {
@@ -448,6 +449,20 @@ class TreeImageService {
       debugPrint('[TreeImageService] 同步失敗: $e');
       return false;
     }
+  }
+
+  String _inferOwnerSource(TreeImage image) {
+    final source = image.metadata?['source']?.toString();
+    if (source == 'pending' || source == 'survey') return source!;
+
+    final ownerType = image.metadata?['owner_type']?.toString();
+    if (ownerType == 'pending' || ownerType == 'survey') return ownerType!;
+
+    if (image.metadata?['task_id'] != null || image.metadata?['session_id'] != null) {
+      return 'pending';
+    }
+
+    return 'survey';
   }
 
   /// 批次同步所有待同步照片（持有互斥鎖，防止重複上傳）
@@ -486,6 +501,41 @@ class TreeImageService {
       _syncLock = null;
       lock?.complete();
     }
+  }
+
+  /// 啟動照片自動重試同步。
+  /// 新增/量測流程會立即嘗試上傳；這裡負責處理離線或失敗後的補償重試。
+  void startPeriodicSync({int intervalMinutes = 30}) {
+    stopPeriodicSync();
+    debugPrint('[TreeImageService] 啟動照片自動同步，間隔: $intervalMinutes 分鐘');
+    syncPendingIfPossible();
+    _periodicSyncTimer = Timer.periodic(
+      Duration(minutes: intervalMinutes),
+      (_) => syncPendingIfPossible(),
+    );
+  }
+
+  void stopPeriodicSync() {
+    _periodicSyncTimer?.cancel();
+    _periodicSyncTimer = null;
+  }
+
+  Future<Map<String, dynamic>> syncPendingIfPossible() async {
+    if (ApiService.getJwtToken() == null) {
+      return {'total': 0, 'success': 0, 'failed': 0, 'skipped': true};
+    }
+
+    final connectivity = await Connectivity().checkConnectivity();
+    if (connectivity.isEmpty || connectivity.contains(ConnectivityResult.none)) {
+      return {'total': 0, 'success': 0, 'failed': 0, 'skipped': true};
+    }
+
+    final pendingImages = await getPendingSyncImages();
+    if (pendingImages.isEmpty) {
+      return {'total': 0, 'success': 0, 'failed': 0};
+    }
+
+    return syncAllPendingImages();
   }
 
   /// 計算儲存空間使用量

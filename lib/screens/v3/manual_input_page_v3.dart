@@ -1621,11 +1621,25 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
 
         // 3. 儲存照片 (關聯到新創建的 treeId)
         for (var photo in _photos) {
-          await _imageService.saveMeasurementImage(
+          final savedImage = await _imageService.saveMeasurementImage(
             treeId: treeId,
             image: photo,
             type: TreeImageType.overview, // 或區分照片類型
+            metadata: {
+              'source': 'survey',
+              'project_code': _projectCodeController.text,
+              'project_name': _projectController.text.isNotEmpty
+                  ? _projectController.text
+                  : _selectedProjectName,
+            },
           );
+          if (savedImage != null) {
+            unawaited(_imageService.syncImage(savedImage).then((ok) {
+              debugPrint('[Photo] 同步到後端: ${ok ? "成功" : "失敗/稍後重試"}');
+            }).catchError((e) {
+              debugPrint('[Photo] 同步異常（將在下次批次時重試）: $e');
+            }));
+          }
         }
 
         // [ML Data Collection] 收集訓練數據

@@ -22,6 +22,7 @@ import 'config/global_keys.dart';
 import 'services/api_service.dart';
 import 'services/auth_service.dart';
 import 'services/v3/ml_data_sync_service.dart';
+import 'services/v3/tree_image_service.dart';
 import 'services/network_service.dart';
 
 /// 取得目前已登入帳號的 AI Chat userId。
@@ -94,9 +95,10 @@ void main() async {
     await MLDataSyncService.initialize(AppConfig().baseUrl);
     // 啟動背景同步（每 30 分鐘檢查一次）
     MLDataSyncService().startPeriodicSync();
-    print('ML 數據同步服務已初始化');
+    TreeImageService().startPeriodicSync();
+    debugPrint('ML 數據同步服務已初始化');
   } catch (e) {
-    print('ML 數據同步服務初始化失敗: $e');
+    debugPrint('ML 數據同步服務初始化失敗: $e');
   }
 
   // 初始化主題服務

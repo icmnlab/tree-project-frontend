@@ -4,7 +4,7 @@ import '../services/v3/tree_image_service.dart';
 import '../services/v3/conflict_resolution_service.dart';
 import '../services/v3/ml_data_sync_service.dart';
 
-/// V3 進階服務管理頁面
+/// V3 同步與補救管理頁面
 /// 
 /// 功能：
 /// 1. 樹木影像管理 - 查看、同步照片
@@ -65,7 +65,7 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('進階服務管理'),
+        title: const Text('同步與補救管理'),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
         actions: [
@@ -87,7 +87,9 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
                   const SizedBox(height: 20),
                   _buildServiceCard(
                     title: '樹木影像管理',
-                    subtitle: '$_pendingImageCount 張照片待同步',
+                    subtitle: _pendingImageCount > 0
+                        ? '$_pendingImageCount 張待自動上傳，可手動重試'
+                        : '照片會隨提交自動上傳',
                     icon: Icons.photo_library,
                     color: Colors.blue,
                     badge: _pendingImageCount > 0 ? _pendingImageCount : null,
@@ -105,7 +107,9 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
                   const SizedBox(height: 12),
                   _buildServiceCard(
                     title: 'ML 數據同步',
-                    subtitle: '$_pendingMlDataCount 筆待上傳',
+                    subtitle: _pendingMlDataCount > 0
+                        ? '$_pendingMlDataCount 筆待自動上傳'
+                        : '背景同步正常',
                     icon: Icons.psychology,
                     color: Colors.purple,
                     badge: _pendingMlDataCount > 0 ? _pendingMlDataCount : null,
@@ -156,7 +160,7 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'V3 進階服務',
+                      '同步與補救工具',
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 22,
@@ -165,7 +169,7 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
                     ),
                     SizedBox(height: 4),
                     Text(
-                      '管理進階功能與資料同步',
+                      '檢查背景上傳與多人衝突',
                       style: TextStyle(
                         color: Colors.white70,
                         fontSize: 14,
@@ -260,7 +264,7 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
                       top: -2,
                       child: Container(
                         padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                           color: Colors.red,
                           shape: BoxShape.circle,
                         ),
@@ -332,8 +336,8 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
           ),
           const SizedBox(height: 12),
           Text(
-            'V3 進階服務提供離線資料管理、衝突解決、'
-            'ML 數據同步等功能。所有資料會在有網路時自動同步。',
+            '照片與 ML 訓練資料會在提交後或有網路時自動上傳。'
+            '這裡主要用來查看狀態、重試失敗項目，以及處理多人編輯衝突。',
             style: TextStyle(
               fontSize: 13,
               color: Colors.grey.shade600,
@@ -368,7 +372,7 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
   void _showMLDataSync() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Row(
           children: [
             Icon(Icons.psychology, color: Colors.purple),
@@ -383,30 +387,31 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
             Text('待上傳數據: $_pendingMlDataCount 筆'),
             const SizedBox(height: 12),
             const Text(
-              'ML 數據會在有網路連線時自動上傳，'
-              '用於改善測量精度和碳計算模型。',
+              'ML 數據會在有網路連線時自動上傳，用於改善測量精度和碳計算模型。'
+              '通常不需要手動操作。',
               style: TextStyle(fontSize: 13, color: Colors.grey),
             ),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('關閉'),
           ),
           ElevatedButton.icon(
             onPressed: () async {
-              Navigator.pop(context);
+              final messenger = ScaffoldMessenger.of(context);
+              Navigator.pop(dialogContext);
               await _mlSyncService.sync(force: true);
               _loadServiceStatus();
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
+                messenger.showSnackBar(
                   const SnackBar(content: Text('同步已啟動')),
                 );
               }
             },
             icon: const Icon(Icons.sync),
-            label: const Text('立即同步'),
+            label: const Text('立即重試'),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.purple),
           ),
         ],
@@ -502,7 +507,7 @@ class _TreeImageManagerPageState extends State<_TreeImageManagerPage> {
                       )
                     : const Icon(Icons.cloud_upload),
                 onPressed: _isSyncing ? null : _syncAll,
-                tooltip: '同步所有照片',
+                tooltip: '立即重試照片同步',
               ),
             ),
         ],
@@ -576,13 +581,13 @@ class _TreeImageManagerPageState extends State<_TreeImageManagerPage> {
           right: 0,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [Colors.transparent, Colors.black54],
               ),
-              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(8)),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(8)),
             ),
             child: Text(
               image.type.name,
