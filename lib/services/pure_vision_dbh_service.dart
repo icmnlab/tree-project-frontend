@@ -4,8 +4,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' show Rect;
 import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
-import '../config/app_config.dart';
+import 'api_service.dart';
 
 /// 純視覺 DBH 測量服務
 ///
@@ -19,15 +18,15 @@ class PureVisionDbhService {
   factory PureVisionDbhService() => _instance;
   PureVisionDbhService._internal();
 
-  String get _baseUrl => AppConfig().mlServiceUrl;
+  String get _baseUrl => '${ApiService.baseUrl}/ml-service';
 
-  Map<String, String> get _authHeaders => const {};
+  Map<String, String> get _authHeaders => ApiService.getAuthHeaders();
 
   String _requireBaseUrl() {
     final url = _baseUrl.trim();
     if (url.isEmpty) {
       throw PureVisionException(
-        'ML Service URL 未設定，請重新登入或確認後端 ML_SERVICE_PUBLIC_URL',
+        'ML Service 代理 URL 未設定，請重新登入或確認後端連線',
       );
     }
     return url;
@@ -153,7 +152,7 @@ class PureVisionDbhService {
 
       return PureVisionDbhResult.fromJson(data);
     } on SocketException {
-      throw PureVisionException('無法連接 ML 服務，請確認手機可連線至後端下發的 ML 位址');
+      throw PureVisionException('無法連接後端 ML 代理服務，請確認手機可連線至後端');
     } on TimeoutException {
       throw PureVisionException('請求逾時，伺服器可能正在喚醒，請稍後再試');
     } on http.ClientException catch (e) {
@@ -190,7 +189,7 @@ class PureVisionDbhService {
     } on PureVisionException {
       rethrow;
     } on SocketException {
-      throw PureVisionException('無法連接 ML 服務');
+      throw PureVisionException('無法連接後端 ML 代理服務');
     } on TimeoutException {
       throw PureVisionException('請求逾時');
     } on FormatException {
@@ -210,7 +209,11 @@ class PureVisionDbhService {
           .timeout(const Duration(seconds: 10));
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return MlServiceConfig.fromJson(data);
+        final configJson = data is Map<String, dynamic> &&
+                data['config'] is Map<String, dynamic>
+            ? data['config'] as Map<String, dynamic>
+            : data as Map<String, dynamic>;
+        return MlServiceConfig.fromJson(configJson);
       }
       debugPrint(
           '[PureVisionDbhService] Config fetch failed: ${response.statusCode}');
@@ -313,13 +316,8 @@ class PureVisionDbhService {
 
       request.headers.addAll(_authHeaders);
 
-      // 明確設定 content type，避免伺服器誤判
       request.files.add(
-        await http.MultipartFile.fromPath(
-          'image',
-          imageFile.path,
-          contentType: _guessImageMediaType(imageFile.path),
-        ),
+        await http.MultipartFile.fromPath('image', imageFile.path),
       );
 
       request.fields['fov_degrees'] = (fovDegrees ?? 70.0).toString();
@@ -451,32 +449,13 @@ class PureVisionDbhService {
     } on PureVisionException {
       rethrow;
     } on SocketException {
-      throw PureVisionException('無法連接 ML 服務');
+      throw PureVisionException('無法連接後端 ML 代理服務');
     } on TimeoutException {
       throw PureVisionException('多照片分析逾時');
     } on FormatException {
       throw PureVisionException('伺服器回傳無效的 JSON 格式');
     } on http.ClientException catch (e) {
       throw PureVisionException('網路錯誤: $e');
-    }
-  }
-
-  /// 根據檔案副檔名猜測 MIME type
-  MediaType _guessImageMediaType(String path) {
-    final ext = path.split('.').last.toLowerCase();
-    switch (ext) {
-      case 'jpg':
-      case 'jpeg':
-        return MediaType('image', 'jpeg');
-      case 'png':
-        return MediaType('image', 'png');
-      case 'webp':
-        return MediaType('image', 'webp');
-      case 'heic':
-      case 'heif':
-        return MediaType('image', 'heic');
-      default:
-        return MediaType('image', 'jpeg'); // 預設 JPEG
     }
   }
 }

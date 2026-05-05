@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:exif/exif.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../models/pending_tree_measurement.dart';
 import '../../services/pending_measurement_service.dart';
 import '../../services/species_identification_service.dart';
@@ -11,8 +12,6 @@ import '../../services/pure_vision_dbh_service.dart';
 import '../../services/tflite_tracking_service.dart';
 import '../../services/v3/tree_image_service.dart';
 import '../../services/v3/ml_data_collector.dart';
-import '../../services/ar_measurement_service.dart';
-import '../scanner_page.dart';
 import '../../widgets/conflict_resolution_dialog.dart';
 
 /// V3 整合式樹木測量表單
@@ -318,6 +317,25 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
     }
   }
 
+  Future<void> _importPhoto() async {
+    try {
+      final File? image = await _imageService.captureImage(
+        source: ImageSource.gallery,
+      );
+      if (image != null) {
+        _cleanupTempImages();
+        setState(() {
+          _mainImage = image;
+          _capturedImages.clear();
+          _showMultiShotHint = false;
+        });
+        _runAutoPilot(image);
+      }
+    } catch (e) {
+      _showError('匯入照片失敗: $e');
+    }
+  }
+
   /// 清理先前拍攝的暫存照片，釋放儲存空間
   void _cleanupTempImages() {
     for (final img in _capturedImages) {
@@ -393,7 +411,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       final modelTag = exifData['Image Model'];
       if (modelTag != null) exifInfo['model'] = modelTag.printable.trim();
 
-      debugPrint('[EXIF] ${exifInfo}');
+      debugPrint('[EXIF] $exifInfo');
     } catch (e) {
       debugPrint('[EXIF] Read failed: $e');
     }
@@ -463,10 +481,10 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       if (mounted) {
         setState(() => _autoPilotStatus = 'DBH 量測失敗');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('DBH 自動量測失敗，請重拍或手動輸入'),
+          const SnackBar(
+            content: Text('DBH 自動量測失敗，請重拍或手動輸入'),
             backgroundColor: Colors.orange,
-            duration: const Duration(seconds: 3),
+            duration: Duration(seconds: 3),
           ),
         );
       }
@@ -589,8 +607,9 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
                   : null;
           String displayName = (sciNoAuthor ?? '').trim();
           if (displayName.isEmpty) displayName = (sciFull ?? '').trim();
-          if (displayName.isEmpty && commonHint != null)
+          if (displayName.isEmpty && commonHint != null) {
             displayName = commonHint.trim();
+          }
           if (displayName.isEmpty) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -695,89 +714,12 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       debugPrint('樹種辨識錯誤: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('樹種辨識失敗，請手動選擇'),
+          const SnackBar(
+            content: Text('樹種辨識失敗，請手動選擇'),
             backgroundColor: Colors.orange,
-            duration: const Duration(seconds: 3),
+            duration: Duration(seconds: 3),
           ),
         );
-      }
-    }
-  }
-
-  /// 即時掃描模式 — WebSocket 串流 + mask 疊加 + Lock 擷取
-  Future<void> _startScanMode() async {
-    _tfliteTracker.dispose();
-    final result = await Navigator.of(context).push<MeasurementResult>(
-      MaterialPageRoute(
-        builder: (context) => ScannerPage(
-          initialDbh: double.tryParse(_dbhController.text),
-        ),
-      ),
-    );
-
-    if (result != null) {
-      setState(() {
-        _measuredDbh = result.diameterCm;
-        _measurementConfidence = result.confidenceScore;
-        _measurementMethod = 'scan_mode';
-        _dbhController.text = result.diameterCm.toStringAsFixed(1);
-        _dbhReady = true;
-
-        if (result.notes != null && result.notes!.isNotEmpty) {
-          if (_notesController.text.isNotEmpty) {
-            _notesController.text += '\n${result.notes}';
-          } else {
-            _notesController.text = result.notes!;
-          }
-        }
-      });
-
-      if (_speciesController.text.isEmpty && result.capturedImagePath != null) {
-        final imageFile = File(result.capturedImagePath!);
-        if (await imageFile.exists()) {
-          setState(() => _mainImage ??= imageFile);
-          _identifySpecies(imageFile);
-        }
-      }
-    }
-  }
-
-  /// 手動進入 ScannerPage 量測（保留原有功能）
-  Future<void> _startDBHMeasurement() async {
-    _tfliteTracker.dispose();
-    final result = await Navigator.of(context).push<MeasurementResult>(
-      MaterialPageRoute(
-        builder: (context) => ScannerPage(
-          initialDbh: double.tryParse(_dbhController.text),
-          speciesName: _speciesController.text,
-        ),
-      ),
-    );
-
-    if (result != null) {
-      setState(() {
-        _measuredDbh = result.diameterCm;
-        _measurementConfidence = result.confidenceScore;
-        _measurementMethod = result.method.name;
-        _dbhController.text = result.diameterCm.toStringAsFixed(1);
-        _dbhReady = true;
-
-        if (result.notes != null && result.notes!.isNotEmpty) {
-          if (_notesController.text.isNotEmpty) {
-            _notesController.text += '\n${result.notes}';
-          } else {
-            _notesController.text = result.notes!;
-          }
-        }
-      });
-
-      if (_speciesController.text.isEmpty && result.capturedImagePath != null) {
-        final imageFile = File(result.capturedImagePath!);
-        if (await imageFile.exists()) {
-          setState(() => _mainImage ??= imageFile);
-          _identifySpecies(imageFile);
-        }
       }
     }
   }
@@ -1139,7 +1081,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
         final shouldLeave = await _confirmExit();
-        if (shouldLeave && mounted) {
+        if (shouldLeave && context.mounted) {
           Navigator.of(context).pop(false);
         }
       },
@@ -1152,7 +1094,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
             icon: const Icon(Icons.arrow_back),
             onPressed: () async {
               final shouldLeave = await _confirmExit();
-              if (shouldLeave && mounted) {
+              if (shouldLeave && context.mounted) {
                 Navigator.of(context).pop(false);
               }
             },
@@ -1403,6 +1345,26 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
             ),
           ),
         ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _isAutoPilotRunning ? null : _takePhoto,
+                icon: const Icon(Icons.camera_alt),
+                label: Text(_mainImage == null ? '拍照' : '重拍'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: _isAutoPilotRunning ? null : _importPhoto,
+                icon: const Icon(Icons.photo_library),
+                label: const Text('匯入照片'),
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -1536,7 +1498,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
 
         const SizedBox(height: 16),
 
-        // DBH 輸入 + AR 按鈕
+        // DBH 輸入（AutoPilot 失敗或人工覆核時可手動補值）
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1550,42 +1512,6 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
                   suffixText: 'cm',
                   prefixIcon: Icon(Icons.circle_outlined),
                 ),
-              ),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton(
-              onPressed: _startDBHMeasurement,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal.shade50,
-                foregroundColor: Colors.teal,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-                side: BorderSide(color: Colors.teal.shade200),
-              ),
-              child: const Column(
-                children: [
-                  Icon(Icons.camera_alt),
-                  SizedBox(height: 4),
-                  Text('DBH 測量'),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton(
-              onPressed: _startScanMode,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal.shade50,
-                foregroundColor: Colors.teal,
-                padding:
-                    const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-                side: BorderSide(color: Colors.teal.shade200),
-              ),
-              child: const Column(
-                children: [
-                  Icon(Icons.document_scanner),
-                  SizedBox(height: 4),
-                  Text('Scan Mode'),
-                ],
               ),
             ),
           ],
