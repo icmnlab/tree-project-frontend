@@ -120,8 +120,9 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
 
       // Annual: read DB-stored TIPC value only; client-side recompute is unsafe
       // because TIPC's annual formula is not publicly documented.
+      // Backend SQL aliases the column as '推估年碳吸存量' (see routes/treeSurvey.js).
       final annualSequestration = double.tryParse(
-              (tree['年存碳量'] ?? tree['carbon_sequestration_per_year'] ?? '')
+              (tree['推估年碳吸存量'] ?? tree['carbon_sequestration_per_year'] ?? '')
                   .toString()) ??
           0.0;
 

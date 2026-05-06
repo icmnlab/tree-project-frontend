@@ -162,8 +162,9 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
 
     // Annual: TIPC platform's internal formula uses tree age and is not public;
     // we display the DB-stored value only. 0 代表 “—” (unavailable).
+    // Backend SQL aliases the column as '推估年碳吸存量'.
     final annualSequestration = double.tryParse(
-            _f('carbon_sequestration_per_year', '年存碳量')) ??
+            _f('carbon_sequestration_per_year', '推估年碳吸存量')) ??
         0.0;
 
     // [B5] 暗/亮模式輔助
