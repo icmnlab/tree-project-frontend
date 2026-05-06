@@ -11,6 +11,7 @@ import 'config/app_config.dart'; // Import AppConfig
 import 'screens/v3/project_boundary_draw_page.dart'; // V3 專案邊界繪製
 import 'screens/csv_import_page.dart'; // [Phase C] CSV 匯入頁面
 import 'screens/ip_blacklist_page.dart'; // [T8.2] IP 黑名單管理
+import 'admin_research_dataset_page.dart'; // [Research] DBH 校準資料蒐集
 import '../services/auth_service.dart';
 
 class AdminPage extends StatefulWidget {
@@ -1014,6 +1015,24 @@ class _AdminPageState extends State<AdminPage> {
             // [Stage 0.3] 已移除「系統計算」段：
             //   populateSpeciesRegionScore 依賴已刪除的 tree_carbon_data 表，
             //   不再適用。
+
+            // [Research] DBH 校準資料蒐集（給研究/論文 §結果用的乾淨資料集）
+            Card(
+              elevation: 2,
+              child: ListTile(
+                leading: const Icon(Icons.science_outlined),
+                title: const Text('研究資料蒐集（DBH 校準）'),
+                subtitle: const Text('現場捲尺實測周長 + 拍攝距離 + 1~3 張手機照'),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const AdminResearchDatasetPage(),
+                    ),
+                  );
+                },
+              ),
+            ),
             const SizedBox(height: 40),
           ],
         ),
