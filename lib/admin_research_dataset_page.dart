@@ -26,6 +26,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:exif/exif.dart';
 
 import 'services/api_service.dart';
+import 'services/species_identification_service.dart';
 
 class AdminResearchDatasetPage extends StatefulWidget {
   const AdminResearchDatasetPage({super.key});
@@ -53,6 +54,8 @@ class _AdminResearchDatasetPageState extends State<AdminResearchDatasetPage> {
 
   bool _submitting = false;
   bool _loadingList = false;
+  bool _identifyingSpecies = false;
+  bool _treeIdManuallyEdited = false; // 使用者手改過樹編號後，不再自動套預設值
   List<Map<String, dynamic>> _entries = [];
 
   @override
@@ -74,6 +77,28 @@ class _AdminResearchDatasetPageState extends State<AdminResearchDatasetPage> {
   }
 
   // ─────────────── 自動填欄 ───────────────
+
+  // 從已有 entries 挑出 max NDHU-NNN 的下一個編號（只在使用者未手改時填）
+  void _suggestNextTreeId() {
+    if (_treeIdManuallyEdited) return;
+    int maxN = 0;
+    final reg = RegExp(r'^NDHU-(\d+)$', caseSensitive: false);
+    for (final r in _entries) {
+      final id = (r['tree_id'] as String?) ?? '';
+      final m = reg.firstMatch(id.trim());
+      if (m != null) {
+        final n = int.tryParse(m.group(1)!) ?? 0;
+        if (n > maxN) maxN = n;
+      }
+    }
+    final next = (maxN + 1).toString().padLeft(3, '0');
+    final suggested = 'NDHU-$next';
+    if (_treeIdCtrl.text != suggested) {
+      // 設定時暫時跳過 "手改" 判斷
+      _treeIdCtrl.text = suggested;
+      _treeIdManuallyEdited = false;
+    }
+  }
 
   Future<void> _autoFillPhone() async {
     try {
@@ -268,10 +293,13 @@ class _AdminResearchDatasetPageState extends State<AdminResearchDatasetPage> {
     _distCtrl.clear();
     _speciesCtrl.clear();
     _notesCtrl.clear();
+    _treeIdManuallyEdited = false;
     setState(() {
       _photos.clear();
       _evidence = null;
     });
+    // 送出成功後重拉列表（使 _entries 更新）並幫使用者填下一個編號
+    // （_fetchList 內部會呼 _suggestNextTreeId）
   }
 
   // ─────────────── 列表 / 刪除 ───────────────
@@ -290,7 +318,99 @@ class _AdminResearchDatasetPageState extends State<AdminResearchDatasetPage> {
     } catch (_) {
       _entries = [];
     } finally {
-      if (mounted) setState(() => _loadingList = false);
+      if (mounted) {
+        setState(() => _loadingList = false);
+        // 列表拿到後才能算下一個編號
+        _suggestNextTreeId();
+      }
+    }
+  }
+
+  // 拍照辨識樹種。成功則套入 _speciesCtrl（中文名優先，沒有則學名）
+  Future<void> _identifySpeciesFromCamera() async {
+    final action = await showModalBottomSheet<String>(
+      context: context,
+      builder: (_) => SafeArea(
+        child: Wrap(children: [
+          ListTile(
+            leading: const Icon(Icons.camera_alt),
+            title: const Text('拍照辨識樹種'),
+            onTap: () => Navigator.pop(context, 'camera'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.photo_library),
+            title: const Text('從相簿選圖辨識'),
+            onTap: () => Navigator.pop(context, 'gallery'),
+          ),
+        ]),
+      ),
+    );
+    if (action == null) return;
+    final XFile? picked = await _picker.pickImage(
+      source: action == 'camera' ? ImageSource.camera : ImageSource.gallery,
+      maxWidth: 1920,
+      imageQuality: 85,
+    );
+    if (picked == null) return;
+
+    setState(() => _identifyingSpecies = true);
+    try {
+      final bytes = await picked.readAsBytes();
+      final resp = await SpeciesIdentificationService.identifyFromBytes(
+        bytes,
+        organ: 'auto',
+      );
+      if (resp['success'] != true) {
+        _toast('辨識失敗：${resp['error'] ?? ""}');
+        return;
+      }
+      final results = (resp['results'] as List?) ?? [];
+      if (results.isEmpty) {
+        _toast('辨識無結果');
+        return;
+      }
+      // 讓使用者選 top-3，以免第一名不一定對
+      final top = results.take(3).cast<Map<String, dynamic>>().toList();
+      if (!mounted) return;
+      final picked2 = await showDialog<Map<String, dynamic>>(
+        context: context,
+        builder: (ctx) => SimpleDialog(
+          title: const Text('選擇樹種'),
+          children: top.map((r) {
+            final score = (r['score'] as num?)?.toDouble() ?? 0;
+            final pct = (score * 100).toStringAsFixed(1);
+            final commons =
+                (r['commonNames'] as List?)?.cast<String>() ?? const [];
+            final sci = r['scientificName']?.toString() ?? '';
+            final label = commons.isNotEmpty ? commons.first : sci;
+            return SimpleDialogOption(
+              onPressed: () => Navigator.pop(ctx, r),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('$label  ($pct%)',
+                      style:
+                          const TextStyle(fontWeight: FontWeight.bold)),
+                  if (sci.isNotEmpty)
+                    Text(sci,
+                        style: const TextStyle(
+                            color: Colors.grey, fontSize: 12)),
+                ],
+              ),
+            );
+          }).toList(),
+        ),
+      );
+      if (picked2 == null) return;
+      final commons =
+          (picked2['commonNames'] as List?)?.cast<String>() ?? const [];
+      final sci = picked2['scientificName']?.toString() ?? '';
+      _speciesCtrl.text = commons.isNotEmpty ? commons.first : sci;
+      setState(() {});
+    } catch (e) {
+      _toast('辨識發生錯誤：$e');
+    } finally {
+      if (mounted) setState(() => _identifyingSpecies = false);
     }
   }
 
@@ -388,11 +508,24 @@ class _AdminResearchDatasetPageState extends State<AdminResearchDatasetPage> {
         children: [
           TextFormField(
             controller: _treeIdCtrl,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: '樹編號 *',
-              hintText: '如 NDHU-001',
-              border: OutlineInputBorder(),
+              hintText: '自動套 NDHU-XXX，可手改（同棵樹重測請填原編號）',
+              border: const OutlineInputBorder(),
+              suffixIcon: IconButton(
+                tooltip: '重新計算下一個 NDHU-XXX',
+                icon: const Icon(Icons.refresh),
+                onPressed: () {
+                  _treeIdManuallyEdited = false;
+                  _suggestNextTreeId();
+                  setState(() {});
+                },
+              ),
             ),
+            onChanged: (_) {
+              // 使用者手打，記上 "已手改" 旗標
+              _treeIdManuallyEdited = true;
+            },
             validator: (v) =>
                 (v == null || v.trim().isEmpty) ? '必填' : null,
           ),
@@ -438,9 +571,23 @@ class _AdminResearchDatasetPageState extends State<AdminResearchDatasetPage> {
           const SizedBox(height: 10),
           TextFormField(
             controller: _speciesCtrl,
-            decoration: const InputDecoration(
+            decoration: InputDecoration(
               labelText: '樹種（可空）',
-              border: OutlineInputBorder(),
+              border: const OutlineInputBorder(),
+              suffixIcon: IconButton(
+                tooltip: '拍照辨識樹種',
+                icon: _identifyingSpecies
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child:
+                            CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.eco),
+                onPressed: _identifyingSpecies
+                    ? null
+                    : _identifySpeciesFromCamera,
+              ),
             ),
           ),
           const SizedBox(height: 10),
