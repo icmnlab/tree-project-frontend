@@ -195,8 +195,13 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
         return;
       }
 
+      // 導航 / 測站對準模式：1 m + 250 ms 更新避免雷達顯示卡頓
+      // (走路 ~1 m/s 時每秒約 4 次更新；耗電稍增,但只在任務頁開啟期間)
       _positionSubscription = Geolocator.getPositionStream(
-        locationSettings: buildLocationSettings(distanceFilter: 3),
+        locationSettings: buildLocationSettings(
+          distanceFilter: 1,
+          intervalMs: 250,
+        ),
       ).listen((position) {
         if (mounted) {
           setState(() {
@@ -1486,7 +1491,9 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
         ),
 
         const SizedBox(height: 8),
-        Text('十字=$targetLabel, 藍點=你的位置',
+        // 雷達語義(對齊 dot 算法):中心 = 你的位置,藍點 = 目標相對你朝向的方向
+        // 即:藍點在中心左邊 → 目標在你左邊,往左走
+        Text('中心=你, 藍點=$targetLabel 方向',
             style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
       ],
     );
