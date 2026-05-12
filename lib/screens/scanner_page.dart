@@ -1522,6 +1522,55 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
             ),
           ),
           const SizedBox(height: 16),
+          // 拍攝距離過近警告:擋下「使用此結果」並引導重拍
+          if (r.isTooClose) ...[
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.deepOrange.withValues(alpha: 0.15),
+                border: Border.all(color: Colors.deepOrange, width: 1.2),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.warning_amber_rounded,
+                      color: Colors.deepOrange, size: 24),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text('拍攝距離過近,結果不可採用',
+                            style: TextStyle(
+                                color: Colors.deepOrange,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14)),
+                        const SizedBox(height: 4),
+                        Text(
+                          r.qualityMessage ??
+                              '樹幹超出畫面或深度模型已飽和;請退至 1–3 m 後重拍',
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 12),
+                        ),
+                        if (r.fovRatio > 0)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 4),
+                            child: Text(
+                              '樹幹覆蓋率: ${(r.fovRatio * 100).toStringAsFixed(0)}% (建議 < 70%)',
+                              style: const TextStyle(
+                                  color: Colors.white54, fontSize: 11),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
@@ -1552,11 +1601,14 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
                 Expanded(
                   flex: 2,
                   child: ElevatedButton.icon(
-                    onPressed: _useAutoResult,
-                    icon: const Icon(Icons.check),
-                    label: const Text('使用此結果'),
+                    onPressed: r.isTooClose ? null : _useAutoResult,
+                    icon: Icon(r.isTooClose ? Icons.block : Icons.check),
+                    label: Text(r.isTooClose ? '請先退至 1–3 m 重拍' : '使用此結果'),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
+                      backgroundColor:
+                          r.isTooClose ? Colors.grey : Colors.green,
+                      disabledBackgroundColor: Colors.grey.shade700,
+                      disabledForegroundColor: Colors.white54,
                       foregroundColor: Colors.white,
                       padding: const EdgeInsets.symmetric(vertical: 14),
                     ),

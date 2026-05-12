@@ -569,9 +569,19 @@ class AutoMeasureResult {
   final String? method;
   final List<String> notes;
 
-  // 距離驗證
+  // 距離驗證 (來自 trunk_detector;深度層級)
   final String distanceStatus; // "ok", "too_close", "too_far", "warning"
   final String distanceMessage;
+
+  // 整體量測品質警告 (來自 ml_service quality gate)
+  // qualityCode: "ok" | "too_close" | "low_confidence"
+  //   - too_close: 樹幹超出 FOV 或近場深度飽和,UI 必須擋下「使用此結果」
+  //   - low_confidence: 模型信心度不足,建議重拍
+  final bool qualityWarning;
+  final String qualityCode;
+  final String? qualityMessage;
+  // FOV 飽和比率 (trunk_pixel_width / image_width);> 0.7 表示太近
+  final double fovRatio;
 
   // 偵測到的框
   final Map<String, int>? detectedBbox;
@@ -607,6 +617,10 @@ class AutoMeasureResult {
     this.notes = const [],
     this.distanceStatus = 'unknown',
     this.distanceMessage = '',
+    this.qualityWarning = false,
+    this.qualityCode = 'ok',
+    this.qualityMessage,
+    this.fovRatio = 0,
     this.detectedBbox,
     this.detectionConfidence = 0,
     this.allTrunks = const [],
@@ -663,6 +677,10 @@ class AutoMeasureResult {
           : <String>[],
       distanceStatus: json['distance_status']?.toString() ?? 'unknown',
       distanceMessage: json['distance_message']?.toString() ?? '',
+      qualityWarning: json['quality_warning'] == true,
+      qualityCode: json['quality_code']?.toString() ?? 'ok',
+      qualityMessage: json['quality_message']?.toString(),
+      fovRatio: (json['fov_ratio'] as num?)?.toDouble() ?? 0,
       detectedBbox: bbox,
       detectionConfidence:
           (json['detection_confidence'] as num?)?.toDouble() ?? 0,
@@ -696,6 +714,13 @@ class AutoMeasureResult {
       distanceStatus == 'warning' ||
       distanceStatus == 'too_close' ||
       distanceStatus == 'too_far';
+
+  /// 是否為 FOV 飽和(樹幹超出畫面或近場深度失準)
+  /// UI 應在此情況下擋下「使用此結果」並引導使用者退至 1–3 m 重拍
+  bool get isTooClose => qualityCode == 'too_close';
+
+  /// 結果是否可被接受用於存檔
+  bool get isAcceptableForSave => success && !isTooClose;
 }
 
 /// 偵測到的個別樹幹資訊
