@@ -23,7 +23,7 @@ void logDebug(String message) {
 }
 
 // 創建碳儲存量計算函數 (kg CO2-eq)
-// Delegates to TIPC-aligned [CarbonCalculationService] (AR-TMS0001 / 林業署
+// Delegates to [CarbonCalculationService]（手冊第六章 / AR-TMS0001）
 // 森林碳匯調查與監測手冊式 6-4); both species and height are required to
 // produce a number consistent with the TIPC platform.
 double calculateCarbonStorage(String species, double height, double dbh) {

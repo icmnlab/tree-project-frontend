@@ -12,6 +12,7 @@ import '../../services/pure_vision_dbh_service.dart';
 import '../../services/tflite_tracking_service.dart';
 import '../../services/v3/tree_image_service.dart';
 import '../../services/v3/ml_data_collector.dart';
+import '../../services/carbon_calculation_service.dart';
 import '../../widgets/conflict_resolution_dialog.dart';
 
 /// V3 整合式樹木測量表單
@@ -87,6 +88,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
   String _autoPilotStatus = '';
   bool _dbhReady = false;
   bool _speciesReady = false;
+  double? _previewCarbonKg;
 
   // Multi-shot: stored images for precision boost
   final List<File> _capturedImages = [];
@@ -98,8 +100,24 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
   void initState() {
     super.initState();
     _initializeForm();
+    _dbhController.addListener(_updateCarbonPreview);
+    _heightController.addListener(_updateCarbonPreview);
+    _speciesController.addListener(_updateCarbonPreview);
+    _updateCarbonPreview();
     _loadSpecies();
     _acquirePhoneGps();
+  }
+
+  void _updateCarbonPreview() {
+    final dbh = double.tryParse(_dbhController.text) ?? 0;
+    final h = double.tryParse(_heightController.text) ?? widget.task.treeHeight;
+    final species = _speciesController.text.trim();
+    if (dbh <= 0 || h <= 0 || species.isEmpty) {
+      if (_previewCarbonKg != null) setState(() => _previewCarbonKg = null);
+      return;
+    }
+    final v = CarbonCalculationService.calculateCarbonStorage(species, h, dbh);
+    if (_previewCarbonKg != v) setState(() => _previewCarbonKg = v);
   }
 
   /// 取得手機 GPS 位置，提供現場位置提示；DBH 量測距離由 ML 深度模型決定。
@@ -291,6 +309,9 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
     _cleanupTempImages();
     _tfliteTracker.dispose();
     _speciesSearchDebounce?.cancel();
+    _dbhController.removeListener(_updateCarbonPreview);
+    _heightController.removeListener(_updateCarbonPreview);
+    _speciesController.removeListener(_updateCarbonPreview);
     _dbhController.dispose();
     _heightController.dispose();
     _speciesController.dispose();
@@ -1517,6 +1538,19 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
             ),
           ],
         ),
+
+        if (_previewCarbonKg != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8, left: 4),
+            child: Text(
+              '預估碳儲量（手冊第六章）: ${_previewCarbonKg!.toStringAsFixed(2)} kg CO₂e',
+              style: TextStyle(
+                fontSize: 13,
+                color: Colors.teal.shade800,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
 
         if (_measurementConfidence != null)
           Padding(

@@ -24,7 +24,7 @@ void logDebug(String message) {
   }());
 }
 
-// Delegates to TIPC-aligned [CarbonCalculationService] (AR-TMS0001 / 林業署
+// Delegates to [CarbonCalculationService]（手冊第六章 / AR-TMS0001）
 // 森林碳匯調查與監測手冊式 6-4).
 double calculateCarbonStorage(String species, double height, double dbh) {
   return CarbonCalculationService.calculateCarbonStorage(species, height, dbh);

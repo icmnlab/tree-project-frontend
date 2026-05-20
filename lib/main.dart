@@ -20,6 +20,7 @@ import 'config/app_config.dart';
 import 'services/theme_service.dart';
 import 'config/global_keys.dart';
 import 'services/api_service.dart';
+import 'services/handbook_carbon_service.dart';
 import 'services/auth_service.dart';
 import 'services/v3/ml_data_sync_service.dart';
 import 'services/v3/tree_image_service.dart';
@@ -66,6 +67,9 @@ class SelfHostedHttpOverrides extends HttpOverrides {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 手冊第六章材積式表（assets/coa/coa_volume_equations.json）
+  await HandbookCarbonService.preload();
 
   // 允許自架伺服器的自簽 TLS 憑證
   HttpOverrides.global = SelfHostedHttpOverrides();
