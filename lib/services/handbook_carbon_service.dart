@@ -94,8 +94,8 @@ class HandbookCarbonService {
     String? region,
     String? climateZone,
   }) {
-    final entry = _resolveEntry(species, region: region, climateZone: climateZone);
-    if (entry != null) {
+    final ranked = _rankEntries(species, region: region, climateZone: climateZone);
+    for (final entry in ranked) {
       final v = _evalEq(entry, dbh, h);
       if (v != null && v > 0) return v;
     }
@@ -104,17 +104,16 @@ class HandbookCarbonService {
     return _piOver4 * dbh * dbh * h * f * 0.0001;
   }
 
-  static Map<String, dynamic>? _resolveEntry(
+  static List<Map<String, dynamic>> _rankEntries(
     String species, {
     String? region,
     String? climateZone,
   }) {
-    if (!_loadAttempted) return null;
+    if (!_loadAttempted) return [];
     final entries = (_volumeDoc?['entries'] as List?)?.cast<Map<String, dynamic>>();
-    if (entries == null) return null;
+    if (entries == null) return [];
     final sn = _norm(species);
-    Map<String, dynamic>? best;
-    var bestScore = 999999;
+    final scored = <MapEntry<Map<String, dynamic>, int>>[];
     for (final e in entries) {
       final labels = (e['species_labels'] as List?)?.cast<String>() ?? [];
       var labelScore = 999;
@@ -127,6 +126,11 @@ class HandbookCarbonService {
         }
       }
       if (labelScore >= 999) continue;
+      final isOther = (e['species_labels'] as List?)?.any(
+            (l) => _norm(l.toString()).contains('其他'),
+          ) ??
+          false;
+      if (isOther && !sn.contains('其他')) labelScore += 22;
       var regionPenalty = 0;
       final er = (e['region'] as String?) ?? '全臺';
       if (region != null) {
@@ -143,12 +147,10 @@ class HandbookCarbonService {
         regionPenalty += 15;
       }
       final score = (e['priority'] as int? ?? 50) + labelScore + regionPenalty;
-      if (score < bestScore) {
-        bestScore = score;
-        best = e;
-      }
+      scored.add(MapEntry(e, score));
     }
-    return best;
+    scored.sort((a, b) => a.value.compareTo(b.value));
+    return scored.map((e) => e.key).toList();
   }
 
   static double? _evalEq(Map<String, dynamic> eq, double d, double h) {
@@ -184,6 +186,15 @@ class HandbookCarbonService {
         final inner = (eq['a'] as num).toDouble() +
             (eq['b'] as num).toDouble() * math.log(d * d * h) / math.ln10;
         return math.pow(10, inner).toDouble();
+      case 'cubic_d':
+        return (eq['a'] as num).toDouble() +
+            ((eq['e'] as num?)?.toDouble() ?? 0) * math.pow(d, 3);
+      case 'ln_d_h_d2':
+        final inner = (eq['a'] as num).toDouble() +
+            (eq['b'] as num).toDouble() * math.log(d) +
+            (eq['c'] as num).toDouble() * math.log(h) +
+            ((eq['d'] as num?)?.toDouble() ?? 0) * d * d;
+        return math.exp(inner);
       default:
         return null;
     }
