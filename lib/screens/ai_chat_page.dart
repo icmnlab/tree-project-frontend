@@ -1902,6 +1902,11 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   /// Agent 工具調用記錄展示
   Widget _buildToolCallsSection(List<Map<String, dynamic>> toolCalls, ColorScheme colorScheme) {
     const toolLabels = {
+      'query_tree_data': '查詢樹木資料',
+      'calculate_carbon': '碳匯計算',
+      'species_carbon_info': '樹種碳匯查詢',
+      'project_summary': '專案統計',
+      'carbon_credit_estimate': '碳儲存估算',
       'fetch_allowed_url': '讀取政策網頁',
       'fetch_allowed_urls': '批次讀取網頁',
       'list_policy_sources': '政策入口列表',
@@ -1913,6 +1918,11 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
       'export_ai_report': 'AI 永續報告',
     };
     const toolIcons = {
+      'query_tree_data': Icons.search_rounded,
+      'calculate_carbon': Icons.eco_rounded,
+      'species_carbon_info': Icons.park_rounded,
+      'project_summary': Icons.analytics_rounded,
+      'carbon_credit_estimate': Icons.co2_rounded,
       'fetch_allowed_url': Icons.language_rounded,
       'fetch_allowed_urls': Icons.compare_arrows_rounded,
       'list_policy_sources': Icons.list_alt_rounded,
