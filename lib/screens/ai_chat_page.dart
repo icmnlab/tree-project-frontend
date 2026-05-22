@@ -9,6 +9,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import '../services/ai_service.dart';
+import '../services/download_service.dart';
 import '../constants/colors.dart'; // [NEW] 統一色彩
 
 /// 現代化 AI 聊天頁面 v2.0
@@ -228,36 +229,18 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   bool _isDarkMode = false;
   bool _isAgentMode = true; // 預設啟用 Agent 模式
 
-  // Settings
-  String _selectedModel = 'deepseek-ai/DeepSeek-V3';
-  
-  // 模型分類：SiliconFlow 免費額度 / 付費 API
-  final Map<String, Map<String, dynamic>> _modelCategories = {
-    '🆓 SiliconFlow 免費': {
-      'models': {
-        'deepseek-ai/DeepSeek-V3': 'DeepSeek V3 ⭐推薦',
-        'Qwen/Qwen3-235B-A22B-Instruct': 'Qwen3 235B (最強)',
-        'Qwen/QwQ-32B': 'QwQ 32B (推理)',
-        'deepseek-ai/DeepSeek-R1-0528': 'DeepSeek R1 (推理)',
-        'Qwen/Qwen3-32B-Instruct': 'Qwen3 32B',
-      },
-    },
-    '💰 OpenAI GPT-5 (付費)': {
-      'models': {
-        'gpt-5-nano': 'GPT-5 Nano (最快)',
-        'gpt-5-mini': 'GPT-5 Mini',
-        'gpt-5.1': 'GPT-5.1 (最強)',
-      },
-    },
-    '💰 Google Gemini (付費)': {
-      'models': {
-        'gemini-2.5-flash': 'Gemini 2.5 Flash',
-        'gemini-2.5-pro': 'Gemini 2.5 Pro',
-      },
-    },
-  };
-  
-  // 整合所有模型
+  // Settings（預設由後端 /api/ai/llm-options 覆寫）
+  String _selectedModel = 'gpt-5.4-mini';
+  Map<String, Map<String, dynamic>> _modelCategories = {};
+  bool _llmOptionsLoaded = false;
+  bool _showModelPicker = true;
+  List<String> _demoHints = const [
+    '匯出高雄港樹木 Excel',
+    '比較環境部與林業署碳匯政策',
+    '列出可查的政策網站',
+    'IPCC 森林碳匯方法學摘要',
+  ];
+
   Map<String, String> get _availableModels {
     final models = <String, String>{};
     for (final category in _modelCategories.values) {
@@ -282,8 +265,59 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 1200),
     )..repeat();
 
-    // 載入本地儲存的對話歷史
     _loadSessions();
+    _loadLlmOptions();
+  }
+
+  /// 從後端載入可用 LLM（隱藏無法連線的供應商）
+  Future<void> _loadLlmOptions() async {
+    try {
+      final res = await _aiService.getLlmOptions();
+      if (!mounted) return;
+      final categories = res['categories'] as List<dynamic>? ?? [];
+      final next = <String, Map<String, dynamic>>{};
+      for (final raw in categories) {
+        final cat = raw as Map<String, dynamic>;
+        final title = cat['category']?.toString() ?? '模型';
+        final models = <String, String>{};
+        for (final m in (cat['models'] as List<dynamic>? ?? [])) {
+          final mm = m as Map<String, dynamic>;
+          final id = mm['id']?.toString();
+          final label = mm['label']?.toString();
+          if (id != null && label != null) models[id] = label;
+        }
+        if (models.isNotEmpty) next[title] = {'models': models};
+      }
+      final defaultModel = res['defaultModel']?.toString();
+      final agentMode = res['agentMode'] as Map<String, dynamic>?;
+      final hints = res['demoHints'] as List<dynamic>?;
+      setState(() {
+        if (next.isNotEmpty) _modelCategories = next;
+        if (defaultModel != null && _availableModels.containsKey(defaultModel)) {
+          _selectedModel = defaultModel;
+        } else if (_availableModels.isNotEmpty) {
+          _selectedModel = _availableModels.keys.first;
+        }
+        _showModelPicker = agentMode?['showModelPicker'] as bool? ??
+            (_modelCategories.length > 1);
+        if (hints != null && hints.isNotEmpty) {
+          _demoHints = hints.map((e) => e.toString()).toList();
+        }
+        _llmOptionsLoaded = true;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _modelCategories = {
+          'OpenAI': {
+            'models': {'gpt-5.4-mini': 'GPT-5.4 mini（離線預設）'},
+          },
+        };
+        _selectedModel = 'gpt-5.4-mini';
+        _showModelPicker = false;
+        _llmOptionsLoaded = true;
+      });
+    }
   }
 
   @override
@@ -430,6 +464,36 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   // 訊息處理
   // ============================================
 
+  bool _isDownloadingExport = false;
+
+  Future<void> _downloadAgentFile(String href) async {
+    if (_isDownloadingExport) return;
+    setState(() => _isDownloadingExport = true);
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.showSnackBar(
+      const SnackBar(content: Text('正在下載檔案…'), duration: Duration(seconds: 2)),
+    );
+    try {
+      final result = await DownloadService.downloadAgentExport(href);
+      if (!mounted) return;
+      if (result.success) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(
+              result.warning ?? '已下載${result.filePath != null ? '並嘗試開啟' : ''}',
+            ),
+          ),
+        );
+      } else {
+        messenger.showSnackBar(
+          SnackBar(content: Text(result.error ?? '下載失敗')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isDownloadingExport = false);
+    }
+  }
+
   Future<void> _sendMessage() async {
     final message = _messageController.text.trim();
     if (message.isEmpty || _isLoading) return;
@@ -479,7 +543,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
           message,
           widget.userId,
           sessionId: _currentSession?.id,
-          model: _selectedModel,
+          model: _showModelPicker ? _selectedModel : null,
         );
       } else {
         // 一般模式: 使用原有 Chat API
@@ -781,8 +845,10 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
             ),
             child: Column(
               children: [
-                // 模型選擇
-                _buildModelSelector(colorScheme),
+                if (!_isAgentMode || _showModelPicker)
+                  _buildModelSelector(colorScheme)
+                else if (_llmOptionsLoaded)
+                  _buildAgentModelBadge(colorScheme),
               ],
             ),
           ),
@@ -791,7 +857,40 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
     );
   }
 
+  Widget _buildAgentModelBadge(ColorScheme colorScheme) {
+    final label = _availableModels[_selectedModel] ?? _selectedModel;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: colorScheme.outline.withValues(alpha: 0.1)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.auto_awesome, size: 18, color: colorScheme.primary),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              'Agent · $label',
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: colorScheme.onSurface,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildModelSelector(ColorScheme colorScheme) {
+    if (_modelCategories.isEmpty) {
+      return const SizedBox.shrink();
+    }
     return PopupMenuButton<String>(
       initialValue: _selectedModel,
       onSelected: (value) => setState(() => _selectedModel = value),
@@ -1286,7 +1385,9 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
               
               // 副標題
               Text(
-                '智慧樹木管理與碳匯分析助手',
+                _isAgentMode
+                    ? '政策檢索 · 報表匯出 · 口語提問即可'
+                    : '智慧樹木管理與碳匯分析助手',
                 style: TextStyle(
                   fontSize: 16,
                   color: colorScheme.onSurfaceVariant,
@@ -1309,11 +1410,17 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   }
 
   Widget _buildFeatureCards(ColorScheme colorScheme) {
-    final features = [
-      {'icon': Icons.search_rounded, 'title': '智慧查詢', 'desc': '自然語言搜尋樹木資料'},
-      {'icon': Icons.analytics_rounded, 'title': '數據分析', 'desc': '碳儲存量統計報表'},
-      {'icon': Icons.lightbulb_rounded, 'title': '專業建議', 'desc': '樹木養護管理諮詢'},
-    ];
+    final features = _isAgentMode
+        ? [
+            {'icon': Icons.policy_rounded, 'title': '政策檢索', 'desc': '政府公開網頁摘要'},
+            {'icon': Icons.download_rounded, 'title': '報表匯出', 'desc': 'Excel / PDF 下載'},
+            {'icon': Icons.chat_bubble_outline, 'title': '口語即可', 'desc': '短句也能用，不必很長'},
+          ]
+        : [
+            {'icon': Icons.search_rounded, 'title': '智慧查詢', 'desc': '自然語言搜尋樹木資料'},
+            {'icon': Icons.analytics_rounded, 'title': '數據分析', 'desc': '碳儲存量統計報表'},
+            {'icon': Icons.lightbulb_rounded, 'title': '專業建議', 'desc': '樹木養護管理諮詢'},
+          ];
 
     return Wrap(
       spacing: 16,
@@ -1375,12 +1482,14 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   }
 
   Widget _buildSuggestionGrid(ColorScheme colorScheme) {
-    final suggestions = [
-      '高雄港有多少棵樹？',
-      '哪種樹碳儲存量最高？',
-      '胸徑超過50公分的大樹',
-      '統計各區位的樹木數量',
-    ];
+    final suggestions = _isAgentMode
+        ? _demoHints
+        : [
+            '高雄港有多少棵樹？',
+            '哪種樹碳儲存量最高？',
+            '胸徑超過50公分的大樹',
+            '統計各區位的樹木數量',
+          ];
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1686,7 +1795,10 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
             tableCellsPadding: const EdgeInsets.all(12),
           ),
           onTapLink: (text, href, title) {
-            if (href != null) {
+            if (href == null) return;
+            if (DownloadService.isAppDownloadUrl(href)) {
+              _downloadAgentFile(href);
+            } else {
               launchUrl(Uri.parse(href), mode: LaunchMode.externalApplication);
             }
           },
@@ -1790,18 +1902,26 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
   /// Agent 工具調用記錄展示
   Widget _buildToolCallsSection(List<Map<String, dynamic>> toolCalls, ColorScheme colorScheme) {
     const toolLabels = {
-      'query_tree_data': '查詢樹木資料',
-      'calculate_carbon': '碳匯計算',
-      'species_carbon_info': '樹種碳匯查詢',
-      'project_summary': '專案統計',
-      'carbon_credit_estimate': '碳匯統計',
+      'fetch_allowed_url': '讀取政策網頁',
+      'fetch_allowed_urls': '批次讀取網頁',
+      'list_policy_sources': '政策入口列表',
+      'list_demo_policy_urls': 'Demo 政策入口',
+      'list_allowed_domains': '可查網域說明',
+      'search_public_documents': '公開文件搜尋',
+      'export_excel': '匯出 Excel',
+      'export_pdf': '匯出 PDF',
+      'export_ai_report': 'AI 永續報告',
     };
     const toolIcons = {
-      'query_tree_data': Icons.search_rounded,
-      'calculate_carbon': Icons.eco_rounded,
-      'species_carbon_info': Icons.park_rounded,
-      'project_summary': Icons.analytics_rounded,
-      'carbon_credit_estimate': Icons.monetization_on_rounded,
+      'fetch_allowed_url': Icons.language_rounded,
+      'fetch_allowed_urls': Icons.compare_arrows_rounded,
+      'list_policy_sources': Icons.list_alt_rounded,
+      'list_demo_policy_urls': Icons.link_rounded,
+      'list_allowed_domains': Icons.policy_rounded,
+      'search_public_documents': Icons.search_rounded,
+      'export_excel': Icons.table_chart_rounded,
+      'export_pdf': Icons.picture_as_pdf_rounded,
+      'export_ai_report': Icons.analytics_rounded,
     };
 
     return Padding(
@@ -1881,6 +2001,26 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
                       style: TextStyle(
                         fontSize: 11,
                         color: Colors.green.shade700,
+                      ),
+                    ),
+                  ],
+                  if (resultSummary != null &&
+                      resultSummary is Map &&
+                      resultSummary['downloadUrl'] != null) ...[
+                    const SizedBox(height: 8),
+                    TextButton.icon(
+                      onPressed: _isDownloadingExport
+                          ? null
+                          : () => _downloadAgentFile(
+                                resultSummary['downloadUrl'].toString(),
+                              ),
+                      icon: const Icon(Icons.download_rounded, size: 18),
+                      label: const Text('在 App 內下載'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: colorScheme.primary,
+                        padding: EdgeInsets.zero,
+                        minimumSize: const Size(0, 32),
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
                     ),
                   ],

@@ -6,6 +6,46 @@ import 'package:open_filex/open_filex.dart';
 import 'api_service.dart';
 
 class DownloadService {
+  /// Agent / Chat 匯出連結（/api/download/…）應在 App 內下載，勿用外部瀏覽器（Chrome 無法信任 .ts.net 自簽憑證）
+  static bool isAppDownloadUrl(String? href) {
+    if (href == null || href.isEmpty) return false;
+    final u = href.toLowerCase();
+    return u.contains('/api/download/') || u.contains('/download/');
+  }
+
+  /// 將相對或完整 URL 解析為目前 App 設定的 API 主機
+  static String resolveDownloadUrl(String href) {
+    final trimmed = href.trim();
+    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      final parsed = Uri.parse(trimmed);
+      if (isAppDownloadUrl(parsed.path)) {
+        final api = Uri.parse(ApiService.baseUrl);
+        return parsed.replace(
+          scheme: api.scheme,
+          host: api.host,
+          port: api.port,
+        ).toString();
+      }
+      return trimmed;
+    }
+    if (trimmed.startsWith('/api/download/')) {
+      final api = Uri.parse(ApiService.baseUrl);
+      return '${api.scheme}://${api.host}${api.hasPort ? ':${api.port}' : ''}$trimmed';
+    }
+    if (trimmed.startsWith('/download/')) {
+      final api = Uri.parse(ApiService.baseUrl);
+      return '${api.scheme}://${api.host}${api.hasPort ? ':${api.port}' : ''}/api$trimmed';
+    }
+    return trimmed;
+  }
+
+  static Future<DownloadResult> downloadAgentExport(String href) async {
+    final url = resolveDownloadUrl(href);
+    final uri = Uri.parse(url);
+    final name = uri.pathSegments.isNotEmpty ? uri.pathSegments.last : null;
+    return downloadAndOpen(url, suggestedFilename: name);
+  }
+
   static Future<DownloadResult> downloadAndOpen(
     String url, {
     String? suggestedFilename,

@@ -38,6 +38,12 @@ class AiService {
     return ApiService.get('agent/status');
   }
 
+  /// 依後端偵測結果取得可用 LLM 模型清單
+  Future<Map<String, dynamic>> getLlmOptions({bool refresh = false}) async {
+    final q = refresh ? '?refresh=1' : '';
+    return ApiService.get('ai/llm-options$q');
+  }
+
   Future<Map<String, dynamic>> getSpeciesRecommendations(
       String userId, List<String> selectedAreas) async {
     return ApiService.post('ai/species_recommendations',
