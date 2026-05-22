@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -6,44 +7,59 @@ import 'package:open_filex/open_filex.dart';
 import 'api_service.dart';
 
 class DownloadService {
-  /// Agent / Chat 匯出連結（/api/download/…）應在 App 內下載，勿用外部瀏覽器（Chrome 無法信任 .ts.net 自簽憑證）
+  static const _timeout = Duration(seconds: 120);
+
+  /// Agent / Chat 匯出連結應在 App 內下載（勿開 Chrome，.ts.net 自簽憑證會失敗）
   static bool isAppDownloadUrl(String? href) {
     if (href == null || href.isEmpty) return false;
     final u = href.toLowerCase();
-    return u.contains('/api/download/') || u.contains('/download/');
+    return u.contains('/download/') ||
+        u.endsWith('.xlsx') ||
+        u.endsWith('.pdf');
   }
 
-  /// 將相對或完整 URL 解析為目前 App 設定的 API 主機
-  static String resolveDownloadUrl(String href) {
+  /// 從各種 Agent 回傳格式抽出檔名
+  static String? extractDownloadFilename(String href) {
     final trimmed = href.trim();
+    if (trimmed.isEmpty) return null;
+
     if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-      final parsed = Uri.parse(trimmed);
-      if (isAppDownloadUrl(parsed.path)) {
-        final api = Uri.parse(ApiService.baseUrl);
-        return parsed.replace(
-          scheme: api.scheme,
-          host: api.host,
-          port: api.port,
-        ).toString();
+      final uri = Uri.parse(trimmed);
+      final segs = uri.pathSegments;
+      if (segs.isNotEmpty && segs.last.contains('.')) {
+        return Uri.decodeComponent(segs.last);
       }
-      return trimmed;
     }
-    if (trimmed.startsWith('/api/download/')) {
-      final api = Uri.parse(ApiService.baseUrl);
-      return '${api.scheme}://${api.host}${api.hasPort ? ':${api.port}' : ''}$trimmed';
+
+    const markers = ['/api/download/', '/download/'];
+    for (final m in markers) {
+      final idx = trimmed.indexOf(m);
+      if (idx >= 0) {
+        var tail = trimmed.substring(idx + m.length).split('?').first.split('#').first;
+        if (tail.isNotEmpty) return Uri.decodeComponent(tail);
+      }
     }
-    if (trimmed.startsWith('/download/')) {
-      final api = Uri.parse(ApiService.baseUrl);
-      return '${api.scheme}://${api.host}${api.hasPort ? ':${api.port}' : ''}/api$trimmed';
+
+    if (!trimmed.contains('/') &&
+        (trimmed.endsWith('.xlsx') || trimmed.endsWith('.pdf'))) {
+      return Uri.decodeComponent(trimmed);
     }
-    return trimmed;
+    return null;
+  }
+
+  /// 一律用 App 的 ApiService.baseUrl 組下載網址
+  static String resolveDownloadUrl(String href) {
+    final file = extractDownloadFilename(href);
+    if (file == null || file.isEmpty) {
+      return href.trim();
+    }
+    final base = ApiService.baseUrl.replaceAll(RegExp(r'/+$'), '');
+    final encoded = Uri.encodeComponent(file);
+    return '$base/download/$encoded';
   }
 
   static Future<DownloadResult> downloadAgentExport(String href) async {
-    final url = resolveDownloadUrl(href);
-    final uri = Uri.parse(url);
-    final name = uri.pathSegments.isNotEmpty ? uri.pathSegments.last : null;
-    return downloadAndOpen(url, suggestedFilename: name);
+    return downloadAndOpen(resolveDownloadUrl(href), suggestedFilename: extractDownloadFilename(href));
   }
 
   static Future<DownloadResult> downloadAndOpen(
@@ -53,17 +69,44 @@ class DownloadService {
   }) async {
     try {
       final uri = Uri.parse(url);
-      
-      final response = await http.get(
-        uri,
-        headers: ApiService.getAuthHeaders(),
-      );
+      final headers = ApiService.getAuthHeaders();
 
-      if (response.statusCode != 200) {
+      final response = await http.get(uri, headers: headers).timeout(_timeout);
+
+      if (response.statusCode == 401) {
         return DownloadResult(
           success: false,
-          error: '下載失敗: HTTP ${response.statusCode}',
+          error: '請重新登入後再下載',
         );
+      }
+
+      if (response.statusCode != 200) {
+        String detail = 'HTTP ${response.statusCode}';
+        try {
+          final body = json.decode(response.body);
+          if (body is Map && body['message'] != null) {
+            detail = body['message'].toString();
+          }
+        } catch (_) {
+          if (response.body.isNotEmpty && response.body.length < 200) {
+            detail = response.body;
+          }
+        }
+        return DownloadResult(success: false, error: '下載失敗: $detail');
+      }
+
+      final contentType = response.headers['content-type'] ?? '';
+      if (contentType.contains('application/json')) {
+        try {
+          final body = json.decode(response.body);
+          if (body is Map && body['message'] != null) {
+            return DownloadResult(
+              success: false,
+              error: body['message'].toString(),
+            );
+          }
+        } catch (_) {}
+        return DownloadResult(success: false, error: '下載失敗: 伺服器回傳非檔案內容');
       }
 
       final filename = suggestedFilename ?? _extractFilename(response, uri);
@@ -73,11 +116,12 @@ class DownloadService {
         await downloadsDir.create(recursive: true);
       }
 
-      final filePath = '${downloadsDir.path}/$filename';
+      final safeName = filename.split(RegExp(r'[/\\]')).last;
+      final filePath = '${downloadsDir.path}/$safeName';
       final file = File(filePath);
       await file.writeAsBytes(response.bodyBytes);
 
-      debugPrint('[DownloadService] File saved to: $filePath');
+      debugPrint('[DownloadService] File saved to: $filePath (${response.bodyBytes.length} bytes)');
 
       if (openAfterDownload) {
         final result = await OpenFilex.open(filePath);
@@ -85,14 +129,21 @@ class DownloadService {
           return DownloadResult(
             success: true,
             filePath: filePath,
-            warning: '檔案已下載但無法開啟: ${result.message}',
+            warning: '檔案已下載至 App，但無法自動開啟: ${result.message}',
           );
         }
       }
 
+      return DownloadResult(success: true, filePath: filePath);
+    } on HandshakeException catch (e) {
       return DownloadResult(
-        success: true,
-        filePath: filePath,
+        success: false,
+        error: 'TLS 連線失敗，請確認已使用 App 內下載而非瀏覽器: $e',
+      );
+    } on SocketException catch (e) {
+      return DownloadResult(
+        success: false,
+        error: '無法連線伺服器: $e',
       );
     } catch (e) {
       debugPrint('[DownloadService] Download error: $e');
@@ -106,12 +157,10 @@ class DownloadService {
   static String _extractFilename(http.Response response, Uri uri) {
     final contentDisposition = response.headers['content-disposition'];
     if (contentDisposition != null) {
-      // 使用更簡單的正則表達式避免 Dart 解析問題
       final filenamePattern = RegExp(r'filename[^;=\n]*=([^;\n]*)');
       final match = filenamePattern.firstMatch(contentDisposition);
       if (match != null && match.groupCount >= 1) {
         var filename = match.group(1) ?? '';
-        // 移除前後的引號
         filename = filename.trim();
         if (filename.startsWith('"') && filename.endsWith('"')) {
           filename = filename.substring(1, filename.length - 1);
@@ -128,7 +177,7 @@ class DownloadService {
     if (pathSegments.isNotEmpty) {
       final lastSegment = pathSegments.last;
       if (lastSegment.contains('.')) {
-        return lastSegment;
+        return Uri.decodeComponent(lastSegment);
       }
     }
 
@@ -138,10 +187,6 @@ class DownloadService {
       extension = '.xlsx';
     } else if (contentType.contains('pdf')) {
       extension = '.pdf';
-    } else if (contentType.contains('json')) {
-      extension = '.json';
-    } else if (contentType.contains('csv')) {
-      extension = '.csv';
     }
 
     return 'download_${DateTime.now().millisecondsSinceEpoch}$extension';
