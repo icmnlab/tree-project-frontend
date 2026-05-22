@@ -575,7 +575,7 @@ class AutoMeasureResult {
 
   // 整體量測品質警告 (來自 ml_service quality gate)
   // qualityCode: "ok" | "too_close" | "low_confidence"
-  //   - too_close: 樹幹超出 FOV 或近場深度飽和,UI 必須擋下「使用此結果」
+  //   - too_close: 樹幹超出 FOV 或近場深度飽和,UI 顯示風險提示但不強制擋下
   //   - low_confidence: 模型信心度不足,建議重拍
   final bool qualityWarning;
   final String qualityCode;
@@ -716,11 +716,11 @@ class AutoMeasureResult {
       distanceStatus == 'too_far';
 
   /// 是否為 FOV 飽和(樹幹超出畫面或近場深度失準)
-  /// UI 應在此情況下擋下「使用此結果」並引導使用者退至 1–3 m 重拍
+  /// UI 只提示品質風險,不強制擋下「使用此結果」。
   bool get isTooClose => qualityCode == 'too_close';
 
   /// 結果是否可被接受用於存檔
-  bool get isAcceptableForSave => success && !isTooClose;
+  bool get isAcceptableForSave => success;
 }
 
 /// 偵測到的個別樹幹資訊

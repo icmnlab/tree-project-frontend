@@ -1522,7 +1522,8 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
             ),
           ),
           const SizedBox(height: 16),
-          // 拍攝距離過近警告:擋下「使用此結果」並引導重拍
+          // 拍攝距離過近警告:只提示品質風險,不再擋下「使用此結果」。
+          // 研究與正式紀錄皆回歸數據本身,由使用者判斷是否採用或重拍。
           if (r.isTooClose) ...[
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -1542,7 +1543,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('拍攝距離過近,結果不可採用',
+                        const Text('拍攝距離過近,結果可能失準',
                             style: TextStyle(
                                 color: Colors.deepOrange,
                                 fontWeight: FontWeight.bold,
@@ -1550,7 +1551,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
                         const SizedBox(height: 4),
                         Text(
                           r.qualityMessage ??
-                              '樹幹超出畫面或深度模型已飽和;請退至 1–3 m 後重拍',
+                              '樹幹可能超出畫面或深度模型已飽和;建議重拍或改以人工量測確認',
                           style: const TextStyle(
                               color: Colors.white70, fontSize: 12),
                         ),
@@ -1601,12 +1602,12 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
                 Expanded(
                   flex: 2,
                   child: ElevatedButton.icon(
-                    onPressed: r.isTooClose ? null : _useAutoResult,
-                    icon: Icon(r.isTooClose ? Icons.block : Icons.check),
-                    label: Text(r.isTooClose ? '請先退至 1–3 m 重拍' : '使用此結果'),
+                    onPressed: _useAutoResult,
+                    icon: const Icon(Icons.check),
+                    label: Text(r.isTooClose ? '仍使用此結果' : '使用此結果'),
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
-                          r.isTooClose ? Colors.grey : Colors.green,
+                          r.isTooClose ? Colors.deepOrange : Colors.green,
                       disabledBackgroundColor: Colors.grey.shade700,
                       disabledForegroundColor: Colors.white54,
                       foregroundColor: Colors.white,

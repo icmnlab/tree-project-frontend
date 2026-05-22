@@ -23,7 +23,7 @@ class MapPage extends StatefulWidget {
 class _MapPageState extends State<MapPage> with RouteAware {
   GoogleMapController? _controller;
   final Set<Marker> _markers = {};
-  final Set<Polygon> _polygons = {}; // V3: 專案邊界多邊形
+  Set<Polygon> _polygons = {}; // V3: 專案邊界多邊形（每次重建 Set 以觸發地圖更新）
   bool _isLoading = false;
   String _selectedProject = '全部';
   String _selectedCity = '全部';
@@ -77,12 +77,69 @@ class _MapPageState extends State<MapPage> with RouteAware {
     }
   }
 
+  /// 依目前縣市／專案篩選，從快取樹木解析專案代碼（優先符合縣市條件）。
+  String? _resolveSelectedProjectCode() {
+    if (_selectedProject == '全部') return null;
+
+    String? fromCityScoped;
+    String? fromAny;
+    for (final tree in _cachedTreeData) {
+      if (tree['專案名稱'] != _selectedProject) continue;
+      final code = tree['專案代碼']?.toString().trim();
+      if (code == null || code.isEmpty) continue;
+      fromAny ??= code;
+      if (_selectedCity != '全部' && tree['_city'] == _selectedCity) {
+        fromCityScoped ??= code;
+      }
+    }
+    return fromCityScoped ?? fromAny;
+  }
+
+  bool _boundaryMatchesSelectedProject(ProjectBoundary boundary) {
+    if (_selectedProject == '全部') return true;
+
+    final selectedCode = _resolveSelectedProjectCode();
+    final boundaryCode = boundary.projectCode?.toString().trim();
+    if (selectedCode != null &&
+        boundaryCode != null &&
+        selectedCode == boundaryCode) {
+      return true;
+    }
+    return _normalizeProjectLabel(boundary.projectName) ==
+        _normalizeProjectLabel(_selectedProject);
+  }
+
+  /// 相容「植栽第1區」與「植栽1區」等命名差異（高雄港區常見）。
+  String _normalizeProjectLabel(String name) {
+    return name.trim().replaceAll('植栽第', '植栽');
+  }
+
+  /// 縣市篩選時，僅顯示該縣市樹木資料中出現過的專案邊界。
+  bool _boundaryMatchesSelectedCity(ProjectBoundary boundary) {
+    if (_selectedCity == '全部') return true;
+
+    final code = boundary.projectCode?.toString().trim();
+    for (final tree in _cachedTreeData) {
+      if (tree['_city'] != _selectedCity) continue;
+      if (code != null && code.isNotEmpty) {
+        if (tree['專案代碼']?.toString().trim() == code) return true;
+      } else if (tree['專案名稱'] == boundary.projectName) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool _shouldShowBoundary(ProjectBoundary boundary) {
+    if (!_showBoundaries) return false;
+    if (!_boundaryMatchesSelectedCity(boundary)) return false;
+    return _boundaryMatchesSelectedProject(boundary);
+  }
+
   // V3: 更新邊界多邊形
   void _updateBoundaryPolygons() {
-    _polygons.clear();
-    
     if (!_showBoundaries) {
-      _safeSetState(() {});
+      _safeSetState(() => _polygons = {});
       return;
     }
 
@@ -98,22 +155,19 @@ class _MapPageState extends State<MapPage> with RouteAware {
       Colors.amber,
     ];
 
+    final nextPolygons = <Polygon>{};
     for (int i = 0; i < _projectBoundaries.length; i++) {
       final boundary = _projectBoundaries[i];
-      final color = colors[i % colors.length];
-      
-      // 如果選擇了特定專案，只顯示該專案的邊界
-      if (_selectedProject != '全部' && boundary.projectName != _selectedProject) {
-        continue;
-      }
+      if (!_shouldShowBoundary(boundary)) continue;
 
+      final color = colors[i % colors.length];
       final points = boundary.coordinates
           .map((c) => LatLng(c[0], c[1]))
           .toList();
 
       if (points.length >= 3) {
-        _polygons.add(Polygon(
-          polygonId: PolygonId('boundary_${boundary.projectName}'),
+        nextPolygons.add(Polygon(
+          polygonId: PolygonId('boundary_${boundary.projectCode ?? boundary.projectName}'),
           points: points,
           strokeColor: color,
           strokeWidth: 2,
@@ -124,7 +178,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
       }
     }
 
-    _safeSetState(() {});
+    _safeSetState(() => _polygons = nextPolygons);
   }
 
   // V3: 顯示邊界資訊

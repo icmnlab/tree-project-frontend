@@ -14,18 +14,22 @@ preview. The single companion to the Node backend.
 ```mermaid
 flowchart TB
   subgraph repo["This repo (Flutter app — Mi A1 / Android first; iOS supported)"]
-    app["· Survey UI (V2 / V3 pages)<br/>· AR + on-device YOLO trunk preview (tflite)<br/>· BLE bridge (測距儀 / VLGEO2)<br/>· AI chat (SSE) + agent client"]
+    app["· Login / dashboard / survey UI (V2 / V3)<br/>· Camera + EXIF + on-device YOLO bbox preview<br/>· BLE bridge (VLGEO2 / Vertex CSV packets)<br/>· AI chat / agent JSON client<br/>· species ID / map / local photo cache"]
   end
-  be["Node backend (tree-project-backend repo)<br/>/api/* CRUD + auth + Text-to-SQL chat"]
-  ml["ml_service (FastAPI)<br/>Depth Pro + SAM 2.1 Tiny<br/>/api/v1/auto-measure-dbh · /ws/scan · …"]
-  app -- "HTTPS (Tailscale Funnel)" --> be
-  app -- "HTTPS + X-ML-API-Key" --> ml
+  be["Node backend (tree-project-backend repo)<br/>JWT auth + RBAC<br/>tree_survey / pending / images / species<br/>AI chat + agent<br/>ML proxy /api/ml-service/*"]
+  ml["FastAPI ml_service<br/>Depth Anything v3 on Intel NPU<br/>YOLOv8m-seg on Intel iGPU<br/>pure pinhole DBH calculator"]
+  store[("flutter_secure_storage<br/>JWT + user profile<br/><br/>SharedPreferences<br/>theme / ML URL / local flags<br/><br/>app documents<br/>tree image cache")]
+  app -- "HTTPS + JWT" --> be
+  be -- "multipart + X-ML-API-Key" --> ml
+  ml -- "DBH / mask / quality warning" --> be
+  app --> store
 ```
 
-The ML service URL + API key are returned by `/login` and stored in
-`SharedPreferences`; subsequent ML requests bypass the Node backend so the
-WebSocket stream and large image POSTs do not pay a proxy hop. The Node
-backend's `/api/ml-service/status` is only used by diagnostics screens.
+Static DBH measurement goes through the Node backend proxy:
+`Flutter → /api/ml-service/* → FastAPI ml_service`. The Flutter client
+sends only the app JWT; `X-ML-API-Key` is injected by the backend from its
+environment. Older direct-ML/WebSocket code remains useful for live preview
+experiments, but it is not the main persisted DBH path.
 
 ---
 
@@ -102,17 +106,18 @@ rather than relying on what is checked in.
 
 ### ML service (`lib/config/app_config.dart`)
 
-The Flutter app talks to the FastAPI ML service **directly** (faster than
-proxying through the Node backend on slow uplinks). Two prefs control it:
+The persisted DBH flow calls the Node backend ML proxy. `PureVisionDbhService`
+uses `ApiService.baseUrl + '/ml-service'`, so requests are authenticated with
+the normal app JWT and the backend keeps `ML_API_KEY` server-side. One prefs
+key is still used for diagnostics / optional live scan URLs:
 
 | `SharedPreferences` key | Purpose |
 |-------------------------|---------|
-| `self_hosted_ml_url`    | Base URL (the app appends `/api/v1` automatically) |
-| `ml_api_key`            | Sent as `X-ML-API-Key` header |
+| `self_hosted_ml_url`    | Optional ML host URL for diagnostics or experimental live scan |
 
-These are populated automatically at login from the backend's `/login`
-response (the backend reads `ML_SERVICE_PUBLIC_URL`/`ML_SERVICE_URL` and
-`ML_API_KEY`). They can be edited manually from `ApiKeyManagementScreen`.
+`ml_api_key` is no longer persisted by the Flutter app; old values are removed
+during configuration initialization. `ApiKeyManagementScreen` manages backend
+API keys, not the ML service secret.
 
 ### Other prefs
 

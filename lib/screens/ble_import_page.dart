@@ -7,6 +7,7 @@ import '../services/ble_data_processor.dart'; // 引入解析器
 import '../services/ble_packet_decoder.dart'; // 引入封包解碼器
 import '../models/pending_tree_measurement.dart';
 import '../services/pending_measurement_service.dart'; // 待測量服務
+import '../services/auth_service.dart'; // 登入時可存取專案（BLE 指派 fallback）
 import '../services/project_service.dart'; // 專案服務（手動指派 dropdown）
 import '../services/tree_service.dart';
 import '../services/v3/data_filter_service.dart'; // V3 數據過濾服務
@@ -2522,6 +2523,47 @@ class _BleImportPageState extends State<BleImportPage> {
     );
   }
 
+  /// 載入 BLE 手動指派用的專案清單（GET /projects 回傳 `data`，非 `projects`）
+  Future<List<Map<String, String?>>> _loadBleProjectPickerCandidates() async {
+    final seen = <String>{};
+    final out = <Map<String, String?>>[];
+
+    void addFromMap(Map p) {
+      final code = (p['code'] ?? p['project_code'])?.toString();
+      if (code == null || code.isEmpty || seen.contains(code)) return;
+      seen.add(code);
+      out.add({
+        'code': code,
+        'area': (p['area'] ?? p['area_name'] ?? p['project_area'])?.toString(),
+        'name': (p['name'] ?? p['project_name'])?.toString(),
+      });
+    }
+
+    try {
+      final resp = await ProjectService().getProjects(forceRefresh: true);
+      if (resp['success'] == true && resp['data'] is List) {
+        for (final p in resp['data'] as List) {
+          if (p is Map) addFromMap(Map<String, dynamic>.from(p));
+        }
+      }
+    } catch (e) {
+      debugPrint('[BLE] 載入專案清單失敗: $e');
+    }
+
+    if (out.isEmpty) {
+      try {
+        for (final p in await AuthService.getAccessibleProjectDetails()) {
+          addFromMap(p);
+        }
+      } catch (e) {
+        debugPrint('[BLE] 登入專案 fallback 失敗: $e');
+      }
+    }
+
+    debugPrint('[BLE] 可選專案數: ${out.length}');
+    return out;
+  }
+
   /// 手動專案挑選對話框
   /// 回傳 {'code','area','name'}；'__none__' 代表「不指派」；null 代表取消
   Future<Map<String, String?>?> _showManualProjectPicker({
@@ -2535,23 +2577,7 @@ class _BleImportPageState extends State<BleImportPage> {
     List<Map<String, String?>> candidates =
         presetCandidates != null ? List.of(presetCandidates) : [];
     if (candidates.isEmpty) {
-      try {
-        final projectService = ProjectService();
-        final resp = await projectService.getProjects();
-        if (resp['success'] == true && resp['projects'] is List) {
-          for (final p in (resp['projects'] as List)) {
-            if (p is Map) {
-              candidates.add({
-                'code': p['project_code']?.toString(),
-                'area': (p['area_name'] ?? p['project_area'])?.toString(),
-                'name': p['name']?.toString() ?? p['project_name']?.toString(),
-              });
-            }
-          }
-        }
-      } catch (e) {
-        debugPrint('[BLE] 載入專案清單失敗: $e');
-      }
+      candidates.addAll(await _loadBleProjectPickerCandidates());
     }
 
     if (!mounted) return null;
@@ -2571,8 +2597,13 @@ class _BleImportPageState extends State<BleImportPage> {
                   Text(message),
                   const SizedBox(height: 12),
                   if (candidates.isEmpty)
-                    const Text('（無可選擇的專案）',
-                        style: TextStyle(color: Colors.grey))
+                    const Text(
+                      '（無可選擇的專案）\n'
+                      '可能原因：帳號尚未被指派專案權限，或專案清單載入失敗。\n'
+                      '請請業務管理員在後台將您的帳號加入 user_projects，'
+                      '或重新登入後再試；仍無法選擇時請先取消匯入。',
+                      style: TextStyle(color: Colors.grey, fontSize: 12),
+                    )
                   else
                     DropdownButton<String>(
                       isExpanded: true,
