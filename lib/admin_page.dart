@@ -151,17 +151,21 @@ class _AdminPageState extends State<AdminPage> {
       if (!mounted) return;
       setState(() {
         _users = users.map((user) {
-          // [FIX] Backend now guarantees boolean, but keeping robust parsing logic just in case
-          // Handle various types: bool, int (0/1), or string ("true"/"false")
-          bool isActive = true;
-          if (user['is_active'] is bool) {
-            isActive = user['is_active'];
-          } else if (user['is_active'] is int) {
-            isActive = user['is_active'] == 1;
-          } else if (user['is_active'] is String) {
-            isActive = user['is_active'].toString().toLowerCase() == 'true';
+          bool parseBool(dynamic v, {required bool defaultValue}) {
+            if (v is bool) return v;
+            if (v is int) return v == 1;
+            if (v is String) {
+              return v.toLowerCase() == 'true';
+            }
+            return defaultValue;
           }
-          return {...user, 'is_active': isActive};
+
+          return {
+            ...user,
+            'is_active': parseBool(user['is_active'], defaultValue: true),
+            'pending_approval':
+                parseBool(user['pending_approval'], defaultValue: false),
+          };
         }).toList();
       });
     } catch (e) {
