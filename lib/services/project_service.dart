@@ -6,6 +6,13 @@ class ProjectService {
   DateTime? _lastFetchTime;
   static const Duration _cacheDuration = Duration(minutes: 5);
 
+  /// 後端 GET /projects 回傳 `{ success, data: [...] }`；部分舊 UI 讀 `projects`。
+  static List<dynamic> _projectListFromResponse(Map<String, dynamic> response) {
+    final raw = response['data'] ?? response['projects'];
+    if (raw is List) return raw;
+    return [];
+  }
+
   Future<Map<String, dynamic>> getProjects({bool forceRefresh = false}) async {
     if (!forceRefresh &&
         _cachedProjectsResponse != null &&
@@ -16,8 +23,15 @@ class ProjectService {
 
     final response = await ApiService.get('projects');
     if (response['success'] == true) {
-      _cachedProjectsResponse = response;
+      final list = _projectListFromResponse(response);
+      final normalized = <String, dynamic>{
+        ...response,
+        'data': list,
+        'projects': list,
+      };
+      _cachedProjectsResponse = normalized;
       _lastFetchTime = DateTime.now();
+      return normalized;
     }
     return response;
   }

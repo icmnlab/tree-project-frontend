@@ -28,9 +28,12 @@ Future<FieldSessionSetup?> showFieldSessionSetupDialog(
 }) async {
   final projectsResp = await ProjectService().getProjects(forceRefresh: true);
   final projects = <Map<String, dynamic>>[];
-  if (projectsResp['success'] == true && projectsResp['projects'] is List) {
-    for (final p in projectsResp['projects'] as List) {
-      if (p is Map) projects.add(Map<String, dynamic>.from(p));
+  if (projectsResp['success'] == true) {
+    final raw = projectsResp['data'] ?? projectsResp['projects'];
+    if (raw is List) {
+      for (final p in raw) {
+        if (p is Map) projects.add(Map<String, dynamic>.from(p));
+      }
     }
   }
 
