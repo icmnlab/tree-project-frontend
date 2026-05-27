@@ -12,6 +12,7 @@ import 'screens/v3/project_boundary_draw_page.dart'; // V3 專案邊界繪製
 import 'screens/csv_import_page.dart'; // [Phase C] CSV 匯入頁面
 import 'screens/ip_blacklist_page.dart'; // [T8.2] IP 黑名單管理
 import 'admin_research_dataset_page.dart'; // [Research] DBH 校準資料蒐集
+import 'screens/invite_management_page.dart';
 import '../services/auth_service.dart';
 
 class AdminPage extends StatefulWidget {
@@ -32,6 +33,7 @@ class _AdminPageState extends State<AdminPage> {
   bool _canManageProjects = false; // 專案邊界 tab
   bool _canImportCsv = false;       // CSV 匯入 tab
   bool _canManageIpBlacklist = false; // [T8.2] IP 黑名單 tab
+  bool _canManageInvites = false; // 邀請碼（業務管理員以上）
 
   List<Project> _projectsForExport = [];
   List<String> _selectedProjectCodesForMultiExport = []; // 用於儲存多選的專案代碼
@@ -62,11 +64,13 @@ class _AdminPageState extends State<AdminPage> {
     final canManage = await AuthService.canManageProjects();
     final canCsv = await AuthService.canImportCsv();
     final canIp = await AuthService.canManageIpBlacklist();
+    final canInvites = await AuthService.canManageUsers();
     if (mounted) {
       setState(() {
         _canManageProjects = canManage;
         _canImportCsv = canCsv;
         _canManageIpBlacklist = canIp;
+        _canManageInvites = canInvites;
       });
     }
   }
@@ -643,6 +647,24 @@ class _AdminPageState extends State<AdminPage> {
 
     return Column(
       children: [
+        if (_canManageInvites)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.vpn_key_outlined),
+                label: const Text('邀請碼管理'),
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const InviteManagementPage(),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
         // 搜尋和篩選區域
         Padding(
           padding: const EdgeInsets.all(16.0),

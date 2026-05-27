@@ -40,7 +40,25 @@ class CarbonDisplay {
       '係數見表 6-4。與環境部溫室氣體減量方法學 AR-TMS0001 造林植林專案一致。';
 
   static const String methodologyAnnual =
-      '$fieldAnnual 來自資料庫（歷史 TIPC 平台或匯入）；樹齡相關公式未公開，App 不重算。';
+      '$fieldAnnual 為年度固碳流量（kg CO₂e/年），與 $fieldStorage（存量）不同。'
+      '手冊第六章僅規範碳儲存量試算，年吸存量需生長量／樹齡或平台參數；'
+      '本 App 僅顯示資料庫既有值（TIPC 匯入或 CSV），客端不重算。';
+
+  /// 詳情頁「計算依據」列：年流量
+  static String calculationBasisAnnual(double? dbAnnual) {
+    if (dbAnnual != null && dbAnnual > 0) {
+      return '資料庫欄位 $fieldAnnual（匯入或平台歷史值）';
+    }
+    return '無 $fieldAnnual；手冊第六章無 DBH+H 年流量公式，未試算';
+  }
+
+  /// 詳情頁「計算依據」列：存量
+  static String calculationBasisStorage({required bool fromDb}) {
+    if (fromDb) {
+      return '資料庫欄位 $fieldStorage';
+    }
+    return '手冊第六章重算 → $fieldStorage';
+  }
 
   static const List<String> literatureRefs = [
     '農業部林業及自然保育署 (2024). 森林碳匯調查與監測手冊.',

@@ -32,9 +32,17 @@ import '../../widgets/conflict_resolution_dialog.dart';
 class IntegratedTreeFormPage extends StatefulWidget {
   final PendingTreeMeasurement task;
 
+  /// 提交成功後自動將此 session 內「已完成」筆數轉入 tree_survey（現場連線用）
+  final bool autoTransferToTreeSurvey;
+
+  /// 與 [autoTransferToTreeSurvey] 搭配；未提供則用 [task.sessionId]
+  final String? transferSessionId;
+
   const IntegratedTreeFormPage({
     super.key,
     required this.task,
+    this.autoTransferToTreeSurvey = false,
+    this.transferSessionId,
   });
 
   @override
@@ -141,6 +149,9 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
     if (!mounted || fresh?.updatedAt == null) return;
     setState(() => _lockUpdatedAt = fresh!.updatedAt);
   }
+
+  String? _lockIsoString() =>
+      _lockUpdatedAt?.toUtc().toIso8601String();
 
   void _updateCarbonPreview() {
     final dbh = double.tryParse(_dbhController.text) ?? 0;
@@ -376,7 +387,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
     _logDbh(
       'select source=$source '
       '(instrument=${widget.task.instrumentDbhCm}, '
-      'vision=${_storedVisionDbhCm}, manual=${_dbhController.text})',
+      'vision=$_storedVisionDbhCm, manual=${_dbhController.text})',
     );
     setState(() {
       _activeDbhSource = source;
@@ -698,6 +709,8 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       _measuredDbh = m.diameterCm;
       _measurementConfidence = m.confidenceScore;
       _measurementMethod = m.method.name;
+      _storedVisionDbhCm = m.diameterCm;
+      _storedVisionMethod = m.method.name;
       _dbhController.text = m.diameterCm.toStringAsFixed(1);
       _activeDbhSource = 'vision';
       _storedVisionConfidence = m.confidenceScore;
@@ -1271,6 +1284,8 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
     setState(() => _isLoading = true);
 
     try {
+      await _refreshLockBaseline();
+
       final dbh = double.tryParse(_dbhController.text);
       if (dbh == null) {
         _showError('請輸入有效的數值');
@@ -1381,8 +1396,8 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
         if (_notesController.text.isNotEmpty) _notesController.text,
       ].join(' | ');
 
-      // [T6][Phase1.5] 帶上載入當下的 updated_at 做樂觀鎖
-      final expectedUpdatedAt = _lockUpdatedAt?.toIso8601String();
+      // [T6][Phase1.5] 帶上載入當下的 updated_at 做樂觀鎖（UTC ISO）
+      final expectedUpdatedAt = _lockIsoString();
       var updateResp = await _pendingService.updateMeasurement(
         id: taskId,
         dbhCm: dbh,
@@ -1474,6 +1489,54 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       final newUpdated = updateResp['data']?['updated_at']?.toString();
       if (newUpdated != null) {
         _lockUpdatedAt = DateTime.tryParse(newUpdated);
+      }
+
+      if (widget.autoTransferToTreeSurvey) {
+        final sessionId =
+            widget.transferSessionId ?? widget.task.sessionId;
+        if (sessionId != null && sessionId.isNotEmpty) {
+          try {
+            final tr = await _pendingService.transferToTreeSurvey(
+              sessionId: sessionId,
+            );
+            if (mounted && tr['success'] == true) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    tr['message']?.toString() ??
+                        context.tr('transfer_auto_ok'),
+                  ),
+                  backgroundColor: Colors.green,
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+            } else if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    tr['message']?.toString() ??
+                        context.tr('transfer_auto_fail'),
+                  ),
+                  backgroundColor: Colors.orange,
+                  duration: const Duration(seconds: 5),
+                ),
+              );
+            }
+          } catch (e) {
+            debugPrint('[IntegratedForm] auto-transfer failed: $e');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${context.tr('transfer_auto_fail')}: $e',
+                  ),
+                  backgroundColor: Colors.orange,
+                  duration: const Duration(seconds: 5),
+                ),
+              );
+            }
+          }
+        }
       }
 
       if (mounted) {
@@ -1633,7 +1696,11 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
                               ),
                             )
                           : const Icon(Icons.check_circle),
-                      label: Text(_isLoading ? '提交中...' : '完成並提交'),
+                      label: Text(
+                        _isLoading
+                            ? context.tr('integrated_submitting')
+                            : context.tr('integrated_submit'),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: _isLoading ? Colors.grey : Colors.teal,
                         foregroundColor: Colors.white,

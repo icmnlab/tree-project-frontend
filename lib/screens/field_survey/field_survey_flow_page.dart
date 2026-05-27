@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 
 import '../../widgets/ble/ble_device_scanner.dart';
+import '../../widgets/field/field_session_setup.dart';
 import '../ble_live_session_page.dart';
 import '../pending_measurement_task_page.dart';
 import '../../services/locale_service.dart';
@@ -17,12 +18,23 @@ class FieldSurveyFlowPage extends StatefulWidget {
 class _FieldSurveyFlowPageState extends State<FieldSurveyFlowPage> {
   int _step = 0;
   BluetoothDevice? _selectedDevice;
+  FieldSessionSetup? _sessionSetup;
 
-  void _openBleLive() {
+  Future<void> _openBleLive() async {
     if (_selectedDevice == null) return;
-    Navigator.of(context).push(
+
+    final setup = _sessionSetup ??
+        await showFieldSessionSetupDialog(context);
+    if (setup == null || !mounted) return;
+
+    setState(() => _sessionSetup = setup);
+
+    await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => BleLiveSessionPage(initialDevice: _selectedDevice),
+        builder: (_) => BleLiveSessionPage(
+          initialDevice: _selectedDevice,
+          initialSessionSetup: setup,
+        ),
       ),
     );
   }
@@ -45,27 +57,27 @@ class _FieldSurveyFlowPageState extends State<FieldSurveyFlowPage> {
   Widget _buildMenu() {
     return ListView(
       children: [
-        const Text(
-          '選擇現場作業類型',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        Text(
+          context.tr('field_survey_pick'),
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 8),
         Text(
-          'VLGEO2 建議關閉 ENABLE MEM，每棵按 SEND 後立即填寫整合表單。',
+          context.tr('field_survey_ble_hint'),
           style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
         ),
         const SizedBox(height: 24),
         _FlowCard(
           icon: Icons.bluetooth_connected,
-          title: 'VLGEO2 現場連線',
-          subtitle: '掃描並選擇儀器 → 逐棵 SEND → 整合拍照表單',
+          title: context.tr('field_ble_title'),
+          subtitle: context.tr('field_ble_sub'),
           onTap: () => setState(() => _step = 1),
         ),
         const SizedBox(height: 12),
         _FlowCard(
           icon: Icons.assignment_outlined,
-          title: '待測量任務',
-          subtitle: '檢視並完成已上傳的待測量列',
+          title: context.tr('field_pending_title'),
+          subtitle: context.tr('field_pending_sub'),
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(
@@ -115,13 +127,32 @@ class _FieldSurveyFlowPageState extends State<FieldSurveyFlowPage> {
             ),
           ],
         ),
-        const SizedBox(height: 8),
+        if (_sessionSetup != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              '${_sessionSetup!.projectName} · ${_sessionSetup!.projectArea}',
+              style: TextStyle(fontSize: 12, color: Colors.teal.shade700),
+            ),
+          ),
+        TextButton.icon(
+          onPressed: () async {
+            final s = await showFieldSessionSetupDialog(
+              context,
+              initial: _sessionSetup,
+            );
+            if (s != null && mounted) setState(() => _sessionSetup = s);
+          },
+          icon: const Icon(Icons.edit_location_alt, size: 18),
+          label: Text(context.tr('field_setup_title')),
+        ),
+        const SizedBox(height: 4),
         Expanded(
           child: BleDeviceScanner(
             onDeviceSelected: (device) {
               setState(() => _selectedDevice = device);
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('已選：${device.platformName}')),
+                SnackBar(content: Text('${device.platformName}')),
               );
             },
           ),

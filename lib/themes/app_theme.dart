@@ -908,6 +908,7 @@ class FeatureCard extends StatelessWidget {
             padding: const EdgeInsets.all(AppTheme.spacingMD),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
                   padding: const EdgeInsets.all(14),
@@ -932,19 +933,25 @@ class FeatureCard extends StatelessWidget {
                   child: Icon(icon, size: 28, color: AppColors.white),
                 ),
                 const SizedBox(height: AppTheme.spacingMD),
-                Text(
-                  title,
-                  style: Theme.of(context).textTheme.labelLarge,
-                  textAlign: TextAlign.center,
+                Flexible(
+                  child: Text(
+                    title,
+                    style: Theme.of(context).textTheme.labelLarge,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
                 if (subtitle != null) ...[
                   const SizedBox(height: AppTheme.spacingXS),
-                  Text(
-                    subtitle!,
-                    style: Theme.of(context).textTheme.bodySmall,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                  Flexible(
+                    child: Text(
+                      subtitle!,
+                      style: Theme.of(context).textTheme.bodySmall,
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   ),
                 ],
               ],

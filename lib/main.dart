@@ -108,9 +108,9 @@ void main() async {
     // 啟動背景同步（每 30 分鐘檢查一次）
     MLDataSyncService().startPeriodicSync();
     TreeImageService().startPeriodicSync();
-    debugPrint('ML 數據同步服務已初始化');
+    debugPrint('訓練資料收集服務已初始化');
   } catch (e) {
-    debugPrint('ML 數據同步服務初始化失敗: $e');
+    debugPrint('訓練資料收集服務初始化失敗: $e');
   }
 
   // 初始化主題服務

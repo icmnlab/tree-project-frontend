@@ -6,8 +6,10 @@ import 'package:geolocator/geolocator.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import '../models/pending_tree_measurement.dart';
 import '../services/pending_measurement_service.dart';
+import '../services/project_service.dart';
 import '../services/v3/tree_image_service.dart';
 import '../utils/location_helper.dart';
+import '../services/locale_service.dart';
 import 'v3/integrated_tree_form_page.dart';
 
 /// 待測量任務頁面
@@ -794,7 +796,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                '尚未指定專案區位 — 點此選擇',
+                '尚未指定專案／區位 — 點此選擇',
                 style: TextStyle(
                     fontSize: 13,
                     color: Colors.orange.shade800,
@@ -810,73 +812,140 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   }
 
   void _showProjectSelectionSheet() {
-    final controller = TextEditingController();
+    final areaController = TextEditingController();
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom,
-          left: 16,
-          right: 16,
-          top: 16,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('指定專案區位',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.teal.shade700,
-                )),
-            const SizedBox(height: 8),
-            const Text('將套用到此批次的所有樹木'),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                labelText: '專案區位名稱',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.location_on),
+      builder: (ctx) => FutureBuilder<Map<String, dynamic>>(
+        future: ProjectService().getProjects(forceRefresh: true),
+        builder: (context, snapshot) {
+          final projects = <Map<String, dynamic>>[];
+          if (snapshot.hasData && snapshot.data!['success'] == true) {
+            final raw = snapshot.data!['projects'];
+            if (raw is List) {
+              for (final p in raw) {
+                if (p is Map) {
+                  projects.add(Map<String, dynamic>.from(p));
+                }
+              }
+            }
+          }
+          String? selectedCode;
+          return StatefulBuilder(
+            builder: (ctx2, setSheet) => Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom,
+                left: 16,
+                right: 16,
+                top: 16,
               ),
-              autofocus: true,
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () async {
-                  final name = controller.text.trim();
-                  if (name.isEmpty || _activeSessionId == null) return;
-                  Navigator.of(ctx).pop();
-                  try {
-                    await _service.updateSessionProject(
-                      sessionId: _activeSessionId!,
-                      projectArea: name,
-                    );
-                    if (mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                            content: Text('已設定專案區位: $name'),
-                            backgroundColor: Colors.green),
-                      );
-                    }
-                    _loadTasks();
-                  } catch (e) {
-                    _showError('設定失敗: $e');
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.teal,
-                    foregroundColor: Colors.white),
-                child: const Text('確定'),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '指定專案與區位',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.teal.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const Text('將套用到此批次所有待測量樹木'),
+                  const SizedBox(height: 12),
+                  if (snapshot.connectionState == ConnectionState.waiting)
+                    const Center(child: CircularProgressIndicator())
+                  else if (projects.isEmpty)
+                    const Text(
+                      '無法載入專案清單，請確認網路或帳號權限。',
+                      style: TextStyle(color: Colors.grey),
+                    )
+                  else
+                    DropdownButtonFormField<String>(
+                      decoration: const InputDecoration(
+                        labelText: '專案',
+                        border: OutlineInputBorder(),
+                      ),
+                      value: selectedCode,
+                      items: projects.map((p) {
+                        final code = p['code']?.toString() ?? '';
+                        final name = p['name']?.toString() ?? code;
+                        return DropdownMenuItem(
+                          value: code.isEmpty ? name : code,
+                          child: Text(name),
+                        );
+                      }).toList(),
+                      onChanged: (v) => setSheet(() => selectedCode = v),
+                    ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: areaController,
+                    decoration: const InputDecoration(
+                      labelText: '專案區位',
+                      hintText: '可選既有區位或輸入新名稱',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.location_on),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: selectedCode == null
+                          ? null
+                          : () async {
+                              if (_activeSessionId == null) return;
+                              Map<String, dynamic>? picked;
+                              for (final p in projects) {
+                                if (p['code']?.toString() == selectedCode ||
+                                    p['name']?.toString() == selectedCode) {
+                                  picked = p;
+                                  break;
+                                }
+                              }
+                              final area = areaController.text.trim().isNotEmpty
+                                  ? areaController.text.trim()
+                                  : (picked?['area']?.toString() ?? '未分類');
+                              final projectName = picked?['name']?.toString();
+                              final projectCode =
+                                  picked?['code']?.toString() ?? selectedCode;
+                              Navigator.of(ctx).pop();
+                              try {
+                                await _service.updateSessionProject(
+                                  sessionId: _activeSessionId!,
+                                  projectArea: area,
+                                  projectCode: projectCode,
+                                  projectName: projectName,
+                                );
+                                if (mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        '已設定：${projectName ?? projectCode ?? "—"} / $area',
+                                      ),
+                                      backgroundColor: Colors.green,
+                                    ),
+                                  );
+                                }
+                                _loadTasks();
+                              } catch (e) {
+                                _showError('設定失敗: $e');
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.teal,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('確定'),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
@@ -1862,7 +1931,11 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
           _navState = NavigationState.selectingTask;
           _currentTask = null;
         });
-        _showBatchTransferDialog();
+        if (_isActiveSmokeSession) {
+          _showBatchTransferDialog();
+        } else {
+          _autoTransferAfterBatchComplete();
+        }
       }
     } else {
       // 使用者取消或測量失敗 — 恢復 pending
@@ -1883,6 +1956,18 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
       });
       await _loadTasks();
     }
+  }
+
+  /// 批次全部完成後自動轉入 tree_survey（現場連線已在單棵提交時轉移）
+  Future<void> _autoTransferAfterBatchComplete() async {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(context.tr('pending_auto_transfer')),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+    await _executeBatchTransfer();
   }
 
   /// [Phase 3] 全部完成後顯示 batch transfer 對話框

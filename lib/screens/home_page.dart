@@ -171,10 +171,9 @@ class _DashboardPageState extends State<DashboardPage>
   // All available cards — order controlled by _cardOrder
   static const _allCards = [
     // 現場作業
-    {'id': 'field_survey', 'title': '現場測量', 'subtitle': 'VLGEO2／待測量', 'icon': 'forest', 'category': 'field', 'needsNetwork': true},
+    {'id': 'field_survey', 'title': '現場測量', 'subtitle': 'VLGEO2 連線／待測量', 'icon': 'forest', 'category': 'field', 'needsNetwork': true},
     {'id': 'ble', 'title': '藍牙匯入', 'subtitle': '儀器同步', 'icon': 'bluetooth', 'category': 'field', 'needsNetwork': false},
-    {'id': 'ble_live', 'title': '現場連線', 'subtitle': 'VLGEO2 即時', 'icon': 'bluetooth', 'category': 'field', 'needsNetwork': true},
-    {'id': 'pending', 'title': '待測量任務', 'subtitle': '現場測量', 'icon': 'assignment', 'category': 'field', 'needsNetwork': true},
+    {'id': 'pending', 'title': '待測量任務', 'subtitle': '批次導航測量', 'icon': 'assignment', 'category': 'field', 'needsNetwork': true},
     // 數據管理
     {'id': 'survey', 'title': '樹木調查', 'subtitle': '新增與編輯', 'icon': 'nature', 'category': 'data', 'needsNetwork': true},
     {'id': 'map', 'title': '樹木地圖', 'subtitle': '位置分佈', 'icon': 'map', 'category': 'data', 'needsNetwork': true},
@@ -250,6 +249,8 @@ class _DashboardPageState extends State<DashboardPage>
           _cardOrder.add(card['id'] as String);
         }
       }
+      // 現場連線已併入「現場測量」，移除舊卡片 id
+      _cardOrder.removeWhere((id) => id == 'ble_live');
     });
   }
   

@@ -9,7 +9,7 @@ import '../services/v3/ml_data_sync_service.dart';
 /// 功能：
 /// 1. 樹木影像管理 - 查看、同步照片
 /// 2. 衝突解決 - 查看待處理的衝突
-/// 3. ML 數據同步 - 管理訓練數據同步
+/// 3. 訓練資料收集 - 上傳現場量測與影像供模型訓練
 ///
 /// 註：DBH 測量校準 UI 已於 T3 移除（純視覺示意，未連接量測流程）。
 ///     ar_measurement_integration_service.dart / CalibrationData 暫保留，
@@ -377,7 +377,7 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
           children: [
             Icon(Icons.psychology, color: Colors.purple),
             SizedBox(width: 8),
-            Text('ML 數據同步'),
+            Text('訓練資料收集'),
           ],
         ),
         content: Column(

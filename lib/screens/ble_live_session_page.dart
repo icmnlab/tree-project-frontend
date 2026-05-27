@@ -7,6 +7,7 @@ import '../services/ble_live_packet_decoder.dart';
 import '../utils/location_helper.dart';
 import '../services/pending_measurement_service.dart';
 import '../widgets/ble/ble_device_scanner.dart';
+import '../widgets/field/field_session_setup.dart';
 import 'pending_measurement_task_page.dart';
 import 'v3/integrated_tree_form_page.dart';
 import '../services/locale_service.dart';
@@ -17,7 +18,14 @@ class BleLiveSessionPage extends StatefulWidget {
   /// 由 [FieldSurveyFlowPage] 等入口預先選定的裝置
   final BluetoothDevice? initialDevice;
 
-  const BleLiveSessionPage({super.key, this.initialDevice});
+  /// 進入連線前已完成的專案／區位設定（建議由現場測量 Wizard 傳入）
+  final FieldSessionSetup? initialSessionSetup;
+
+  const BleLiveSessionPage({
+    super.key,
+    this.initialDevice,
+    this.initialSessionSetup,
+  });
 
   @override
   State<BleLiveSessionPage> createState() => _BleLiveSessionPageState();
@@ -39,7 +47,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   bool _isConnected = false;
   bool _isListening = false;
   bool _isProcessingTree = false;
-  String _status = '請掃描 VLGEO2 裝置';
+  String _status = '';
 
   int _liveSeq = 0;
   int _completedCount = 0;
@@ -48,6 +56,9 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   String? _liveSessionId;
   String? _batchName;
   String? _gpsSource;
+  String? _projectName;
+  String? _projectCode;
+  String? _projectArea;
 
   BleLiveMeasurement? _lastMeasurement;
   final List<String> _logLines = [];
@@ -55,13 +66,30 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   @override
   void initState() {
     super.initState();
+    _status = ''; // set in didChangeDependencies
+    final setup = widget.initialSessionSetup;
+    if (setup != null) {
+      _batchName = setup.batchName;
+      _projectName = setup.projectName;
+      _projectCode = setup.projectCode;
+      _projectArea = setup.projectArea;
+      _gpsSource = setup.gpsSource;
+    }
     final pre = widget.initialDevice;
     if (pre != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _connect(pre);
       });
-    } else {
-      _status = '請從列表選擇 VLGEO2 裝置';
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_status.isEmpty) {
+      _status = widget.initialDevice == null
+          ? context.tr('ble_status_pick_device')
+          : context.tr('ble_status_connect');
     }
   }
 
@@ -98,7 +126,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       if (!mounted) return;
       setState(() {
         _isConnected = true;
-        _status = '已連線。量一棵 → SEND → 處理完再下一棵';
+        _status = context.tr('ble_status_connected');
       });
     } catch (e) {
       if (!mounted) return;
@@ -232,8 +260,8 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
 
       if (!hasGps && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('無法取得手機 GPS，仍會建立任務但樹位可能需稍後補'),
+          SnackBar(
+            content: Text(context.tr('ble_no_gps')),
             backgroundColor: Colors.orange,
           ),
         );
@@ -262,6 +290,9 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       final result = await _pendingService.createAndUploadFromBle(
         bleData: [bleRecord],
         batchName: _batchName,
+        projectArea: _projectArea,
+        projectCode: _projectCode,
+        projectName: _projectName,
         sessionId: _liveSessionId,
       );
 
@@ -277,6 +308,8 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       }
 
       _liveSessionId = result['sessionId'] as String? ?? _liveSessionId;
+
+      await _syncSessionProjectToServer();
 
       final tasks = result['tasks'] as List<PendingTreeMeasurement>?;
       if (tasks == null || tasks.isEmpty || tasks.first.id == null) {
@@ -306,7 +339,11 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
 
       final success = await nav.push<bool>(
         MaterialPageRoute(
-          builder: (_) => IntegratedTreeFormPage(task: task),
+          builder: (_) => IntegratedTreeFormPage(
+            task: task,
+            autoTransferToTreeSurvey: true,
+            transferSessionId: _liveSessionId,
+          ),
         ),
       );
 
@@ -316,7 +353,12 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         _completedCount++;
         messenger.showSnackBar(
           SnackBar(
-            content: Text('第 $seq 棵已完成（本場 $_completedCount 棵）'),
+            content: Text(
+              context
+                  .tr('ble_tree_done')
+                  .replaceAll('{n}', '$seq')
+                  .replaceAll('{total}', '$_completedCount'),
+            ),
             backgroundColor: Colors.green,
             duration: const Duration(seconds: 2),
           ),
@@ -328,7 +370,9 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         if (!mounted) return;
         messenger.showSnackBar(
           SnackBar(
-            content: Text('第 $seq 棵已取消或未完成，可從待測量列表繼續'),
+            content: Text(
+              context.tr('ble_tree_cancel').replaceAll('{n}', '$seq'),
+            ),
           ),
         );
       }
@@ -344,30 +388,68 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         setState(() {
           _isProcessingTree = false;
           _status = _isConnected
-              ? '已完成 $_completedCount 棵。請在儀器量下一棵並按 SEND'
+              ? context.tr('ble_status_connected')
               : _status;
         });
       }
     }
   }
 
-  /// 第一棵前詢問場次名稱與 GPS 語意（整場共用）
+  /// 第一棵前：專案、區位、GPS 語意、場次名稱（整場共用）
   Future<bool> _ensureLiveSessionConfigured() async {
-    if (_batchName != null && _gpsSource != null) return true;
+    if (_projectCode != null &&
+        _projectArea != null &&
+        _gpsSource != null &&
+        _batchName != null) {
+      return true;
+    }
 
-    final batchName = await _promptBatchName();
-    if (batchName == null || batchName.isEmpty) return false;
-
-    final gpsSource = await _confirmGpsSource();
-    if (gpsSource == null) return false;
+    final setup = await showFieldSessionSetupDialog(
+      context,
+      initial: widget.initialSessionSetup ??
+          (_projectCode != null
+              ? FieldSessionSetup(
+                  batchName: _batchName ?? '',
+                  projectName: _projectName ?? '',
+                  projectCode: _projectCode!,
+                  projectArea: _projectArea ?? '',
+                  gpsSource: _gpsSource ?? 'surveyor',
+                )
+              : null),
+    );
+    if (setup == null) return false;
 
     if (mounted) {
       setState(() {
-        _batchName = batchName;
-        _gpsSource = gpsSource;
+        _batchName = setup.batchName;
+        _projectName = setup.projectName;
+        _projectCode = setup.projectCode;
+        _projectArea = setup.projectArea;
+        _gpsSource = setup.gpsSource;
       });
     }
+    await _syncSessionProjectToServer();
     return true;
+  }
+
+  Future<void> _syncSessionProjectToServer() async {
+    final sid = _liveSessionId;
+    if (sid == null ||
+        _projectArea == null ||
+        _projectCode == null ||
+        _projectName == null) {
+      return;
+    }
+    try {
+      await _pendingService.updateSessionProject(
+        sessionId: sid,
+        projectArea: _projectArea!,
+        projectCode: _projectCode,
+        projectName: _projectName,
+      );
+    } catch (e) {
+      debugPrint('[BleLive] updateSessionProject: $e');
+    }
   }
 
   void _appendLog(String line) {
@@ -378,49 +460,10 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
     });
   }
 
-  Future<String?> _promptBatchName() async {
-    final controller = TextEditingController(
-      text: _batchName ?? '現場連線-${DateTime.now().month}/${DateTime.now().day}',
-    );
-    return showDialog<String>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Text('現場場次名稱'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              '本場所有樹木共用此名稱，第一棵前設定一次即可。',
-              style: TextStyle(fontSize: 13),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(hintText: '例如：東華樣區-A'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('取消')),
-          ElevatedButton(
-            onPressed: () {
-              final v = controller.text.trim();
-              if (v.isEmpty) return;
-              Navigator.pop(ctx, v);
-            },
-            child: const Text('開始'),
-          ),
-        ],
-      ),
-    );
-  }
-
   Future<void> _openSessionTaskList() async {
     if (_liveSessionId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('尚無本場次任務')),
+        SnackBar(content: Text(context.tr('ble_no_session_tasks'))),
       );
       return;
     }
@@ -428,35 +471,6 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       context,
       MaterialPageRoute(
         builder: (_) => PendingMeasurementTaskPage(sessionId: _liveSessionId),
-      ),
-    );
-  }
-
-  Future<String?> _confirmGpsSource() async {
-    return showDialog<String>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Text('GPS 語意（手機座標）'),
-        content: const Text(
-          '每棵樹在按 SEND 當下會取一次手機 GPS。\n\n'
-          '• 測站模式：您在測站持機，依 HD+方位推算樹位\n'
-          '• 樹旁模式：您站在樹旁，座標即樹位',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, 'surveyor'),
-            child: const Text('測站'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, 'tree'),
-            child: const Text('樹旁'),
-          ),
-        ],
       ),
     );
   }
@@ -486,7 +500,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
     final last = _lastMeasurement;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('VLGEO2 現場連線'),
+        title: Text(context.tr('ble_live_title')),
         actions: [
           if (_liveSessionId != null)
             IconButton(
@@ -518,14 +532,23 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
                   const SizedBox(height: 8),
                   Text(
                     _isProcessingTree
-                        ? '⏳ 處理中 — 請完成表單後再量下一棵'
-                        : '流程：量一棵 → SEND → 拍照/DBH/提交 → 再下一棵\n'
-                            '已完成 $_completedCount 棵 · 已接收 $_liveSeq 筆 NMEA',
+                        ? '⏳ ${context.tr('ble_processing')}'
+                        : '${context.tr('ble_flow_hint')}\n'
+                            '$_completedCount · $_liveSeq NMEA',
                     style: const TextStyle(fontSize: 12),
                   ),
-                  if (_batchName != null)
+                  if (_projectName != null)
                     Text(
-                      '場次：$_batchName · GPS：${_gpsSource == 'tree' ? '樹旁' : '測站'}',
+                      context
+                          .tr('ble_session_line')
+                          .replaceAll('{project}', _projectName!)
+                          .replaceAll('{area}', _projectArea ?? '—')
+                          .replaceAll(
+                            '{gps}',
+                            _gpsSource == 'tree'
+                                ? context.tr('ble_gps_tree')
+                                : context.tr('ble_gps_surveyor'),
+                          ),
                       style: const TextStyle(fontSize: 11),
                     ),
                 ],

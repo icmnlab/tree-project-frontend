@@ -116,6 +116,9 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
     _treeId = widget.treeData['id'].toString();
     _loadedUpdatedAt = widget.treeData['updated_at']?.toString();
 
+    // 列表頁資料可能沒有 updated_at；進入編輯時向伺服器刷新，避免誤觸 409
+    _refreshLockFromServer();
+
     _loadSpeciesList();
     _loadProjectAreas();
 
@@ -125,6 +128,20 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
 
     treeHeightController.addListener(_updateCarbonCalculations);
     dbhController.addListener(_updateCarbonCalculations);
+  }
+
+  Future<void> _refreshLockFromServer() async {
+    try {
+      final res = await TreeService().getTreeById(_treeId);
+      if (res['success'] != true) return;
+      final data = res['data'] as Map<String, dynamic>?;
+      final fresh = data?['updated_at']?.toString();
+      if (fresh != null && fresh.isNotEmpty && mounted) {
+        setState(() => _loadedUpdatedAt = fresh);
+      }
+    } catch (e) {
+      logDebug('刷新樂觀鎖基準失敗: $e');
+    }
   }
 
   void _populateFormWithData(Map<String, dynamic> data) {

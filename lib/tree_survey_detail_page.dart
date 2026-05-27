@@ -281,10 +281,16 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
                 ),
               ),
               _buildInfoRow(
-                '計算依據',
-                dbStorage != null
-                    ? '資料庫欄位 ${CarbonDisplay.fieldStorage}'
-                    : '手冊第六章重算 → ${CarbonDisplay.fieldStorage}',
+                '計算依據（存量）',
+                CarbonDisplay.calculationBasisStorage(
+                  fromDb: dbStorage != null,
+                ),
+              ),
+              _buildInfoRow(
+                '計算依據（年吸存）',
+                CarbonDisplay.calculationBasisAnnual(
+                  annualSequestration > 0 ? annualSequestration : null,
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.only(top: 4),

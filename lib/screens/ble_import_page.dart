@@ -2618,11 +2618,10 @@ class _BleImportPageState extends State<BleImportPage> {
                     const Text(
                       '（無可選擇的專案）\n'
                       '可能原因：帳號尚未被指派專案權限，或專案清單載入失敗。\n'
-                      '請請業務管理員在後台將您的帳號加入 user_projects，'
-                      '或重新登入後再試；仍無法選擇時請先取消匯入。',
+                      '可下方「新增專案」，或請業務管理員將帳號加入 user_projects。',
                       style: TextStyle(color: Colors.grey, fontSize: 12),
-                    )
-                  else
+                    ),
+                  if (candidates.isNotEmpty) ...[
                     DropdownButton<String>(
                       isExpanded: true,
                       hint: const Text('選擇專案…'),
@@ -2645,6 +2644,22 @@ class _BleImportPageState extends State<BleImportPage> {
                       ],
                       onChanged: (v) => setStateDialog(() => selectedKey = v),
                     ),
+                    const SizedBox(height: 8),
+                  ],
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    icon: const Icon(Icons.add),
+                    label: const Text('新增專案'),
+                    onPressed: () async {
+                      final created = await _showBleCreateProjectDialog(ctx2);
+                      if (created != null) {
+                        candidates.add(created);
+                        setStateDialog(() {
+                          selectedKey = created['code'] ?? created['name'];
+                        });
+                      }
+                    },
+                  ),
                 ],
               ),
             ),
@@ -2679,5 +2694,79 @@ class _BleImportPageState extends State<BleImportPage> {
         );
       },
     );
+  }
+
+  /// 回傳 {'name','code','area'} 供 BLE 批次指派專案使用
+  Future<Map<String, String?>?> _showBleCreateProjectDialog(
+      BuildContext dialogContext) async {
+    final nameCtrl = TextEditingController();
+    final areaCtrl = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: dialogContext,
+      builder: (ctx) => AlertDialog(
+        title: const Text('新增專案'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(
+                labelText: '專案名稱',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: areaCtrl,
+              decoration: const InputDecoration(
+                labelText: '專案區位（選填）',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('建立'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || nameCtrl.text.trim().isEmpty) return null;
+    try {
+      final area = areaCtrl.text.trim();
+      final res = await ProjectService().addProject(
+        nameCtrl.text.trim(),
+        area.isEmpty ? '未分類' : area,
+      );
+      if (res['success'] == true && res['project'] != null) {
+        final p = res['project'] as Map<String, dynamic>;
+        await ProjectBoundaryCoordinator.instance.afterBoundaryMutation(
+          projectName: p['name']?.toString(),
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('專案「${p['name']}」已建立')),
+          );
+        }
+        return {
+          'name': p['name']?.toString(),
+          'code': p['code']?.toString(),
+          'area': p['area']?.toString() ?? (area.isEmpty ? null : area),
+        };
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('新增專案失敗: $e')),
+        );
+      }
+    }
+    return null;
   }
 }

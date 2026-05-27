@@ -89,6 +89,7 @@
 
 - [x] P0 骨架：`LocaleService` + `AppStrings`（zh / en）  
 - [x] P1：主要流程（`home_page`、`integrated_tree_form` 拍照、BLE／現場 Wizard）  
+- [x] P1：現場場次必填專案＋區位（`FieldSessionSetup`、BLE 上傳帶 project_*）  
 - [ ] P2：其餘頁面 + ARB + `flutter gen-l10n`、跟隨系統語言
 
 ---
