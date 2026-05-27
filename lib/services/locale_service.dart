@@ -96,4 +96,7 @@ class LocaleService extends ChangeNotifier {
 
 extension LocaleX on BuildContext {
   String tr(String key) => LocaleService.instance.t(key);
+
+  String trParams(String key, Map<String, String> params) =>
+      LocaleService.instance.tParams(key, params);
 }

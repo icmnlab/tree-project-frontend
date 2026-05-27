@@ -34,6 +34,26 @@ class AuthService {
     });
   }
 
+  /// 申請密碼重設碼（公開；管理員從後台提供重設碼）
+  static Future<Map<String, dynamic>> requestPasswordReset(String username) {
+    return ApiService.post('password-reset-request', {
+      'username': username.trim(),
+    });
+  }
+
+  /// 使用重設碼重設密碼（公開）
+  static Future<Map<String, dynamic>> resetPassword({
+    required String username,
+    required String code,
+    required String newPassword,
+  }) {
+    return ApiService.post('password-reset', {
+      'username': username.trim(),
+      'code': code.trim(),
+      'new_password': newPassword,
+    });
+  }
+
   // 儲存使用者資訊（使用加密存儲）
   static Future<void> saveUserInfo(Map<String, dynamic> userInfo) async {
     await _secureStorage.write(key: _userKey, value: jsonEncode(userInfo));

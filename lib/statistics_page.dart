@@ -4,6 +4,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'services/carbon_calculation_service.dart';
 import 'services/api_service.dart';
 import 'constants/colors.dart';
+import 'services/locale_service.dart';
 
 class StatisticsPage extends StatefulWidget {
   const StatisticsPage({super.key});
@@ -62,7 +63,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('無法載入統計資料'),
+              content: Text(LocaleService.instance.t('stats_load_failed')),
               backgroundColor: AppColors.error,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -74,7 +75,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('發生錯誤: $e'),
+            content: Text('${LocaleService.instance.t('stats_error')}: $e'),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -231,11 +232,11 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
 
   Widget _buildSpeciesChart() {
     if (_statistics == null || _statistics!['species'] == null) {
-      return _buildEmptyState('暫無樹種數據');
+      return _buildEmptyState(LocaleService.instance.t('stats_empty_species'));
     }
 
     final speciesData = _statistics!['species'] as List;
-    if (speciesData.isEmpty) return _buildEmptyState('暫無樹種數據');
+    if (speciesData.isEmpty) return _buildEmptyState(LocaleService.instance.t('stats_empty_species'));
     
     final topSpecies = speciesData.take(8).toList(); // 減少到8個以避免擁擠
     final maxY = (topSpecies
@@ -243,8 +244,8 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
         .reduce((a, b) => a > b ? a : b) * 1.2).toDouble();
 
     return _buildChartCard(
-      title: '樹種分布統計',
-      subtitle: '依數量顯示前8大樹種',
+      title: LocaleService.instance.t('stats_species_title'),
+      subtitle: LocaleService.instance.t('stats_species_sub'),
       icon: Icons.forest,
       accentColor: AppColors.forestGreen,
       chart: SizedBox(
@@ -369,11 +370,11 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
 
   Widget _buildProjectChart() {
     if (_statistics == null || _statistics!['projects'] == null) {
-      return _buildEmptyState('暫無專案數據');
+      return _buildEmptyState(LocaleService.instance.t('stats_empty_project'));
     }
 
     final projectData = _statistics!['projects'] as List;
-    if (projectData.isEmpty) return _buildEmptyState('暫無專案數據');
+    if (projectData.isEmpty) return _buildEmptyState(LocaleService.instance.t('stats_empty_project'));
     
     final topProjects = projectData.take(6).toList(); // 減少到6個
     final maxY = (topProjects
@@ -381,8 +382,8 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
         .reduce((a, b) => a > b ? a : b) * 1.2).toDouble();
 
     return _buildChartCard(
-      title: '專案樹木統計',
-      subtitle: '依數量顯示前6大專案',
+      title: LocaleService.instance.t('stats_project_title'),
+      subtitle: LocaleService.instance.t('stats_project_sub'),
       icon: Icons.folder_special,
       accentColor: AppColors.portBlue,
       chart: SizedBox(
@@ -484,11 +485,11 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
 
   Widget _buildAreaChart() {
     if (_statistics == null || _statistics!['areas'] == null) {
-      return _buildEmptyState('暫無區位數據');
+      return _buildEmptyState(LocaleService.instance.t('stats_empty_area'));
     }
 
     final areaData = _statistics!['areas'] as List;
-    if (areaData.isEmpty) return _buildEmptyState('暫無區位數據');
+    if (areaData.isEmpty) return _buildEmptyState(LocaleService.instance.t('stats_empty_area'));
     
     final topAreas = areaData.take(6).toList();
     final maxY = (topAreas
@@ -496,8 +497,8 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
         .reduce((a, b) => a > b ? a : b) * 1.2).toDouble();
 
     return _buildChartCard(
-      title: '區位樹木統計',
-      subtitle: '依數量顯示前6大區位',
+      title: LocaleService.instance.t('stats_area_title'),
+      subtitle: LocaleService.instance.t('stats_area_sub'),
       icon: Icons.location_on,
       accentColor: AppColors.warmOrange,
       chart: SizedBox(
@@ -599,7 +600,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
 
   Widget _buildSizeStats() {
     if (_statistics == null || _statistics!['sizes'] == null) {
-      return _buildEmptyState('暫無尺寸數據');
+      return _buildEmptyState(LocaleService.instance.t('stats_empty_size'));
     }
 
     final sizes = _statistics!['sizes'];
@@ -651,8 +652,8 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
                   child: const Icon(Icons.straighten, color: AppColors.creativePurple, size: 24),
                 ),
                 const SizedBox(width: 16),
-                const Text(
-                  '樹木尺寸統計',
+                Text(
+                  LocaleService.instance.t('stats_size_title'),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -666,17 +667,17 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
-                _buildModernStatRow('平均樹高', '${formatStat(sizes['avg_height'])} 公尺', Icons.height),
-                _buildModernStatRow('最大樹高', '${formatStat(sizes['max_height'])} 公尺', Icons.arrow_upward),
-                _buildModernStatRow('最小樹高', '${formatStat(sizes['min_height'])} 公尺', Icons.arrow_downward),
+                _buildModernStatRow(LocaleService.instance.t('stats_avg_height'), '${formatStat(sizes['avg_height'])} ${LocaleService.instance.t('stats_unit_m')}', Icons.height),
+                _buildModernStatRow(LocaleService.instance.t('stats_max_height'), '${formatStat(sizes['max_height'])} ${LocaleService.instance.t('stats_unit_m')}', Icons.arrow_upward),
+                _buildModernStatRow(LocaleService.instance.t('stats_min_height'), '${formatStat(sizes['min_height'])} ${LocaleService.instance.t('stats_unit_m')}', Icons.arrow_downward),
                 Container(
                   margin: const EdgeInsets.symmetric(vertical: 12),
                   height: 1,
                   color: Colors.grey.shade200,
                 ),
-                _buildModernStatRow('平均胸徑', '${formatStat(sizes['avg_dbh'])} 公分', Icons.circle_outlined),
-                _buildModernStatRow('最大胸徑', '${formatStat(sizes['max_dbh'])} 公分', Icons.add_circle_outline),
-                _buildModernStatRow('最小胸徑', '${formatStat(sizes['min_dbh'])} 公分', Icons.remove_circle_outline),
+                _buildModernStatRow(LocaleService.instance.t('stats_avg_dbh'), '${formatStat(sizes['avg_dbh'])} ${LocaleService.instance.t('stats_unit_cm')}', Icons.circle_outlined),
+                _buildModernStatRow(LocaleService.instance.t('stats_max_dbh'), '${formatStat(sizes['max_dbh'])} ${LocaleService.instance.t('stats_unit_cm')}', Icons.add_circle_outline),
+                _buildModernStatRow(LocaleService.instance.t('stats_min_dbh'), '${formatStat(sizes['min_dbh'])} ${LocaleService.instance.t('stats_unit_cm')}', Icons.remove_circle_outline),
               ],
             ),
           ),
@@ -687,7 +688,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
 
   Widget _buildCarbonStats() {
     if (_statistics == null || _statistics!['carbon'] == null) {
-      return _buildEmptyState('暫無碳儲存數據');
+      return _buildEmptyState(LocaleService.instance.t('stats_empty_carbon'));
     }
 
     final carbon = _statistics!['carbon'];
@@ -739,8 +740,8 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
                   child: const Icon(Icons.eco, color: AppColors.forestGreen, size: 24),
                 ),
                 const SizedBox(width: 16),
-                const Text(
-                  '碳儲存量統計',
+                Text(
+                  LocaleService.instance.t('stats_carbon_title'),
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -834,22 +835,22 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
                   child: const Icon(Icons.calculate, color: Colors.white, size: 28),
                 ),
                 const SizedBox(width: 16),
-                const Expanded(
+                Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        '碳足跡抵換計算器',
-                        style: TextStyle(
+                        LocaleService.instance.t('stats_carbon_calc_title'),
+                        style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                           color: Colors.white,
                         ),
                       ),
-                      SizedBox(height: 4),
+                      const SizedBox(height: 4),
                       Text(
-                        '根據您的樹木資料計算',
-                        style: TextStyle(
+                        LocaleService.instance.t('stats_carbon_calc_sub'),
+                        style: const TextStyle(
                           fontSize: 12,
                           color: Colors.white70,
                         ),
@@ -865,7 +866,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
                 Expanded(
                   child: _buildCarbonMetricCard(
                     icon: Icons.trending_up,
-                    label: '年吸存量',
+                    label: LocaleService.instance.t('stats_annual_seq_label'),
                     value: '${_totalAnnualSequestration.toStringAsFixed(1)}',
                     unit: 'kg CO₂',
                   ),
@@ -874,7 +875,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
                 Expanded(
                   child: _buildCarbonMetricCard(
                     icon: Icons.inventory_2,
-                    label: '總儲存量',
+                    label: LocaleService.instance.t('stats_total_storage_label'),
                     value: '${_totalCarbonStorage.toStringAsFixed(1)}',
                     unit: 'kg CO₂',
                   ),
@@ -956,9 +957,9 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
             ),
           ),
         ),
-        title: const Text(
-          '統計分析',
-          style: TextStyle(
+        title: Text(
+          LocaleService.instance.t('stats_title'),
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
             fontSize: 20,
@@ -986,7 +987,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    '載入統計資料中...',
+                    LocaleService.instance.t('stats_loading'),
                     style: TextStyle(
                       color: Colors.grey.shade600,
                       fontSize: 14,

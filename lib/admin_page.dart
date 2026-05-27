@@ -14,7 +14,9 @@ import 'screens/ip_blacklist_page.dart'; // [T8.2] IP 黑名單管理
 import 'admin_research_dataset_page.dart'; // [Research] DBH 校準資料蒐集
 import 'screens/invite_management_page.dart';
 import 'screens/audit_log_page.dart';
+import 'screens/pending_password_resets_page.dart';
 import '../services/auth_service.dart';
+import '../services/locale_service.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
@@ -1062,13 +1064,30 @@ class _AdminPageState extends State<AdminPage> {
                 elevation: 2,
                 child: ListTile(
                   leading: const Icon(Icons.history_edu_outlined),
-                  title: const Text('稽核日誌'),
-                  subtitle: const Text('登入、註冊、資料變更紀錄'),
+                  title: Text(context.tr('admin_audit_log')),
+                  subtitle: Text(context.tr('admin_audit_log_sub')),
                   trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                   onTap: () {
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => const AuditLogPage(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 12),
+              Card(
+                elevation: 2,
+                child: ListTile(
+                  leading: const Icon(Icons.password_outlined),
+                  title: Text(context.tr('admin_pwd_resets')),
+                  subtitle: Text(context.tr('admin_pwd_resets_sub')),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const PendingPasswordResetsPage(),
                       ),
                     );
                   },

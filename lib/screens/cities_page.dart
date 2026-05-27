@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../constants/colors.dart';
+import '../services/locale_service.dart';
 import 'project_areas_page.dart';
 
 class CitiesPage extends StatelessWidget {
@@ -35,7 +36,7 @@ class CitiesPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('選擇縣市'),
+        title: Text(context.tr('cities_title')),
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
@@ -89,16 +90,16 @@ class CitiesPage extends StatelessWidget {
                     size: 32,
                   ),
                 ),
-                title: const Text(
-                  '全台灣',
-                  style: TextStyle(
+                title: Text(
+                  context.tr('cities_all_taiwan'),
+                  style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 20,
                     color: Colors.white,
                   ),
                 ),
                 subtitle: Text(
-                  '查看所有區位',
+                  context.tr('cities_all_areas'),
                   style: TextStyle(color: Colors.white.withValues(alpha:0.9)),
                 ),
                 trailing: Container(

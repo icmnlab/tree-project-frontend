@@ -298,6 +298,12 @@ class _LoginPageState extends State<LoginPage>
                       : () => Navigator.pushNamed(context, '/register'),
                   child: Text(context.tr('register_have_invite')),
                 ),
+                TextButton(
+                  onPressed: _isLoading
+                      ? null
+                      : () => Navigator.pushNamed(context, '/forgot-password'),
+                  child: Text(context.tr('login_forgot_password')),
+                ),
               ],
             ),
           ),

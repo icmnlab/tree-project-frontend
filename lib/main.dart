@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/login_page.dart';
 import 'screens/register_page.dart';
+import 'screens/forgot_password_page.dart';
 import 'screens/home_page.dart';
 import 'admin_page.dart';
 import 'tree_survey_page.dart';
@@ -211,6 +212,7 @@ class MyApp extends StatelessWidget {
             const LoginPage(), // Default route for logout redirect
         '/login': (context) => const LoginPage(),
         '/register': (context) => const RegisterPage(),
+        '/forgot-password': (context) => const ForgotPasswordPage(),
         '/home': (context) => const AuthGuard(child: HomePage()),
         '/admin': (context) =>
             const AuthGuard(requireAdmin: true, child: AdminPage()),

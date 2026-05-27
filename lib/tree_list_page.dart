@@ -8,6 +8,7 @@ import 'services/admin_service.dart';
 import 'services/api_service.dart';
 import 'services/auth_service.dart'; // 角色權限
 import 'constants/colors.dart';
+import 'services/locale_service.dart';
 
 /// [T6 cleanup] 中文表頭→V2 (English) DB 欄位映射
 /// 用于 Excel 匯入 + 批次更新改走 createTreeV2 / updateTreeV2。
@@ -264,7 +265,7 @@ class _TreeListPageState extends State<TreeListPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('排序選項'),
+        title: Text(context.tr('tree_list_sort_title')),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -284,7 +285,7 @@ class _TreeListPageState extends State<TreeListPage> {
                 )),
             const Divider(),
             SwitchListTile(
-              title: const Text('升序排列'),
+              title: Text(context.tr('tree_list_sort_asc')),
               value: _isAscending,
               onChanged: (value) {
                 setState(() {
@@ -652,9 +653,9 @@ class _TreeListPageState extends State<TreeListPage> {
             ],
           ),
         ),
-        title: const Text(
-          '樹木列表',
-          style: TextStyle(
+        title: Text(
+          context.tr('tree_list_title'),
+          style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
             fontSize: 20,
@@ -667,29 +668,29 @@ class _TreeListPageState extends State<TreeListPage> {
             if (_canEdit)
               IconButton(
                 icon: const Icon(Icons.edit_rounded),
-                tooltip: '批次更新',
+                tooltip: context.tr('tree_list_batch_update'),
                 onPressed: _batchUpdate,
               ),
             if (_canDelete)
               IconButton(
                 icon: const Icon(Icons.delete_outline_rounded),
-                tooltip: '批次刪除',
+                tooltip: context.tr('tree_list_batch_delete'),
                 onPressed: _batchDelete,
               ),
             IconButton(
               icon: const Icon(Icons.close_rounded),
-              tooltip: '取消選擇',
+              tooltip: context.tr('tree_list_cancel_select'),
               onPressed: _toggleSelectionMode,
             ),
           ] else ...[
             IconButton(
               icon: const Icon(Icons.sort_rounded),
-              tooltip: '排序',
+              tooltip: context.tr('tree_list_sort'),
               onPressed: _showSortDialog,
             ),
             IconButton(
               icon: const Icon(Icons.checklist_rounded),
-              tooltip: '批次選擇',
+              tooltip: context.tr('tree_list_batch_select'),
               onPressed: _toggleSelectionMode,
             ),
             PopupMenuButton<String>(
@@ -722,7 +723,7 @@ class _TreeListPageState extends State<TreeListPage> {
                             )
                           : Icon(Icons.table_chart_rounded, color: AppColors.forestGreen),
                       const SizedBox(width: 12),
-                      Text(_isExportingExcel ? '匯出 Excel 中...' : '匯出 Excel'),
+                      Text(_isExportingExcel ? context.tr('tree_list_export_excel_loading') : context.tr('tree_list_export_excel')),
                     ],
                   ),
                 ),
@@ -739,7 +740,7 @@ class _TreeListPageState extends State<TreeListPage> {
                             )
                           : Icon(Icons.picture_as_pdf_rounded, color: AppColors.tipcRed),
                       const SizedBox(width: 12),
-                      Text(_isExportingPdf ? '匯出 PDF 中...' : '匯出 PDF'),
+                      Text(_isExportingPdf ? context.tr('tree_list_export_pdf_loading') : context.tr('tree_list_export_pdf')),
                     ],
                   ),
                 ),
@@ -749,7 +750,7 @@ class _TreeListPageState extends State<TreeListPage> {
                     children: [
                       Icon(Icons.upload_file_rounded, color: AppColors.portBlue),
                       const SizedBox(width: 12),
-                      const Text('匯入 Excel'),
+                      Text(context.tr('tree_list_import_excel')),
                     ],
                   ),
                 ),
@@ -791,7 +792,7 @@ class _TreeListPageState extends State<TreeListPage> {
                           child: TextField(
                             controller: _searchController,
                             decoration: InputDecoration(
-                              hintText: '搜尋樹種、專案或區位',
+                              hintText: context.tr('tree_list_search_hint'),
                               hintStyle: TextStyle(color: textTertiary, fontSize: 14),
                               prefixIcon: Icon(Icons.search_rounded, color: AppColors.portBlue),
                               border: OutlineInputBorder(
@@ -888,7 +889,9 @@ class _TreeListPageState extends State<TreeListPage> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
-                          '共 ${_filteredTrees.length} 棵',
+                          context.trParams('tree_list_total', {
+                            'n': '${_filteredTrees.length}',
+                          }),
                           style: TextStyle(
                             color: AppColors.forestGreen,
                             fontSize: 13,
@@ -926,7 +929,7 @@ class _TreeListPageState extends State<TreeListPage> {
                               ),
                               const SizedBox(height: 20),
                               Text(
-                                '載入樹木資料中...',
+                                context.tr('tree_list_loading'),
                                 style: TextStyle(color: textSecondary, fontSize: 15),
                               ),
                             ],
