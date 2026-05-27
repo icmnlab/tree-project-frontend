@@ -671,20 +671,18 @@ class _DashboardPageState extends State<DashboardPage>
             children: [
               const Icon(Icons.language_rounded, size: 20),
               const SizedBox(width: 12),
-              Text(LocaleService.instance.isEnglish
-                  ? _l10n('language_zh')
-                  : _l10n('language_en')),
+              Text(LocaleService.instance.languageMenuLabel),
             ],
           ),
         ),
         const PopupMenuDivider(),
-        const PopupMenuItem(
+        PopupMenuItem(
           value: 'logout',
           child: Row(
             children: [
-              Icon(Icons.logout_rounded, size: 20, color: AppColors.error),
-              SizedBox(width: 12),
-              Text('登出', style: TextStyle(color: AppColors.error)),
+              const Icon(Icons.logout_rounded, size: 20, color: AppColors.error),
+              const SizedBox(width: 12),
+              Text(_l10n('logout'), style: const TextStyle(color: AppColors.error)),
             ],
           ),
         ),
@@ -695,7 +693,7 @@ class _DashboardPageState extends State<DashboardPage>
         } else if (value == 'theme') {
           ThemeService().toggleDarkMode();
         } else if (value == 'language') {
-          LocaleService.instance.toggle().then((_) {
+          LocaleService.instance.cycleLanguage().then((_) {
             if (context.mounted) setState(() {});
           });
         }

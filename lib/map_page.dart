@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:math';
+import 'dart:async';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart';
 import 'services/api_service.dart';
@@ -11,6 +12,7 @@ import 'utils/location_helper.dart';
 import 'services/v3/project_boundary_service.dart';
 import 'screens/v3/project_boundary_draw_page.dart';
 import 'services/auth_service.dart'; // [T7] 角色權限
+import 'services/locale_service.dart';
 import 'constants/colors.dart';
 import 'config/global_keys.dart';
 
@@ -45,6 +47,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
   int _totalTreeCount = 0;
   bool _mapTruncated = false;
   bool _mapNeedsFilter = true;
+  Timer? _bboxDebounce;
   
   // V3: 專案邊界服務
   final ProjectBoundaryService _boundaryService = ProjectBoundaryService();
@@ -408,6 +411,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
 
   @override
   void dispose() {
+    _bboxDebounce?.cancel();
     _disposed = true;
     GlobalKeys.routeObserver.unsubscribe(this);
     _controller?.dispose();
@@ -491,9 +495,19 @@ class _MapPageState extends State<MapPage> with RouteAware {
     return cities.toList()..sort();
   }
 
-  // 依縣市／專案篩選載入標記（避免一次拉 7000+ 棵）
+  // 依縣市／專案／可視範圍載入標記
   Future<void> _loadMapData() async {
-    if (_selectedProject == '全部' && _selectedCity == '全部') {
+    final hasFilter =
+        _selectedProject != '全部' || _selectedCity != '全部';
+
+    LatLngBounds? bounds;
+    if (_controller != null) {
+      try {
+        bounds = await _controller!.getVisibleRegion();
+      } catch (_) {}
+    }
+
+    if (!hasFilter && bounds == null) {
       _safeSetState(() {
         _cachedTreeData = [];
         _mapNeedsFilter = true;
@@ -514,6 +528,10 @@ class _MapPageState extends State<MapPage> with RouteAware {
       final response = await _treeService.getMapTrees(
         projectCode: projectCode,
         city: _selectedCity == '全部' ? null : _selectedCity,
+        swLat: bounds?.southwest.latitude,
+        swLng: bounds?.southwest.longitude,
+        neLat: bounds?.northeast.latitude,
+        neLng: bounds?.northeast.longitude,
         limit: 2500,
       );
 
@@ -523,26 +541,24 @@ class _MapPageState extends State<MapPage> with RouteAware {
         final truncated = response['truncated'] == true;
 
         _safeSetState(() {
-          _mapNeedsFilter = false;
+          _mapNeedsFilter = !hasFilter && bounds != null;
           _mapTruncated = truncated;
         });
 
         if (truncated && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('標記已達上限，請縮小至單一專案或縣市'),
-              duration: Duration(seconds: 4),
+            SnackBar(
+              content: Text(LocaleService.instance.t('map_select_filter')),
+              duration: const Duration(seconds: 3),
             ),
           );
         }
 
-        _updateProjectsForCity(_selectedCity);
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('無法載入資料')),
-          );
-        }
+        _updateMarkersFromCache();
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('無法載入資料')),
+        );
       }
     } catch (e) {
       if (mounted) {
@@ -553,6 +569,13 @@ class _MapPageState extends State<MapPage> with RouteAware {
     } finally {
       _safeSetState(() => _isLoading = false);
     }
+  }
+
+  void _scheduleBboxReload() {
+    _bboxDebounce?.cancel();
+    _bboxDebounce = Timer(const Duration(milliseconds: 450), () {
+      if (!_disposed && mounted) _loadMapData();
+    });
   }
 
   // [優化] 從快取資料更新地圖標記
@@ -678,6 +701,8 @@ class _MapPageState extends State<MapPage> with RouteAware {
       Future.delayed(const Duration(milliseconds: 500), () {
         _zoomToMarkers();
       });
+    } else {
+      _scheduleBboxReload();
     }
   }
 
@@ -811,6 +836,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
         children: [
           GoogleMap(
             onMapCreated: _onMapCreated,
+            onCameraIdle: _scheduleBboxReload,
             initialCameraPosition: CameraPosition(
               target: _currentPosition != null
                   ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
@@ -1032,7 +1058,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
                           const SizedBox(width: 8),
                           Text(
                             _mapNeedsFilter
-                                ? '共 $_totalTreeCount 棵（請選縣市或專案載入標記）'
+                                ? LocaleService.instance.t('map_bbox_hint')
                                 : '顯示 ${_markers.length} 棵'
                                     '${_mapTruncated ? '（已達上限）' : ''}',
                             style: const TextStyle(

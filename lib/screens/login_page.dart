@@ -117,7 +117,7 @@ class _LoginPageState extends State<LoginPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('登入時發生錯誤，請稍後再試'),
+            content: Text(context.tr('login_error')),
             backgroundColor: AppColors.error,
             behavior: SnackBarBehavior.floating,
             shape:
@@ -208,9 +208,9 @@ class _LoginPageState extends State<LoginPage>
           ),
         ),
         const SizedBox(height: 20),
-        const Text(
-          '樹木調查系統',
-          style: TextStyle(
+        Text(
+          context.tr('login_title'),
+          style: const TextStyle(
             fontSize: 28,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -219,7 +219,7 @@ class _LoginPageState extends State<LoginPage>
         ),
         const SizedBox(height: 8),
         Text(
-          'Tree Survey Management System',
+          context.tr('login_subtitle'),
           style: TextStyle(
             fontSize: 12,
             color: Colors.white.withValues(alpha: 0.8),
@@ -263,11 +263,11 @@ class _LoginPageState extends State<LoginPage>
                 // 帳號輸入
                 _buildTextField(
                   controller: _accountController,
-                  label: '帳號',
+                  label: context.tr('login_account'),
                   icon: Icons.person_outline_rounded,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return '請輸入帳號';
+                      return context.tr('login_account_required');
                     }
                     return null;
                   },
@@ -277,12 +277,12 @@ class _LoginPageState extends State<LoginPage>
                 // 密碼輸入
                 _buildTextField(
                   controller: _passwordController,
-                  label: '密碼',
+                  label: context.tr('login_password'),
                   icon: Icons.lock_outline_rounded,
                   isPassword: true,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return '請輸入密碼';
+                      return context.tr('login_password_required');
                     }
                     return null;
                   },
@@ -318,7 +318,7 @@ class _LoginPageState extends State<LoginPage>
         children: [
           Expanded(
             child: _buildTypeButton(
-              label: '調查登入',
+              label: context.tr('login_survey'),
               icon: Icons.search_rounded,
               isSelected: _loginType == 'survey',
               onTap: () => setState(() => _loginType = 'survey'),
@@ -326,7 +326,7 @@ class _LoginPageState extends State<LoginPage>
           ),
           Expanded(
             child: _buildTypeButton(
-              label: '管理後臺',
+              label: context.tr('login_admin'),
               icon: Icons.admin_panel_settings_rounded,
               isSelected: _loginType == 'admin',
               onTap: () => setState(() => _loginType = 'admin'),
@@ -496,13 +496,13 @@ class _LoginPageState extends State<LoginPage>
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
-            : const Row(
+            : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.login_rounded, color: Colors.white, size: 22),
-                  SizedBox(width: 10),
+                  const Icon(Icons.login_rounded, color: Colors.white, size: 22),
+                  const SizedBox(width: 10),
                   Text(
-                    '登入',
+                    context.tr('login_submit'),
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 17,

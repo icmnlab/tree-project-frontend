@@ -13,6 +13,7 @@ import 'screens/csv_import_page.dart'; // [Phase C] CSV 匯入頁面
 import 'screens/ip_blacklist_page.dart'; // [T8.2] IP 黑名單管理
 import 'admin_research_dataset_page.dart'; // [Research] DBH 校準資料蒐集
 import 'screens/invite_management_page.dart';
+import 'screens/audit_log_page.dart';
 import '../services/auth_service.dart';
 
 class AdminPage extends StatefulWidget {
@@ -1055,6 +1056,25 @@ class _AdminPageState extends State<AdminPage> {
                 },
               ),
             ),
+            if (_canManageInvites) ...[
+              const SizedBox(height: 12),
+              Card(
+                elevation: 2,
+                child: ListTile(
+                  leading: const Icon(Icons.history_edu_outlined),
+                  title: const Text('稽核日誌'),
+                  subtitle: const Text('登入、註冊、資料變更紀錄'),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const AuditLogPage(),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
             const SizedBox(height: 40),
           ],
         ),
