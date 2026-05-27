@@ -83,9 +83,9 @@ class AppVerificationHarness {
   }
 
   static void _logRaw(String line) {
-    // ignore: avoid_print — 刻意輸出到 flutter run / release terminal
+    // 僅 print：避免 print + debugPrint 在 logcat 重複兩遍
+    // ignore: avoid_print
     print(line);
-    debugPrint(line);
   }
 
   static Future<void> _section0Environment() async {

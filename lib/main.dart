@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/login_page.dart';
 import 'screens/register_page.dart';
@@ -158,8 +159,28 @@ class MyApp extends StatelessWidget {
       locale: LocaleService.instance.locale,
       supportedLocales: const [
         Locale('zh', 'TW'),
+        Locale('zh'), // Material 元件繁中 fallback
         Locale('en'),
       ],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      localeResolutionCallback: (deviceLocale, supported) {
+        final current = LocaleService.instance.locale;
+        for (final loc in supported) {
+          if (loc.languageCode == current.languageCode &&
+              (loc.countryCode == null ||
+                  loc.countryCode == current.countryCode)) {
+            return loc;
+          }
+        }
+        if (current.languageCode == 'zh') {
+          return const Locale('zh', 'TW');
+        }
+        return const Locale('en');
+      },
       navigatorKey: GlobalKeys.navigatorKey,
       navigatorObservers: [GlobalKeys.routeObserver],
       debugShowCheckedModeBanner: false,
