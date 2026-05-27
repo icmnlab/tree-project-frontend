@@ -10,8 +10,59 @@ class TreeService {
 
   // --- API Methods ---
 
-  Future<Map<String, dynamic>> getAllTrees() async {
-    return await ApiService.get('tree_survey');
+  Future<Map<String, dynamic>> getAllTrees({
+    int? limit,
+    int offset = 0,
+    String? projectCode,
+    String? projectName,
+  }) async {
+    final q = <String>[];
+    if (limit != null) q.add('limit=$limit');
+    if (offset > 0) q.add('offset=$offset');
+    if (projectCode != null &&
+        projectCode.isNotEmpty &&
+        projectCode != '全部') {
+      q.add('project_code=${Uri.encodeComponent(projectCode)}');
+    } else if (projectName != null &&
+        projectName.isNotEmpty &&
+        projectName != '全部') {
+      q.add('project_name=${Uri.encodeComponent(projectName)}');
+    }
+    final suffix = q.isEmpty ? '' : '?${q.join('&')}';
+    return await ApiService.get('tree_survey$suffix');
+  }
+
+  Future<Map<String, dynamic>> getMapMeta() async {
+    return await ApiService.get('tree_survey/map/meta');
+  }
+
+  Future<Map<String, dynamic>> getMapTrees({
+    String? projectCode,
+    String? city,
+    double? swLat,
+    double? swLng,
+    double? neLat,
+    double? neLng,
+    int limit = 2500,
+  }) async {
+    final q = <String>['limit=$limit'];
+    if (projectCode != null &&
+        projectCode.isNotEmpty &&
+        projectCode != '全部') {
+      q.add('project_code=${Uri.encodeComponent(projectCode)}');
+    }
+    if (city != null && city.isNotEmpty && city != '全部') {
+      q.add('city=${Uri.encodeComponent(city)}');
+    }
+    if (swLat != null && swLng != null && neLat != null && neLng != null) {
+      q.addAll([
+        'sw_lat=$swLat',
+        'sw_lng=$swLng',
+        'ne_lat=$neLat',
+        'ne_lng=$neLng',
+      ]);
+    }
+    return await ApiService.get('tree_survey/map?${q.join('&')}');
   }
 
   Future<Map<String, dynamic>> getTreesByProjectName(String projectName) async {

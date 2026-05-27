@@ -51,6 +51,12 @@ class _TreeListPageState extends State<TreeListPage> {
   List<Map<String, dynamic>> _trees = [];
   List<Map<String, dynamic>> _filteredTrees = [];
   bool _isLoading = true;
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
+  int _totalCount = 0;
+  static const int _pageSize = 200;
+  int _offset = 0;
+  final ScrollController _scrollController = ScrollController();
   String _errorMessage = '';
   final TextEditingController _searchController = TextEditingController();
   String _selectedProject = '全部';
@@ -93,8 +99,19 @@ class _TreeListPageState extends State<TreeListPage> {
     // 觸發一次性的背景清理任務，不需要等待其完成
     ApiService.triggerCleanup();
 
-    _fetchTrees();
+    _fetchTrees(reset: true);
     _loadPermissions();
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 400 &&
+        !_isLoading &&
+        !_isLoadingMore &&
+        _hasMore) {
+      _fetchTrees(reset: false);
+    }
   }
 
   Future<void> _loadPermissions() async {
@@ -111,31 +128,73 @@ class _TreeListPageState extends State<TreeListPage> {
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
-  Future<void> _fetchTrees() async {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = '';
-    });
+  String? get _selectedProjectCode {
+    if (_selectedProject == '全部') return null;
+    for (final t in _trees) {
+      if (t['專案名稱'] == _selectedProject) {
+        final c = t['專案代碼']?.toString();
+        if (c != null && c.isNotEmpty) return c;
+      }
+    }
+    return null;
+  }
+
+  String? get _selectedProjectFilterName {
+    if (_selectedProject == '全部') return null;
+    if (_selectedProjectCode != null) return null;
+    return _selectedProject;
+  }
+
+  Future<void> _fetchTrees({bool reset = true}) async {
+    if (reset) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = '';
+        _offset = 0;
+        _hasMore = true;
+        _trees = [];
+      });
+    } else {
+      if (!_hasMore || _isLoadingMore) return;
+      setState(() => _isLoadingMore = true);
+    }
 
     try {
-      // 使用 TreeService 並正確處理回應格式
-      final response = await _treeService.getAllTrees();
+      final response = await _treeService.getAllTrees(
+        limit: _pageSize,
+        offset: _offset,
+        projectCode: _selectedProjectCode,
+        projectName: _selectedProjectFilterName,
+      );
 
-      // TreeService 現在回傳一個 Map，我們需要從 'data' 鍵中提取列表
       if (response['success'] == true && response['data'] is List) {
-        final trees = response['data'] as List<dynamic>;
+        final batch = (response['data'] as List<dynamic>)
+            .map((t) => t as Map<String, dynamic>)
+            .toList();
+        final total = (response['totalCount'] as num?)?.toInt();
 
         setState(() {
-          _trees = trees.map((t) => t as Map<String, dynamic>).toList();
-          _projects = [
-            '全部',
-            ..._trees.map((t) => t['專案名稱'].toString()).toSet().toList()
-          ];
+          if (reset) {
+            _trees = batch;
+          } else {
+            _trees.addAll(batch);
+          }
+          _offset = _trees.length;
+          _totalCount = total ?? _trees.length;
+          _hasMore = batch.length >= _pageSize && _trees.length < _totalCount;
+          if (_projects.length <= 1) {
+            _projects = [
+              '全部',
+              ..._trees.map((t) => t['專案名稱'].toString()).toSet().toList(),
+            ];
+          }
           _filterAndSortTrees();
           _isLoading = false;
+          _isLoadingMore = false;
         });
       } else {
         throw Exception('API 回應格式不正確或請求失敗');
@@ -144,6 +203,7 @@ class _TreeListPageState extends State<TreeListPage> {
       setState(() {
         _errorMessage = '發生錯誤: $e';
         _isLoading = false;
+        _isLoadingMore = false;
       });
     }
   }
@@ -777,8 +837,8 @@ class _TreeListPageState extends State<TreeListPage> {
                               if (newValue != null) {
                                 setState(() {
                                   _selectedProject = newValue;
-                                  _filterAndSortTrees();
                                 });
+                                _fetchTrees(reset: true);
                               }
                             },
                           ),
@@ -963,12 +1023,22 @@ class _TreeListPageState extends State<TreeListPage> {
                                   ),
                                 )
                               : RefreshIndicator(
-                                  onRefresh: _fetchTrees,
+                                  onRefresh: () => _fetchTrees(reset: true),
                                   color: AppColors.portBlue,
                                   child: ListView.builder(
+                                    controller: _scrollController,
                                     padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-                                    itemCount: _filteredTrees.length,
+                                    itemCount: _filteredTrees.length +
+                                        (_isLoadingMore ? 1 : 0),
                                     itemBuilder: (context, index) {
+                                      if (index >= _filteredTrees.length) {
+                                        return const Padding(
+                                          padding: EdgeInsets.all(16),
+                                          child: Center(
+                                            child: CircularProgressIndicator(),
+                                          ),
+                                        );
+                                      }
                                       final tree = _filteredTrees[index];
                                       return Container(
                                         margin: const EdgeInsets.only(bottom: 12),

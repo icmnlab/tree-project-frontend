@@ -116,6 +116,10 @@ class AppStrings {
     'v3_sync_title': '同步與補救管理',
     'v3_sync_hint': '照片與衝突會在提交後或有網路時自動處理。',
     'invite_admin_title': '邀請碼管理',
+    'map_select_filter': '請選縣市或專案以載入標記',
+    'tree_list_loading': '載入樹木資料中…',
+    'tree_list_total': '共 {n} 棵',
+    'tree_list_load_more': '向下滑動載入更多',
   };
 
   static const en = <String, String>{
@@ -237,5 +241,9 @@ class AppStrings {
     'v3_sync_title': 'Sync & recovery',
     'v3_sync_hint': 'Photos and conflicts sync when online.',
     'invite_admin_title': 'Invite codes',
+    'map_select_filter': 'Select city or project to load markers',
+    'tree_list_loading': 'Loading trees…',
+    'tree_list_total': '{n} trees total',
+    'tree_list_load_more': 'Scroll down to load more',
   };
 }

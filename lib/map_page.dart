@@ -6,6 +6,7 @@ import 'dart:math';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart';
 import 'services/api_service.dart';
+import 'services/tree_service.dart';
 import 'utils/location_helper.dart';
 import 'services/v3/project_boundary_service.dart';
 import 'screens/v3/project_boundary_draw_page.dart';
@@ -40,9 +41,14 @@ class _MapPageState extends State<MapPage> with RouteAware {
 
   // [優化] 快取樹木資料，避免重複呼叫 API
   List<dynamic> _cachedTreeData = [];
+  Map<String, String> _projectNameToCode = {};
+  int _totalTreeCount = 0;
+  bool _mapTruncated = false;
+  bool _mapNeedsFilter = true;
   
   // V3: 專案邊界服務
   final ProjectBoundaryService _boundaryService = ProjectBoundaryService();
+  final TreeService _treeService = TreeService();
   List<ProjectBoundary> _projectBoundaries = [];
 
   // 台灣中心點作為預設位置
@@ -52,7 +58,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
   void initState() {
     super.initState();
     ApiService.triggerCleanup();
-    _loadMapData();
+    _loadMapMeta();
     _loadProjectBoundaries(); // V3: 載入專案邊界
     _loadPermissions(); // [T7] 載入角色權限
     // 延遲請求權限，確保 widget 已完全建立
@@ -421,7 +427,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
   @override
   void didPopNext() {
     debugPrint('[MapPage] didPopNext: 強制刷新邊界與樹木資料');
-    _loadMapData();
+    _loadMapMeta();
     _loadProjectBoundaries();
   }
 
@@ -431,36 +437,105 @@ class _MapPageState extends State<MapPage> with RouteAware {
     }
   }
 
-  // [優化] 一次性載入所有地圖資料
+  // 載入專案／縣市 meta（輕量），樹木標記依篩選再載入
+  Future<void> _loadMapMeta() async {
+    _safeSetState(() => _isLoading = true);
+    try {
+      final meta = await _treeService.getMapMeta();
+      if (meta['success'] == true) {
+        final projects = (meta['projects'] as List?) ?? [];
+        final nameToCode = <String, String>{};
+        final names = <String>{};
+        for (final p in projects) {
+          if (p is! Map) continue;
+          final name = p['name']?.toString();
+          final code = p['code']?.toString();
+          if (name != null && name.isNotEmpty) {
+            names.add(name);
+            if (code != null && code.isNotEmpty) nameToCode[name] = code;
+          }
+        }
+        final cities = (meta['cities'] as List?)
+                ?.map((c) => c.toString())
+                .where((c) => c.isNotEmpty)
+                .toList() ??
+            [];
+        _safeSetState(() {
+          _projectNameToCode = nameToCode;
+          _projects = ['全部', ...names];
+          _filteredProjects = _projects;
+          _cities = ['全部', ..._extractCitiesFromList(cities)];
+          _totalTreeCount = (meta['totalTrees'] as num?)?.toInt() ?? 0;
+        });
+        await _loadMapData();
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('無法載入地圖 meta: $e')),
+        );
+      }
+    } finally {
+      _safeSetState(() => _isLoading = false);
+    }
+  }
+
+  List<String> _extractCitiesFromList(List<String> fromMeta) {
+    final cities = {...fromMeta};
+    cities.addAll([
+      '臺北市', '新北市', '桃園市', '臺中市', '臺南市', '高雄市',
+      '基隆市', '新竹市', '新竹縣', '苗栗縣', '彰化縣', '南投縣',
+      '雲林縣', '嘉義市', '嘉義縣', '屏東縣', '宜蘭縣', '花蓮縣',
+      '臺東縣', '澎湖縣', '金門縣', '連江縣',
+    ]);
+    return cities.toList()..sort();
+  }
+
+  // 依縣市／專案篩選載入標記（避免一次拉 7000+ 棵）
   Future<void> _loadMapData() async {
-    _safeSetState(() {
-      _isLoading = true;
-    });
+    if (_selectedProject == '全部' && _selectedCity == '全部') {
+      _safeSetState(() {
+        _cachedTreeData = [];
+        _mapNeedsFilter = true;
+        _mapTruncated = false;
+        _markers.clear();
+      });
+      _updateBoundaryPolygons();
+      return;
+    }
+
+    _safeSetState(() => _isLoading = true);
 
     try {
-      // [優化] 使用精簡版 API
-      final response = await ApiService.get('tree_survey/map');
+      final projectCode = _selectedProject == '全部'
+          ? null
+          : (_projectNameToCode[_selectedProject] ?? _resolveSelectedProjectCode());
+
+      final response = await _treeService.getMapTrees(
+        projectCode: projectCode,
+        city: _selectedCity == '全部' ? null : _selectedCity,
+        limit: 2500,
+      );
 
       if (response['success'] == true && response['data'] != null) {
         final data = response['data'] as List;
         _cachedTreeData = data;
-
-        final projects = data
-            .map((tree) => tree['專案名稱'] as String?)
-            .where((name) => name != null && name.isNotEmpty)
-            .cast<String>()
-            .toSet()
-            .toList();
-
-        final cities = _extractCitiesFromData(data);
+        final truncated = response['truncated'] == true;
 
         _safeSetState(() {
-          _projects = ['全部', ...projects];
-          _cities = ['全部', ...cities];
+          _mapNeedsFilter = false;
+          _mapTruncated = truncated;
         });
 
-        // 不直接設 _filteredProjects：交給 _updateProjectsForCity 依當前 _selectedCity
-        // 重算，變 Reload【選了花蓮縣 → 切走別頁 → didPopNext 重載】時不會被全部專案覆寫。
+        if (truncated && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('標記已達上限，請縮小至單一專案或縣市'),
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+
         _updateProjectsForCity(_selectedCity);
       } else {
         if (mounted) {
@@ -476,9 +551,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
         );
       }
     } finally {
-      _safeSetState(() {
-        _isLoading = false;
-      });
+      _safeSetState(() => _isLoading = false);
     }
   }
 
@@ -542,29 +615,12 @@ class _MapPageState extends State<MapPage> with RouteAware {
         _filteredProjects = _projects;
         if (!keepSelected) _selectedProject = '全部';
       });
-      _updateMarkersFromCache();
+      _loadMapData();
       return;
     }
 
-    // [Stage 1] 使用伺服器權威 _city 欄位，不再自行解析名稱/座標
-    final filteredTrees = _cachedTreeData.where((tree) => tree['_city'] == city);
-
-    final cityProjects = filteredTrees
-        .map((tree) => tree['專案名稱'] as String?)
-        .where((name) => name != null && name.isNotEmpty)
-        .cast<String>()
-        .toSet()
-        .toList();
-
-    final newList = ['全部', ...cityProjects];
-    final keepSelected = newList.contains(_selectedProject);
-
-    _safeSetState(() {
-      _filteredProjects = newList;
-      if (!keepSelected) _selectedProject = '全部';
-    });
-
-    _updateMarkersFromCache();
+    // 縣市變更 → 重新向伺服器取標記
+    _loadMapData();
   }
 
   // [Stage 1] 縣市下拉選單：列出資料中出現過的 _city + 完整台灣 22 縣市。
@@ -937,7 +993,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
                                 _safeSetState(() {
                                   _selectedProject = value;
                                 });
-                                _updateMarkersFromCache();
+                                _loadMapData();
                               }
                             },
                           ),
@@ -975,7 +1031,10 @@ class _MapPageState extends State<MapPage> with RouteAware {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            '共有 ${_markers.length} 棵樹',
+                            _mapNeedsFilter
+                                ? '共 $_totalTreeCount 棵（請選縣市或專案載入標記）'
+                                : '顯示 ${_markers.length} 棵'
+                                    '${_mapTruncated ? '（已達上限）' : ''}',
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,

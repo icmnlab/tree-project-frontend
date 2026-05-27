@@ -91,6 +91,9 @@
 - [x] P1：主要流程（`home_page`、`integrated_tree_form` 拍照、BLE／現場 Wizard）  
 - [x] P1：現場場次必填專案＋區位（`FieldSessionSetup`、BLE 上傳帶 project_*）  
 - [x] P2（部分）：首頁問候／底欄、系統設定標題 i18n  
+- [x] **地圖／列表效能**：地圖依縣市／專案載入；列表分頁 200 筆  
+- [x] **BLE 匯入**：上傳前強制每筆綁專案  
+- [x] **邊界**：API 失敗 fallback 本地；重疊取最小 polygon  
 - [ ] P2：其餘頁面 + ARB + `flutter gen-l10n`、跟隨系統語言
 
 ---

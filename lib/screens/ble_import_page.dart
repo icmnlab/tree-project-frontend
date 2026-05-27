@@ -1305,6 +1305,10 @@ class _BleImportPageState extends State<BleImportPage> {
         return;
       }
 
+      if (!await _ensureAllRecordsHaveProject(filteredData)) {
+        return;
+      }
+
       final surveyModeProceed = await _resolveSurveyModeForBatch(filteredData);
       if (!surveyModeProceed) return;
 
@@ -1990,6 +1994,32 @@ class _BleImportPageState extends State<BleImportPage> {
         ],
       ),
     );
+  }
+
+  /// 上傳前強制每筆皆有專案（不可 NULL project_code）
+  Future<bool> _ensureAllRecordsHaveProject(
+    List<Map<String, dynamic>> filteredData,
+  ) async {
+    final unassigned = filteredData.where((r) {
+      final code = r['_assigned_project_code']?.toString();
+      return code == null || code.isEmpty;
+    }).toList();
+    if (unassigned.isEmpty) return true;
+    if (!mounted) return false;
+
+    final picked = await _showManualProjectPicker(
+      title: '尚有 ${unassigned.length} 棵未指派專案',
+      message: '批次上傳前每棵樹都必須綁定專案，請選擇要指派至：',
+    );
+    if (picked == null) return false;
+    if (picked['code'] == '__none__') return false;
+
+    for (final rec in unassigned) {
+      rec['_assigned_project_area'] = picked['area'];
+      rec['_assigned_project_code'] = picked['code'];
+      rec['_assigned_project_name'] = picked['name'];
+    }
+    return true;
   }
 
   Future<void> _applyOutsideAction(

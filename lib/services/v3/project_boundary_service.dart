@@ -385,17 +385,18 @@ class ProjectBoundaryService {
         );
       }
 
-      return BoundaryValidationResult(
-        isValid: false,
-        hasBoundary: true,
-        message: '無法驗證邊界，請檢查網路後重試',
+      // API 失敗 → 改以已刷新快取做本地驗證，避免誤判「有邊界但阻擋」
+      return validateCoordinateForProject(
+        projectName: projectName,
+        lat: lat,
+        lng: lng,
       );
     } catch (e) {
       debugPrint('[ProjectBoundaryService] 座標驗證錯誤: $e');
-      return BoundaryValidationResult(
-        isValid: false,
-        hasBoundary: true,
-        message: '邊界驗證失敗: $e',
+      return validateCoordinateForProject(
+        projectName: projectName,
+        lat: lat,
+        lng: lng,
       );
     }
   }
@@ -467,15 +468,31 @@ class ProjectBoundaryService {
       );
     }
 
-    // 多個匹配
+    // 重疊邊界：取面積最小者（較具體的子專案）
+    matchingBoundaries.sort(
+      (a, b) => _polygonAreaApprox(a.coordinates)
+          .compareTo(_polygonAreaApprox(b.coordinates)),
+    );
+    final best = matchingBoundaries.first;
+
     return CoordinateMatchResult(
       matched: true,
-      projectName: matchingBoundaries[0].projectName,
-      projectCode: matchingBoundaries[0].projectCode,
-      projectArea: matchingBoundaries[0].projectArea,
-      multipleMatches: true,
+      projectName: best.projectName,
+      projectCode: best.projectCode,
+      projectArea: best.projectArea,
+      multipleMatches: matchingBoundaries.length > 1,
       allMatches: matchingBoundaries,
     );
+  }
+
+  double _polygonAreaApprox(List<List<double>> polygon) {
+    if (polygon.length < 3) return double.infinity;
+    double area = 0;
+    for (int i = 0; i < polygon.length; i++) {
+      final j = (i + 1) % polygon.length;
+      area += polygon[i][1] * polygon[j][0] - polygon[j][1] * polygon[i][0];
+    }
+    return area.abs();
   }
 
   /// 批次匹配座標到專案（用於 BLE 匯入）
