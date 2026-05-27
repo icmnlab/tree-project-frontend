@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/invite_service.dart';
 import '../services/project_service.dart';
+import '../services/project_area_service.dart';
 import '../services/v3/project_boundary_coordinator.dart';
 import '../models/project.dart';
 
@@ -16,6 +17,7 @@ class InviteManagementPage extends StatefulWidget {
 class _InviteManagementPageState extends State<InviteManagementPage> {
   final InviteService _inviteService = InviteService();
   final ProjectService _projectService = ProjectService();
+  final ProjectAreaService _projectAreaService = ProjectAreaService();
   List<Map<String, dynamic>> _invites = [];
   List<Project> _projects = [];
   bool _loading = true;
@@ -113,7 +115,7 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
                 ),
                 SwitchListTile(
                   title: const Text('註冊後需審核啟用'),
-                  subtitle: const Text('帳號 is_active=false，管理員於使用者列表啟用'),
+                  subtitle: const Text('帳號待審核，管理員於「待審核」專區啟用'),
                   value: requiresApproval,
                   onChanged: (v) => setDialog(() => requiresApproval = v),
                 ),
@@ -270,49 +272,158 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
 
   Future<Project?> _quickCreateProject(BuildContext context) async {
     final nameCtrl = TextEditingController();
-    final areaCtrl = TextEditingController();
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('新增專案'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(
-                labelText: '專案名稱',
-                border: OutlineInputBorder(),
-              ),
+    List<Map<String, dynamic>> areas = [];
+    String? selectedArea;
+    bool loadingAreas = true;
+
+    Future<void> loadAreas(StateSetter setDialog) async {
+      setDialog(() => loadingAreas = true);
+      try {
+        areas = await _projectAreaService.getProjectAreas();
+      } catch (_) {
+        areas = [];
+      }
+      if (selectedArea == null && areas.isNotEmpty) {
+        selectedArea = areas.first['area_name']?.toString();
+      }
+      setDialog(() => loadingAreas = false);
+    }
+
+    Future<void> addNewArea(StateSetter setDialog) async {
+      final areaCtrl = TextEditingController();
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('新增專案區位'),
+          content: TextField(
+            controller: areaCtrl,
+            decoration: const InputDecoration(
+              labelText: '區位名稱',
+              border: OutlineInputBorder(),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: areaCtrl,
-              decoration: const InputDecoration(
-                labelText: '專案區位',
-                border: OutlineInputBorder(),
-              ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('建立'),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('建立'),
-          ),
-        ],
+      );
+      if (ok != true || areaCtrl.text.trim().isEmpty) return;
+      final areaName = areaCtrl.text.trim();
+      try {
+        final res = await _projectAreaService.addProjectArea({
+          'area_name': areaName,
+          'description': '$areaName專案區位',
+        });
+        if (res['success'] == true) {
+          await loadAreas(setDialog);
+          setDialog(() => selectedArea = areaName);
+        }
+      } catch (_) {}
+    }
+
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialog) {
+          if (loadingAreas && areas.isEmpty) {
+            loadAreas(setDialog);
+          }
+          return AlertDialog(
+            title: const Text('新增專案'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
+                    controller: nameCtrl,
+                    decoration: const InputDecoration(
+                      labelText: '專案名稱',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          '專案區位',
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      TextButton.icon(
+                        onPressed: () => addNewArea(setDialog),
+                        icon: const Icon(Icons.add, size: 18),
+                        label: const Text('新增區位'),
+                      ),
+                    ],
+                  ),
+                  if (loadingAreas)
+                    const Padding(
+                      padding: EdgeInsets.all(12),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (areas.isEmpty)
+                    const Text('尚無區位，請先新增區位')
+                  else
+                    DropdownButtonFormField<String>(
+                      value: selectedArea,
+                      decoration: const InputDecoration(
+                        border: OutlineInputBorder(),
+                        hintText: '選擇既有區位',
+                      ),
+                      items: areas
+                          .map((a) => a['area_name']?.toString() ?? '')
+                          .where((n) => n.isNotEmpty)
+                          .map(
+                            (n) => DropdownMenuItem(value: n, child: Text(n)),
+                          )
+                          .toList(),
+                      onChanged: (v) => setDialog(() => selectedArea = v),
+                    ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('取消'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  if (nameCtrl.text.trim().isEmpty ||
+                      selectedArea == null ||
+                      selectedArea!.trim().isEmpty) {
+                    return;
+                  }
+                  Navigator.pop(ctx, true);
+                },
+                child: const Text('建立'),
+              ),
+            ],
+          );
+        },
       ),
     );
-    if (ok != true || nameCtrl.text.trim().isEmpty) return null;
-    final area = areaCtrl.text.trim();
+
+    if (ok != true ||
+        nameCtrl.text.trim().isEmpty ||
+        selectedArea == null ||
+        selectedArea!.trim().isEmpty) {
+      return null;
+    }
+
     try {
       final res = await _projectService.addProject(
         nameCtrl.text.trim(),
-        area.isEmpty ? '未分類' : area,
+        selectedArea!.trim(),
       );
       if (res['success'] == true && res['project'] != null) {
         final p = Project.fromJson(
