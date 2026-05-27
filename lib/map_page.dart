@@ -47,9 +47,6 @@ class _MapPageState extends State<MapPage> with RouteAware {
   Map<String, String> _projectNameToCode = {};
   int _totalTreeCount = 0;
   bool _mapTruncated = false;
-  bool _mapNeedsFilter = true;
-  Timer? _bboxDebounce;
-  String? _lastBboxKey;
   bool _fitBoundsOnNextMarkerUpdate = false;
   bool _mapLoadInFlight = false;
   DateTime? _lastBoundaryRefresh;
@@ -435,7 +432,6 @@ class _MapPageState extends State<MapPage> with RouteAware {
 
   @override
   void dispose() {
-    _bboxDebounce?.cancel();
     _mapControllerReady = false;
     _disposed = true;
     GlobalKeys.routeObserver.unsubscribe(this);
@@ -531,29 +527,8 @@ class _MapPageState extends State<MapPage> with RouteAware {
     return cities.toList()..sort();
   }
 
-  // 依縣市／專案／可視範圍載入標記
+  // 依縣市／專案一次載入標記（預設不用 bbox；拖曳不再自動重載）
   Future<void> _loadMapData() async {
-    final hasFilter =
-        _selectedProject != '全部' || _selectedCity != '全部';
-
-    LatLngBounds? bounds;
-    if (_controller != null) {
-      try {
-        bounds = await _controller!.getVisibleRegion();
-      } catch (_) {}
-    }
-
-    if (!hasFilter && bounds == null) {
-      _safeSetState(() {
-        _cachedTreeData = [];
-        _mapNeedsFilter = true;
-        _mapTruncated = false;
-        _markers.clear();
-      });
-      _updateBoundaryPolygons();
-      return;
-    }
-
     if (_mapLoadInFlight) return;
     _mapLoadInFlight = true;
     _safeSetState(() => _isLoading = true);
@@ -564,21 +539,16 @@ class _MapPageState extends State<MapPage> with RouteAware {
           ? null
           : (_projectNameToCode[_selectedProject] ?? _resolveSelectedProjectCode());
 
-      final mapLimit = _selectedProject != '全部' ? 5000 : 2500;
+      const mapLimit = 5000;
 
       _mapLog(
         'load start city=$_selectedCity project=$_selectedProject '
-        'code=$projectCode limit=$mapLimit '
-        'bbox=${bounds != null ? _boundsKey(bounds) : "none"}',
+        'code=$projectCode limit=$mapLimit mode=filter-all',
       );
 
       final response = await _treeService.getMapTrees(
         projectCode: projectCode,
         city: _selectedCity == '全部' ? null : _selectedCity,
-        swLat: bounds?.southwest.latitude,
-        swLng: bounds?.southwest.longitude,
-        neLat: bounds?.northeast.latitude,
-        neLng: bounds?.northeast.longitude,
         limit: mapLimit,
       );
 
@@ -588,7 +558,6 @@ class _MapPageState extends State<MapPage> with RouteAware {
         final truncated = response['truncated'] == true;
 
         _safeSetState(() {
-          _mapNeedsFilter = !hasFilter && bounds != null;
           _mapTruncated = truncated;
         });
 
@@ -596,9 +565,9 @@ class _MapPageState extends State<MapPage> with RouteAware {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                _selectedProject != '全部'
-                    ? '此專案標記過多，已載入 $mapLimit 筆；請縮放地圖查看局部'
-                    : LocaleService.instance.t('map_select_filter'),
+                _selectedProject != '全部' || _selectedCity != '全部'
+                    ? '此篩選標記超過 $mapLimit 筆，已載入前 $mapLimit 筆；請縮小縣市或專案範圍'
+                    : '全庫標記過多，已載入 $mapLimit 筆；請選縣市或專案縮小範圍',
               ),
               duration: const Duration(seconds: 4),
             ),
@@ -627,34 +596,8 @@ class _MapPageState extends State<MapPage> with RouteAware {
     }
   }
 
-  String? _boundsKey(LatLngBounds b) {
-    String r(double v) => v.toStringAsFixed(3);
-    return '${r(b.southwest.latitude)},${r(b.southwest.longitude)},'
-        '${r(b.northeast.latitude)},${r(b.northeast.longitude)}';
-  }
-
-  void _scheduleBboxReload() {
-    _bboxDebounce?.cancel();
-    _bboxDebounce = Timer(const Duration(milliseconds: 900), () async {
-      if (_disposed || !mounted || _controller == null || !_mapControllerReady) {
-        return;
-      }
-      try {
-        final bounds = await _controller!.getVisibleRegion();
-        final key = _boundsKey(bounds);
-        if (key != null && key == _lastBboxKey) return;
-        _lastBboxKey = key;
-        _mapLog('bbox reload key=$key city=$_selectedCity project=$_selectedProject');
-        await _loadMapData();
-      } catch (e) {
-        _mapLog('bbox reload error: $e');
-      }
-    });
-  }
-
   void _onFilterChanged({bool fitBounds = true}) {
-    _lastBboxKey = null;
-    if (fitBounds) _fitBoundsOnNextMarkerUpdate = true;
+    _fitBoundsOnNextMarkerUpdate = fitBounds;
     _loadMapData();
   }
 
@@ -832,7 +775,6 @@ class _MapPageState extends State<MapPage> with RouteAware {
     _controller = controller;
     _mapControllerReady = true;
     _mapLog('map created');
-    _scheduleBboxReload();
   }
 
   Future<void> _getCurrentLocation() async {
@@ -1033,7 +975,6 @@ class _MapPageState extends State<MapPage> with RouteAware {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
-              _lastBboxKey = null;
               _fitBoundsOnNextMarkerUpdate = true;
               _loadMapMeta();
               _loadProjectBoundaries(forceRefresh: true);
@@ -1046,7 +987,6 @@ class _MapPageState extends State<MapPage> with RouteAware {
         children: [
           GoogleMap(
             onMapCreated: _onMapCreated,
-            onCameraIdle: _scheduleBboxReload,
             initialCameraPosition: CameraPosition(
               target: _currentPosition != null
                   ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
@@ -1281,10 +1221,9 @@ class _MapPageState extends State<MapPage> with RouteAware {
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            _mapNeedsFilter
-                                ? LocaleService.instance.t('map_bbox_hint')
-                                : '顯示 ${_markers.length} 棵'
-                                    '${_mapTruncated ? '（已達上限）' : ''}',
+                            '顯示 ${_markers.length} 棵'
+                                '${_totalTreeCount > 0 && _markers.length < _totalTreeCount ? ' / 共 $_totalTreeCount' : ''}'
+                                '${_mapTruncated ? '（已達上限）' : ''}',
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
