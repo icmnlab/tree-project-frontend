@@ -42,7 +42,7 @@ dependencies:
   fl_chart: ^0.71.0
   google_generative_ai: ^0.2.0
   dart_openai: ^4.0.0
-  google_maps_flutter: ^2.5.0
+  google_maps_flutter: 2.10.0
   geolocator: ^10.1.0
   excel: ^4.0.6
   pdf: ^3.10.7

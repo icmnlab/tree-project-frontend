@@ -52,9 +52,12 @@ class TreeService {
     double? swLng,
     double? neLat,
     double? neLng,
-    int limit = 2500,
+    int? limit,
   }) async {
-    final q = <String>['limit=$limit'];
+    final q = <String>[];
+    if (limit != null && limit > 0) {
+      q.add('limit=$limit');
+    }
     if (projectCode != null &&
         projectCode.isNotEmpty &&
         projectCode != '全部') {
@@ -71,7 +74,8 @@ class TreeService {
         'ne_lng=$neLng',
       ]);
     }
-    return await ApiService.get('tree_survey/map?${q.join('&')}');
+    final suffix = q.isEmpty ? '' : '?${q.join('&')}';
+    return await ApiService.get('tree_survey/map$suffix');
   }
 
   Future<Map<String, dynamic>> getTreesByProjectName(String projectName) async {

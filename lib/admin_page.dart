@@ -83,6 +83,7 @@ class _AdminPageState extends State<AdminPage> {
   Widget _buildBodyForIndex() {
     final pages = <Widget>[
       _buildUserList(),
+      _buildPendingApprovalUsers(),
       _buildExportOptions(),
       _buildAdminZone(),
       _buildProjectManagement(),
@@ -111,6 +112,32 @@ class _AdminPageState extends State<AdminPage> {
 
       return matchesSearch && matchesRole;
     }).toList();
+  }
+
+  List<Map<String, dynamic>> get _pendingApprovalUsers {
+    final pending =
+        _users.where((user) => user['is_active'] != true).toList();
+    pending.sort((a, b) {
+      final ta = a['created_at']?.toString() ?? '';
+      final tb = b['created_at']?.toString() ?? '';
+      return tb.compareTo(ta);
+    });
+    return pending;
+  }
+
+  int get _pendingApprovalCount => _pendingApprovalUsers.length;
+
+  String _formatUserTime(dynamic value) {
+    if (value == null) return '—';
+    return value.toString().replaceFirst('T', ' ').split('.').first;
+  }
+
+  Widget _railIcon(IconData icon, {int badge = 0}) {
+    if (badge <= 0) return Icon(icon);
+    return Badge(
+      label: Text('$badge'),
+      child: Icon(icon),
+    );
   }
 
   Future<void> _fetchUsers() async {
@@ -768,6 +795,95 @@ class _AdminPageState extends State<AdminPage> {
     );
   }
 
+  Widget _buildPendingApprovalUsers() {
+    if (_isLoading && _users.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final pending = _pendingApprovalUsers;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '待審核使用者',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '透過「註冊後需審核啟用」邀請碼註冊的帳號會顯示於此，啟用後方可登入。',
+                      style: TextStyle(color: Colors.grey[700]),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                tooltip: '重新整理',
+                onPressed: _fetchUsers,
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: pending.isEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Text(
+                      '目前沒有待審核的使用者。',
+                      style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                )
+              : ListView.builder(
+                  padding: const EdgeInsets.only(top: 12, bottom: 24),
+                  itemCount: pending.length,
+                  itemBuilder: (context, index) {
+                    final user = pending[index];
+                    final displayName =
+                        user['display_name']?.toString() ?? user['username'];
+                    final username = user['username']?.toString() ?? '';
+                    final role = user['role']?.toString() ?? '';
+                    return Card(
+                      margin: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 6),
+                      child: ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor:
+                              Theme.of(context).colorScheme.primaryContainer,
+                          child: const Icon(Icons.hourglass_top),
+                        ),
+                        title: Text(displayName),
+                        subtitle: Text(
+                          '帳號：$username\n角色：$role\n註冊時間：${_formatUserTime(user['created_at'])}',
+                        ),
+                        isThreeLine: true,
+                        trailing: FilledButton.icon(
+                          onPressed: () => _toggleUserStatus(user),
+                          icon: const Icon(Icons.check_circle_outline),
+                          label: const Text('啟用'),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+        ),
+      ],
+    );
+  }
+
   Color _getRoleColor(String role) {
     switch (role) {
       case '系統管理員':
@@ -1078,6 +1194,25 @@ class _AdminPageState extends State<AdminPage> {
               Card(
                 elevation: 2,
                 child: ListTile(
+                  leading: const Icon(Icons.person_add_alt_1_outlined),
+                  title: const Text('待審核使用者'),
+                  subtitle: Text(
+                    _pendingApprovalCount > 0
+                        ? '目前有 $_pendingApprovalCount 位使用者等待啟用'
+                        : '審核需啟用的邀請碼註冊帳號',
+                  ),
+                  trailing: _pendingApprovalCount > 0
+                      ? Badge(label: Text('$_pendingApprovalCount'))
+                      : const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () {
+                    setState(() => _selectedIndex = 1);
+                  },
+                ),
+              ),
+              const SizedBox(height: 12),
+              Card(
+                elevation: 2,
+                child: ListTile(
                   leading: const Icon(Icons.history_edu_outlined),
                   title: Text(context.tr('admin_audit_log')),
                   subtitle: Text(context.tr('admin_audit_log_sub')),
@@ -1326,6 +1461,11 @@ class _AdminPageState extends State<AdminPage> {
                   const NavigationRailDestination(
                     icon: Icon(Icons.people),
                     label: Text('使用者管理'),
+                  ),
+                  NavigationRailDestination(
+                    icon: _railIcon(Icons.person_add_alt_1,
+                        badge: _pendingApprovalCount),
+                    label: const Text('待審核'),
                   ),
                   const NavigationRailDestination(
                     icon: Icon(Icons.file_download),

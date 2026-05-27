@@ -25,8 +25,15 @@ class MapPage extends StatefulWidget {
 }
 
 class _MapPageState extends State<MapPage> with RouteAware {
+  static const ClusterManagerId _treeClusterId =
+      ClusterManagerId('tree_markers');
+
   GoogleMapController? _controller;
   final Set<Marker> _markers = {};
+  late final ClusterManager _treeClusterManager = ClusterManager(
+    clusterManagerId: _treeClusterId,
+    onClusterTap: _onTreeClusterTap,
+  );
   Set<Polygon> _polygons = {}; // V3: 專案邊界多邊形（每次重建 Set 以觸發地圖更新）
   bool _isLoading = false;
   String _selectedProject = '全部';
@@ -46,7 +53,6 @@ class _MapPageState extends State<MapPage> with RouteAware {
   List<dynamic> _cachedTreeData = [];
   Map<String, String> _projectNameToCode = {};
   int _totalTreeCount = 0;
-  bool _mapTruncated = false;
   bool _fitBoundsOnNextMarkerUpdate = false;
   bool _mapLoadInFlight = false;
   DateTime? _lastBoundaryRefresh;
@@ -54,6 +60,13 @@ class _MapPageState extends State<MapPage> with RouteAware {
   
   void _mapLog(String message) {
     debugPrint('[MapPage] $message');
+  }
+
+  void _onTreeClusterTap(Cluster cluster) {
+    if (_controller == null || !_mapControllerReady) return;
+    _safeAnimateCamera(
+      CameraUpdate.newLatLngZoom(cluster.position, 14),
+    );
   }
 
   Future<void> _safeAnimateCamera(CameraUpdate update) async {
@@ -539,45 +552,24 @@ class _MapPageState extends State<MapPage> with RouteAware {
           ? null
           : (_projectNameToCode[_selectedProject] ?? _resolveSelectedProjectCode());
 
-      const mapLimit = 5000;
-
       _mapLog(
         'load start city=$_selectedCity project=$_selectedProject '
-        'code=$projectCode limit=$mapLimit mode=filter-all',
+        'code=$projectCode mode=filter-all',
       );
 
       final response = await _treeService.getMapTrees(
         projectCode: projectCode,
         city: _selectedCity == '全部' ? null : _selectedCity,
-        limit: mapLimit,
       );
 
       if (response['success'] == true && response['data'] != null) {
         final data = response['data'] as List;
         _cachedTreeData = data;
-        final truncated = response['truncated'] == true;
-
-        _safeSetState(() {
-          _mapTruncated = truncated;
-        });
-
-        if (truncated && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                _selectedProject != '全部' || _selectedCity != '全部'
-                    ? '此篩選標記超過 $mapLimit 筆，已載入前 $mapLimit 筆；請縮小縣市或專案範圍'
-                    : '全庫標記過多，已載入 $mapLimit 筆；請選縣市或專案縮小範圍',
-              ),
-              duration: const Duration(seconds: 4),
-            ),
-          );
-        }
 
         _updateMarkersFromCache();
         _mapLog(
           'load done markers=${_markers.length} cached=${data.length} '
-          'truncated=$truncated elapsed=${sw.elapsedMilliseconds}ms',
+          'elapsed=${sw.elapsedMilliseconds}ms',
         );
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -644,6 +636,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
         return Marker(
           markerId: MarkerId(markerId),
           position: LatLng(y, x),
+          clusterManagerId: _treeClusterId,
           infoWindow: InfoWindow(
             title: tree['樹種名稱'] ?? '未知樹種',
             snippet: '專案：$projectName\n區位：$areaName',
@@ -994,6 +987,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
               zoom: _currentPosition != null ? 15 : 7,
             ),
             markers: _markers,
+            clusterManagers: {_treeClusterManager},
             polygons: _polygons, // V3: 專案邊界多邊形
             // [N13 fix] 避免外層手勢變裝（如 BottomNavigation / TabBar袈動）拍走地圖的拖動手勢
             gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{
@@ -1222,8 +1216,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
                           const SizedBox(width: 8),
                           Text(
                             '顯示 ${_markers.length} 棵'
-                                '${_totalTreeCount > 0 && _markers.length < _totalTreeCount ? ' / 共 $_totalTreeCount' : ''}'
-                                '${_mapTruncated ? '（已達上限）' : ''}',
+                                '${_totalTreeCount > 0 && _markers.length < _totalTreeCount ? ' / 共 $_totalTreeCount' : ''}',
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,

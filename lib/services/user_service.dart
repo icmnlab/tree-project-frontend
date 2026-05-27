@@ -10,6 +10,15 @@ class UserService {
     }
   }
 
+  Future<List<Map<String, dynamic>>> fetchPendingApprovalUsers() async {
+    final response = await ApiService.get('users?pending_approval=true');
+    if (response['success'] == true && response['users'] != null) {
+      return List<Map<String, dynamic>>.from(response['users']);
+    } else {
+      throw Exception(response['message'] ?? 'Failed to load pending users');
+    }
+  }
+
   Future<Map<String, dynamic>> deleteUser(String userId) async {
     final response = await ApiService.delete('users/$userId');
     return response;
