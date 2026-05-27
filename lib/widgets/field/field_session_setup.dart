@@ -532,24 +532,10 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
             Text(context.tr('field_setup_gps_title'),
                 style: const TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 4),
-            Text(context.tr('field_setup_gps_hint'),
-                style: const TextStyle(fontSize: 12)),
-            if (_gpsSource == 'tree')
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  '樹旁模式：每棵樹測量時需手動按「取得 GPS」。',
-                  style: TextStyle(fontSize: 11, color: Colors.teal.shade700),
-                ),
-              )
-            else
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  '測站模式：確認前需自動鎖定 GPS（±5m、5 筆穩定）。',
-                  style: TextStyle(fontSize: 11, color: Colors.teal.shade700),
-                ),
-              ),
+            Text(
+              context.tr('field_setup_gps_hint'),
+              style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+            ),
             RadioListTile<String>(
               dense: true,
               title: Text(context.tr('field_setup_gps_surveyor')),

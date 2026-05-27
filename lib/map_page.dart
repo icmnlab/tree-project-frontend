@@ -25,15 +25,8 @@ class MapPage extends StatefulWidget {
 }
 
 class _MapPageState extends State<MapPage> with RouteAware {
-  static const ClusterManagerId _treeClusterId =
-      ClusterManagerId('tree_markers');
-
   GoogleMapController? _controller;
   final Set<Marker> _markers = {};
-  late final ClusterManager _treeClusterManager = ClusterManager(
-    clusterManagerId: _treeClusterId,
-    onClusterTap: _onTreeClusterTap,
-  );
   Set<Polygon> _polygons = {}; // V3: 專案邊界多邊形（每次重建 Set 以觸發地圖更新）
   bool _isLoading = false;
   String _selectedProject = '全部';
@@ -60,13 +53,6 @@ class _MapPageState extends State<MapPage> with RouteAware {
   
   void _mapLog(String message) {
     debugPrint('[MapPage] $message');
-  }
-
-  void _onTreeClusterTap(Cluster cluster) {
-    if (_controller == null || !_mapControllerReady) return;
-    _safeAnimateCamera(
-      CameraUpdate.newLatLngZoom(cluster.position, 14),
-    );
   }
 
   Future<void> _safeAnimateCamera(CameraUpdate update) async {
@@ -567,6 +553,16 @@ class _MapPageState extends State<MapPage> with RouteAware {
         _cachedTreeData = data;
 
         _updateMarkersFromCache();
+        if (data.length > 5000 && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                '標記數量過多（${data.length} 筆），可能造成地圖當機；請選縣市或專案縮小範圍',
+              ),
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
         _mapLog(
           'load done markers=${_markers.length} cached=${data.length} '
           'elapsed=${sw.elapsedMilliseconds}ms',
@@ -639,7 +635,6 @@ class _MapPageState extends State<MapPage> with RouteAware {
         return Marker(
           markerId: MarkerId(markerId),
           position: LatLng(y, x),
-          clusterManagerId: _treeClusterId,
           infoWindow: InfoWindow(
             title: tree['樹種名稱'] ?? '未知樹種',
             snippet: '專案：$projectName\n區位：$areaName',
@@ -990,7 +985,6 @@ class _MapPageState extends State<MapPage> with RouteAware {
               zoom: _currentPosition != null ? 15 : 7,
             ),
             markers: _markers,
-            clusterManagers: {_treeClusterManager},
             polygons: _polygons, // V3: 專案邊界多邊形
             // [N13 fix] 避免外層手勢變裝（如 BottomNavigation / TabBar袈動）拍走地圖的拖動手勢
             gestureRecognizers: <Factory<OneSequenceGestureRecognizer>>{

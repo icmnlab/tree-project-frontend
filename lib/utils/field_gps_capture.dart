@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
 import 'location_helper.dart';
+import 'field_gps_settings.dart';
 
 class FieldGpsQuality {
   static const double maxAccuracyM = 5.0;
@@ -59,6 +60,7 @@ class _FieldGpsCaptureDialogState extends State<_FieldGpsCaptureDialog> {
   StreamSubscription<Position>? _sub;
   Timer? _timeoutTimer;
   bool _busy = false;
+  bool _relaxedAccuracy = false;
   String _status = '準備中…';
   Position? _lastPosition;
   final List<Position> _samples = [];
@@ -69,11 +71,17 @@ class _FieldGpsCaptureDialogState extends State<_FieldGpsCaptureDialog> {
   void initState() {
     super.initState();
     fieldGpsLog('open mode=${widget.mode}');
+    _initRelaxed();
     if (_isTreeMode) {
       _status = '請站定位置後按「取得 GPS」';
     } else {
       _startAutoCapture();
     }
+  }
+
+  Future<void> _initRelaxed() async {
+    final relaxed = await FieldGpsSettings.isRelaxedAccuracy();
+    if (mounted) setState(() => _relaxedAccuracy = relaxed);
   }
 
   @override
@@ -105,13 +113,15 @@ class _FieldGpsCaptureDialogState extends State<_FieldGpsCaptureDialog> {
     return true;
   }
 
-  bool _accuracyOk(double accuracy) =>
-      accuracy > 0 && accuracy <= FieldGpsQuality.maxAccuracyM;
+  bool _accuracyOk(double accuracy) {
+    if (accuracy <= 0) return false;
+    if (_relaxedAccuracy) return true;
+    return accuracy <= FieldGpsQuality.maxAccuracyM;
+  }
 
   void _pushSample(Position p) {
-    if ((p.latitude == 0 && p.longitude == 0) || !_accuracyOk(p.accuracy)) {
-      return;
-    }
+    if (p.latitude == 0 && p.longitude == 0) return;
+    if (!_accuracyOk(p.accuracy)) return;
     _samples.add(p);
     if (_samples.length > FieldGpsQuality.requiredSamples + 2) {
       _samples.removeAt(0);
@@ -119,6 +129,9 @@ class _FieldGpsCaptureDialogState extends State<_FieldGpsCaptureDialog> {
   }
 
   bool _samplesStable() {
+    if (_relaxedAccuracy) {
+      return _samples.isNotEmpty;
+    }
     if (_samples.length < FieldGpsQuality.requiredSamples) return false;
     final recent =
         _samples.sublist(_samples.length - FieldGpsQuality.requiredSamples);
@@ -169,8 +182,9 @@ class _FieldGpsCaptureDialogState extends State<_FieldGpsCaptureDialog> {
     );
     if (!ok) {
       setState(() {
-        _status =
-            '等待高品質 GPS… ±${p.accuracy.toStringAsFixed(0)}m (需 ≤${FieldGpsQuality.maxAccuracyM.toStringAsFixed(0)}m)';
+        _status = _relaxedAccuracy
+            ? '無法取得有效 GPS'
+            : '等待高品質 GPS… ±${p.accuracy.toStringAsFixed(0)}m (需 ≤${FieldGpsQuality.maxAccuracyM.toStringAsFixed(0)}m)';
       });
       return;
     }
@@ -233,8 +247,9 @@ class _FieldGpsCaptureDialogState extends State<_FieldGpsCaptureDialog> {
       _lastPosition = p;
       if (!_accuracyOk(p.accuracy)) {
         setState(() {
-          _status =
-              '精度 ±${p.accuracy.toStringAsFixed(0)}m 不足，需 ≤${FieldGpsQuality.maxAccuracyM.toStringAsFixed(0)}m';
+          _status = _relaxedAccuracy
+              ? '無法取得有效 GPS'
+              : '精度 ±${p.accuracy.toStringAsFixed(0)}m 不足，需 ≤${FieldGpsQuality.maxAccuracyM.toStringAsFixed(0)}m';
         });
         return;
       }
@@ -257,7 +272,7 @@ class _FieldGpsCaptureDialogState extends State<_FieldGpsCaptureDialog> {
     final canConfirm = _isTreeMode &&
         _samples.isNotEmpty &&
         _lastPosition != null &&
-        _accuracyOk(_lastPosition!.accuracy);
+        (_relaxedAccuracy || _accuracyOk(_lastPosition!.accuracy));
     return AlertDialog(
       title: Text(widget.title ??
           (_isTreeMode ? '樹旁 GPS 定位' : '測站 GPS 自動定位')),
@@ -265,6 +280,18 @@ class _FieldGpsCaptureDialogState extends State<_FieldGpsCaptureDialog> {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (_relaxedAccuracy)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Text(
+                '測試模式：不檢查 ±5m 精度',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.orange.shade800,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
           Text(_status, style: const TextStyle(fontWeight: FontWeight.w600)),
           if (_lastPosition != null)
             Text(
