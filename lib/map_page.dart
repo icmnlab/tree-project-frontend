@@ -48,6 +48,10 @@ class _MapPageState extends State<MapPage> with RouteAware {
   bool _mapTruncated = false;
   bool _mapNeedsFilter = true;
   Timer? _bboxDebounce;
+  String? _lastBboxKey;
+  bool _fitBoundsOnNextMarkerUpdate = false;
+  bool _mapLoadInFlight = false;
+  DateTime? _lastBoundaryRefresh;
   
   // V3: 專案邊界服務
   final ProjectBoundaryService _boundaryService = ProjectBoundaryService();
@@ -62,7 +66,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
     super.initState();
     ApiService.triggerCleanup();
     _loadMapMeta();
-    _loadProjectBoundaries(); // V3: 載入專案邊界
+    _loadProjectBoundaries(forceRefresh: false); // V3: 載入專案邊界
     _loadPermissions(); // [T7] 載入角色權限
     // 延遲請求權限，確保 widget 已完全建立
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -77,9 +81,10 @@ class _MapPageState extends State<MapPage> with RouteAware {
   }
 
   // V3: 載入專案邊界
-  Future<void> _loadProjectBoundaries() async {
+  Future<void> _loadProjectBoundaries({bool forceRefresh = false}) async {
     try {
-      _projectBoundaries = await _boundaryService.getAllBoundaries(forceRefresh: true);
+      _projectBoundaries =
+          await _boundaryService.getAllBoundaries(forceRefresh: forceRefresh);
       _updateBoundaryPolygons();
     } catch (e) {
       debugPrint('載入專案邊界錯誤: $e');
@@ -427,12 +432,17 @@ class _MapPageState extends State<MapPage> with RouteAware {
     }
   }
 
-  // [Bug B 修復] 從別頁返回 MapPage 時強制刷新邊界與樹木資料，避免顯示快取
+  // 從子頁返回時僅輕量刷新邊界（避免整頁重載樹木造成閃爍／迴圈）
   @override
   void didPopNext() {
-    debugPrint('[MapPage] didPopNext: 強制刷新邊界與樹木資料');
-    _loadMapMeta();
-    _loadProjectBoundaries();
+    final now = DateTime.now();
+    if (_lastBoundaryRefresh != null &&
+        now.difference(_lastBoundaryRefresh!) < const Duration(seconds: 45)) {
+      return;
+    }
+    _lastBoundaryRefresh = now;
+    debugPrint('[MapPage] didPopNext: 刷新邊界多邊形（不重整樹木）');
+    _loadProjectBoundaries(forceRefresh: false);
   }
 
   void _safeSetState(VoidCallback fn) {
@@ -518,6 +528,8 @@ class _MapPageState extends State<MapPage> with RouteAware {
       return;
     }
 
+    if (_mapLoadInFlight) return;
+    _mapLoadInFlight = true;
     _safeSetState(() => _isLoading = true);
 
     try {
@@ -567,15 +579,38 @@ class _MapPageState extends State<MapPage> with RouteAware {
         );
       }
     } finally {
+      _mapLoadInFlight = false;
       _safeSetState(() => _isLoading = false);
     }
   }
 
+  String? _boundsKey(LatLngBounds b) {
+    String r(double v) => v.toStringAsFixed(3);
+    return '${r(b.southwest.latitude)},${r(b.southwest.longitude)},'
+        '${r(b.northeast.latitude)},${r(b.northeast.longitude)}';
+  }
+
   void _scheduleBboxReload() {
+    if (_selectedProject != '全部' || _selectedCity != '全部') {
+      return;
+    }
     _bboxDebounce?.cancel();
-    _bboxDebounce = Timer(const Duration(milliseconds: 450), () {
-      if (!_disposed && mounted) _loadMapData();
+    _bboxDebounce = Timer(const Duration(milliseconds: 900), () async {
+      if (_disposed || !mounted || _controller == null) return;
+      try {
+        final bounds = await _controller!.getVisibleRegion();
+        final key = _boundsKey(bounds);
+        if (key != null && key == _lastBboxKey) return;
+        _lastBboxKey = key;
+        await _loadMapData();
+      } catch (_) {}
     });
+  }
+
+  void _onFilterChanged({bool fitBounds = true}) {
+    _lastBboxKey = null;
+    if (fitBounds) _fitBoundsOnNextMarkerUpdate = true;
+    _loadMapData();
   }
 
   // [優化] 從快取資料更新地圖標記
@@ -622,11 +657,16 @@ class _MapPageState extends State<MapPage> with RouteAware {
       _markers.addAll(markers);
     });
 
-    // V3: 同時更新邊界多邊形
     _updateBoundaryPolygons();
 
-    if (_markers.isNotEmpty && _controller != null && mounted) {
-      _zoomToMarkers();
+    if (_fitBoundsOnNextMarkerUpdate &&
+        _markers.isNotEmpty &&
+        _controller != null &&
+        mounted) {
+      _fitBoundsOnNextMarkerUpdate = false;
+      Future.delayed(const Duration(milliseconds: 200), () {
+        if (mounted) _zoomToMarkers();
+      });
     }
   }
 
@@ -638,12 +678,12 @@ class _MapPageState extends State<MapPage> with RouteAware {
         _filteredProjects = _projects;
         if (!keepSelected) _selectedProject = '全部';
       });
-      _loadMapData();
+      _onFilterChanged();
       return;
     }
 
     // 縣市變更 → 重新向伺服器取標記
-    _loadMapData();
+    _onFilterChanged();
   }
 
   // [Stage 1] 縣市下拉選單：列出資料中出現過的 _city + 完整台灣 22 縣市。
@@ -697,11 +737,9 @@ class _MapPageState extends State<MapPage> with RouteAware {
 
   void _onMapCreated(GoogleMapController controller) {
     _controller = controller;
-    if (_markers.isNotEmpty) {
-      Future.delayed(const Duration(milliseconds: 500), () {
-        _zoomToMarkers();
-      });
-    } else {
+    if (_markers.isEmpty &&
+        _selectedProject == '全部' &&
+        _selectedCity == '全部') {
       _scheduleBboxReload();
     }
   }
@@ -825,8 +863,10 @@ class _MapPageState extends State<MapPage> with RouteAware {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: () {
-              _loadMapData();
-              _loadProjectBoundaries();
+              _lastBboxKey = null;
+              _fitBoundsOnNextMarkerUpdate = true;
+              _loadMapMeta();
+              _loadProjectBoundaries(forceRefresh: true);
             },
             tooltip: '重新載入資料',
           ),
@@ -1019,7 +1059,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
                                 _safeSetState(() {
                                   _selectedProject = value;
                                 });
-                                _loadMapData();
+                                _onFilterChanged();
                               }
                             },
                           ),

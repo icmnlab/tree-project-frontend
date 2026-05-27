@@ -9,16 +9,25 @@ import '../../services/locale_service.dart';
 
 /// 現場測量入口：集中 VLGEO2 連線、待測量與操作說明
 class FieldSurveyFlowPage extends StatefulWidget {
-  const FieldSurveyFlowPage({super.key});
+  /// 從 BLE 匯入頁捷徑進入時，直接開啟裝置選擇步驟
+  final bool openBleDeviceStep;
+
+  const FieldSurveyFlowPage({super.key, this.openBleDeviceStep = false});
 
   @override
   State<FieldSurveyFlowPage> createState() => _FieldSurveyFlowPageState();
 }
 
 class _FieldSurveyFlowPageState extends State<FieldSurveyFlowPage> {
-  int _step = 0;
+  late int _step;
   BluetoothDevice? _selectedDevice;
   FieldSessionSetup? _sessionSetup;
+
+  @override
+  void initState() {
+    super.initState();
+    _step = widget.openBleDeviceStep ? 1 : 0;
+  }
 
   Future<void> _openBleLive() async {
     if (_selectedDevice == null) return;

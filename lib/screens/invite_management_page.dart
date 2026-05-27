@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/invite_service.dart';
 import '../services/project_service.dart';
+import '../services/v3/project_boundary_coordinator.dart';
 import '../models/project.dart';
 
 /// 邀請碼管理（業務管理員以上）
@@ -57,7 +58,22 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
     int days = 7;
     bool requiresApproval = true;
     final selectedCodes = <String>{};
+    final selectedAreas = <String>{};
     final locationsCtrl = TextEditingController();
+
+    Set<String> areasForSelection() {
+      final areas = <String>{};
+      for (final p in _projects) {
+        if (!selectedCodes.contains(p.code)) continue;
+        final a = p.area?.trim();
+        if (a != null && a.isNotEmpty) areas.add(a);
+      }
+      return areas;
+    }
+
+    void syncLocationsToField() {
+      locationsCtrl.text = selectedAreas.join(', ');
+    }
 
     final created = await showDialog<bool>(
       context: context,
@@ -102,29 +118,92 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
                   onChanged: (v) => setDialog(() => requiresApproval = v),
                 ),
                 const Text('綁定專案（可多選）', style: TextStyle(fontWeight: FontWeight.w600)),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton.icon(
+                    onPressed: () async {
+                      final createdProj = await _quickCreateProject(ctx);
+                      if (createdProj != null) {
+                        setDialog(() {
+                          _projects.add(createdProj);
+                          selectedCodes.add(createdProj.code);
+                          final a = createdProj.area?.trim();
+                          if (a != null && a.isNotEmpty) selectedAreas.add(a);
+                          syncLocationsToField();
+                        });
+                      }
+                    },
+                    icon: const Icon(Icons.add, size: 18),
+                    label: const Text('新增專案'),
+                  ),
+                ),
                 ..._projects.map((p) {
                   final code = p.code;
                   return CheckboxListTile(
                     dense: true,
                     title: Text('${p.name} ($code)'),
+                    subtitle: p.area != null && p.area!.isNotEmpty
+                        ? Text('預設區位：${p.area}')
+                        : null,
                     value: selectedCodes.contains(code),
                     onChanged: (checked) {
                       setDialog(() {
                         if (checked == true) {
                           selectedCodes.add(code);
+                          final a = p.area?.trim();
+                          if (a != null && a.isNotEmpty) selectedAreas.add(a);
                         } else {
                           selectedCodes.remove(code);
+                          final a = p.area?.trim();
+                          if (a != null) selectedAreas.remove(a);
                         }
+                        syncLocationsToField();
                       });
                     },
                   );
                 }),
+                if (areasForSelection().isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  const Text('綁定區位（可多選，對應註冊後專案區位）',
+                      style: TextStyle(fontWeight: FontWeight.w600)),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 0,
+                    children: areasForSelection().map((area) {
+                      final picked = selectedAreas.contains(area);
+                      return FilterChip(
+                        label: Text(area),
+                        selected: picked,
+                        onSelected: (v) {
+                          setDialog(() {
+                            if (v) {
+                              selectedAreas.add(area);
+                            } else {
+                              selectedAreas.remove(area);
+                            }
+                            syncLocationsToField();
+                          });
+                        },
+                      );
+                    }).toList(),
+                  ),
+                ],
                 TextField(
                   controller: locationsCtrl,
                   decoration: const InputDecoration(
-                    labelText: '預設區位（逗號分隔，選填）',
+                    labelText: '預設區位（逗號分隔，可手動增修）',
                     hintText: '例如：A區, B區',
                   ),
+                  onChanged: (_) {
+                    selectedAreas
+                      ..clear()
+                      ..addAll(
+                        locationsCtrl.text
+                            .split(RegExp(r'[,，]'))
+                            .map((s) => s.trim())
+                            .where((s) => s.isNotEmpty),
+                      );
+                  },
                 ),
               ],
             ),
@@ -145,11 +224,13 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
     if (created != true || !mounted) return;
 
     try {
-      final locations = locationText
-          .split(RegExp(r'[,，]'))
-          .map((s) => s.trim())
-          .where((s) => s.isNotEmpty)
-          .toList();
+      final locations = selectedAreas.isNotEmpty
+          ? selectedAreas.toList()
+          : locationText
+              .split(RegExp(r'[,，]'))
+              .map((s) => s.trim())
+              .where((s) => s.isNotEmpty)
+              .toList();
       final invite = await _inviteService.createInvite(
         role: role,
         maxUses: maxUses.clamp(1, 100),
@@ -185,6 +266,65 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
         SnackBar(content: Text('$e'), backgroundColor: Colors.red),
       );
     }
+  }
+
+  Future<Project?> _quickCreateProject(BuildContext context) async {
+    final nameCtrl = TextEditingController();
+    final areaCtrl = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('新增專案'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(
+                labelText: '專案名稱',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: areaCtrl,
+              decoration: const InputDecoration(
+                labelText: '專案區位',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('建立'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || nameCtrl.text.trim().isEmpty) return null;
+    final area = areaCtrl.text.trim();
+    try {
+      final res = await _projectService.addProject(
+        nameCtrl.text.trim(),
+        area.isEmpty ? '未分類' : area,
+      );
+      if (res['success'] == true && res['project'] != null) {
+        final p = Project.fromJson(
+          Map<String, dynamic>.from(res['project'] as Map),
+        );
+        await ProjectBoundaryCoordinator.instance.afterBoundaryMutation(
+          projectName: p.name,
+        );
+        return p;
+      }
+    } catch (_) {}
+    return null;
   }
 
   @override

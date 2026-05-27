@@ -3,7 +3,7 @@ import 'api_service.dart';
 /// 邀請碼管理（業務管理員以上）
 class InviteService {
   Future<List<Map<String, dynamic>>> listInvites() async {
-    final response = await ApiService.get('users/invites');
+    final response = await ApiService.get('invites');
     if (response['success'] == true && response['invites'] != null) {
       return List<Map<String, dynamic>>.from(response['invites']);
     }
@@ -18,7 +18,7 @@ class InviteService {
     List<String>? projectLocations,
     bool requiresApproval = false,
   }) async {
-    final response = await ApiService.post('users/invites', {
+    final response = await ApiService.post('invites', {
       'role': role,
       'max_uses': maxUses,
       'expires_in_days': expiresInDays,
@@ -36,7 +36,7 @@ class InviteService {
 
   Future<void> deactivateInvite(int inviteId) async {
     final response =
-        await ApiService.patch('users/invites/$inviteId/deactivate', {});
+        await ApiService.patch('invites/$inviteId/deactivate', {});
     if (response['success'] != true) {
       throw Exception(response['message'] ?? '停用失敗');
     }
