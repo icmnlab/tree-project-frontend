@@ -15,6 +15,7 @@ import 'admin_research_dataset_page.dart'; // [Research] DBH 校準資料蒐集
 import 'screens/invite_management_page.dart';
 import 'screens/audit_log_page.dart';
 import 'screens/pending_password_resets_page.dart';
+import 'screens/role_permissions_page.dart';
 import '../services/auth_service.dart';
 import '../services/locale_service.dart';
 
@@ -650,24 +651,38 @@ class _AdminPageState extends State<AdminPage> {
 
     return Column(
       children: [
-        if (_canManageInvites)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.vpn_key_outlined),
-                label: const Text('邀請碼管理'),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              OutlinedButton.icon(
+                icon: const Icon(Icons.admin_panel_settings_outlined),
+                label: const Text('角色權限對照'),
                 onPressed: () {
                   Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => const InviteManagementPage(),
+                      builder: (_) => const RolePermissionsPage(),
                     ),
                   );
                 },
               ),
-            ),
+              if (_canManageInvites)
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.vpn_key_outlined),
+                  label: const Text('邀請碼管理'),
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const InviteManagementPage(),
+                      ),
+                    );
+                  },
+                ),
+            ],
           ),
+        ),
         // 搜尋和篩選區域
         Padding(
           padding: const EdgeInsets.all(16.0),

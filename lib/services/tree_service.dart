@@ -32,8 +32,13 @@ class TreeService {
     return await ApiService.get('tree_survey$suffix');
   }
 
-  Future<Map<String, dynamic>> getMapMeta() async {
-    return await ApiService.get('tree_survey/map/meta');
+  Future<Map<String, dynamic>> getMapMeta({String? city}) async {
+    final q = <String>[];
+    if (city != null && city.isNotEmpty && city != '全部') {
+      q.add('city=${Uri.encodeComponent(city)}');
+    }
+    final suffix = q.isEmpty ? '/map/meta' : '/map/meta?${q.join('&')}';
+    return await ApiService.get('tree_survey$suffix');
   }
 
   Future<Map<String, dynamic>> getMapTrees({

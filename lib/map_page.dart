@@ -672,7 +672,6 @@ class _MapPageState extends State<MapPage> with RouteAware {
 
   void _updateProjectsForCity(String city) {
     if (city == '全部') {
-      // 縣市=全部 → 列出所有專案；若使用者已選的專案還在就保留，不在就回 '全部'
       final keepSelected = _projects.contains(_selectedProject);
       _safeSetState(() {
         _filteredProjects = _projects;
@@ -682,7 +681,36 @@ class _MapPageState extends State<MapPage> with RouteAware {
       return;
     }
 
-    // 縣市變更 → 重新向伺服器取標記
+    _refreshProjectsForCity(city);
+  }
+
+  Future<void> _refreshProjectsForCity(String city) async {
+    try {
+      final meta = await _treeService.getMapMeta(city: city);
+      if (meta['success'] != true || !mounted) {
+        _onFilterChanged();
+        return;
+      }
+      final projects = (meta['projects'] as List?) ?? [];
+      final names = <String>{'全部'};
+      for (final p in projects) {
+        if (p is Map) {
+          final name = p['name']?.toString();
+          if (name != null && name.isNotEmpty) names.add(name);
+        }
+      }
+      final list = names.toList()..sort((a, b) {
+            if (a == '全部') return -1;
+            if (b == '全部') return 1;
+            return a.compareTo(b);
+          });
+      _safeSetState(() {
+        _filteredProjects = list;
+        if (!list.contains(_selectedProject)) _selectedProject = '全部';
+      });
+    } catch (e) {
+      debugPrint('依縣市載入專案列表失敗: $e');
+    }
     _onFilterChanged();
   }
 

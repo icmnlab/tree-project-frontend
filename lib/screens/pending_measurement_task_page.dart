@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:sensors_plus/sensors_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/pending_tree_measurement.dart';
 import '../services/pending_measurement_service.dart';
 import '../services/project_service.dart';
@@ -1412,6 +1413,23 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
           ),
 
         Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: hasTargetGps
+                      ? () => _openGoogleMapsNavigation(targetLat, targetLon)
+                      : null,
+                  icon: const Icon(Icons.map_outlined),
+                  label: Text('Google 導航至$targetLabel'),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
@@ -2090,6 +2108,20 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(msg), backgroundColor: Colors.red),
     );
+  }
+
+  Future<void> _openGoogleMapsNavigation(double lat, double lon) async {
+    final uri = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1&destination=$lat,$lon&travelmode=walking',
+    );
+    try {
+      final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (!launched && mounted) {
+        _showError('無法開啟 Google Maps');
+      }
+    } catch (e) {
+      if (mounted) _showError('開啟 Google Maps 失敗: $e');
+    }
   }
 
   Future<void> _skipCurrentTask() async {
