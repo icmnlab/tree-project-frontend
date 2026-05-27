@@ -1325,12 +1325,9 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
             },
           );
           if (savedImage != null) {
-            // 非同步上傳到後端（不阻塞提交流程）
-            _imageService.syncImage(savedImage).then((ok) {
-              debugPrint('[Photo] 同步到後端: ${ok ? "成功" : "失敗/稍後重試"}');
-            }).catchError((e) {
-              debugPrint('[Photo] 同步異常（將在下次批次時重試）: $e');
-            });
+            // 先完成上傳再轉移，避免 transfer 時 tree_images 尚未寫入
+            final synced = await _imageService.syncImage(savedImage);
+            debugPrint('[Photo] 同步到後端: ${synced ? "成功" : "失敗/稍後重試"}');
           } else if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
@@ -1499,6 +1496,23 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
             final tr = await _pendingService.transferToTreeSurvey(
               sessionId: sessionId,
             );
+            if (tr['success'] == true) {
+              try {
+                final idMapping = tr['id_mapping'] as List<dynamic>?;
+                if (idMapping != null) {
+                  for (final m in idMapping) {
+                    if (m is! Map) continue;
+                    final pendingId = m['pending_id']?.toString();
+                    final surveyId = m['tree_survey_id']?.toString();
+                    if (pendingId != null && surveyId != null) {
+                      await _imageService.remapTreeId(pendingId, surveyId);
+                    }
+                  }
+                }
+              } catch (e) {
+                debugPrint('[IntegratedForm] photo remap failed: $e');
+              }
+            }
             if (mounted && tr['success'] == true) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(

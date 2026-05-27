@@ -528,15 +528,6 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
                 fillColor: Colors.teal.shade50,
               ),
             ),
-            if (_canAddProject)
-              Align(
-                alignment: Alignment.centerLeft,
-                child: TextButton.icon(
-                  onPressed: _showAddProjectDialog,
-                  icon: const Icon(Icons.add, size: 18),
-                  label: Text(context.tr('field_setup_add_project')),
-                ),
-              ),
             const SizedBox(height: 16),
             Text(context.tr('field_setup_gps_title'),
                 style: const TextStyle(fontWeight: FontWeight.w600)),

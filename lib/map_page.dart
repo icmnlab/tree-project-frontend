@@ -613,6 +613,20 @@ class _MapPageState extends State<MapPage> with RouteAware {
     _loadMapData();
   }
 
+  /// 縣市比對（相容台/臺、市/縣尾綴）
+  bool _cityMatches(String? detected, String selected) {
+    if (selected == '全部') return true;
+    if (detected == null || detected.isEmpty) return false;
+    String norm(String s) => s.trim().replaceAll('台', '臺');
+    final d = norm(detected);
+    final candidates = <String>{norm(selected)};
+    final base = selected.replaceAll(RegExp(r'[市縣]$'), '');
+    if (base.isNotEmpty) {
+      candidates.addAll([norm('${base}市'), norm('${base}縣')]);
+    }
+    return candidates.contains(d);
+  }
+
   // [優化] 從快取資料更新地圖標記
   // [Stage 1] city 過濾改用伺服器權威 _city 欄位（utils/county.resolveAreaCity 解析）
   void _updateMarkersFromCache() {
@@ -623,7 +637,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
         return false;
       }
       if (_selectedCity != '全部') {
-        return tree['_city'] == _selectedCity;
+        return _cityMatches(tree['_city']?.toString(), _selectedCity);
       }
       return true;
     }).toList();

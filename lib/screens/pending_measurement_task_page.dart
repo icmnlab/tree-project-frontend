@@ -93,7 +93,10 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     if (_activeSessionId == null) {
       try {
         _sessions = await _service.getSessions();
-        if (_sessions.length == 1) {
+        final active = _sessions.where((s) => s.hasActiveTasks).toList();
+        if (active.length == 1) {
+          _activeSessionId = active.first.sessionId;
+        } else if (active.isEmpty && _sessions.length == 1) {
           _activeSessionId = _sessions.first.sessionId;
         }
       } catch (e) {
@@ -684,6 +687,11 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   }
 
   Widget _buildSessionPicker() {
+    final activeSessions =
+        _sessions.where((s) => s.hasActiveTasks).toList();
+    final completedSessions =
+        _sessions.where((s) => !s.hasActiveTasks).toList();
+
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
@@ -694,68 +702,28 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
               color: Colors.teal.shade700,
             )),
         const SizedBox(height: 4),
-        Text('您有多個測量批次，請選擇要操作的批次',
+        Text('僅顯示仍有待測量任務的批次；已完成批次在下方。',
             style: TextStyle(color: Colors.grey.shade600)),
         const SizedBox(height: 16),
-        ..._sessions.map((session) {
-          final progress = session.totalTrees > 0
-              ? session.completedTrees / session.totalTrees
-              : 0.0;
-          return Card(
-            margin: const EdgeInsets.only(bottom: 10),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () {
-                setState(() => _activeSessionId = session.sessionId);
-                _loadTasks();
-              },
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.folder_open, color: Colors.teal.shade600),
-                        const SizedBox(width: 8),
-                        Expanded(
-                            child: Text(
-                          session.projectArea ?? session.sessionId,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16),
-                        )),
-                        Text('${session.completedTrees}/${session.totalTrees}',
-                            style: TextStyle(
-                                color: Colors.teal.shade700,
-                                fontWeight: FontWeight.bold)),
-                      ],
-                    ),
-                    if (session.projectCode != null) ...[
-                      const SizedBox(height: 4),
-                      Text(session.projectCode!,
-                          style: TextStyle(
-                              color: Colors.grey.shade600, fontSize: 13)),
-                    ],
-                    const SizedBox(height: 8),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(4),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        minHeight: 4,
-                        backgroundColor: Colors.grey.shade200,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          session.isComplete
-                              ? Colors.green
-                              : Colors.teal.shade400,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+        if (activeSessions.isEmpty)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Text(
+              '目前沒有待測量的批次',
+              style: TextStyle(color: Colors.grey.shade700),
             ),
-          );
-        }),
+          ),
+        ...activeSessions.map((session) => _buildSessionCard(session)),
+        if (completedSessions.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          Text('已完成（可轉移或刪除）',
+              style: TextStyle(
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade700,
+              )),
+          const SizedBox(height: 8),
+          ...completedSessions.map((session) => _buildSessionCard(session)),
+        ],
         const SizedBox(height: 8),
         OutlinedButton.icon(
           onPressed: _isCreatingSmokeTask ? null : _createAutoPilotSmokeTask,
@@ -770,6 +738,88 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
               Text(_isCreatingSmokeTask ? '建立測試任務中...' : '建立 AutoPilot 測試任務'),
         ),
       ],
+    );
+  }
+
+  Widget _buildSessionCard(MeasurementSession session) {
+    final progress = session.totalTrees > 0
+        ? session.completedTrees / session.totalTrees
+        : 0.0;
+    final statusLabel = session.hasActiveTasks
+        ? '待測 ${session.pendingTrees} 筆'
+        : '已完成';
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          setState(() => _activeSessionId = session.sessionId);
+          _loadTasks();
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    session.hasActiveTasks
+                        ? Icons.folder_open
+                        : Icons.check_circle_outline,
+                    color: session.hasActiveTasks
+                        ? Colors.teal.shade600
+                        : Colors.green.shade600,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      session.projectArea ?? session.sessionId,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                  ),
+                  Text(
+                    '${session.completedTrees}/${session.totalTrees}',
+                    style: TextStyle(
+                        color: Colors.teal.shade700,
+                        fontWeight: FontWeight.bold),
+                  ),
+                ],
+              ),
+              if (session.projectCode != null) ...[
+                const SizedBox(height: 4),
+                Text(session.projectCode!,
+                    style:
+                        TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+              ],
+              const SizedBox(height: 4),
+              Text(statusLabel,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: session.hasActiveTasks
+                        ? Colors.orange.shade800
+                        : Colors.green.shade700,
+                  )),
+              const SizedBox(height: 8),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 4,
+                  backgroundColor: Colors.grey.shade200,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    session.hasActiveTasks
+                        ? Colors.teal.shade400
+                        : Colors.green,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

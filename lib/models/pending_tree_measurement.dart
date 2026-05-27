@@ -513,6 +513,7 @@ class MeasurementSession {
   final DateTime createdAt;
   final int totalTrees;
   final int completedTrees;
+  final int pendingTrees;
   final String? projectArea;
   final String? projectCode;
 
@@ -524,6 +525,7 @@ class MeasurementSession {
     required this.createdAt,
     required this.totalTrees,
     required this.completedTrees,
+    this.pendingTrees = 0,
     this.projectArea,
     this.projectCode,
   });
@@ -531,7 +533,8 @@ class MeasurementSession {
   double get progressPercent =>
       totalTrees > 0 ? (completedTrees / totalTrees * 100) : 0;
 
-  bool get isComplete => completedTrees >= totalTrees;
+  bool get isComplete => pendingTrees <= 0 && completedTrees >= totalTrees;
+  bool get hasActiveTasks => pendingTrees > 0;
 
   factory MeasurementSession.fromJson(Map<String, dynamic> json) {
     return MeasurementSession(
@@ -543,6 +546,7 @@ class MeasurementSession {
           DateTime.now(),
       totalTrees: _jsonToInt(json['total_trees']),
       completedTrees: _jsonToInt(json['completed_trees']),
+      pendingTrees: _jsonToInt(json['pending_trees']),
       projectArea: json['project_area']?.toString(),
       projectCode: json['project_code']?.toString(),
     );
@@ -565,6 +569,7 @@ class MeasurementSession {
       'created_at': createdAt.toIso8601String(),
       'total_trees': totalTrees,
       'completed_trees': completedTrees,
+      'pending_trees': pendingTrees,
       if (projectArea != null) 'project_area': projectArea,
       if (projectCode != null) 'project_code': projectCode,
     };
