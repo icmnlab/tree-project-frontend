@@ -10,7 +10,7 @@ import 'services/project_area_service.dart';
 import 'services/location_service.dart';
 import 'services/species_service.dart';
 import 'services/carbon_calculation_service.dart';
-import 'services/v3/project_boundary_service.dart'; // V3: 專案邊界驗證
+import 'services/v3/project_boundary_coordinator.dart'; // V3: 專案邊界驗證
 import 'screens/v3/project_boundary_draw_page.dart'; // [新功能] 新增專案 → 引導畫邊界
 import 'widgets/conflict_resolution_dialog.dart';
 
@@ -305,17 +305,14 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
     final lng = double.tryParse(xCoordController.text);
     
     if (projectName.isNotEmpty && lat != null && lng != null && lat != 0 && lng != 0) {
-      final boundaryService = ProjectBoundaryService();
-      // 確保已載入邊界資料
-      await boundaryService.getAllBoundaries();
-      
-      final validation = boundaryService.validateCoordinateForProject(
+      final decision = await ProjectBoundaryCoordinator.instance.evaluateSubmit(
         projectName: projectName,
         lat: lat,
         lng: lng,
+        enforcement: BoundaryEnforcement.manualModeAllowNoBoundary,
       );
-      
-      if (!validation.isValid) {
+
+      if (decision.hasBoundary && !decision.isInside) {
         if (mounted) {
           final shouldContinue = await showDialog<bool>(
             context: context,
@@ -328,7 +325,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
                 ],
               ),
               content: Text(
-                '${validation.message}\n\n'
+                '${decision.message}\n\n'
                 '您仍然可以選擇繼續提交，但這棵樹的位置可能需要重新確認。',
               ),
               actions: [
@@ -1305,6 +1302,9 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
           projectCode: projectCode,
         ),
       ),
+    );
+    await ProjectBoundaryCoordinator.instance.afterBoundaryMutation(
+      projectName: projectName,
     );
   }
 

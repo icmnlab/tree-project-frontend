@@ -11,6 +11,7 @@ import '../../services/species_service.dart';
 import '../../services/pure_vision_dbh_service.dart';
 import '../../services/tflite_tracking_service.dart';
 import '../../services/v3/tree_image_service.dart';
+import '../../services/v3/project_boundary_coordinator.dart';
 import '../../services/v3/ml_data_collector.dart';
 import '../../services/carbon_calculation_service.dart';
 import '../../services/dbh_measurement_engine.dart';
@@ -1224,6 +1225,46 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
     if (taskId == null) {
       _showError('任務 ID 不存在，無法提交');
       return;
+    }
+
+    final projectName = widget.task.projectName?.trim() ?? '';
+    final tLat = widget.task.treeLatitude;
+    final tLon = widget.task.treeLongitude;
+    if (projectName.isNotEmpty &&
+        tLat.abs() > 1e-6 &&
+        tLon.abs() > 1e-6 &&
+        (tLat != 0 || tLon != 0)) {
+      final boundaryCheck =
+          await ProjectBoundaryCoordinator.instance.evaluateSubmit(
+        projectName: projectName,
+        lat: tLat,
+        lng: tLon,
+        enforcement: BoundaryEnforcement.warnOnly,
+      );
+      if (boundaryCheck.hasBoundary &&
+          !boundaryCheck.isInside &&
+          mounted) {
+        final proceed = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('座標在專案邊界外'),
+            content: Text(
+              '${boundaryCheck.message}\n\n仍要提交這棵樹的測量結果嗎？',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('返回'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('仍要提交'),
+              ),
+            ],
+          ),
+        );
+        if (proceed != true) return;
+      }
     }
 
     setState(() => _isLoading = true);

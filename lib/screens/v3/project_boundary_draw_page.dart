@@ -11,6 +11,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../services/v3/project_boundary_service.dart';
+import '../../services/v3/project_boundary_coordinator.dart';
 import '../../services/api_service.dart';
 import '../../widgets/conflict_resolution_dialog.dart';
 import '../../constants/colors.dart';
@@ -654,15 +655,19 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
       }
 
       if (response['success'] == true) {
+        await ProjectBoundaryCoordinator.instance.afterBoundaryMutation(
+          projectName: _selectedProject,
+        );
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('邊界已儲存')),
         );
-        
+
         setState(() {
           _isDrawing = false;
           _drawingPoints.clear();
         });
-        
+
         await _loadData();
       } else {
         final message = response['message'] ?? '儲存失敗';

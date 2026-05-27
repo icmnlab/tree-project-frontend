@@ -11,7 +11,8 @@ import '../services/auth_service.dart'; // 登入時可存取專案（BLE 指派
 import '../services/project_service.dart'; // 專案服務（手動指派 dropdown）
 import '../services/tree_service.dart';
 import '../services/v3/data_filter_service.dart'; // V3 數據過濾服務
-import '../services/v3/project_boundary_service.dart'; // 專案邊界服務（自動匹配專案）
+import '../services/v3/project_boundary_service.dart'; // 專案邊界服務
+import '../services/v3/project_boundary_coordinator.dart';（自動匹配專案）
 import '../widgets/network_aware_widgets.dart'; // 網路感知元件
 import 'manual_input_page_v2.dart'; // V2 批次匯入
 import 'pending_measurement_task_page.dart'; // 引入待測量任務頁面
@@ -1423,15 +1424,21 @@ class _BleImportPageState extends State<BleImportPage> {
       final match = boundaryService.findProjectByCoordinate(lat: lat, lng: lon);
       if (match.matched && match.projectName != null) {
         final key = match.projectName!;
+        final enriched =
+            await ProjectBoundaryCoordinator.instance.enrichProjectFields(
+          projectName: match.projectName,
+          projectCode: match.projectCode,
+          projectArea: match.projectArea,
+        );
         projectCounts[key] = (projectCounts[key] ?? 0) + 1;
         projectInfo[key] = {
-          'name': match.projectName,
-          'code': match.projectCode,
-          'area': match.projectArea,
+          'name': enriched['name'],
+          'code': enriched['code'],
+          'area': enriched['area'],
         };
-        rec['_assigned_project_area'] = match.projectArea;
-        rec['_assigned_project_code'] = match.projectCode;
-        rec['_assigned_project_name'] = match.projectName;
+        rec['_assigned_project_area'] = enriched['area'];
+        rec['_assigned_project_code'] = enriched['code'];
+        rec['_assigned_project_name'] = enriched['name'];
       } else {
         outsideCount++;
         rec['_assigned_project_area'] = null;

@@ -11,6 +11,7 @@ import '../../services/project_service.dart';
 import '../../services/species_service.dart';
 import '../../services/species_identification_service.dart';
 import '../../services/v3/project_boundary_service.dart';
+import '../../services/v3/project_boundary_coordinator.dart';
 import '../../services/v3/tree_image_service.dart';
 import '../../services/v3/ml_data_collector.dart'; // ML Data Collector
 import '../scanner_page.dart'; // For DBH measurement
@@ -113,7 +114,8 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
   // [N12 fix] 載入專案邊界並轉成 Polygon Set 供地圖顯示
   Future<void> _loadBoundariesForMap() async {
     try {
-      final boundaries = await _boundaryService.getAllBoundaries();
+      final boundaries =
+          await ProjectBoundaryCoordinator.instance.forMapDisplay();
       if (!mounted) return;
       const palette = <Color>[
         Colors.blue,
@@ -235,8 +237,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
   Future<void> _autoMatchProject() async {
     if (_currentLocation == null) return;
 
-    // 確保邊界資料已載入
-    await _boundaryService.getAllBoundaries();
+    await ProjectBoundaryCoordinator.instance.beforeAutoMatch();
 
     if (!mounted) return;
 
@@ -306,23 +307,23 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
 
     await _refreshProjectBoundaryStatus();
 
-    final validation = await _boundaryService.validateCoordinateForProjectFresh(
+    final decision = await ProjectBoundaryCoordinator.instance.evaluateSubmit(
       projectName: _projectController.text.trim(),
       lat: _currentLocation!.latitude,
       lng: _currentLocation!.longitude,
+      enforcement: BoundaryEnforcement.manualModeAllowNoBoundary,
     );
 
     if (!mounted) return;
 
     setState(() {
-      if (!validation.hasBoundary) {
-        // 專案存在但尚未畫邊界 → 手動模式，不阻擋提交
+      if (!decision.hasBoundary) {
         _isLocationValid = true;
         _locationWarning = null;
         return;
       }
-      _isLocationValid = validation.isValid;
-      _locationWarning = validation.isValid ? null : validation.message;
+      _isLocationValid = decision.isInside;
+      _locationWarning = decision.isInside ? null : decision.message;
     });
   }
 
@@ -665,10 +666,11 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
         ),
       ),
     );
-    // 回來後重新整理一下邊界快取（讓自動匹配馬上生效）
-    try {
-      await _boundaryService.getAllBoundaries(forceRefresh: true);
-    } catch (_) {}
+    await ProjectBoundaryCoordinator.instance.afterBoundaryMutation(
+      projectName: projectName,
+    );
+    if (mounted) await _loadBoundariesForMap();
+    if (mounted) await _refreshProjectBoundaryStatus();
   }
 
   // 清理臨時新增的專案區位和專案

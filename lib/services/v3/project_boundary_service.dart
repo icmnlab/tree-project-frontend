@@ -315,8 +315,7 @@ class ProjectBoundaryService {
       final response = await ApiService.delete('/project-boundaries/$projectName');
       
       if (response['success'] == true) {
-        // 清除快取
-        _cachedBoundaries.removeWhere((b) => b.projectName == projectName);
+        markBoundariesChanged();
         debugPrint('[ProjectBoundaryService] 邊界已刪除: $projectName');
         return true;
       }
@@ -424,6 +423,15 @@ class ProjectBoundaryService {
   }
 
   /// 根據座標查找對應的專案（本地計算）
+  /// 刷新快取後再匹配（智慧表單／BLE 建議使用）
+  Future<CoordinateMatchResult> findProjectByCoordinateFresh({
+    required double lat,
+    required double lng,
+  }) async {
+    await getAllBoundaries(forceRefresh: true);
+    return findProjectByCoordinate(lat: lat, lng: lng);
+  }
+
   CoordinateMatchResult findProjectByCoordinate({
     required double lat,
     required double lng,
@@ -585,6 +593,9 @@ class ProjectBoundaryService {
     _lastFetchTime = null;
     debugPrint('[ProjectBoundaryService] 快取已清除');
   }
+
+  /// 邊界已變更（儲存／刪除／繪製返回）— 各頁應重新載入
+  void markBoundariesChanged() => clearCache();
 
   /// 獲取快取的邊界數量
   int get cachedBoundaryCount => _cachedBoundaries.length;
