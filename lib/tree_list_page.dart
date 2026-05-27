@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'tree_survey_detail_page.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:excel/excel.dart';
@@ -62,8 +63,12 @@ class _TreeListPageState extends State<TreeListPage> {
   final TextEditingController _searchController = TextEditingController();
   String _selectedProject = '全部';
   List<String> _projects = ['全部'];
+  Map<String, String> _projectNameToCode = {};
+  Timer? _searchDebounce;
 
-  // 排序相關
+  void _treeListLog(String message) {
+    debugPrint('[TreeList] $message');
+  }
   String _sortBy = '樹種名稱';
   bool _isAscending = true;
   final List<String> _sortOptions = [
@@ -101,6 +106,7 @@ class _TreeListPageState extends State<TreeListPage> {
     ApiService.triggerCleanup();
 
     _fetchTrees(reset: true);
+    _loadProjectOptions();
     _loadPermissions();
     _scrollController.addListener(_onScroll);
   }
@@ -128,20 +134,51 @@ class _TreeListPageState extends State<TreeListPage> {
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchController.dispose();
     _scrollController.dispose();
     super.dispose();
   }
 
+  Future<void> _loadProjectOptions() async {
+    try {
+      final meta = await _treeService.getMapMeta();
+      if (meta['success'] != true || !mounted) return;
+      final projects = (meta['projects'] as List?) ?? [];
+      final names = <String>{};
+      final nameToCode = <String, String>{};
+      for (final p in projects) {
+        if (p is! Map) continue;
+        final name = p['name']?.toString();
+        final code = p['code']?.toString();
+        if (name != null && name.isNotEmpty) {
+          names.add(name);
+          if (code != null && code.isNotEmpty) nameToCode[name] = code;
+        }
+      }
+      final sorted = names.toList()..sort();
+      setState(() {
+        _projectNameToCode = nameToCode;
+        _projects = ['全部', ...sorted];
+      });
+      _treeListLog('projects loaded: ${sorted.length}');
+    } catch (e) {
+      _treeListLog('load projects failed: $e');
+    }
+  }
+
   String? get _selectedProjectCode {
     if (_selectedProject == '全部') return null;
-    for (final t in _trees) {
-      if (t['專案名稱'] == _selectedProject) {
-        final c = t['專案代碼']?.toString();
-        if (c != null && c.isNotEmpty) return c;
-      }
-    }
-    return null;
+    return _projectNameToCode[_selectedProject];
+  }
+
+  void _onSearchChanged(String value) {
+    _searchDebounce?.cancel();
+    _searchDebounce = Timer(const Duration(milliseconds: 400), () {
+      if (!mounted) return;
+      _treeListLog('search q="$value" project=$_selectedProject');
+      _fetchTrees(reset: true);
+    });
   }
 
   String? get _selectedProjectFilterName {
@@ -170,6 +207,7 @@ class _TreeListPageState extends State<TreeListPage> {
         offset: _offset,
         projectCode: _selectedProjectCode,
         projectName: _selectedProjectFilterName,
+        search: _searchController.text.trim(),
       );
 
       if (response['success'] == true && response['data'] is List) {
@@ -187,12 +225,6 @@ class _TreeListPageState extends State<TreeListPage> {
           _offset = _trees.length;
           _totalCount = total ?? _trees.length;
           _hasMore = batch.length >= _pageSize && _trees.length < _totalCount;
-          if (_projects.length <= 1) {
-            _projects = [
-              '全部',
-              ..._trees.map((t) => t['專案名稱'].toString()).toSet().toList(),
-            ];
-          }
           _filterAndSortTrees();
           _isLoading = false;
           _isLoadingMore = false;
@@ -210,23 +242,7 @@ class _TreeListPageState extends State<TreeListPage> {
   }
 
   void _filterAndSortTrees() {
-    final searchText = _searchController.text.toLowerCase();
-
-    // 先過濾
-    var filtered = _trees.where((tree) {
-      final matchesSearch = searchText.isEmpty ||
-          (tree['樹種名稱']?.toString().toLowerCase().contains(searchText) ??
-              false) ||
-          (tree['專案名稱']?.toString().toLowerCase().contains(searchText) ??
-              false) ||
-          (tree['專案區位']?.toString().toLowerCase().contains(searchText) ??
-              false);
-
-      final matchesProject =
-          _selectedProject == '全部' || tree['專案名稱'] == _selectedProject;
-
-      return matchesSearch && matchesProject;
-    }).toList();
+    var filtered = List<Map<String, dynamic>>.from(_trees);
 
     // 再排序
     filtered.sort((a, b) {
@@ -803,7 +819,7 @@ class _TreeListPageState extends State<TreeListPage> {
                               fillColor: cardBg,
                               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                             ),
-                            onChanged: (value) => _filterAndSortTrees(),
+                            onChanged: _onSearchChanged,
                           ),
                         ),
                       ),

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../models/pending_tree_measurement.dart';
 import '../services/ble_live_packet_decoder.dart';
-import '../utils/location_helper.dart';
+import '../utils/field_gps_capture.dart';
 import '../services/pending_measurement_service.dart';
 import '../widgets/ble/ble_device_scanner.dart';
 import '../widgets/field/field_session_setup.dart';
@@ -251,21 +251,20 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         return;
       }
 
-      final pos = await getHighAccuracyPosition(
-        timeout: const Duration(seconds: 12),
+      final gps = await showFieldGpsCaptureDialog(
+        context,
+        mode: _gpsSource == 'tree' ? 'tree' : 'surveyor',
+        title: '第 $seq 棵 · GPS',
       );
-      final lat = pos?.latitude ?? 0.0;
-      final lon = pos?.longitude ?? 0.0;
-      final hasGps = pos != null;
+      if (gps == null || !mounted) return;
 
-      if (!hasGps && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(context.tr('ble_no_gps')),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
+      final lat = gps.latitude;
+      final lon = gps.longitude;
+      const hasGps = true;
+
+      fieldGpsLog(
+        'live seq=$seq mode=${_gpsSource} lat=$lat lon=$lon acc=${gps.accuracyM}m',
+      );
 
       _liveSessionId ??= PendingMeasurementService.generateSessionId();
 
@@ -277,7 +276,8 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         hasGps: hasGps,
         gpsSource: _gpsSource!,
         extraMetadata: {
-          if (pos != null) 'phone_gps_accuracy_m': pos.accuracy,
+          'phone_gps_accuracy_m': gps.accuracyM,
+          'gps_sample_count': gps.sampleCount,
           'live_session_index': seq,
           if (_batchName != null) 'batch_name': _batchName,
         },

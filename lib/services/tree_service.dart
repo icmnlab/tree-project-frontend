@@ -15,6 +15,7 @@ class TreeService {
     int offset = 0,
     String? projectCode,
     String? projectName,
+    String? search,
   }) async {
     final q = <String>[];
     if (limit != null) q.add('limit=$limit');
@@ -27,6 +28,9 @@ class TreeService {
         projectName.isNotEmpty &&
         projectName != '全部') {
       q.add('project_name=${Uri.encodeComponent(projectName)}');
+    }
+    if (search != null && search.trim().isNotEmpty) {
+      q.add('q=${Uri.encodeComponent(search.trim())}');
     }
     final suffix = q.isEmpty ? '' : '?${q.join('&')}';
     return await ApiService.get('tree_survey$suffix');

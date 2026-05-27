@@ -53,8 +53,24 @@ class _MapPageState extends State<MapPage> with RouteAware {
   bool _fitBoundsOnNextMarkerUpdate = false;
   bool _mapLoadInFlight = false;
   DateTime? _lastBoundaryRefresh;
+  bool _mapControllerReady = false;
   
-  // V3: 專案邊界服務
+  void _mapLog(String message) {
+    debugPrint('[MapPage] $message');
+  }
+
+  Future<void> _safeAnimateCamera(CameraUpdate update) async {
+    if (_controller == null || !_mapControllerReady) {
+      _mapLog('animateCamera skipped (controller not ready)');
+      return;
+    }
+    try {
+      await _controller!.animateCamera(update);
+    } catch (e, st) {
+      _mapLog('animateCamera failed: $e');
+      debugPrint('$st');
+    }
+  }
   final ProjectBoundaryService _boundaryService = ProjectBoundaryService();
   final TreeService _treeService = TreeService();
   final LocationService _locationService = LocationService();
@@ -330,7 +346,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
   // V3: 聚焦到特定邊界
   void _focusOnBoundary(ProjectBoundary boundary) {
     final center = _boundaryService.calculatePolygonCenter(boundary.coordinates);
-    _controller?.animateCamera(CameraUpdate.newLatLngZoom(
+    _safeAnimateCamera(CameraUpdate.newLatLngZoom(
       LatLng(center['lat']!, center['lng']!),
       15,
     ));
@@ -420,6 +436,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
   @override
   void dispose() {
     _bboxDebounce?.cancel();
+    _mapControllerReady = false;
     _disposed = true;
     GlobalKeys.routeObserver.unsubscribe(this);
     _controller?.dispose();
@@ -457,7 +474,9 @@ class _MapPageState extends State<MapPage> with RouteAware {
   // 載入專案／縣市 meta（輕量），樹木標記依篩選再載入
   Future<void> _loadMapMeta() async {
     _safeSetState(() => _isLoading = true);
+    final sw = Stopwatch()..start();
     try {
+      _mapLog('meta load start');
       final meta = await _treeService.getMapMeta();
       if (meta['success'] == true) {
         final projects = (meta['projects'] as List?) ?? [];
@@ -484,6 +503,10 @@ class _MapPageState extends State<MapPage> with RouteAware {
           _cities = ['全部', ..._extractCitiesFromList(cities)];
           _totalTreeCount = (meta['totalTrees'] as num?)?.toInt() ?? 0;
         });
+        _mapLog(
+          'meta loaded projects=${names.length} cities=${cities.length} '
+          'totalTrees=$_totalTreeCount elapsed=${sw.elapsedMilliseconds}ms',
+        );
         await _loadMapData();
       }
     } catch (e) {
@@ -534,6 +557,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
     if (_mapLoadInFlight) return;
     _mapLoadInFlight = true;
     _safeSetState(() => _isLoading = true);
+    final sw = Stopwatch()..start();
 
     try {
       final projectCode = _selectedProject == '全部'
@@ -541,6 +565,12 @@ class _MapPageState extends State<MapPage> with RouteAware {
           : (_projectNameToCode[_selectedProject] ?? _resolveSelectedProjectCode());
 
       final mapLimit = _selectedProject != '全部' ? 5000 : 2500;
+
+      _mapLog(
+        'load start city=$_selectedCity project=$_selectedProject '
+        'code=$projectCode limit=$mapLimit '
+        'bbox=${bounds != null ? _boundsKey(bounds) : "none"}',
+      );
 
       final response = await _treeService.getMapTrees(
         projectCode: projectCode,
@@ -576,6 +606,10 @@ class _MapPageState extends State<MapPage> with RouteAware {
         }
 
         _updateMarkersFromCache();
+        _mapLog(
+          'load done markers=${_markers.length} cached=${data.length} '
+          'truncated=$truncated elapsed=${sw.elapsedMilliseconds}ms',
+        );
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('無法載入資料')),
@@ -600,19 +634,21 @@ class _MapPageState extends State<MapPage> with RouteAware {
   }
 
   void _scheduleBboxReload() {
-    if (_selectedProject != '全部' || _selectedCity != '全部') {
-      return;
-    }
     _bboxDebounce?.cancel();
     _bboxDebounce = Timer(const Duration(milliseconds: 900), () async {
-      if (_disposed || !mounted || _controller == null) return;
+      if (_disposed || !mounted || _controller == null || !_mapControllerReady) {
+        return;
+      }
       try {
         final bounds = await _controller!.getVisibleRegion();
         final key = _boundsKey(bounds);
         if (key != null && key == _lastBboxKey) return;
         _lastBboxKey = key;
+        _mapLog('bbox reload key=$key city=$_selectedCity project=$_selectedProject');
         await _loadMapData();
-      } catch (_) {}
+      } catch (e) {
+        _mapLog('bbox reload error: $e');
+      }
     });
   }
 
@@ -716,10 +752,15 @@ class _MapPageState extends State<MapPage> with RouteAware {
       }
       final projects = (meta['projects'] as List?) ?? [];
       final names = <String>{'全部'};
+      final nameToCode = Map<String, String>.from(_projectNameToCode);
       for (final p in projects) {
         if (p is Map) {
           final name = p['name']?.toString();
-          if (name != null && name.isNotEmpty) names.add(name);
+          final code = p['code']?.toString();
+          if (name != null && name.isNotEmpty) {
+            names.add(name);
+            if (code != null && code.isNotEmpty) nameToCode[name] = code;
+          }
         }
       }
       final list = names.toList()..sort((a, b) {
@@ -729,6 +770,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
           });
       _safeSetState(() {
         _filteredProjects = list;
+        _projectNameToCode = nameToCode;
         if (!list.contains(_selectedProject)) _selectedProject = '全部';
       });
     } catch (e) {
@@ -783,16 +825,14 @@ class _MapPageState extends State<MapPage> with RouteAware {
       northeast: LatLng(maxLat, maxLng),
     );
 
-    _controller!.animateCamera(CameraUpdate.newLatLngBounds(bounds, 50));
+    _safeAnimateCamera(CameraUpdate.newLatLngBounds(bounds, 50));
   }
 
   void _onMapCreated(GoogleMapController controller) {
     _controller = controller;
-    if (_markers.isEmpty &&
-        _selectedProject == '全部' &&
-        _selectedCity == '全部') {
-      _scheduleBboxReload();
-    }
+    _mapControllerReady = true;
+    _mapLog('map created');
+    _scheduleBboxReload();
   }
 
   Future<void> _getCurrentLocation() async {
@@ -846,8 +886,8 @@ class _MapPageState extends State<MapPage> with RouteAware {
 
       _safeSetState(() => _currentPosition = position);
 
-      if (_controller != null) {
-        await _controller!.animateCamera(
+      if (_controller != null && _mapControllerReady) {
+        await _safeAnimateCamera(
           CameraUpdate.newLatLngZoom(
             LatLng(position.latitude, position.longitude),
             14,
@@ -1370,8 +1410,8 @@ class _MapPageState extends State<MapPage> with RouteAware {
                   await _requestLocationPermission();
                   return;
                 }
-                if (_currentPosition != null && _controller != null) {
-                  await _controller!.animateCamera(
+                if (_currentPosition != null) {
+                  await _safeAnimateCamera(
                     CameraUpdate.newLatLng(
                       LatLng(
                         _currentPosition!.latitude,
@@ -1381,8 +1421,8 @@ class _MapPageState extends State<MapPage> with RouteAware {
                   );
                 } else {
                   await _getCurrentLocation();
-                  if (_currentPosition != null && _controller != null) {
-                    await _controller!.animateCamera(
+                  if (_currentPosition != null) {
+                    await _safeAnimateCamera(
                       CameraUpdate.newLatLng(
                         LatLng(
                           _currentPosition!.latitude,

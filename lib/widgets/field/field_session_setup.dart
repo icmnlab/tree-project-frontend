@@ -8,6 +8,7 @@ import '../../services/project_area_service.dart';
 import '../../services/project_service.dart';
 import '../../services/v3/project_boundary_coordinator.dart';
 import '../../utils/location_helper.dart';
+import '../../utils/field_gps_capture.dart';
 
 /// 現場場次共用：專案／區位／GPS 語意／場次名稱
 class FieldSessionSetup {
@@ -534,6 +535,22 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
             const SizedBox(height: 4),
             Text(context.tr('field_setup_gps_hint'),
                 style: const TextStyle(fontSize: 12)),
+            if (_gpsSource == 'tree')
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  '樹旁模式：每棵樹測量時需手動按「取得 GPS」。',
+                  style: TextStyle(fontSize: 11, color: Colors.teal.shade700),
+                ),
+              )
+            else
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  '測站模式：確認前需自動鎖定 GPS（±5m、5 筆穩定）。',
+                  style: TextStyle(fontSize: 11, color: Colors.teal.shade700),
+                ),
+              ),
             RadioListTile<String>(
               dense: true,
               title: Text(context.tr('field_setup_gps_surveyor')),
@@ -558,7 +575,20 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
         ),
         ElevatedButton(
           onPressed: _canConfirm
-              ? () {
+              ? () async {
+                  if (_gpsSource == 'surveyor') {
+                    final gps = await showFieldGpsCaptureDialog(
+                      context,
+                      mode: 'surveyor',
+                      title: '鎖定測站 GPS',
+                    );
+                    if (gps == null) return;
+                    fieldGpsLog(
+                      'session setup surveyor lock acc=${gps.accuracyM}m '
+                      'samples=${gps.sampleCount}',
+                    );
+                  }
+                  if (!context.mounted) return;
                   Navigator.pop(
                     context,
                     FieldSessionSetup(
