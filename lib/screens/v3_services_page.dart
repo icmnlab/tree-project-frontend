@@ -1,5 +1,7 @@
 ﻿import 'dart:io';
 import 'package:flutter/material.dart';
+import '../config/app_config.dart';
+import '../services/locale_service.dart';
 import '../services/v3/tree_image_service.dart';
 import '../services/v3/conflict_resolution_service.dart';
 import '../services/v3/ml_data_sync_service.dart';
@@ -9,7 +11,7 @@ import '../services/v3/ml_data_sync_service.dart';
 /// 功能：
 /// 1. 樹木影像管理 - 查看、同步照片
 /// 2. 衝突解決 - 查看待處理的衝突
-/// 3. 訓練資料收集 - 上傳現場量測與影像供模型訓練
+/// 3. （選用）修正紀錄上傳 — 預設關閉，見 AppConfig.enableMlCorrectionUpload
 ///
 /// 註：DBH 測量校準 UI 已於 T3 移除（純視覺示意，未連接量測流程）。
 ///     ar_measurement_integration_service.dart / CalibrationData 暫保留，
@@ -46,13 +48,16 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
       final unsyncedImages = await _imageService.getUnsyncedImages();
       final pendingOps = _conflictService.pendingOperations;
       
-      // 獲取 ML 數據同步狀態
-      final mlStatus = await _mlSyncService.getStatus();
-      
+      int mlPending = 0;
+      if (AppConfig.enableMlCorrectionUpload) {
+        final mlStatus = await _mlSyncService.getStatus();
+        mlPending = mlStatus.pendingRecords;
+      }
+
       setState(() {
         _pendingImageCount = unsyncedImages.length;
         _pendingConflictCount = pendingOps.length;
-        _pendingMlDataCount = mlStatus.pendingRecords;
+        _pendingMlDataCount = mlPending;
         _isLoading = false;
       });
     } catch (e) {
@@ -65,7 +70,7 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('同步與補救管理'),
+        title: Text(LocaleService.instance.t('v3_sync_title')),
         backgroundColor: Colors.deepPurple,
         foregroundColor: Colors.white,
         actions: [
@@ -104,17 +109,19 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
                     badge: _pendingConflictCount > 0 ? _pendingConflictCount : null,
                     onTap: () => _showConflictResolver(),
                   ),
-                  const SizedBox(height: 12),
-                  _buildServiceCard(
-                    title: 'ML 數據同步',
-                    subtitle: _pendingMlDataCount > 0
-                        ? '$_pendingMlDataCount 筆待自動上傳'
-                        : '背景同步正常',
-                    icon: Icons.psychology,
-                    color: Colors.purple,
-                    badge: _pendingMlDataCount > 0 ? _pendingMlDataCount : null,
-                    onTap: () => _showMLDataSync(),
-                  ),
+                  if (AppConfig.enableMlCorrectionUpload) ...[
+                    const SizedBox(height: 12),
+                    _buildServiceCard(
+                      title: '修正紀錄上傳',
+                      subtitle: _pendingMlDataCount > 0
+                          ? '$_pendingMlDataCount 筆待上傳（DBH／樹種等覆寫）'
+                          : '無待上傳修正紀錄',
+                      icon: Icons.psychology,
+                      color: Colors.purple,
+                      badge: _pendingMlDataCount > 0 ? _pendingMlDataCount : null,
+                      onTap: () => _showMLDataSync(),
+                    ),
+                  ],
                   const SizedBox(height: 24),
                   _buildInfoSection(),
                 ],
@@ -336,7 +343,7 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
           ),
           const SizedBox(height: 12),
           Text(
-            '照片與 ML 訓練資料會在提交後或有網路時自動上傳。'
+            LocaleService.instance.t('v3_sync_hint'),
             '這裡主要用來查看狀態、重試失敗項目，以及處理多人編輯衝突。',
             style: TextStyle(
               fontSize: 13,
@@ -377,18 +384,18 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
           children: [
             Icon(Icons.psychology, color: Colors.purple),
             SizedBox(width: 8),
-            Text('訓練資料收集'),
+            const Text('修正紀錄上傳'),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('待上傳數據: $_pendingMlDataCount 筆'),
+            Text('待上傳: $_pendingMlDataCount 筆（DBH／樹種等覆寫紀錄）'),
             const SizedBox(height: 12),
             const Text(
-              'ML 數據會在有網路連線時自動上傳，用於改善測量精度和碳計算模型。'
-              '通常不需要手動操作。',
+              '僅在啟用 ENABLE_ML_CORRECTION_UPLOAD 時收集；'
+              '論文級標註請用管理後台「研究資料蒐集」。',
               style: TextStyle(fontSize: 13, color: Colors.grey),
             ),
           ],

@@ -90,14 +90,19 @@
 - [x] P0 骨架：`LocaleService` + `AppStrings`（zh / en）  
 - [x] P1：主要流程（`home_page`、`integrated_tree_form` 拍照、BLE／現場 Wizard）  
 - [x] P1：現場場次必填專案＋區位（`FieldSessionSetup`、BLE 上傳帶 project_*）  
+- [x] P2（部分）：首頁問候／底欄、系統設定標題 i18n  
 - [ ] P2：其餘頁面 + ARB + `flutter gen-l10n`、跟隨系統語言
 
 ---
 
 ## 6. 帳號體系
 
-- [x] **邀請碼註冊**：`POST /api/register` + App `RegisterPage`（管理員：`POST /api/invites`）  
+- [x] **邀請碼註冊**：綁專案、一次性、過期、可審核啟用；App 邀請碼管理 UI  
 - [ ] Email 連結、密碼重設、裝置綁定
+
+### 修正紀錄上傳（選用，預設關）
+
+- 見 `docs/ML_CORRECTION_UPLOAD.md`；高品質標註請用管理後台「研究資料蒐集」。
 
 ---
 

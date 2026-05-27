@@ -70,7 +70,8 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 DropdownButtonFormField<String>(
-                  value: role,
+                  key: ValueKey(role),
+                  initialValue: role,
                   decoration: const InputDecoration(labelText: '內建角色'),
                   items: const [
                     '一般使用者',

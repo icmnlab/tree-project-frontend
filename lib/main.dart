@@ -102,15 +102,20 @@ void main() async {
   //   依賴的後端 /carbon-sink/tree-species 路由與 tree_carbon_data 表均已刪除，
   //   實際也未被任何画面使用。
 
-  // V3: 初始化 ML 數據同步服務
+  // V3: 修正紀錄上傳（預設關閉，見 AppConfig.enableMlCorrectionUpload）
+  if (AppConfig.enableMlCorrectionUpload) {
+    try {
+      await MLDataSyncService.initialize(AppConfig().baseUrl);
+      MLDataSyncService().startPeriodicSync();
+      debugPrint('[ML] 修正紀錄背景上傳已啟用');
+    } catch (e) {
+      debugPrint('[ML] 修正紀錄上傳初始化失敗: $e');
+    }
+  }
   try {
-    await MLDataSyncService.initialize(AppConfig().baseUrl);
-    // 啟動背景同步（每 30 分鐘檢查一次）
-    MLDataSyncService().startPeriodicSync();
     TreeImageService().startPeriodicSync();
-    debugPrint('訓練資料收集服務已初始化');
   } catch (e) {
-    debugPrint('訓練資料收集服務初始化失敗: $e');
+    debugPrint('樹木影像同步初始化失敗: $e');
   }
 
   // 初始化主題服務

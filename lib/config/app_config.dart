@@ -18,6 +18,14 @@ class AppConfig {
     defaultValue: '',
   );
 
+  /// 是否收集並上傳「使用者覆寫自動值」的修正紀錄（DBH／樹種等）。
+  /// 預設關閉；研究用高品質資料請用管理後台「研究資料蒐集」。
+  /// 啟用：flutter run --dart-define=ENABLE_ML_CORRECTION_UPLOAD=true
+  static const bool enableMlCorrectionUpload = bool.fromEnvironment(
+    'ENABLE_ML_CORRECTION_UPLOAD',
+    defaultValue: false,
+  );
+
   static final AppConfig _instance = AppConfig._internal();
 
   factory AppConfig() {

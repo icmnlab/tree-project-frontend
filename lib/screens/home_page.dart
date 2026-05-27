@@ -130,17 +130,17 @@ class _HomePageState extends State<HomePage> {
             NavigationDestination(
               icon: const Icon(Icons.dashboard_outlined),
               selectedIcon: Icon(Icons.dashboard_rounded, color: primary),
-              label: '首頁',
+              label: LocaleService.instance.t('nav_home'),
             ),
             NavigationDestination(
               icon: const Icon(Icons.folder_outlined),
               selectedIcon: Icon(Icons.folder_rounded, color: primary),
-              label: '專案',
+              label: LocaleService.instance.t('nav_projects'),
             ),
             NavigationDestination(
               icon: const Icon(Icons.park_outlined),
               selectedIcon: Icon(Icons.park_rounded, color: primary),
-              label: '樹木',
+              label: LocaleService.instance.t('nav_trees'),
             ),
           ],
         ),
@@ -407,7 +407,9 @@ class _DashboardPageState extends State<DashboardPage>
                 const Spacer(),
                 IconButton(
                   icon: Icon(_isEditMode ? Icons.check : Icons.tune, size: 20),
-                  tooltip: _isEditMode ? '完成排序' : '自定義排序',
+                  tooltip: _isEditMode
+                      ? _l10n('dashboard_edit_done')
+                      : _l10n('dashboard_edit_sort'),
                   onPressed: () {
                     if (_isEditMode) _saveCardOrder();
                     setState(() => _isEditMode = !_isEditMode);
@@ -529,10 +531,10 @@ class _DashboardPageState extends State<DashboardPage>
 
   String _getGreeting() {
     final hour = DateTime.now().hour;
-    if (hour < 6) return '夜深了';
-    if (hour < 12) return '早安';
-    if (hour < 18) return '午安';
-    return '晚安';
+    if (hour < 6) return _l10n('greeting_night');
+    if (hour < 12) return _l10n('greeting_morning');
+    if (hour < 18) return _l10n('greeting_afternoon');
+    return _l10n('greeting_evening');
   }
 
   Widget _buildHeader() {
@@ -579,7 +581,7 @@ class _DashboardPageState extends State<DashboardPage>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '永續碳匯管理系統',
+                      _l10n('app_title'),
                       style: AppTheme.labelLarge.copyWith(
                         color: Theme.of(context).colorScheme.primary,
                         fontSize: 15,
@@ -587,7 +589,7 @@ class _DashboardPageState extends State<DashboardPage>
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      'TIPC 臺灣港務',
+                      _l10n('brand_org'),
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
@@ -603,12 +605,12 @@ class _DashboardPageState extends State<DashboardPage>
           
           // 動態問候訊息
           Text(
-            '${_getGreeting()}，${_userName ?? '使用者'}',
+            '${_getGreeting()}，${_userName ?? _l10n('user_default')}',
             style: Theme.of(context).textTheme.headlineLarge,
           ),
           const SizedBox(height: 4),
           Text(
-            '歡迎使用智慧樹木管理平台',
+            _l10n('welcome_subtitle'),
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
             ),

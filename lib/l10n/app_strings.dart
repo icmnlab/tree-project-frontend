@@ -101,6 +101,21 @@ class AppStrings {
     'transfer_auto_ok': '已寫入正式樹木資料庫',
     'transfer_auto_fail': '測量已儲存，自動轉入正式資料庫未完成，可稍後在待測量任務手動轉移',
     'pending_auto_transfer': '批次已完成，正在轉入正式資料庫…',
+    'nav_home': '首頁',
+    'nav_projects': '專案',
+    'nav_trees': '樹木',
+    'greeting_night': '夜深了',
+    'greeting_morning': '早安',
+    'greeting_afternoon': '午安',
+    'greeting_evening': '晚安',
+    'welcome_subtitle': '歡迎使用智慧樹木管理平台',
+    'user_default': '使用者',
+    'dashboard_edit_done': '完成排序',
+    'dashboard_edit_sort': '自定義排序',
+    'brand_org': 'TIPC 臺灣港務',
+    'v3_sync_title': '同步與補救管理',
+    'v3_sync_hint': '照片與衝突會在提交後或有網路時自動處理。',
+    'invite_admin_title': '邀請碼管理',
   };
 
   static const en = <String, String>{
@@ -207,5 +222,20 @@ class AppStrings {
     'transfer_auto_fail':
         'Measurement saved; auto-transfer failed — transfer later from pending',
     'pending_auto_transfer': 'Batch complete — transferring to tree survey…',
+    'nav_home': 'Home',
+    'nav_projects': 'Projects',
+    'nav_trees': 'Trees',
+    'greeting_night': 'Good night',
+    'greeting_morning': 'Good morning',
+    'greeting_afternoon': 'Good afternoon',
+    'greeting_evening': 'Good evening',
+    'welcome_subtitle': 'Smart tree carbon platform',
+    'user_default': 'User',
+    'dashboard_edit_done': 'Done sorting',
+    'dashboard_edit_sort': 'Reorder cards',
+    'brand_org': 'TIPC Taiwan Ports',
+    'v3_sync_title': 'Sync & recovery',
+    'v3_sync_hint': 'Photos and conflicts sync when online.',
+    'invite_admin_title': 'Invite codes',
   };
 }

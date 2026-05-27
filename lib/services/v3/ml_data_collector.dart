@@ -24,6 +24,8 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../config/app_config.dart';
+
 /// ML 訓練記錄類型
 enum MLRecordType {
   /// 碳計算修改
@@ -507,6 +509,7 @@ class MLDataCollector {
 
   /// 保存記錄到本地
   static Future<void> _saveRecord(MLTrainingRecord record) async {
+    if (!isEnabled) return;
     try {
       final prefs = await SharedPreferences.getInstance();
       final existingData = prefs.getString(_storageKey);
