@@ -59,6 +59,10 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   String? _projectName;
   String? _projectCode;
   String? _projectArea;
+  double? _sessionLatitude;
+  double? _sessionLongitude;
+  double? _sessionAccuracyM;
+  int? _sessionSampleCount;
 
   BleLiveMeasurement? _lastMeasurement;
   final List<String> _logLines = [];
@@ -74,6 +78,10 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       _projectCode = setup.projectCode;
       _projectArea = setup.projectArea;
       _gpsSource = setup.gpsSource;
+      _sessionLatitude = setup.sessionLatitude;
+      _sessionLongitude = setup.sessionLongitude;
+      _sessionAccuracyM = setup.sessionAccuracyM;
+      _sessionSampleCount = setup.sessionSampleCount;
     }
     final pre = widget.initialDevice;
     if (pre != null) {
@@ -251,11 +259,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         return;
       }
 
-      final gps = await showFieldGpsCaptureDialog(
-        context,
-        mode: _gpsSource == 'tree' ? 'tree' : 'surveyor',
-        title: '第 $seq 棵 · GPS',
-      );
+      final gps = await _resolveGpsForLiveMeasurement(seq);
       if (gps == null || !mounted) return;
 
       final lat = gps.latitude;
@@ -395,12 +399,38 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
     }
   }
 
+  /// 測站模式：場次開始已鎖定 GPS，SEND 時沿用；樹旁模式：每棵 SEND 手動定位
+  Future<FieldGpsCaptureResult?> _resolveGpsForLiveMeasurement(int seq) async {
+    if (_gpsSource == 'surveyor' &&
+        _sessionLatitude != null &&
+        _sessionLongitude != null) {
+      fieldGpsLog(
+        'live seq=$seq reuse session surveyor GPS '
+        'acc=${_sessionAccuracyM?.toStringAsFixed(1) ?? "?"}m',
+      );
+      return FieldGpsCaptureResult(
+        latitude: _sessionLatitude!,
+        longitude: _sessionLongitude!,
+        accuracyM: _sessionAccuracyM ?? 0,
+        sampleCount: _sessionSampleCount ?? 1,
+        mode: 'surveyor',
+      );
+    }
+    return showFieldGpsCaptureDialog(
+      context,
+      mode: 'tree',
+      title: '第 $seq 棵 · 樹旁 GPS',
+    );
+  }
+
   /// 第一棵前：專案、區位、GPS 語意、場次名稱（整場共用）
   Future<bool> _ensureLiveSessionConfigured() async {
     if (_projectCode != null &&
         _projectArea != null &&
         _gpsSource != null &&
-        _batchName != null) {
+        _batchName != null &&
+        (_gpsSource != 'surveyor' ||
+            (_sessionLatitude != null && _sessionLongitude != null))) {
       return true;
     }
 
@@ -426,6 +456,10 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         _projectCode = setup.projectCode;
         _projectArea = setup.projectArea;
         _gpsSource = setup.gpsSource;
+        _sessionLatitude = setup.sessionLatitude;
+        _sessionLongitude = setup.sessionLongitude;
+        _sessionAccuracyM = setup.sessionAccuracyM;
+        _sessionSampleCount = setup.sessionSampleCount;
       });
     }
     await _syncSessionProjectToServer();

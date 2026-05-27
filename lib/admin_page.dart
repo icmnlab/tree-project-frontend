@@ -115,8 +115,10 @@ class _AdminPageState extends State<AdminPage> {
   }
 
   List<Map<String, dynamic>> get _pendingApprovalUsers {
-    final pending =
-        _users.where((user) => user['is_active'] != true).toList();
+    final pending = _users
+        .where((user) =>
+            user['pending_approval'] == true && user['is_active'] != true)
+        .toList();
     pending.sort((a, b) {
       final ta = a['created_at']?.toString() ?? '';
       final tb = b['created_at']?.toString() ?? '';
