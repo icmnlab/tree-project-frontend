@@ -8,7 +8,6 @@ import '../../services/project_area_service.dart';
 import '../../services/project_service.dart';
 import '../../services/v3/project_boundary_coordinator.dart';
 import '../../utils/location_helper.dart';
-import '../../utils/field_gps_capture.dart';
 
 /// 現場場次共用：專案／區位／GPS 語意／場次名稱
 class FieldSessionSetup {
@@ -17,11 +16,6 @@ class FieldSessionSetup {
   final String projectCode;
   final String projectArea;
   final String gpsSource; // 'surveyor' | 'tree'
-  /// 場次開始前鎖定的 GPS（測站模式後續 SEND 沿用；樹旁模式僅作精度檢查）
-  final double? sessionLatitude;
-  final double? sessionLongitude;
-  final double? sessionAccuracyM;
-  final int? sessionSampleCount;
 
   const FieldSessionSetup({
     required this.batchName,
@@ -29,10 +23,6 @@ class FieldSessionSetup {
     required this.projectCode,
     required this.projectArea,
     required this.gpsSource,
-    this.sessionLatitude,
-    this.sessionLongitude,
-    this.sessionAccuracyM,
-    this.sessionSampleCount,
   });
 }
 
@@ -584,20 +574,7 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
         ),
         ElevatedButton(
           onPressed: _canConfirm
-              ? () async {
-                  final gps = await showFieldGpsCaptureDialog(
-                    context,
-                    mode: _gpsSource == 'tree' ? 'tree' : 'surveyor',
-                    title: _gpsSource == 'tree'
-                        ? '確認 GPS 精度（樹旁模式）'
-                        : '鎖定測站 GPS',
-                  );
-                  if (gps == null) return;
-                  fieldGpsLog(
-                    'session setup ${_gpsSource} lock acc=${gps.accuracyM}m '
-                    'samples=${gps.sampleCount}',
-                  );
-                  if (!context.mounted) return;
+              ? () {
                   Navigator.pop(
                     context,
                     FieldSessionSetup(
@@ -606,10 +583,6 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
                       projectCode: _projectCode!,
                       projectArea: _areaCtrl.text.trim(),
                       gpsSource: _gpsSource,
-                      sessionLatitude: gps.latitude,
-                      sessionLongitude: gps.longitude,
-                      sessionAccuracyM: gps.accuracyM,
-                      sessionSampleCount: gps.sampleCount,
                     ),
                   );
                 }

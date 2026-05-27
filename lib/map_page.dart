@@ -559,7 +559,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
 
       final response = await _treeService.getMapTrees(
         projectCode: projectCode,
-        // 縣市篩選在前端 _updateMarkersFromCache 處理，避免後端 _city 解析不全導致空結果
+        city: _selectedCity == '全部' ? null : _selectedCity,
       );
 
       if (response['success'] == true && response['data'] != null) {
@@ -607,8 +607,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
     return candidates.contains(d);
   }
 
-  // [優化] 從快取資料更新地圖標記
-  // [Stage 1] city 過濾改用伺服器權威 _city 欄位（utils/county.resolveAreaCity 解析）
+  // 後端已依 city 參數篩選；前端再對專案／縣市做一次防禦性過濾（避免快取混用）
   void _updateMarkersFromCache() {
     if (_cachedTreeData.isEmpty) {
       _safeSetState(() => _markers.clear());
