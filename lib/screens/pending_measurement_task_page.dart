@@ -821,7 +821,8 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
         builder: (context, snapshot) {
           final projects = <Map<String, dynamic>>[];
           if (snapshot.hasData && snapshot.data!['success'] == true) {
-            final raw = snapshot.data!['projects'];
+            final raw =
+                snapshot.data!['data'] ?? snapshot.data!['projects'];
             if (raw is List) {
               for (final p in raw) {
                 if (p is Map) {
