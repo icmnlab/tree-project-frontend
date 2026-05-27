@@ -61,6 +61,8 @@ class MeasurementResult {
   final List<MeasurementPoint> points; // 測量點
   final String? notes;               // 備註
   final String? capturedImagePath;   // 拍攝影像路徑（可用於樹種辨識）
+  /// 樹幹框 [left, top, right, bottom]，0–1 相對影像寬高（Scanner 手動／YOLO 確認後）
+  final List<double>? trunkBboxNormalized;
   final DateTime timestamp;
   
   MeasurementResult({
@@ -70,6 +72,7 @@ class MeasurementResult {
     required this.points,
     this.notes,
     this.capturedImagePath,
+    this.trunkBboxNormalized,
     DateTime? timestamp,
   }) : timestamp = timestamp ?? DateTime.now();
   

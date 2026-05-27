@@ -23,14 +23,16 @@ class PendingMeasurementService {
   ///     _survey_mode  ('new' | 'maintenance')
   ///   來覆寫全域值（per-tree 指派優先）。
   /// [createdBy] - 創建者 ID
+  /// [sessionId] 若提供則同一現場場次共用（現場連線逐棵模式）
   List<PendingTreeMeasurement> createFromBleData({
     required List<Map<String, dynamic>> bleData,
     String? projectArea,
     String? projectCode,
     String? projectName,
     String? createdBy,
+    String? sessionId,
   }) {
-    final String sessionId = _generateSessionId();
+    final String resolvedSessionId = sessionId ?? generateSessionId();
     final List<PendingTreeMeasurement> pendingMeasurements = [];
 
     for (var record in bleData) {
@@ -137,7 +139,7 @@ class PendingMeasurementService {
         }
 
         final pending = PendingTreeMeasurement(
-          sessionId: sessionId,
+          sessionId: resolvedSessionId,
           originalRecordId: record['id']?.toString(),
           projectArea:
               (record['_assigned_project_area'] as String?) ?? projectArea,
@@ -185,8 +187,8 @@ class PendingMeasurementService {
     return pendingMeasurements;
   }
 
-  /// 生成測量批次 ID
-  static String _generateSessionId() {
+  /// 生成測量批次 ID（現場連線多棵共用同一 session）
+  static String generateSessionId() {
     final now = DateTime.now();
     return 'MS-${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}-${now.millisecondsSinceEpoch % 100000}';
   }
@@ -230,16 +232,14 @@ class PendingMeasurementService {
 
   /// 上傳待測量記錄到後端
   Future<Map<String, dynamic>> uploadPendingMeasurements(
-    List<PendingTreeMeasurement> measurements,
-  ) async {
+    List<PendingTreeMeasurement> measurements, {
+    String? requestId,
+  }) async {
     try {
       final response = await http
           .post(
             Uri.parse('$_baseUrl/api/pending-measurements/batch'),
-            headers: {
-              'Content-Type': 'application/json',
-              ...ApiService.getAuthHeaders(),
-            },
+            headers: ApiService.jsonHeaders(requestId: requestId),
             body: jsonEncode({
               'measurements': measurements.map((m) => m.toJson()).toList(),
             }),
@@ -358,10 +358,7 @@ class PendingMeasurementService {
       final response = await http
           .patch(
             Uri.parse('$_baseUrl/api/pending-measurements/$id'),
-            headers: {
-              'Content-Type': 'application/json',
-              ...ApiService.getAuthHeaders(),
-            },
+            headers: ApiService.jsonHeaders(),
             body: jsonEncode(body),
           )
           .timeout(_timeout);
@@ -386,10 +383,7 @@ class PendingMeasurementService {
       final response = await http
           .patch(
             Uri.parse('$_baseUrl/api/pending-measurements/$id'),
-            headers: {
-              'Content-Type': 'application/json',
-              ...ApiService.getAuthHeaders(),
-            },
+            headers: ApiService.jsonHeaders(),
             body: jsonEncode({
               'status': MeasurementStatus.skipped.value,
               'measurement_notes': reason ?? '使用者跳過',
@@ -407,23 +401,53 @@ class PendingMeasurementService {
   }
 
   /// 更新任務狀態（不改變其他欄位）
-  Future<void> updateTaskStatus(int id, MeasurementStatus status) async {
+  /// 回傳伺服器最新的 [updated_at]（in_progress 會觸發 trigger，供樂觀鎖使用）
+  Future<DateTime?> updateTaskStatus(int id, MeasurementStatus status) async {
     try {
-      await http
+      final response = await http
           .patch(
             Uri.parse('$_baseUrl/api/pending-measurements/$id'),
-            headers: {
-              'Content-Type': 'application/json',
-              ...ApiService.getAuthHeaders(),
-            },
+            headers: ApiService.jsonHeaders(),
             body: jsonEncode({
               'status': status.value,
             }),
           )
           .timeout(_timeout);
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        final data = body['data'];
+        if (data is Map && data['updated_at'] != null) {
+          return DateTime.tryParse(data['updated_at'].toString());
+        }
+      }
+      return null;
     } catch (e) {
       debugPrint('更新任務狀態失敗: $e');
       rethrow;
+    }
+  }
+
+  /// 取得單筆待測量（含最新 updated_at）
+  Future<PendingTreeMeasurement?> fetchTaskById(int id) async {
+    try {
+      final response = await http
+          .get(
+            Uri.parse('$_baseUrl/api/pending-measurements/$id'),
+            headers: ApiService.getAuthHeaders(),
+          )
+          .timeout(_timeout);
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body is Map<String, dynamic>) {
+          return PendingTreeMeasurement.fromJson(body);
+        }
+      }
+      return null;
+    } catch (e) {
+      debugPrint('取得待測量任務失敗: $e');
+      return null;
     }
   }
 
@@ -435,10 +459,7 @@ class PendingMeasurementService {
       final response = await http
           .post(
             Uri.parse('$_baseUrl/api/pending-measurements/transfer'),
-            headers: {
-              'Content-Type': 'application/json',
-              ...ApiService.getAuthHeaders(),
-            },
+            headers: ApiService.jsonHeaders(),
             body: jsonEncode({
               'session_id': sessionId,
             }),
@@ -468,10 +489,7 @@ class PendingMeasurementService {
           .patch(
             Uri.parse(
                 '$_baseUrl/api/pending-measurements/session/$sessionId/project'),
-            headers: {
-              'Content-Type': 'application/json',
-              ...ApiService.getAuthHeaders(),
-            },
+            headers: ApiService.jsonHeaders(),
             body: jsonEncode({
               'project_area': projectArea,
               'project_code': projectCode,
@@ -646,14 +664,15 @@ class PendingMeasurementService {
     String? projectArea,
     String? projectCode,
     String? projectName,
+    String? sessionId,
   }) async {
     try {
-      // 1. 本地解析 BLE 數據
       final measurements = createFromBleData(
         bleData: bleData,
         projectArea: projectArea,
         projectCode: projectCode,
         projectName: projectName,
+        sessionId: sessionId,
       );
 
       if (measurements.isEmpty) {
@@ -664,14 +683,26 @@ class PendingMeasurementService {
         };
       }
 
-      // 2. 上傳到後端
       final result = await uploadPendingMeasurements(measurements);
+
+      final insertedRaw = result['inserted_ids'];
+      if (insertedRaw is List && insertedRaw.length == measurements.length) {
+        for (var i = 0; i < insertedRaw.length; i++) {
+          final id = insertedRaw[i];
+          if (id is int) {
+            measurements[i] = measurements[i].copyWith(id: id);
+          } else if (id is num) {
+            measurements[i] = measurements[i].copyWith(id: id.toInt());
+          }
+        }
+      }
 
       return {
         'success': true,
         'message': '成功儲存 ${measurements.length} 筆待測量記錄',
         'count': measurements.length,
-        'sessionId': measurements.first.sessionId,
+        'sessionId': result['session_id'] ?? measurements.first.sessionId,
+        'tasks': measurements,
         'data': result,
       };
     } catch (e) {

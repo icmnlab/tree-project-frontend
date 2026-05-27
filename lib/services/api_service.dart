@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/app_config.dart'; // Import AppConfig
@@ -89,6 +90,15 @@ class ApiService {
     }
 
     return headers;
+  }
+
+  /// JSON API 請求頭（含冪等 X-Request-Id）
+  static Map<String, String> jsonHeaders({String? requestId}) {
+    return {
+      'Content-Type': 'application/json',
+      'X-Request-Id': requestId ?? newRequestId(),
+      ...getAuthHeaders(),
+    };
   }
 
   // Fetch ML Service endpoint from Backend
@@ -280,10 +290,15 @@ class ApiService {
     }
   }
 
+  /// 弱網重試時後端可依 [X-Request-Id] 去重（見 APP_PRODUCT_ROADMAP.md）
+  static String newRequestId() =>
+      '${DateTime.now().millisecondsSinceEpoch}-${Random().nextInt(0x7FFFFFFF)}';
+
   // 獲取請求頭
   static Map<String, String> _getHeaders() {
     return {
       'Content-Type': 'application/json',
+      'X-Request-Id': newRequestId(),
       ...getAuthHeaders(),
     };
   }

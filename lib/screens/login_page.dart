@@ -4,6 +4,7 @@ import '../services/auth_service.dart';
 import '../services/api_service.dart';
 import '../config/app_config.dart';
 import '../constants/colors.dart';
+import '../services/locale_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -290,6 +291,13 @@ class _LoginPageState extends State<LoginPage>
 
                 // 登入按鈕
                 _buildLoginButton(),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: _isLoading
+                      ? null
+                      : () => Navigator.pushNamed(context, '/register'),
+                  child: Text(context.tr('register_have_invite')),
+                ),
               ],
             ),
           ),

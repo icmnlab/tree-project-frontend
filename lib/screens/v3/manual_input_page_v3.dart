@@ -45,6 +45,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
   String? _selectedProjectName;
   bool _isLocationValid = false;
   String? _locationWarning;
+  ProjectBoundaryStatus? _boundaryStatus;
 
   // V3: 專案區位和專案列表（類似 V2）
   List<Map<String, dynamic>> _projectAreas = [];
@@ -289,16 +290,37 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
     }
   }
 
-  void _validateLocation() {
+  Future<void> _refreshProjectBoundaryStatus() async {
+    final name = _projectController.text.trim();
+    if (name.isEmpty) {
+      if (mounted) setState(() => _boundaryStatus = null);
+      return;
+    }
+    await _boundaryService.getAllBoundaries();
+    final status = await _boundaryService.getProjectBoundaryStatus(name);
+    if (mounted) setState(() => _boundaryStatus = status);
+  }
+
+  void _validateLocation() async {
     if (_currentLocation == null || _projectController.text.isEmpty) return;
 
-    final validation = _boundaryService.validateCoordinateForProject(
-      projectName: _projectController.text,
+    await _refreshProjectBoundaryStatus();
+
+    final validation = await _boundaryService.validateCoordinateForProjectFresh(
+      projectName: _projectController.text.trim(),
       lat: _currentLocation!.latitude,
       lng: _currentLocation!.longitude,
     );
 
+    if (!mounted) return;
+
     setState(() {
+      if (!validation.hasBoundary) {
+        // 專案存在但尚未畫邊界 → 手動模式，不阻擋提交
+        _isLocationValid = true;
+        _locationWarning = null;
+        return;
+      }
       _isLocationValid = validation.isValid;
       _locationWarning = validation.isValid ? null : validation.message;
     });
@@ -511,6 +533,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
                                           });
                                           Navigator.pop(context);
                                           _validateLocation();
+                                          _refreshProjectBoundaryStatus();
                                         },
                                       ),
                                     );
@@ -583,6 +606,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
           _selectedProjectName = newProject['name'];
         });
         await _updateFilteredProjects(_areaController.text);
+        await _refreshProjectBoundaryStatus();
         _validateLocation();
         _showSnackBar('專案 "$projectName" 新增成功');
 
@@ -834,8 +858,10 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
         return;
       }
 
-      // 如果有選擇專案名稱，驗證位置
-      if (_projectController.text.isNotEmpty && !_isLocationValid) {
+      // 如果有選擇專案名稱，驗證位置（僅在有邊界時才警告邊界外）
+      if (_projectController.text.isNotEmpty &&
+          _boundaryStatus?.hasBoundary == true &&
+          !_isLocationValid) {
         // 警告但允許繼續 (V3 原則：Validation Warning)
         showDialog(
           context: context,
@@ -898,6 +924,28 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
   }
 
   // === Step 1: Location & Project ===
+  Widget _buildBoundaryStatusChip() {
+    final status = _boundaryStatus!;
+    if (status.hasBoundary) {
+      return Chip(
+        avatar: const Icon(Icons.check_circle, color: Colors.green, size: 18),
+        label: Text(
+          '專案已有邊界${_isLocationValid ? '' : '（目前位置在邊界外）'}',
+          style: const TextStyle(fontSize: 12),
+        ),
+        backgroundColor: Colors.green.shade50,
+      );
+    }
+    return Chip(
+      avatar: const Icon(Icons.info_outline, color: Colors.orange, size: 18),
+      label: Text(
+        '尚未畫邊界（手動模式，GPS 不限制；${status.treeCountWithGps} 棵有 GPS）',
+        style: const TextStyle(fontSize: 12),
+      ),
+      backgroundColor: Colors.orange.shade50,
+    );
+  }
+
   Widget _buildLocationStep() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -990,6 +1038,12 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
                   _showSnackBar('請先選擇專案區位');
                 },
         ),
+
+        if (_projectController.text.isNotEmpty && _boundaryStatus != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0),
+            child: _buildBoundaryStatusChip(),
+          ),
 
         if (_locationWarning != null)
           Padding(

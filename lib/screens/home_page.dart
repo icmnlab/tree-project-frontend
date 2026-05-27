@@ -6,6 +6,8 @@ import '../services/theme_service.dart';
 import '../tree_survey_page.dart';
 import '../tree_list_page.dart';
 import 'ble_import_page.dart';
+import 'field_survey/field_survey_flow_page.dart';
+import '../services/locale_service.dart';
 import 'species_identification_page.dart';
 import 'pending_measurement_task_page.dart';
 import 'v3_services_page.dart';
@@ -169,7 +171,9 @@ class _DashboardPageState extends State<DashboardPage>
   // All available cards — order controlled by _cardOrder
   static const _allCards = [
     // 現場作業
+    {'id': 'field_survey', 'title': '現場測量', 'subtitle': 'VLGEO2／待測量', 'icon': 'forest', 'category': 'field', 'needsNetwork': true},
     {'id': 'ble', 'title': '藍牙匯入', 'subtitle': '儀器同步', 'icon': 'bluetooth', 'category': 'field', 'needsNetwork': false},
+    {'id': 'ble_live', 'title': '現場連線', 'subtitle': 'VLGEO2 即時', 'icon': 'bluetooth', 'category': 'field', 'needsNetwork': true},
     {'id': 'pending', 'title': '待測量任務', 'subtitle': '現場測量', 'icon': 'assignment', 'category': 'field', 'needsNetwork': true},
     // 數據管理
     {'id': 'survey', 'title': '樹木調查', 'subtitle': '新增與編輯', 'icon': 'nature', 'category': 'data', 'needsNetwork': true},
@@ -206,6 +210,7 @@ class _DashboardPageState extends State<DashboardPage>
     _animController.forward();
     _loadUserInfo();
     _loadCardOrder();
+    LocaleService.instance.load();
   }
 
   @override
@@ -255,6 +260,7 @@ class _DashboardPageState extends State<DashboardPage>
 
   IconData _getIcon(String name) {
     switch (name) {
+      case 'forest': return Icons.forest_rounded;
       case 'bluetooth': return Icons.bluetooth_rounded;
       case 'assignment': return Icons.assignment_rounded;
       case 'nature': return Icons.nature_rounded;
@@ -272,7 +278,10 @@ class _DashboardPageState extends State<DashboardPage>
   
   Color _getColor(String id) {
     switch (id) {
-      case 'ble': return AppColors.tipcRed;
+      case 'field_survey':
+      case 'ble':
+      case 'ble_live':
+        return AppColors.tipcRed;
       case 'pending': return Colors.deepOrange;
       case 'survey': return AppColors.primary;
       case 'map': return AppColors.chartOrange;
@@ -287,6 +296,43 @@ class _DashboardPageState extends State<DashboardPage>
     }
   }
   
+  String _l10n(String key) => LocaleService.instance.t(key);
+
+  String _cardTitleKey(String id) {
+    switch (id) {
+      case 'field_survey':
+        return 'card_field_survey';
+      case 'ble':
+        return 'card_ble';
+      case 'ble_live':
+        return 'card_ble_live';
+      case 'pending':
+        return 'card_pending';
+      case 'survey':
+        return 'card_survey';
+      case 'map':
+        return 'card_map';
+      case 'cities':
+        return 'card_cities';
+      case 'stats':
+        return 'card_stats';
+      case 'report':
+        return 'card_report';
+      case 'species':
+        return 'card_species';
+      case 'test_scan':
+        return 'card_scan';
+      case 'ai':
+        return 'card_ai';
+      case 'v3':
+        return 'card_v3';
+      default:
+        return id;
+    }
+  }
+
+  String _cardSubtitleKey(String id) => '${_cardTitleKey(id)}_sub';
+
   void _onCardTap(String id) {
     switch (id) {
       case 'survey': Navigator.pushNamed(context, '/tree-survey'); break;
@@ -295,6 +341,11 @@ class _DashboardPageState extends State<DashboardPage>
       case 'ai': Navigator.pushNamed(context, '/ai-chat'); break;
       case 'report': Navigator.pushNamed(context, '/ai-sustainability-report'); break;
       case 'cities': Navigator.pushNamed(context, '/cities'); break;
+      case 'field_survey':
+      case 'ble_live':
+        Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const FieldSurveyFlowPage()));
+        break;
       case 'ble': Navigator.push(context, MaterialPageRoute(builder: (_) => const BleImportPage())); break;
       case 'pending': Navigator.push(context, MaterialPageRoute(builder: (_) => const PendingMeasurementTaskPage())); break;
       case 'test_scan': Navigator.push(context, MaterialPageRoute(builder: (_) => const ScannerPage())); break;
@@ -306,10 +357,10 @@ class _DashboardPageState extends State<DashboardPage>
   @override
   Widget build(BuildContext context) {
     final categoryLabels = {
-      'field': '現場作業',
-      'data': '數據管理',
-      'analysis': '分析報告',
-      'more': '更多工具',
+      'field': _l10n('cat_field'),
+      'data': _l10n('cat_data'),
+      'analysis': _l10n('cat_analysis'),
+      'more': _l10n('cat_more'),
     };
     
     // Build ordered card list grouped by category
@@ -350,7 +401,8 @@ class _DashboardPageState extends State<DashboardPage>
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
             child: Row(
               children: [
-                Text('功能中心', style: Theme.of(context).textTheme.headlineSmall),
+                Text(_l10n('feature_center'),
+                    style: Theme.of(context).textTheme.headlineSmall),
                 const Spacer(),
                 IconButton(
                   icon: Icon(_isEditMode ? Icons.check : Icons.tune, size: 20),
@@ -394,9 +446,11 @@ class _DashboardPageState extends State<DashboardPage>
                     final id = card['id'] as String;
                     final needsNetwork = card['needsNetwork'] as bool;
                     
+                    final title = _l10n(_cardTitleKey(id));
+                    final subtitle = _l10n(_cardSubtitleKey(id));
                     Widget featureCard = FeatureCard(
-                      title: card['title'] as String,
-                      subtitle: card['subtitle'] as String?,
+                      title: title,
+                      subtitle: subtitle,
                       icon: _getIcon(card['icon'] as String),
                       color: _getColor(id),
                       onTap: _isEditMode ? () {} : () => _onCardTap(id),
@@ -404,7 +458,7 @@ class _DashboardPageState extends State<DashboardPage>
                     
                     if (needsNetwork && !_isEditMode) {
                       featureCard = NetworkGuard(
-                        message: '${card['title']} 需要網路連線',
+                        message: '$title ${_l10n('needs_network')}',
                         child: featureCard,
                       );
                     }
@@ -604,7 +658,19 @@ class _DashboardPageState extends State<DashboardPage>
                 size: 20,
               ),
               const SizedBox(width: 12),
-              Text(isDark ? '切換亮色模式' : '切換暗色模式'),
+              Text(isDark ? _l10n('theme_light') : _l10n('theme_dark')),
+            ],
+          ),
+        ),
+        PopupMenuItem(
+          value: 'language',
+          child: Row(
+            children: [
+              const Icon(Icons.language_rounded, size: 20),
+              const SizedBox(width: 12),
+              Text(LocaleService.instance.isEnglish
+                  ? _l10n('language_zh')
+                  : _l10n('language_en')),
             ],
           ),
         ),
@@ -625,6 +691,10 @@ class _DashboardPageState extends State<DashboardPage>
           AuthService.logout(context);
         } else if (value == 'theme') {
           ThemeService().toggleDarkMode();
+        } else if (value == 'language') {
+          LocaleService.instance.toggle().then((_) {
+            if (context.mounted) setState(() {});
+          });
         }
       },
     );

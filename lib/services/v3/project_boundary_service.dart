@@ -111,6 +111,80 @@ class BoundaryValidationResult {
   });
 }
 
+/// 專案邊界狀態（metadata vs spatial）
+class ProjectBoundaryStatus {
+  final String projectName;
+  final bool hasBoundary;
+  final String boundaryState; // none | manual
+  final int treeCountWithGps;
+  final bool canSuggest;
+  final String? suggestBlockedReason;
+
+  ProjectBoundaryStatus({
+    required this.projectName,
+    required this.hasBoundary,
+    required this.boundaryState,
+    required this.treeCountWithGps,
+    required this.canSuggest,
+    this.suggestBlockedReason,
+  });
+
+  factory ProjectBoundaryStatus.fromJson(Map<String, dynamic> json) {
+    return ProjectBoundaryStatus(
+      projectName: json['projectName'] as String? ?? '',
+      hasBoundary: json['hasBoundary'] == true,
+      boundaryState: json['boundaryState'] as String? ?? 'none',
+      treeCountWithGps: (json['treeCountWithGps'] as num?)?.toInt() ?? 0,
+      canSuggest: json['canSuggest'] == true,
+      suggestBlockedReason: json['suggestBlockedReason'] as String?,
+    );
+  }
+}
+
+/// 建議邊界預覽結果（主群集 convex hull，outlier 已排除）
+class BoundarySuggestResult {
+  final bool success;
+  final String? code;
+  final String message;
+  final List<List<double>> coordinates;
+  final Map<String, dynamic>? stats;
+  final List<String> warnings;
+
+  BoundarySuggestResult({
+    required this.success,
+    this.code,
+    required this.message,
+    this.coordinates = const [],
+    this.stats,
+    this.warnings = const [],
+  });
+
+  factory BoundarySuggestResult.fromJson(Map<String, dynamic> json) {
+    final coords = <List<double>>[];
+    final raw = json['coordinates'];
+    if (raw is List) {
+      for (final c in raw) {
+        if (c is List && c.length >= 2) {
+          coords.add([(c[0] as num).toDouble(), (c[1] as num).toDouble()]);
+        }
+      }
+    }
+    final warn = json['warnings'];
+    return BoundarySuggestResult(
+      success: json['success'] == true,
+      code: json['code'] as String?,
+      message: json['message'] as String? ?? '',
+      coordinates: coords,
+      stats: json['stats'] is Map<String, dynamic>
+          ? Map<String, dynamic>.from(json['stats'] as Map)
+          : null,
+      warnings: warn is List
+          ? warn.map((e) => e.toString()).toList()
+          : const [],
+    );
+  }
+}
+
 /// 專案邊界服務
 class ProjectBoundaryService {
   static final ProjectBoundaryService _instance = ProjectBoundaryService._internal();
@@ -159,7 +233,8 @@ class ProjectBoundaryService {
   /// 獲取特定專案的邊界
   Future<ProjectBoundary?> getBoundary(String projectName) async {
     try {
-      final response = await ApiService.get('/project-boundaries/$projectName');
+      final encoded = Uri.encodeComponent(projectName);
+      final response = await ApiService.get('/project-boundaries/$encoded');
       
       if (response['success'] == true && response['data'] != null) {
         return ProjectBoundary.fromJson(response['data']);
@@ -169,6 +244,48 @@ class ProjectBoundaryService {
     } catch (e) {
       debugPrint('[ProjectBoundaryService] 獲取專案邊界錯誤: $e');
       return null;
+    }
+  }
+
+  /// 快取中是否已有某專案邊界
+  bool hasBoundaryForProject(String projectName) {
+    return _cachedBoundaries.any((b) => b.projectName == projectName);
+  }
+
+  /// 取得專案邊界狀態（有無 polygon、可否建議邊界）
+  Future<ProjectBoundaryStatus?> getProjectBoundaryStatus(String projectName) async {
+    try {
+      final encoded = Uri.encodeComponent(projectName);
+      final response = await ApiService.get('/project-boundaries/status/$encoded');
+      if (response['success'] == true) {
+        return ProjectBoundaryStatus.fromJson(response);
+      }
+      return null;
+    } catch (e) {
+      debugPrint('[ProjectBoundaryService] 邊界狀態錯誤: $e');
+      return null;
+    }
+  }
+
+  /// 從既有 tree_survey GPS 產生建議邊界預覽（不寫入 DB；outlier 排除）
+  Future<BoundarySuggestResult> suggestBoundaryFromTrees({
+    required String projectName,
+    int? bufferM,
+    int? maxSpanM,
+  }) async {
+    try {
+      final body = <String, dynamic>{'projectName': projectName};
+      if (bufferM != null) body['bufferM'] = bufferM;
+      if (maxSpanM != null) body['maxSpanM'] = maxSpanM;
+
+      final response = await ApiService.post('/project-boundaries/suggest', body);
+      return BoundarySuggestResult.fromJson(response);
+    } catch (e) {
+      debugPrint('[ProjectBoundaryService] 建議邊界錯誤: $e');
+      return BoundarySuggestResult(
+        success: false,
+        message: '產生建議邊界失敗: $e',
+      );
     }
   }
 
@@ -270,18 +387,40 @@ class ProjectBoundaryService {
       }
 
       return BoundaryValidationResult(
-        isValid: true,
-        hasBoundary: false,
-        message: '驗證失敗，暫時允許',
+        isValid: false,
+        hasBoundary: true,
+        message: '無法驗證邊界，請檢查網路後重試',
       );
     } catch (e) {
       debugPrint('[ProjectBoundaryService] 座標驗證錯誤: $e');
       return BoundaryValidationResult(
-        isValid: true,
-        hasBoundary: false,
-        message: '驗證失敗，暫時允許',
+        isValid: false,
+        hasBoundary: true,
+        message: '邊界驗證失敗: $e',
       );
     }
+  }
+
+  /// 先刷新快取再本地驗證（BLE / 手動輸入建議使用）
+  Future<BoundaryValidationResult> validateCoordinateForProjectFresh({
+    required String projectName,
+    required double lat,
+    required double lng,
+    bool preferServer = true,
+  }) async {
+    await getAllBoundaries(forceRefresh: true);
+    if (preferServer) {
+      return validateCoordinateForProjectAsync(
+        projectName: projectName,
+        lat: lat,
+        lng: lng,
+      );
+    }
+    return validateCoordinateForProject(
+      projectName: projectName,
+      lat: lat,
+      lng: lng,
+    );
   }
 
   /// 根據座標查找對應的專案（本地計算）

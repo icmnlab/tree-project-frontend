@@ -13,6 +13,11 @@ import '../../services/tflite_tracking_service.dart';
 import '../../services/v3/tree_image_service.dart';
 import '../../services/v3/ml_data_collector.dart';
 import '../../services/carbon_calculation_service.dart';
+import '../../services/dbh_measurement_engine.dart';
+import '../../services/camera_capture_service.dart';
+import '../../services/ar_measurement_service.dart';
+import '../../models/camera_capture_mode.dart';
+import '../../services/locale_service.dart';
 import '../../widgets/conflict_resolution_dialog.dart';
 
 /// V3 整合式樹木測量表單
@@ -36,6 +41,8 @@ class IntegratedTreeFormPage extends StatefulWidget {
 
 class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
   final PendingMeasurementService _pendingService = PendingMeasurementService();
+  /// 樂觀鎖基準（進入表單時向伺服器刷新，避免 in_progress PATCH 造成假 409）
+  DateTime? _lockUpdatedAt;
   final TreeImageService _imageService = TreeImageService();
   final TreeSpeciesService _speciesService = TreeSpeciesService();
   final TfliteObjectTrackingService _tfliteTracker =
@@ -79,6 +86,19 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
   double? _measurementConfidence;
   String? _measurementMethod;
 
+  /// 使用者選定的 DBH 來源：remote_diameter / vision / manual
+  String? _activeDbhSource;
+  double? _storedVisionDbhCm;
+  double? _storedVisionConfidence;
+  String? _storedVisionMethod;
+  bool _programmaticDbhChange = false;
+  List<String> _visionNotes = const [];
+  DbhHardwareCapabilities? _deviceCaps;
+
+  void _logDbh(String message) {
+    debugPrint('[DBH] $message');
+  }
+
   // AI 辨識暫存
   String? _autoIdentifiedSpeciesName;
   String? _autoIdentifiedSpeciesId;
@@ -99,13 +119,25 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
   @override
   void initState() {
     super.initState();
+    _lockUpdatedAt = widget.task.updatedAt;
+    _refreshLockBaseline();
     _initializeForm();
+    _loadDbhCapabilities();
+    _dbhController.addListener(_onDbhFieldEdited);
     _dbhController.addListener(_updateCarbonPreview);
     _heightController.addListener(_updateCarbonPreview);
     _speciesController.addListener(_updateCarbonPreview);
     _updateCarbonPreview();
     _loadSpecies();
     _acquirePhoneGps();
+  }
+
+  Future<void> _refreshLockBaseline() async {
+    final id = widget.task.id;
+    if (id == null) return;
+    final fresh = await _pendingService.fetchTaskById(id);
+    if (!mounted || fresh?.updatedAt == null) return;
+    setState(() => _lockUpdatedAt = fresh!.updatedAt);
   }
 
   void _updateCarbonPreview() {
@@ -293,13 +325,228 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
     }
   }
 
+  Future<void> _loadDbhCapabilities() async {
+    _deviceCaps = await DbhCapabilityService.instance.ensureLoaded();
+  }
+
   void _initializeForm() {
     _heightController.text = widget.task.treeHeight.toStringAsFixed(1);
-    if (widget.task.dbhCm != null) {
+    if (widget.task.hasInstrumentDbh) {
+      _activeDbhSource = 'remote_diameter';
+      _applyDbhFromSource(silent: true);
+      _logDbh(
+        'init task=${widget.task.id} instrumentDbh='
+        '${widget.task.instrumentDbhCm!.toStringAsFixed(1)} cm '
+        '(VLGEO2 Remote Dia, height=user-aimed, not fixed 1.3m)',
+      );
+    } else if (widget.task.dbhCm != null && widget.task.dbhCm! > 0) {
       _dbhController.text = widget.task.dbhCm!.toStringAsFixed(1);
     }
     if (widget.task.speciesName != null) {
       _speciesController.text = widget.task.speciesName!;
+    }
+  }
+
+  void _onDbhFieldEdited() {
+    if (_programmaticDbhChange) return;
+    final parsed = double.tryParse(_dbhController.text.trim());
+    if (parsed == null) return;
+
+    final inst = widget.task.instrumentDbhCm;
+    if (_activeDbhSource == 'remote_diameter' &&
+        inst != null &&
+        (parsed - inst).abs() < 0.05) {
+      return;
+    }
+    if (_activeDbhSource == 'vision' &&
+        _storedVisionDbhCm != null &&
+        (parsed - _storedVisionDbhCm!).abs() < 0.05) {
+      return;
+    }
+    if (_activeDbhSource != 'manual') {
+      setState(() => _activeDbhSource = 'manual');
+    }
+  }
+
+  void _selectDbhSource(String source) {
+    if (source == 'vision' && _storedVisionDbhCm == null) return;
+    if (source == 'remote_diameter' && !widget.task.hasInstrumentDbh) return;
+    _logDbh(
+      'select source=$source '
+      '(instrument=${widget.task.instrumentDbhCm}, '
+      'vision=${_storedVisionDbhCm}, manual=${_dbhController.text})',
+    );
+    setState(() {
+      _activeDbhSource = source;
+      if (source != 'manual') {
+        _applyDbhFromSource(silent: true);
+      }
+    });
+  }
+
+  void _applyDbhFromSource({bool silent = false}) {
+    double? value;
+    switch (_activeDbhSource) {
+      case 'remote_diameter':
+        value = widget.task.instrumentDbhCm;
+        _measurementMethod = 'remote_diameter';
+        _measurementConfidence = 1.0;
+        _dbhReady = value != null && value > 0;
+        break;
+      case 'vision':
+        value = _storedVisionDbhCm;
+        _measurementMethod = _storedVisionMethod ?? 'autopilot_vision';
+        _measurementConfidence = _storedVisionConfidence;
+        _dbhReady = (_storedVisionConfidence ?? 0) >= 0.6;
+        break;
+      default:
+        return;
+    }
+    if (value == null || value <= 0) return;
+    _programmaticDbhChange = true;
+    _dbhController.text = value.toStringAsFixed(1);
+    _programmaticDbhChange = false;
+    if (!silent && mounted) setState(() {});
+  }
+
+  Future<void> _promptDbhSourceAfterVision({
+    required double visionDbhCm,
+    required double? confidence,
+    required String method,
+    required File image,
+    Map<String, dynamic>? exif,
+    int? measurementRow,
+    int? imageHeight,
+    double? trunkDepthM,
+    List<String>? notes,
+  }) async {
+    _storedVisionDbhCm = visionDbhCm;
+    _storedVisionConfidence = confidence;
+    _storedVisionMethod = method;
+    _measuredDbh = visionDbhCm;
+    _visionNotes = notes ?? const [];
+
+    _logDbh(
+      'vision dbh=${visionDbhCm.toStringAsFixed(1)} cm '
+      'conf=${confidence != null ? (confidence * 100).toStringAsFixed(0) : "?"}% '
+      'method=$method '
+      'row=$measurementRow/${imageHeight ?? "?"} '
+      'trunkDepth=${trunkDepthM?.toStringAsFixed(2) ?? "?"} m',
+    );
+    _logDbh(
+      'vision height note: measures at YOLO bbox center row in photo, '
+      'NOT ground-referenced 1.3 m breast height (1.3m RANSAC = roadmap)',
+    );
+    if (_visionNotes.isNotEmpty) {
+      _logDbh('vision notes: ${_visionNotes.join("; ")}');
+    }
+
+    if (!widget.task.hasInstrumentDbh) {
+      if (!mounted) return;
+      setState(() {
+        _activeDbhSource = 'vision';
+        _mainImage = image;
+        if (exif != null) _lastExif = exif;
+        _capturedImages.add(image);
+        _applyDbhFromSource(silent: true);
+      });
+      return;
+    }
+
+    final inst = widget.task.instrumentDbhCm!;
+    final choice = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('DBH 來源選擇'),
+        content: Text(
+          '此樹已有儀器 Remote Diameter：${inst.toStringAsFixed(1)} cm\n'
+          '影像 AutoPilot 量得：${visionDbhCm.toStringAsFixed(1)} cm'
+          '${confidence != null ? '（信心 ${(confidence * 100).toStringAsFixed(0)}%）' : ''}\n\n'
+          'Remote Diameter 與標準胸高（1.3 m）位置可能不同。\n'
+          '影像 DBH 量的是照片中樹幹偵測框中心高度，亦未對準 1.3 m。\n\n'
+          '請選擇要採用的 DBH 來源。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'instrument'),
+            child: Text('採用儀器 ${inst.toStringAsFixed(1)} cm'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'vision'),
+            child: Text('改用影像 ${visionDbhCm.toStringAsFixed(1)} cm'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, 'keep'),
+            child: const Text('稍後再決定'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _mainImage = image;
+      if (exif != null) _lastExif = exif;
+      if (!_capturedImages.contains(image)) {
+        _capturedImages.add(image);
+      }
+      if (choice == 'vision') {
+        _activeDbhSource = 'vision';
+        _applyDbhFromSource(silent: true);
+        _logDbh('user chose vision ${visionDbhCm.toStringAsFixed(1)} cm');
+      } else if (choice == 'instrument') {
+        _activeDbhSource = 'remote_diameter';
+        _applyDbhFromSource(silent: true);
+        _logDbh('user chose instrument ${inst.toStringAsFixed(1)} cm');
+      } else {
+        _logDbh('user deferred choice; vision stored as optional chip');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '影像 DBH ${visionDbhCm.toStringAsFixed(1)} cm 已備選，'
+              '可在下方「DBH 來源」切換',
+            ),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    });
+  }
+
+  String _dbhSourceLabel(String source) {
+    switch (source) {
+      case 'remote_diameter':
+        return '儀器 Remote Dia';
+      case 'vision':
+        return '影像 DBH';
+      case 'manual':
+        return '手動輸入';
+      default:
+        return '未指定';
+    }
+  }
+
+  String _resolveSubmitMethod() {
+    final engine = DbhEngineResolver.fromFormSource(_activeDbhSource);
+    if (engine == DbhEngine.visionMono &&
+        _storedVisionMethod != null &&
+        _storedVisionMethod!.isNotEmpty) {
+      return _storedVisionMethod!;
+    }
+    return engine.defaultMeasurementMethod;
+  }
+
+  double _resolveSubmitConfidence() {
+    final engine = DbhEngineResolver.fromFormSource(_activeDbhSource);
+    switch (engine) {
+      case DbhEngine.instrumentRemote:
+        return 1.0;
+      case DbhEngine.visionMono:
+        return _storedVisionConfidence ?? _measurementConfidence ?? 0.8;
+      case DbhEngine.xiangLidar:
+        return _storedVisionConfidence ?? _measurementConfidence ?? 0.9;
+      case DbhEngine.manual:
+        return _measurementConfidence ?? 1.0;
     }
   }
 
@@ -309,6 +556,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
     _cleanupTempImages();
     _tfliteTracker.dispose();
     _speciesSearchDebounce?.cancel();
+    _dbhController.removeListener(_onDbhFieldEdited);
     _dbhController.removeListener(_updateCarbonPreview);
     _heightController.removeListener(_updateCarbonPreview);
     _speciesController.removeListener(_updateCarbonPreview);
@@ -319,42 +567,145 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
     super.dispose();
   }
 
-  Future<void> _takePhoto() async {
+  /// 預設整合表單使用「整合拍照」（DBH + 樹種 + YOLO 框）
+  CameraCaptureMode _preferredCaptureMode = CameraCaptureMode.integrated;
+
+  Future<void> _showCaptureModeSheet({ImageSource source = ImageSource.camera}) async {
+    final mode = await showModalBottomSheet<CameraCaptureMode>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Text(ctx.tr('capture_mode_title'),
+                  style: const TextStyle(
+                      fontSize: 18, fontWeight: FontWeight.bold)),
+            ),
+            for (final m in CameraCaptureMode.values)
+              ListTile(
+                leading: Icon(_iconForCaptureMode(m)),
+                title: Text(ctx.tr(m.titleKey)),
+                subtitle: Text(ctx.tr(m.subtitleKey)),
+                onTap: () => Navigator.pop(ctx, m),
+              ),
+            const SizedBox(height: 8),
+          ],
+        ),
+      ),
+    );
+    if (mode != null) {
+      setState(() => _preferredCaptureMode = mode);
+      await _captureWithMode(mode, source: source);
+    }
+  }
+
+  IconData _iconForCaptureMode(CameraCaptureMode m) {
+    switch (m) {
+      case CameraCaptureMode.plainPhoto:
+        return Icons.photo_camera_outlined;
+      case CameraCaptureMode.integrated:
+        return Icons.center_focus_strong;
+      case CameraCaptureMode.photoWithSpecies:
+        return Icons.eco_outlined;
+    }
+  }
+
+  Future<void> _importPhoto() =>
+      _showCaptureModeSheet(source: ImageSource.gallery);
+
+  Future<void> _captureWithMode(
+    CameraCaptureMode mode, {
+    ImageSource source = ImageSource.camera,
+  }) async {
     try {
-      final File? image = await _imageService.captureImage();
-      if (image != null) {
-        // 清理先前的暫存照片（避免累積）
-        _cleanupTempImages();
-        setState(() {
-          _mainImage = image;
-          _capturedImages.clear();
-          _showMultiShotHint = false;
-        });
-        // [Phase 1] 拍照後自動啟動 AutoPilot
-        _runAutoPilot(image);
+      final initialDbh = double.tryParse(_dbhController.text);
+      final result = await CameraCaptureService.capture(
+        context,
+        mode: mode,
+        source: source,
+        initialDbh: initialDbh,
+        speciesName: _speciesController.text.trim().isEmpty
+            ? null
+            : _speciesController.text.trim(),
+      );
+      if (result == null || !mounted) return;
+
+      _cleanupTempImages();
+      setState(() {
+        _mainImage = result.imageFile;
+        _capturedImages.clear();
+        _showMultiShotHint = false;
+        _dbhReady = false;
+        _speciesReady = false;
+      });
+
+      switch (mode) {
+        case CameraCaptureMode.plainPhoto:
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('已儲存照片（未自動分析）')),
+            );
+          }
+          break;
+        case CameraCaptureMode.integrated:
+          if (result.measurement != null) {
+            await _applyScannerMeasurement(result.measurement!);
+            if (mounted &&
+                _speciesController.text.trim().isEmpty) {
+              setState(() {
+                _isAutoPilotRunning = true;
+                _autoPilotStatus = '樹種辨識中...';
+              });
+              await _identifySpecies(result.imageFile);
+              if (mounted) {
+                setState(() {
+                  _isAutoPilotRunning = false;
+                  _autoPilotStatus = _speciesReady ? '分析完成' : '樹種需確認';
+                });
+              }
+            }
+          } else {
+            await _runAutoPilot(result.imageFile);
+          }
+          break;
+        case CameraCaptureMode.photoWithSpecies:
+          setState(() {
+            _isAutoPilotRunning = true;
+            _autoPilotStatus = '樹種辨識中...';
+          });
+          await _identifySpecies(result.imageFile);
+          if (mounted) {
+            setState(() {
+              _isAutoPilotRunning = false;
+              _autoPilotStatus = _speciesReady ? '樹種已辨識' : '樹種需確認';
+            });
+          }
+          break;
       }
     } catch (e) {
       _showError('拍照失敗: $e');
     }
   }
 
-  Future<void> _importPhoto() async {
-    try {
-      final File? image = await _imageService.captureImage(
-        source: ImageSource.gallery,
-      );
-      if (image != null) {
-        _cleanupTempImages();
-        setState(() {
-          _mainImage = image;
-          _capturedImages.clear();
-          _showMultiShotHint = false;
-        });
-        _runAutoPilot(image);
-      }
-    } catch (e) {
-      _showError('匯入照片失敗: $e');
-    }
+  Future<void> _applyScannerMeasurement(MeasurementResult m) async {
+    if (!mounted) return;
+    setState(() {
+      _measuredDbh = m.diameterCm;
+      _measurementConfidence = m.confidenceScore;
+      _measurementMethod = m.method.name;
+      _dbhController.text = m.diameterCm.toStringAsFixed(1);
+      _activeDbhSource = 'vision';
+      _storedVisionConfidence = m.confidenceScore;
+      _dbhReady = true;
+    });
+    _logDbh(
+      'scanner integrated capture dbh=${m.diameterCm} '
+      'bbox=${m.trunkBboxNormalized}',
+    );
+    _updateCarbonPreview();
   }
 
   /// 清理先前拍攝的暫存照片，釋放儲存空間
@@ -474,6 +825,22 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       setState(() => _autoPilotStatus =
           localBbox != null ? '後端遮罩與深度估計中...' : '後端偵測樹幹中...');
 
+      final caps =
+          _deviceCaps ?? await DbhCapabilityService.instance.ensureLoaded();
+      _deviceCaps = caps;
+      final routing = DbhEngineResolver.resolveForAutoMeasure(
+        hardware: caps,
+        // TODO(Xiang): ARKit Scene Depth 采集後設 hasLidarDepthFrame=true
+        hasLidarDepthFrame: false,
+        xiangPreflightOk: false,
+      );
+      _logDbh('autoMeasure routing: ${routing.summary}');
+
+      if (routing.apiEngine == DbhEngine.xiangLidar) {
+        // TODO(Xiang): PureVisionDbhService.measureDbhXiang(...) when backend ready
+        _logDbh('xiang API selected but not wired — should not happen yet');
+      }
+
       final result = await service.autoMeasureDbh(
         imageFile: image,
         focalLengthMm: exif['focalMm'] as double?,
@@ -486,16 +853,23 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
 
       if (result.success && result.dbhCm != null && mounted) {
         final conf = result.confidence ?? 0;
-        setState(() {
-          _measuredDbh = result.dbhCm;
-          _measurementConfidence = result.confidence;
-          _measurementMethod = 'autopilot_vision';
-          _dbhController.text = result.dbhCm!.toStringAsFixed(1);
-          _dbhReady = conf >= 0.6;
-          _capturedImages.add(image);
-          _lastExif = exif;
-          _showMultiShotHint = conf < 0.7 && _capturedImages.length < 3;
-        });
+        await _promptDbhSourceAfterVision(
+          visionDbhCm: result.dbhCm!,
+          confidence: conf,
+          method: result.method ?? 'autopilot_vision',
+          image: image,
+          exif: exif,
+          measurementRow: result.measurementRow,
+          trunkDepthM: result.trunkDepthM,
+          notes: result.notes,
+        );
+        _logDbh('detected_bbox=${result.detectedBbox} fovRatio=${result.fovRatio}');
+        _logDbh('autoMeasure api=visionMono dbh=${result.dbhCm} row=${result.measurementRow}');
+        if (mounted) {
+          setState(() {
+            _showMultiShotHint = conf < 0.7 && _capturedImages.length < 3;
+          });
+        }
       }
     } catch (e) {
       debugPrint('[AutoPilot] DBH 自動量測失敗: $e');
@@ -568,16 +942,21 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       );
 
       if (result.success && result.dbhCm != null && mounted) {
-        setState(() {
-          _mainImage = image;
-          _measuredDbh = result.dbhCm;
-          _measurementConfidence = result.confidence;
-          _measurementMethod = 'multi_shot_fusion';
-          _dbhController.text = result.dbhCm!.toStringAsFixed(1);
-          _dbhReady = (result.confidence ?? 0) >= 0.6;
-          _isAutoPilotRunning = false;
-          _autoPilotStatus = '多照片融合完成 (${_capturedImages.length}張)';
-        });
+        await _promptDbhSourceAfterVision(
+          visionDbhCm: result.dbhCm!,
+          confidence: result.confidence,
+          method: 'multi_shot_fusion',
+          image: image,
+          measurementRow: result.measurementRow,
+          trunkDepthM: result.trunkDepthM,
+          notes: result.notes,
+        );
+        if (mounted) {
+          setState(() {
+            _isAutoPilotRunning = false;
+            _autoPilotStatus = '多照片融合完成 (${_capturedImages.length}張)';
+          });
+        }
       } else {
         if (mounted) {
           setState(() {
@@ -857,6 +1236,12 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
         return;
       }
 
+      _logDbh(
+        'submit task=$taskId dbh=${dbh.toStringAsFixed(1)} cm '
+        'source=$_activeDbhSource engine=${DbhEngineResolver.fromFormSource(_activeDbhSource).logTag} '
+        'method=${_resolveSubmitMethod()} confidence=${_resolveSubmitConfidence()}',
+      );
+
       // [Auto-Add] 提交前確保樹種已建檔（取代舊的「新增樹種」按鈕；多人並發安全）
       final speciesOk = await _ensureSpeciesId();
       if (!speciesOk) {
@@ -914,8 +1299,8 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
 
       // [ML Data Collection] 收集訓練數據
       // 1. AR 測量修正記錄
-      if (_measuredDbh != null) {
-        // 只有當有進行過 AR 測量才記錄
+      if (_measuredDbh != null && _activeDbhSource == 'vision') {
+        // 僅在使用者選擇影像 DBH 時記錄修正
         await MLDataCollector.recordARMeasurementModification(
           treeId: widget.task.originalRecordId ?? widget.task.id.toString(),
           referenceObjectType: 'unknown', // 如果有紀錄參考物類型需傳入
@@ -955,12 +1340,12 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       ].join(' | ');
 
       // [T6][Phase1.5] 帶上載入當下的 updated_at 做樂觀鎖
-      final expectedUpdatedAt = widget.task.updatedAt?.toIso8601String();
+      final expectedUpdatedAt = _lockUpdatedAt?.toIso8601String();
       var updateResp = await _pendingService.updateMeasurement(
         id: taskId,
         dbhCm: dbh,
-        confidence: _measurementConfidence ?? 1.0,
-        method: _measurementMethod ?? 'manual_input',
+        confidence: _resolveSubmitConfidence(),
+        method: _resolveSubmitMethod(),
         notes: combinedNotes.isEmpty ? _selectedStatus : combinedNotes,
         speciesName: _speciesController.text,
         expectedUpdatedAt: expectedUpdatedAt,
@@ -976,8 +1361,8 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
           serverVersion: server,
           myDraft: {
             'measured_dbh_cm': dbh,
-            'measurement_confidence': _measurementConfidence ?? 1.0,
-            'measurement_method': _measurementMethod ?? 'manual_input',
+            'measurement_confidence': _resolveSubmitConfidence(),
+            'measurement_method': _resolveSubmitMethod(),
             'measurement_notes': combinedNotes,
             'species_name': _speciesController.text,
             'status': 'completed',
@@ -988,8 +1373,8 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
           updateResp = await _pendingService.updateMeasurement(
             id: taskId,
             dbhCm: dbh,
-            confidence: _measurementConfidence ?? 1.0,
-            method: _measurementMethod ?? 'manual_input',
+            confidence: _resolveSubmitConfidence(),
+            method: _resolveSubmitMethod(),
             notes: combinedNotes.isEmpty ? _selectedStatus : combinedNotes,
             speciesName: _speciesController.text,
           );
@@ -1016,6 +1401,10 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
             if (srvNotes != null) {
               _notesController.text = srvNotes;
             }
+            final srvUpdated = server['updated_at']?.toString();
+            if (srvUpdated != null) {
+              _lockUpdatedAt = DateTime.tryParse(srvUpdated);
+            }
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('已載入伺服器最新版本，請重新調整後再儲存')),
             );
@@ -1035,8 +1424,18 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
         return;
       }
 
+      if (updateResp['success'] != true) {
+        _showError(updateResp['message']?.toString() ?? '更新失敗');
+        return;
+      }
+
+      final newUpdated = updateResp['data']?['updated_at']?.toString();
+      if (newUpdated != null) {
+        _lockUpdatedAt = DateTime.tryParse(newUpdated);
+      }
+
       if (mounted) {
-        Navigator.of(context).pop(true); // 返回 true 表示成功
+        Navigator.of(context).pop(true);
       }
     } catch (e) {
       _showError('提交失敗: $e');
@@ -1254,7 +1653,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
         AspectRatio(
           aspectRatio: 16 / 9,
           child: GestureDetector(
-            onTap: _isAutoPilotRunning ? null : _takePhoto,
+            onTap: _isAutoPilotRunning ? null : _showCaptureModeSheet,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.grey.shade200,
@@ -1285,9 +1684,12 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
                               Icon(Icons.auto_awesome,
                                   size: 48, color: Colors.teal.shade400),
                               const SizedBox(height: 8),
-                              const Text('點擊拍照 — 一鍵自動量測',
-                                  style:
-                                      TextStyle(fontWeight: FontWeight.bold)),
+                              Text(
+                                '點擊選擇拍照模式',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.teal.shade800),
+                              ),
                               const SizedBox(height: 4),
                               Container(
                                 padding: const EdgeInsets.symmetric(
@@ -1297,15 +1699,16 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
                                   borderRadius: BorderRadius.circular(12),
                                 ),
                                 child: Text(
-                                  '距樹幹 1-3m，將樹幹置於畫面中央',
+                                  context.tr(_preferredCaptureMode.subtitleKey),
                                   style: TextStyle(
                                       fontSize: 12,
                                       color: Colors.teal.shade700),
+                                  textAlign: TextAlign.center,
                                 ),
                               ),
                               const SizedBox(height: 2),
                               const Text(
-                                '自動 DBH + 樹種辨識 + 填入表單',
+                                '建議：整合拍照（含即時樹幹框）',
                                 style:
                                     TextStyle(fontSize: 11, color: Colors.grey),
                               ),
@@ -1338,10 +1741,12 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
                           bottom: 8,
                           right: 8,
                           child: IconButton(
-                            onPressed: _isAutoPilotRunning ? null : _takePhoto,
+                            onPressed: _isAutoPilotRunning
+                                ? null
+                                : _showCaptureModeSheet,
                             icon:
                                 const Icon(Icons.refresh, color: Colors.white),
-                            tooltip: '重拍',
+                            tooltip: '重拍／變更模式',
                             style: IconButton.styleFrom(
                               backgroundColor: Colors.black54,
                             ),
@@ -1372,7 +1777,8 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
           children: [
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: _isAutoPilotRunning ? null : _takePhoto,
+                onPressed:
+                    _isAutoPilotRunning ? null : _showCaptureModeSheet,
                 icon: const Icon(Icons.camera_alt),
                 label: Text(_mainImage == null ? '拍照' : '重拍'),
               ),
@@ -1428,6 +1834,91 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
             _buildInfoRow(
                 '距離', '${widget.task.horizontalDistance.toStringAsFixed(1)} m'),
             _buildInfoRow('方位角', '${widget.task.azimuth.toStringAsFixed(0)}°'),
+            if (widget.task.hasInstrumentDbh)
+              _buildInfoRow(
+                '儀器 Remote Dia',
+                '${widget.task.instrumentDbhCm!.toStringAsFixed(1)} cm',
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDbhSourceCard() {
+    final chips = <Widget>[];
+
+    if (widget.task.hasInstrumentDbh) {
+      final v = widget.task.instrumentDbhCm!;
+      chips.add(
+        ChoiceChip(
+          label: Text('儀器 ${v.toStringAsFixed(1)} cm'),
+          selected: _activeDbhSource == 'remote_diameter',
+          onSelected: (_) => _selectDbhSource('remote_diameter'),
+        ),
+      );
+    }
+
+    if (_storedVisionDbhCm != null) {
+      final v = _storedVisionDbhCm!;
+      chips.add(
+        ChoiceChip(
+          label: Text('影像 ${v.toStringAsFixed(1)} cm'),
+          selected: _activeDbhSource == 'vision',
+          onSelected: (_) => _selectDbhSource('vision'),
+        ),
+      );
+    }
+
+    chips.add(
+      ChoiceChip(
+        label: const Text('手動輸入'),
+        selected: _activeDbhSource == 'manual',
+        onSelected: (_) => setState(() => _activeDbhSource = 'manual'),
+      ),
+    );
+
+    return Card(
+      color: Colors.blue.shade50,
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.straighten, size: 18, color: Colors.blue.shade800),
+                const SizedBox(width: 6),
+                Text(
+                  'DBH 來源',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue.shade900,
+                  ),
+                ),
+              ],
+            ),
+            if (widget.task.hasInstrumentDbh) ...[
+              const SizedBox(height: 6),
+              Text(
+                'VLGEO2 Remote Diameter 已量得 '
+                '${widget.task.instrumentDbhCm!.toStringAsFixed(1)} cm'
+                '（儀器瞄準高度，非固定 1.3 m）。'
+                '您仍可拍照做影像 DBH、手動輸入（胸徑尺/捲尺），'
+                '或日後 LiDAR；不會自動覆蓋，請在此選擇來源。',
+                style: TextStyle(fontSize: 12, color: Colors.blue.shade900),
+              ),
+            ] else ...[
+              const SizedBox(height: 6),
+              Text(
+                '影像 DBH 在照片中樹幹偵測框中心量測，'
+                '尚未對準地面 1.3 m 胸高；可改用手動輸入傳統量法。',
+                style: TextStyle(fontSize: 12, color: Colors.blue.shade900),
+              ),
+            ],
+            const SizedBox(height: 8),
+            Wrap(spacing: 8, runSpacing: 4, children: chips),
           ],
         ),
       ),
@@ -1520,6 +2011,9 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
 
         const SizedBox(height: 16),
 
+        if (widget.task.hasInstrumentDbh || _storedVisionDbhCm != null)
+          _buildDbhSourceCard(),
+
         // DBH 輸入（AutoPilot 失敗或人工覆核時可手動補值）
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1528,11 +2022,14 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
               child: TextFormField(
                 controller: _dbhController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: '胸徑 (DBH)',
-                  border: OutlineInputBorder(),
+                  border: const OutlineInputBorder(),
                   suffixText: 'cm',
-                  prefixIcon: Icon(Icons.circle_outlined),
+                  prefixIcon: const Icon(Icons.circle_outlined),
+                  helperText: _activeDbhSource != null
+                      ? '目前採用：${_dbhSourceLabel(_activeDbhSource!)}'
+                      : null,
                 ),
               ),
             ),

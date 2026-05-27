@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter/material.dart';
 import 'api_service.dart'; // 引入 ApiService
+import 'v3/project_boundary_service.dart';
 
 class AuthService {
   static const String _userKey = 'user_info';
@@ -16,6 +17,21 @@ class AuthService {
       'loginType': loginType,
     });
     return response;
+  }
+
+  /// 邀請碼註冊（公開端點，無需 JWT）
+  static Future<Map<String, dynamic>> registerWithInvite({
+    required String inviteCode,
+    required String username,
+    required String password,
+    String? displayName,
+  }) async {
+    return ApiService.post('register', {
+      'invite_code': inviteCode.trim().toUpperCase(),
+      'username': username,
+      'password': password,
+      if (displayName != null) 'display_name': displayName,
+    });
   }
 
   // 儲存使用者資訊（使用加密存儲）
@@ -45,6 +61,7 @@ class AuthService {
   static Future<void> clearSession() async {
     await _secureStorage.delete(key: _userKey);
     await ApiService.setJwtToken(null);
+    ProjectBoundaryService().clearCache();
   }
 
   // 檢查使用者是否已登入

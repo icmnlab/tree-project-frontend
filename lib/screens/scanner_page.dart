@@ -9,6 +9,7 @@ import 'package:sensors_plus/sensors_plus.dart';
 import '../services/pure_vision_dbh_service.dart';
 import '../services/ar_measurement_service.dart';
 import '../services/tflite_tracking_service.dart';
+import '../utils/bbox_normalize.dart';
 
 /// 純視覺 DBH 測量頁面 (ScannerPage)
 ///
@@ -815,6 +816,9 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
   // 使用自動量測結果 → 回傳 MeasurementResult
   // ===========================================================
 
+  List<double>? _trunkBboxForResult() =>
+      normalizeBbox(_currentBbox, _imageSize);
+
   void _useAutoResult() {
     final r = _autoResult;
     if (r == null || !r.success) return;
@@ -825,6 +829,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
       method: MeasurementMethod.pureVision,
       points: [],
       capturedImagePath: _capturedImage?.path,
+      trunkBboxNormalized: _trunkBboxForResult(),
       notes: '自動偵測 AI 測量 | '
           '深度: ${r.trunkDepthM?.toStringAsFixed(2) ?? "?"}m | '
           '信心度: ${r.confidenceLevel} | '
@@ -848,6 +853,7 @@ class _ScannerPageState extends State<ScannerPage> with WidgetsBindingObserver {
       method: MeasurementMethod.pureVision,
       points: [],
       capturedImagePath: _capturedImage?.path,
+      trunkBboxNormalized: _trunkBboxForResult(),
       notes: '純視覺 AI 測量 | '
           '深度: ${_result!.trunkDepthM.toStringAsFixed(2)}m | '
           '信心度: ${_result!.confidenceLevel} | '

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/login_page.dart';
+import 'screens/register_page.dart';
 import 'screens/home_page.dart';
 import 'admin_page.dart';
 import 'tree_survey_page.dart';
@@ -25,6 +26,7 @@ import 'services/auth_service.dart';
 import 'services/v3/ml_data_sync_service.dart';
 import 'services/v3/tree_image_service.dart';
 import 'services/network_service.dart';
+import 'services/locale_service.dart';
 
 /// 取得目前已登入帳號的 AI Chat userId。
 /// 改用真實帳號 ID（過去誤用裝置綁定 timestamp ID，導致同一裝置不同帳號共用對話）。
@@ -76,6 +78,7 @@ void main() async {
 
   // 初始化網路連線監聯
   await NetworkService().init();
+  await LocaleService.instance.load();
 
   // 設置系統 UI 樣式
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
@@ -145,9 +148,14 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: ThemeService(),
+      listenable: Listenable.merge([ThemeService(), LocaleService.instance]),
       builder: (context, _) => MaterialApp(
       title: '永續碳匯管理系統',
+      locale: LocaleService.instance.locale,
+      supportedLocales: const [
+        Locale('zh', 'TW'),
+        Locale('en'),
+      ],
       navigatorKey: GlobalKeys.navigatorKey,
       navigatorObservers: [GlobalKeys.routeObserver],
       debugShowCheckedModeBanner: false,
@@ -172,6 +180,7 @@ class MyApp extends StatelessWidget {
         '/': (context) =>
             const LoginPage(), // Default route for logout redirect
         '/login': (context) => const LoginPage(),
+        '/register': (context) => const RegisterPage(),
         '/home': (context) => const AuthGuard(child: HomePage()),
         '/admin': (context) =>
             const AuthGuard(requireAdmin: true, child: AdminPage()),

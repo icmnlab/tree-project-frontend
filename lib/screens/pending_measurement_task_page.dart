@@ -107,7 +107,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     if (taskId != null && _navState != NavigationState.selectingTask) {
       _service
           .updateTaskStatus(taskId, MeasurementStatus.pending)
-          .catchError((_) {});
+          .catchError((_) => null);
     }
     _positionSubscription?.cancel();
     _magnetometerSubscription?.cancel();
@@ -1675,8 +1675,14 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
           padding: const EdgeInsets.all(16),
           child: ElevatedButton.icon(
             onPressed: _startMeasurement,
-            icon: const Icon(Icons.camera_alt),
-            label: const Text('開始拍照測量 DBH'),
+            icon: Icon(_currentTask?.hasInstrumentDbh == true
+                ? Icons.photo_camera
+                : Icons.camera_alt),
+            label: Text(
+              _currentTask?.hasInstrumentDbh == true
+                  ? '開始現場紀錄（已有 Remote Dia）'
+                  : '開始拍照測量 DBH',
+            ),
             style: ElevatedButton.styleFrom(
               backgroundColor: isAligned ? Colors.green : Colors.teal,
               foregroundColor: Colors.white,
@@ -1777,7 +1783,16 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
 
     if (task.id != null) {
       try {
-        await _service.updateTaskStatus(task.id!, MeasurementStatus.inProgress);
+        final ts = await _service.updateTaskStatus(
+          task.id!,
+          MeasurementStatus.inProgress,
+        );
+        if (ts != null) {
+          _currentTask = task.copyWith(
+            status: MeasurementStatus.inProgress,
+            updatedAt: ts,
+          );
+        }
       } catch (e) {
         debugPrint('[PendingTask] 設定 in_progress 失敗: $e');
       }
@@ -1797,7 +1812,12 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
 
     setState(() => _navState = NavigationState.measuring);
 
-    final taskRef = _currentTask!;
+    var taskRef = _currentTask!;
+
+    if (taskRef.id != null) {
+      final fresh = await _service.fetchTaskById(taskRef.id!);
+      if (fresh != null) taskRef = fresh;
+    }
 
     bool? success;
     try {
@@ -1818,7 +1838,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
       if (taskRef.id != null && success != true) {
         _service
             .updateTaskStatus(taskRef.id!, MeasurementStatus.pending)
-            .catchError((_) {});
+            .catchError((_) => null);
       }
       return;
     }

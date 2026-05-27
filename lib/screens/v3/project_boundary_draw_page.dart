@@ -52,14 +52,17 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
   // UI 狀態
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _isSuggesting = false;
+  List<LatLng>? _suggestedPreviewPoints;
   String? _selectedProject;
   List<String> _availableProjects = [];
+  final Map<String, String> _projectNameToCode = {};
   
   // 顏色
   static const Color _drawingColor = Colors.blue;
   static const Color _existingColor = Colors.green;
   static const Color _currentProjectColor = Colors.orange;
-  // _treeMarkerColor 用於標記現有樹木，使用 BitmapDescriptor.hueRed 代替
+  static const Color _suggestedPreviewColor = Colors.deepPurple;
 
   @override
   void initState() {
@@ -75,8 +78,18 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
       // 載入專案列表
       final projectsResponse = await ApiService.get('/projects');
       if (projectsResponse['success'] == true) {
-        _availableProjects = (projectsResponse['data'] as List)
-            .map((p) => p['name'] as String)
+        _projectNameToCode.clear();
+        final list = projectsResponse['data'] as List;
+        _availableProjects = list
+            .map((p) {
+              final name = p['name']?.toString() ?? '';
+              final code = p['project_code']?.toString() ?? '';
+              if (name.isNotEmpty && code.isNotEmpty) {
+                _projectNameToCode[name] = code;
+              }
+              return name;
+            })
+            .where((n) => n.isNotEmpty)
             .toList();
       }
       
@@ -158,6 +171,8 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
   }
 
   void _updateMapElements() {
+    if (!mounted) return;
+
     _polygons.clear();
     _markers.clear();
     _polylines.clear();
@@ -177,6 +192,18 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
     // 添加繪製中的多邊形
     if (_drawingPoints.isNotEmpty) {
       _addDrawingPolygon();
+    }
+
+    // 建議邊界預覽（尚未儲存）
+    if (_suggestedPreviewPoints != null &&
+        _suggestedPreviewPoints!.length >= 3) {
+      _polygons.add(Polygon(
+        polygonId: const PolygonId('suggested_preview'),
+        points: _suggestedPreviewPoints!,
+        strokeColor: _suggestedPreviewColor,
+        strokeWidth: 3,
+        fillColor: _suggestedPreviewColor.withValues(alpha: 0.12),
+      ));
     }
     
     // 添加現有樹木標記
@@ -201,7 +228,7 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
       ));
     }
     
-    setState(() {});
+    if (mounted) setState(() {});
   }
 
   void _addBoundaryPolygon(ProjectBoundary boundary, Color color) {
@@ -397,12 +424,128 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
       );
       return;
     }
-    
+
     setState(() {
       _isDrawing = true;
       _drawingPoints.clear();
+      _suggestedPreviewPoints = null;
     });
     _updateMapElements();
+  }
+
+  /// 從 tree_survey 主群集 GPS 產生建議邊界（outlier 排除，僅預覽）
+  Future<void> _suggestBoundaryFromTrees() async {
+    if (_selectedProject == null) return;
+    if (_currentProjectBoundary != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('此專案已有邊界，請使用「重新繪製」')),
+      );
+      return;
+    }
+    if (_existingTreeLocations.length < 3) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('至少需要 3 棵有 GPS 的樹木才能產生建議邊界')),
+      );
+      return;
+    }
+
+    setState(() => _isSuggesting = true);
+    try {
+      final result = await _boundaryService.suggestBoundaryFromTrees(
+        projectName: _selectedProject!,
+      );
+
+      if (!mounted) return;
+
+      if (!result.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.message),
+            duration: const Duration(seconds: 5),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+
+      final stats = result.stats;
+      final included = stats?['includedTrees'] ?? '?';
+      final excluded = stats?['excludedTrees'] ?? 0;
+      final spanKm = stats?['spanM'] != null
+          ? ((stats!['spanM'] as num) / 1000).toStringAsFixed(2)
+          : '?';
+
+      final warnText = result.warnings.isNotEmpty
+          ? '\n\n${result.warnings.join('\n')}'
+          : '';
+
+      final confirmed = await showDialog<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('建議邊界預覽'),
+          content: SingleChildScrollView(
+            child: Text(
+              '依主群集 $included 棵樹木產生凸包（+10m buffer）。\n'
+              '主群集跨度約 $spanKm km。\n'
+              '${excluded > 0 ? '已排除 $excluded 棵距主群集過遠的樹木。' : ''}'
+              '$warnText\n\n'
+              '此邊界僅供預覽，確認後可微調再儲存。',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'cancel'),
+              child: const Text('取消'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'load'),
+              child: const Text('載入頂點'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, 'save'),
+              child: const Text('直接儲存'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmed == null || confirmed == 'cancel' || !mounted) return;
+
+      final points = result.coordinates
+          .map((c) => LatLng(c[0], c[1]))
+          .toList();
+
+      setState(() {
+        _suggestedPreviewPoints = points;
+        _drawingPoints
+          ..clear()
+          ..addAll(points);
+        _isDrawing = true;
+      });
+      _updateMapElements();
+
+      if (_controller != null && points.isNotEmpty) {
+        final center = _boundaryService.calculatePolygonCenter(
+          points.map((p) => [p.latitude, p.longitude]).toList(),
+        );
+        _controller!.animateCamera(CameraUpdate.newLatLngZoom(
+          LatLng(center['lat']!, center['lng']!),
+          15,
+        ));
+      }
+
+      if (confirmed == 'save') {
+        await _saveBoundary();
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('已載入建議邊界頂點，可微調後按「儲存邊界」'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSuggesting = false);
+    }
   }
 
   Future<void> _saveBoundary() async {
@@ -460,9 +603,13 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
     setState(() => _isSaving = true);
 
     try {
+      final resolvedCode = _projectNameToCode[_selectedProject!] ??
+          widget.projectCode ??
+          _currentProjectBoundary?.projectCode;
+
       final boundary = ProjectBoundary(
         projectName: _selectedProject!,
-        projectCode: widget.projectCode,
+        projectCode: resolvedCode,
         coordinates: _drawingPoints.map((p) => [p.latitude, p.longitude]).toList(),
       );
 
@@ -594,11 +741,14 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
     });
     
     await _loadProjectTrees(project);
-    
-    _currentProjectBoundary = _existingBoundaries
-        .where((b) => b.projectName == project)
-        .firstOrNull;
-    
+    if (!mounted) return;
+
+    setState(() {
+      _currentProjectBoundary = _existingBoundaries
+          .where((b) => b.projectName == project)
+          .firstOrNull;
+    });
+
     _updateMapElements();
     
     // 移動到專案區域
@@ -793,6 +943,7 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
                           _buildLegendItem('🔴', '現有樹木'),
                           _buildLegendItem('🟢', '其他專案邊界'),
                           _buildLegendItem('🟠', '當前專案邊界'),
+                          _buildLegendItem('🟣', '建議邊界預覽'),
                           _buildLegendItem('🔵', '繪製中'),
                         ],
                       ),
@@ -801,19 +952,19 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
                 ),
                 
                 // 載入中遮罩
-                if (_isSaving)
+                if (_isSaving || _isSuggesting)
                   Container(
                     color: Colors.black26,
-                    child: const Center(
+                    child: Center(
                       child: Card(
                         child: Padding(
-                          padding: EdgeInsets.all(24),
+                          padding: const EdgeInsets.all(24),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              CircularProgressIndicator(),
-                              SizedBox(height: 16),
-                              Text('儲存中...'),
+                              const CircularProgressIndicator(),
+                              const SizedBox(height: 16),
+                              Text(_isSuggesting ? '產生建議邊界中...' : '儲存中...'),
                             ],
                           ),
                         ),
@@ -832,11 +983,23 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
                 child: Row(
                   children: [
                     if (!_isDrawing) ...[
+                      if (_currentProjectBoundary == null &&
+                          _existingTreeLocations.length >= 3)
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: _isSuggesting ? null : _suggestBoundaryFromTrees,
+                            icon: const Icon(Icons.auto_awesome),
+                            label: const Text('建議邊界'),
+                          ),
+                        ),
+                      if (_currentProjectBoundary == null &&
+                          _existingTreeLocations.length >= 3)
+                        const SizedBox(width: 8),
                       Expanded(
                         child: ElevatedButton.icon(
                           onPressed: _startDrawing,
                           icon: const Icon(Icons.draw),
-                          label: Text(_currentProjectBoundary != null ? '重新繪製' : '開始繪製'),
+                          label: Text(_currentProjectBoundary != null ? '重新繪製' : '手動繪製'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.primary,
                             foregroundColor: Colors.white,
