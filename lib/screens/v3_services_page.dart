@@ -343,7 +343,7 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
           ),
           const SizedBox(height: 12),
           Text(
-            LocaleService.instance.t('v3_sync_hint'),
+            '${LocaleService.instance.t('v3_sync_hint')}\n'
             '這裡主要用來查看狀態、重試失敗項目，以及處理多人編輯衝突。',
             style: TextStyle(
               fontSize: 13,

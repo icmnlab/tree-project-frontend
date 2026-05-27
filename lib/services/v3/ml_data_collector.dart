@@ -509,7 +509,7 @@ class MLDataCollector {
 
   /// 保存記錄到本地
   static Future<void> _saveRecord(MLTrainingRecord record) async {
-    if (!isEnabled) return;
+    if (!AppConfig.enableMlCorrectionUpload) return;
     try {
       final prefs = await SharedPreferences.getInstance();
       final existingData = prefs.getString(_storageKey);
