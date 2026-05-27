@@ -11,6 +11,7 @@ import 'services/project_area_service.dart';
 // location_service import removed - unused in edit mode
 import 'services/species_service.dart';
 import 'services/carbon_calculation_service.dart';
+import 'utils/carbon_display.dart';
 import 'services/v3/ml_data_collector.dart'; // V3 ML 數據收集
 import 'widgets/conflict_resolution_dialog.dart';
 
@@ -1328,16 +1329,23 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
         const SizedBox(height: 8),
         _buildTextField(
           carbonstorageController,
-          '碳儲存量 (kg)',
+          CarbonDisplay.formLabelStorage(),
           (value) => value?.isEmpty ?? true ? '請輸入碳儲存量' : null,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
         ),
         const SizedBox(height: 16),
         _buildTextField(
           annualcarbonController,
-          '推估年碳吸存量 (kg)',
+          CarbonDisplay.formLabelAnnual(),
           (value) => value?.isEmpty ?? true ? '請輸入推估年碳吸存量' : null,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            CarbonDisplay.methodologyAnnual,
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          ),
         ),
       ],
     );

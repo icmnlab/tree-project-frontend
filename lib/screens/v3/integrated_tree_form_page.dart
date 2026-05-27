@@ -14,6 +14,7 @@ import '../../services/v3/tree_image_service.dart';
 import '../../services/v3/project_boundary_coordinator.dart';
 import '../../services/v3/ml_data_collector.dart';
 import '../../services/carbon_calculation_service.dart';
+import '../../utils/carbon_display.dart';
 import '../../services/dbh_measurement_engine.dart';
 import '../../services/camera_capture_service.dart';
 import '../../services/ar_measurement_service.dart';
@@ -2081,7 +2082,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
           Padding(
             padding: const EdgeInsets.only(top: 8, left: 4),
             child: Text(
-              '預估碳儲量（手冊第六章）: ${_previewCarbonKg!.toStringAsFixed(2)} kg CO₂e',
+              '${CarbonDisplay.previewLabelStorage()}: ${CarbonDisplay.formatStorage(_previewCarbonKg)}',
               style: TextStyle(
                 fontSize: 13,
                 color: Colors.teal.shade800,

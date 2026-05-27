@@ -27,6 +27,7 @@ import 'services/v3/ml_data_sync_service.dart';
 import 'services/v3/tree_image_service.dart';
 import 'services/network_service.dart';
 import 'services/locale_service.dart';
+import 'debug/app_verification_harness.dart';
 
 /// 取得目前已登入帳號的 AI Chat userId。
 /// 改用真實帳號 ID（過去誤用裝置綁定 timestamp ID，導致同一裝置不同帳號共用對話）。
@@ -92,6 +93,9 @@ void main() async {
   await AppConfig().initialize();
 
   await ApiService.initialize();
+
+  // 啟動驗證偵錯（Debug 預設開；Release 加 --dart-define=RUN_VERIFICATION_HARNESS=true）
+  await AppVerificationHarness.runIfEnabled();
 
   // [Stage 0.3] 已移除 CarbonSinkService preload：
   //   依賴的後端 /carbon-sink/tree-species 路由與 tree_carbon_data 表均已刪除，

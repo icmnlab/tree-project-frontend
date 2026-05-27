@@ -10,6 +10,7 @@ import 'services/project_area_service.dart';
 import 'services/location_service.dart';
 import 'services/species_service.dart';
 import 'services/carbon_calculation_service.dart';
+import 'utils/carbon_display.dart';
 import 'services/v3/project_boundary_coordinator.dart'; // V3: 專案邊界驗證
 import 'screens/v3/project_boundary_draw_page.dart'; // [新功能] 新增專案 → 引導畫邊界
 import 'widgets/conflict_resolution_dialog.dart';
@@ -1498,16 +1499,23 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
         const SizedBox(height: 8),
         _buildTextField(
           carbonstorageController,
-          '碳儲存量 (kg)',
+          CarbonDisplay.formLabelStorage(),
           (value) => value?.isEmpty ?? true ? '請輸入碳儲存量' : null,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
         ),
         const SizedBox(height: 16),
         _buildTextField(
           annualcarbonController,
-          '推估年碳吸存量 (kg)',
+          CarbonDisplay.formLabelAnnual(),
           (value) => value?.isEmpty ?? true ? '請輸入推估年碳吸存量' : null,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text(
+            CarbonDisplay.methodologyAnnual,
+            style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+          ),
         ),
       ],
     );

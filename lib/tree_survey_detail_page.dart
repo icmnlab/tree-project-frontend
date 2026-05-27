@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'services/carbon_calculation_service.dart';
+import 'utils/carbon_display.dart';
 import '../services/api_service.dart';
 import 'tree_edit_page_v2.dart';
 import '../services/tree_service.dart';
@@ -266,14 +267,47 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
               _buildInfoRow('狀況', _f('status', '狀況')),
             ]),
             const SizedBox(height: 16),
-            _buildInfoCard('碳存量資訊', [
-              _buildInfoRow('碳儲存量', '${_f('carbon_storage', '碳儲存量')} kg'),
-              _buildInfoRow('推估年碳吸存量', '${_f('carbon_sequestration_per_year', '推估年碳吸存量')} kg/yr'),
-            ]),
-            const SizedBox(height: 16),
-            _buildInfoCard('碳吸收資訊', [
-              _buildInfoRow('碳儲存量', '${carbonStorage.toStringAsFixed(2)} 公斤CO2e'),
-              _buildInfoRow('年碳吸收量', '${annualSequestration.toStringAsFixed(2)} 公斤CO2e/年'),
+            _buildInfoCard(CarbonDisplay.sectionTitle, [
+              _buildInfoRow(
+                CarbonDisplay.rowLabelStorage(),
+                CarbonDisplay.formatStorage(
+                  dbStorage ?? (carbonStorage > 0 ? carbonStorage : null),
+                ),
+              ),
+              _buildInfoRow(
+                CarbonDisplay.rowLabelAnnual(),
+                CarbonDisplay.formatAnnual(
+                  annualSequestration > 0 ? annualSequestration : null,
+                ),
+              ),
+              _buildInfoRow(
+                '計算依據',
+                dbStorage != null
+                    ? '資料庫欄位 ${CarbonDisplay.fieldStorage}'
+                    : '手冊第六章重算 → ${CarbonDisplay.fieldStorage}',
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 4),
+                child: Text(
+                  CarbonDisplay.methodologyAnnual,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                    height: 1.35,
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.only(top: 8),
+                child: Text(
+                  CarbonDisplay.methodologyStorage,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade600,
+                    height: 1.35,
+                  ),
+                ),
+              ),
             ]),
             const SizedBox(height: 16),
             _buildInfoCard('備註資訊', [
@@ -333,13 +367,9 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
         cardIcon = Icons.trending_up_rounded;
         cardColor = AppColors.forestGreen;
         break;
-      case '碳存量資訊':
+      case '碳匯（tree_survey）':
         cardIcon = Icons.eco_rounded;
         cardColor = AppColors.forestGreen;
-        break;
-      case '碳吸收資訊':
-        cardIcon = Icons.co2_rounded;
-        cardColor = AppColors.leafGreen;
         break;
       case '備註資訊':
         cardIcon = Icons.notes_rounded;

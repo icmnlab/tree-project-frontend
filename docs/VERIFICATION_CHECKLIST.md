@@ -14,6 +14,19 @@
 - [ ] 手機可連實驗室後端 URL（Wi‑Fi / Tailscale）
 - [ ] 準備：VLGEO2 一台、測試專案（≥3 棵有 GPS 的樹）、管理員 + 調查員各一帳號
 
+### 0.1 終端自動偵錯（啟動時）
+
+| 指令 | 說明 |
+|------|------|
+| `flutter run` | **Debug**：啟動後終端印出 `[VERIFY][PASS/FAIL/SKIP][代碼]` |
+| `flutter run --release --dart-define=RUN_VERIFICATION_HARNESS=true` | **Release 實機驗證**時開啟同一套報告 |
+| `flutter run --dart-define=SKIP_VERIFICATION_HARNESS=true` | 關閉偵錯輸出 |
+
+代碼對照：`ENV-*` 環境、`CARB-*` 碳匯手冊試算、`BND-*` 邊界快取、`API-*` 登入後 API。  
+手動步驟（L/B/F/N）會印 `[VERIFY][INFO][*-MANUAL]` 提示，仍需依下方表格勾選。
+
+碳匯欄位說明見 `docs/CARBON_CALCULATION.md`。
+
 ---
 
 ## 1. 409 樂觀鎖（待測量整合表單）
