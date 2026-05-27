@@ -1288,7 +1288,7 @@ class _BleImportPageState extends State<BleImportPage> {
       final gpsSourceProceed = await _resolveGpsSourceForBatch(filteredData);
       if (!gpsSourceProceed) return;
 
-      // [v21.0] 缺 GPS 處理（strict 預設擋下；lax 標記 requires_gps_fix）
+      // [v21.0] 缺 GPS：一律移除（不再保留或手機補定位）
       final missingGpsProceed = await _resolveMissingGps(filteredData);
       if (!missingGpsProceed) return;
 
@@ -2402,176 +2402,40 @@ class _BleImportPageState extends State<BleImportPage> {
     return kept;
   }
 
-  /// [v21.0] 缺 GPS 處理：strict（預設）/ lax（保留並標記 requires_gps_fix）
-  /// 回傳 false 代表使用者取消
+  /// 缺 GPS 記錄一律移除，並提示使用者重新以儀器匯入。
   Future<bool> _resolveMissingGps(
     List<Map<String, dynamic>> filteredData,
   ) async {
     final missing = filteredData.where((r) => r['hasGps'] != true).toList();
     if (missing.isEmpty) return true;
 
-    final action = await showDialog<String>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: Row(
-          children: const [
-            Icon(Icons.location_off, color: Colors.deepOrange),
-            SizedBox(width: 8),
-            Text('缺 GPS 處理'),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('${missing.length} 筆記錄缺少 GPS 座標。',
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              const Text(
-                '處理方式：',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                '• 嚴格模式：直接移除這些記錄，並提示請使用儀器補測。\n'
-                '• 寬鬆模式：保留並標記為「需補 GPS」，匯入後在地圖上手動點選座標，'
-                '或之後用儀器補測時對應 pending ID。',
-                style: TextStyle(fontSize: 12),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                '⚠ 不會自動套用上一筆/中位數座標（避免錯誤位置）。',
-                style: TextStyle(fontSize: 12, color: Colors.red),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, null),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, 'strict'),
-            child: const Text('嚴格（移除）'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, 'lax'),
-            child: const Text('寬鬆（保留標記）'),
-          ),
-        ],
-      ),
-    );
+    final count = missing.length;
+    filteredData.removeWhere((r) => r['hasGps'] != true);
 
-    if (action == null) return false;
-
-    if (action == 'strict') {
-      filteredData.removeWhere((r) => r['hasGps'] != true);
-    } else if (action == 'lax') {
-      for (final rec in missing) {
-        final meta = rec['metadata'] as Map<String, dynamic>? ?? {};
-        meta['requires_gps_fix'] = true;
-        rec['metadata'] = meta;
-      }
-      // 顯示補測流程指引
-      await _showRetestGuide(missing.length);
-    }
-    return true;
-  }
-
-  /// [v21.0] 顯示「使用儀器補測 GPS」標準流程指引
-  Future<void> _showRetestGuide(int count) async {
-    if (!mounted) return;
+    if (!mounted) return true;
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: Row(
           children: const [
-            Icon(Icons.help_outline, color: Colors.blue),
+            Icon(Icons.location_off, color: Colors.deepOrange),
             SizedBox(width: 8),
-            Expanded(child: Text('儀器補測 GPS 流程')),
+            Text('已移除缺 GPS 記錄'),
           ],
         ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '已標記 $count 筆需補測 GPS。請依以下步驟使用 VLGEO2 儀器補測：',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              const Text('1. 清除儀器舊資料：',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              const Padding(
-                padding: EdgeInsets.only(left: 12, top: 2),
-                child: Text(
-                  'SETTINGS → MEMORY → FORMAT（清空 DATA.CSV，避免新舊混淆）',
-                  style: TextStyle(fontSize: 13),
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text('2. 啟用 GPS：',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              const Padding(
-                padding: EdgeInsets.only(left: 12, top: 2),
-                child: Text(
-                  'SETTINGS → GPS → USE GPS ✓，等待 HDOP < 3 才開始測',
-                  style: TextStyle(fontSize: 13),
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text('3. 走到第一棵待補樹下測量。',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              const Text('4. 輸入 5 位 ID 對齊 pending：',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              const Padding(
-                padding: EdgeInsets.only(left: 12, top: 2),
-                child: Text(
-                  '測完後儀器跳出 5 位 ID 輸入，輸入 = pending ID（不足前面補 0）。\n'
-                  '例：pending ID 42 → 輸入 00042',
-                  style: TextStyle(fontSize: 13),
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text('5. 全部測完後回傳：',
-                  style: TextStyle(fontWeight: FontWeight.bold)),
-              const Padding(
-                padding: EdgeInsets.only(left: 12, top: 2),
-                child: Text(
-                  'FILES → SEND 透過 BLE 回傳，或 USB 拷 DATA.CSV',
-                  style: TextStyle(fontSize: 13),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.amber.shade50,
-                  borderRadius: BorderRadius.circular(4),
-                  border: Border.all(color: Colors.amber.shade300),
-                ),
-                child: const Text(
-                  '⚠ 補測結果以 ID 對齊覆蓋 pending 記錄（座標、HD、AZ）。\n'
-                  '請確認 ID 輸入正確，否則會覆寫到錯誤的樹。',
-                  style: TextStyle(fontSize: 12, color: Colors.brown),
-                ),
-              ),
-            ],
-          ),
+        content: Text(
+          '已自動移除 $count 筆缺少 GPS 的記錄。\n\n'
+          '請確認儀器 GPS 已啟用且定位有效後，重新匯入這些樹木。',
         ),
         actions: [
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('我知道了'),
+            child: const Text('了解'),
           ),
         ],
       ),
     );
+    return true;
   }
 
   /// 載入 BLE 手動指派用的專案清單（GET /projects 回傳 `data`，非 `projects`）

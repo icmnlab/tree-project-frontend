@@ -64,12 +64,8 @@ class PendingMeasurementService {
 
         if (horizontalDistance <= 0) continue;
 
-        // [v21.0] 缺 GPS 處理：若使用者於 BLE import 時選 lax 模式（requires_gps_fix=true），
-        // 仍保留記錄（樹位置先以 0,0 placeholder，等待使用者於 pending 列表手動補座標）；
-        // 否則維持原行為跳過。
-        final requiresGpsFix = metadata['requires_gps_fix'] == true;
-        if (!hasGps && !requiresGpsFix) {
-          debugPrint('━━━ 記錄 ID=${record['id']} — 無 GPS 且無 UTM 可補救，跳過 ━━━');
+        if (!hasGps) {
+          debugPrint('━━━ 記錄 ID=${record['id']} — 無 GPS，跳過 ━━━');
           continue;
         }
 
@@ -82,8 +78,7 @@ class PendingMeasurementService {
           continue;
         }
         final recordId = record['id'];
-        final gpsFixSuffix = requiresGpsFix ? ', REQUIRES_GPS_FIX' : '';
-        debugPrint('━━━ 記錄 ID=$recordId (GPS via $gpsSource$gpsFixSuffix) ━━━');
+        debugPrint('━━━ 記錄 ID=$recordId (GPS via $gpsSource) ━━━');
         debugPrint('  GPS 座標: ($lat, $lon)');
         debugPrint('  HD=$horizontalDistance m  AZ=$azimuth°  H=$height m');
 
@@ -91,13 +86,7 @@ class PendingMeasurementService {
         double treeLon;
         double stationLat;
         double stationLon;
-        if (!hasGps && requiresGpsFix) {
-          // 缺 GPS lax：placeholder 0,0；UI 標紅旗
-          treeLat = 0;
-          treeLon = 0;
-          stationLat = 0;
-          stationLon = 0;
-        } else if (gpsSource == 'tree') {
+        if (gpsSource == 'tree') {
           // GPS 已是樹位置；反推測站只作導覽/追溯輔助，導航仍直接導到樹位
           treeLat = lat;
           treeLon = lon;

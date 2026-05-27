@@ -1124,7 +1124,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: const Text(
-                  '⚠ 待補 GPS',
+                  '缺 GPS',
                   style: TextStyle(
                     fontSize: 11,
                     color: Colors.white,
@@ -1234,10 +1234,10 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
               Padding(
                 padding: const EdgeInsets.only(top: 2),
                 child: Text(
-                  '樹位置缺失 — 請依儀器補測流程重測',
+                  '缺少 GPS，無法測量 — 請重新以儀器匯入',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Colors.red.shade700,
+                    color: Colors.red.shade800,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -1850,8 +1850,9 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
 
   Future<void> _startTask(PendingTreeMeasurement task) async {
     if (_isProcessing) return;
+    final workingTask = task;
 
-    if (task.isMixedGpsSource) {
+    if (workingTask.isMixedGpsSource) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('此紀錄的 GPS 來源尚未確認，請先重新匯入或修正批次。'),
@@ -1861,49 +1862,27 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
       return;
     }
 
-    // [v21.0] 紅旗記錄（requires_gps_fix）：HD/AZ/H 已存在但缺 GPS，
-    // 應該用儀器補測整筆覆蓋（依 _showRetestGuide 流程），而非在 app 重新 AR 測量。
-    if (task.requiresGpsFix) {
-      final goAhead = await showDialog<bool>(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Row(
-            children: [
-              Icon(Icons.warning_amber, color: Colors.red),
-              SizedBox(width: 8),
-              Expanded(child: Text('此記錄需以儀器補測 GPS')),
-            ],
-          ),
-          content: const Text(
-            '此記錄缺 GPS 座標，建議使用 VLGEO2 儀器以相同 5 位 ID 補測整筆，'
-            '匯入後會自動覆蓋此 pending 記錄。\n\n'
-            '若仍要在現場用 AR 測 DBH（座標將留空，需稍後手動補上），可選「仍要繼續」。',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('取消'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('仍要繼續'),
-            ),
-          ],
+    if (workingTask.requiresGpsFix ||
+        (!workingTask.hasTreeGps && !workingTask.hasStationGps)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('此紀錄缺少 GPS，無法測量。請重新以儀器匯入含 GPS 的資料。'),
+          backgroundColor: Colors.orange,
         ),
       );
-      if (goAhead != true) return;
-      if (!mounted) return;
+      return;
     }
 
     _isProcessing = true;
     _abandoned = false;
     _hasVibratedArrival = false;
 
-    final bool hasNavigationGps =
-        task.isTreeGpsSource ? task.hasTreeGps : task.hasStationGps;
+    final bool hasNavigationGps = workingTask.isTreeGpsSource
+        ? workingTask.hasTreeGps
+        : workingTask.hasStationGps;
 
     setState(() {
-      _currentTask = task;
+      _currentTask = workingTask;
       _navState = hasNavigationGps
           ? NavigationState.navigatingToStation
           : NavigationState.pointingToTree; // 跳過導航，直接對準樹木方向
@@ -1919,14 +1898,14 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
       );
     }
 
-    if (task.id != null) {
+    if (workingTask.id != null) {
       try {
         final ts = await _service.updateTaskStatus(
-          task.id!,
+          workingTask.id!,
           MeasurementStatus.inProgress,
         );
         if (ts != null) {
-          _currentTask = task.copyWith(
+          _currentTask = workingTask.copyWith(
             status: MeasurementStatus.inProgress,
             updatedAt: ts,
           );

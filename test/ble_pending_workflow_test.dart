@@ -89,8 +89,7 @@ void main() {
       );
     });
 
-    test('missing GPS can be retained only when requiresGpsFix is explicit',
-        () {
+    test('missing GPS records are skipped during pending creation', () {
       final service = PendingMeasurementService();
       final records = [
         _bleRecord(
@@ -104,13 +103,7 @@ void main() {
 
       final pending = service.createFromBleData(bleData: records);
 
-      expect(pending, hasLength(1));
-      final task = pending.single;
-      expect(task.requiresGpsFix, isTrue);
-      expect(task.hasTreeGps, isFalse);
-      expect(task.hasStationGps, isFalse);
-      expect(task.treeLatitude, 0);
-      expect(task.treeLongitude, 0);
+      expect(pending, isEmpty);
     });
 
     test(
@@ -195,7 +188,6 @@ void main() {
       expect(pending.map((task) => task.originalRecordId), [
         'surveyor-001',
         'tree-001',
-        'missing-gps-001',
       ]);
       expect(pending.every((task) => task.projectCode == 'GLOBAL'), isTrue);
 
@@ -207,11 +199,6 @@ void main() {
       final treeTask = pending[1];
       expect(treeTask.gpsSource, 'tree');
       expect(treeTask.rawDataSnapshot?['tree_position_source'], 'gps_receiver');
-
-      final missingGpsTask = pending[2];
-      expect(missingGpsTask.requiresGpsFix, isTrue);
-      expect(missingGpsTask.hasStationGps, isFalse);
-      expect(missingGpsTask.hasTreeGps, isFalse);
     });
 
     test('per-record project assignment overrides global project fallback', () {

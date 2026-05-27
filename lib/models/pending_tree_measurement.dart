@@ -110,12 +110,7 @@ class PendingTreeMeasurement {
     this.rawDataSnapshot,
   });
 
-  /// [v21.0 / Phase B] 是否為 lax 模式保留、需補測 GPS 的待測量。
-  ///
-  /// BLE import 時若使用者選「寬鬆」模式，缺 GPS 的記錄會於 metadata 標記
-  /// `requires_gps_fix=true`，並由 PendingMeasurementService 平鋪寫入
-  /// `rawDataSnapshot`（樹位置同時設為 0,0 placeholder）。
-  /// UI 應據此顯示紅旗並引導使用者依儀器補測流程重測。
+  /// 舊版 lax 模式匯入的缺 GPS 記錄（新匯入已一律移除，此欄位僅供舊資料識別）。
   bool get requiresGpsFix => rawDataSnapshot?['requires_gps_fix'] == true;
 
   String get gpsSource {

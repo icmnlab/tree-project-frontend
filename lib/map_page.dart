@@ -13,6 +13,7 @@ import 'services/v3/project_boundary_service.dart';
 import 'screens/v3/project_boundary_draw_page.dart';
 import 'services/auth_service.dart'; // [T7] 角色權限
 import 'services/locale_service.dart';
+import 'services/location_service.dart';
 import 'constants/colors.dart';
 import 'config/global_keys.dart';
 
@@ -56,6 +57,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
   // V3: 專案邊界服務
   final ProjectBoundaryService _boundaryService = ProjectBoundaryService();
   final TreeService _treeService = TreeService();
+  final LocationService _locationService = LocationService();
   List<ProjectBoundary> _projectBoundaries = [];
 
   // 台灣中心點作為預設位置
@@ -102,7 +104,8 @@ class _MapPageState extends State<MapPage> with RouteAware {
       final code = tree['專案代碼']?.toString().trim();
       if (code == null || code.isEmpty) continue;
       fromAny ??= code;
-      if (_selectedCity != '全部' && tree['_city'] == _selectedCity) {
+      if (_selectedCity != '全部' &&
+          _cityMatches(tree['_city']?.toString(), _selectedCity)) {
         fromCityScoped ??= code;
       }
     }
@@ -134,7 +137,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
 
     final code = boundary.projectCode?.toString().trim();
     for (final tree in _cachedTreeData) {
-      if (tree['_city'] != _selectedCity) continue;
+      if (!_cityMatches(tree['_city']?.toString(), _selectedCity)) continue;
       if (code != null && code.isNotEmpty) {
         if (tree['專案代碼']?.toString().trim() == code) return true;
       } else if (tree['專案名稱'] == boundary.projectName) {
@@ -537,6 +540,8 @@ class _MapPageState extends State<MapPage> with RouteAware {
           ? null
           : (_projectNameToCode[_selectedProject] ?? _resolveSelectedProjectCode());
 
+      final mapLimit = _selectedProject != '全部' ? 5000 : 2500;
+
       final response = await _treeService.getMapTrees(
         projectCode: projectCode,
         city: _selectedCity == '全部' ? null : _selectedCity,
@@ -544,7 +549,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
         swLng: bounds?.southwest.longitude,
         neLat: bounds?.northeast.latitude,
         neLng: bounds?.northeast.longitude,
-        limit: 2500,
+        limit: mapLimit,
       );
 
       if (response['success'] == true && response['data'] != null) {
@@ -560,8 +565,12 @@ class _MapPageState extends State<MapPage> with RouteAware {
         if (truncated && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(LocaleService.instance.t('map_select_filter')),
-              duration: const Duration(seconds: 3),
+              content: Text(
+                _selectedProject != '全部'
+                    ? '此專案標記過多，已載入 $mapLimit 筆；請縮放地圖查看局部'
+                    : LocaleService.instance.t('map_select_filter'),
+              ),
+              duration: const Duration(seconds: 4),
             ),
           );
         }
@@ -798,6 +807,85 @@ class _MapPageState extends State<MapPage> with RouteAware {
       }
     } catch (e) {
       debugPrint('Error getting location: $e');
+    }
+  }
+
+  String? _findCityOption(String shortOrFull) {
+    if (shortOrFull.trim().isEmpty) return null;
+    String norm(String s) => s.trim().replaceAll('台', '臺');
+    final target = norm(shortOrFull);
+    for (final city in _cities) {
+      if (city == '全部') continue;
+      if (_cityMatches(city, shortOrFull) || _cityMatches(shortOrFull, city)) {
+        return city;
+      }
+      final base = city.replaceAll(RegExp(r'[市縣]$'), '');
+      if (norm(base) == target) return city;
+    }
+    return null;
+  }
+
+  /// 依手機 GPS 定位並自動篩選所在縣市。
+  Future<void> _useMyLocation() async {
+    if (!_hasLocationPermission) {
+      await _requestLocationPermission();
+      if (!_hasLocationPermission) return;
+    }
+
+    _safeSetState(() => _isLoading = true);
+    try {
+      final position = await getHighAccuracyPosition();
+      if (position == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('無法取得目前位置')),
+          );
+        }
+        return;
+      }
+
+      _safeSetState(() => _currentPosition = position);
+
+      if (_controller != null) {
+        await _controller!.animateCamera(
+          CameraUpdate.newLatLngZoom(
+            LatLng(position.latitude, position.longitude),
+            14,
+          ),
+        );
+      }
+
+      final resp = await _locationService.suggestArea(
+        latitude: position.latitude,
+        longitude: position.longitude,
+      );
+
+      if (resp['success'] == true) {
+        final shortName = resp['suggestedArea']?.toString() ?? '';
+        final matched = _findCityOption(shortName);
+        if (matched != null) {
+          _safeSetState(() => _selectedCity = matched);
+          await _refreshProjectsForCity(matched);
+          _onFilterChanged(fitBounds: false);
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('已依目前位置篩選：$matched')),
+            );
+          }
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('已定位至目前位置（$shortName）')),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('定位失敗: $e')),
+        );
+      }
+    } finally {
+      _safeSetState(() => _isLoading = false);
     }
   }
 
@@ -1064,6 +1152,20 @@ class _MapPageState extends State<MapPage> with RouteAware {
                           ),
                         ),
                       ],
+                    ),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: _isLoading ? null : _useMyLocation,
+                        icon: const Icon(Icons.my_location, size: 16),
+                        label: Text(LocaleService.instance.t('map_use_my_location')),
+                        style: TextButton.styleFrom(
+                          foregroundColor: const Color(0xFF0D47A1),
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Row(

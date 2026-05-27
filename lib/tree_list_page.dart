@@ -889,9 +889,14 @@ class _TreeListPageState extends State<TreeListPage> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Text(
-                          context.trParams('tree_list_total', {
-                            'n': '${_filteredTrees.length}',
-                          }),
+                          _trees.length < _totalCount
+                              ? context.trParams('tree_list_total_partial', {
+                                  'total': '$_totalCount',
+                                  'loaded': '${_trees.length}',
+                                })
+                              : context.trParams('tree_list_total', {
+                                  'n': '$_totalCount',
+                                }),
                           style: TextStyle(
                             color: AppColors.forestGreen,
                             fontSize: 13,
