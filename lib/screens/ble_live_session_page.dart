@@ -151,8 +151,11 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       }
     }
 
+    // 僅訂閱一個 TX，避免 Haglof + NUS 重複 notify 觸發兩次 _onPacket
     tryAdd(_haglofServiceUuid, _haglofTxUuid);
-    tryAdd(_nusServiceUuid, _nusTxUuid);
+    if (txChars.isEmpty) {
+      tryAdd(_nusServiceUuid, _nusTxUuid);
+    }
 
     if (txChars.isEmpty) {
       throw Exception('找不到 Haglof / NUS 的 notify TX');
@@ -220,6 +223,8 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         return;
       }
 
+      // 同步加鎖，避免 setState 完成前重複 notify 啟動第二個 _processLiveMeasurement
+      _isProcessingTree = true;
       unawaited(_processLiveMeasurement(live, seq: _liveSeq));
       return;
     }
@@ -241,10 +246,9 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   }) async {
     if (!mounted) return;
 
-    setState(() {
-      _isProcessingTree = true;
-      _status = '第 $seq 棵：取得 GPS 並建立任務…';
-    });
+    if (mounted) {
+      setState(() => _status = '第 $seq 棵：取得 GPS 並建立任務…');
+    }
 
     try {
       if (!await _ensureLiveSessionConfigured()) {
@@ -380,9 +384,9 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         );
       }
     } finally {
+      _isProcessingTree = false;
       if (mounted) {
         setState(() {
-          _isProcessingTree = false;
           _status = _isConnected
               ? context.tr('ble_status_connected')
               : _status;
