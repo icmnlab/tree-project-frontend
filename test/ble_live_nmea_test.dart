@@ -89,5 +89,30 @@ void main() {
       expect(done, hasLength(1));
       expect(done.first.heightM, 2.2);
     });
+
+    test('§9.3 前綴 + PHGF 無換行（第二棵 SEND 實機格式）', () {
+      final asm = BleLiveNmeaAssembler();
+      const chunk =
+          r'22  22  14   62574$PHGF,HVV,2.2,M,261.4,D,1.8,D,2.2,M,1.5,M,9.3,CM,*14';
+      final done = asm.feed(chunk.codeUnits);
+      expect(done, hasLength(1));
+      expect(done.first.horizontalDistanceM, 2.2);
+      expect(done.first.heightM, 1.5);
+      expect(done.first.remoteDiameterCm, 9.3);
+    });
+
+    test('連續兩棵 PHGF', () {
+      final asm = BleLiveNmeaAssembler();
+      final first = asm.feed(
+        r'$PHGF,HVV,2.2,M,257.4,D,0.6,D,2.2,M,1.4,M,0.0,CM,*15'.codeUnits,
+      );
+      expect(first, hasLength(1));
+      final second = asm.feed(
+        r'22  22  15  182614$PHGF,HVV,2.2,M,261.4,D,1.8,D,2.2,M,1.5,M,9.3,CM,*14'
+            .codeUnits,
+      );
+      expect(second, hasLength(1));
+      expect(second.first.heightM, 1.5);
+    });
   });
 }

@@ -49,11 +49,28 @@ cd vlgeo2_ble_analysis
 python analysis_scripts/compare_with_official.py
 ```
 
-### 2. 追蹤特定 ID 的 Hex 模式
+### 3. 電腦端 GPS 驗證（寫進 APP 前必做）
+
+依 Haglöf 硬體手冊 §4.6.2 / §9 / §10，確認「MEMORY 關 + 逐棵 SEND」時是否有 GPS NMEA 串流。
 
 ```bash
-python analysis_scripts/trace_hex_pattern.py --id 10071
+cd tree-project-frontend/test/vlgeo2_ble_analysis
+
+# 監聽 BLE（連線後在儀器上量測并按 SEND，Ctrl+C 結束）
+/Users/kyle/project_code/.venv/bin/python verify_vlgeo2_gps_ble.py
+
+# 可選：檢查 USB 匯出 DATA.CSV 是否含 LAT/LON（MEMORY 存檔模式）
+/Users/kyle/project_code/.venv/bin/python verify_vlgeo2_gps_ble.py --csv /Volumes/VL_GEO2/DATA/DATA.CSV
 ```
+
+儀器設定（逐棵現場連線）：
+
+- BLUETOOTH = ON
+- USE GPS = ON，EXTERN.GPS = OFF
+- ENABLE MEM = OFF
+
+腳本會分類 `$PHGF`（量測）與 `$GNGGA` / `$GNRMC`（GPS），並在每次 PHGF 時顯示「當下最新 GGA 快照」。  
+log 輸出：`raw_captures/gps_verify_YYYYMMDD_HHMMSS.log`
 
 ---
 

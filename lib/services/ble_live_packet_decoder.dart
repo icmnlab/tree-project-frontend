@@ -100,10 +100,18 @@ class BleLiveMeasurement {
   }
 }
 
-/// 累積 BLE notify 分片，重組完整 NMEA 句（以 CR/LF 結束）。
+/// 累積 BLE notify 分片，重組完整 NMEA 句。
+///
+/// 實機第二棵起常見：手冊 §9.3 的 20-byte ASCII 前綴與 `$PHGF` 黏在同一 notify、
+/// 無 CR/LF，僅靠換行切割會漏句。
 class BleLiveNmeaAssembler {
   final StringBuffer _buffer = StringBuffer();
   final List<BleLiveMeasurement> _pending = [];
+  int _lastPhgfEnd = 0;
+
+  static final RegExp _phgfSentence = RegExp(
+    r'\$PHGF,HVV,[^*]+\*[0-9A-Fa-f]{2}',
+  );
 
   List<BleLiveMeasurement> feed(List<int> data) {
     if (data.isEmpty) return const [];
@@ -116,29 +124,57 @@ class BleLiveNmeaAssembler {
     _buffer.write(chunk);
     final text = _buffer.toString();
 
-    if (!text.contains('\n') && !text.contains('\r')) {
-      return const [];
-    }
-
-    final lines = text.split(RegExp(r'\r?\n'));
-    _buffer.clear();
-    if (lines.isNotEmpty && !text.endsWith('\n') && !text.endsWith('\r')) {
-      _buffer.write(lines.removeLast());
-    }
-
     _pending.clear();
-    for (final line in lines) {
-      final trimmed = line.trim();
-      if (trimmed.isEmpty) continue;
-      final m = BleLiveNmeaParser.tryParseLine(trimmed);
-      if (m != null) _pending.add(m);
+
+    for (final match in _phgfSentence.allMatches(text)) {
+      if (match.end <= _lastPhgfEnd) continue;
+      final line = match.group(0);
+      if (line == null) continue;
+      final m = BleLiveNmeaParser.tryParseLine(line);
+      if (m != null) {
+        _pending.add(m);
+        _lastPhgfEnd = match.end;
+      }
     }
+
+    // 保留未完成的尾部（含可能半截的 $PHGF 或 §9.3 前綴）
+    if (_lastPhgfEnd > 0) {
+      final tail = text.substring(_lastPhgfEnd);
+      _buffer
+        ..clear()
+        ..write(tail);
+      _lastPhgfEnd = 0;
+    } else if (text.length > 512) {
+      // 長時間無 PHGF 時避免緩衝無限增長
+      _buffer
+        ..clear()
+        ..write(text.substring(text.length - 256));
+    }
+
+    // 仍支援以 CR/LF 結束的 GPS 等其它 NMEA（§10 / §4.6.2）
+    final tailText = _buffer.toString();
+    if (tailText.contains('\n') || tailText.contains('\r')) {
+      final lines = tailText.split(RegExp(r'\r?\n'));
+      _buffer.clear();
+      if (lines.isNotEmpty &&
+          !chunk.endsWith('\n') &&
+          !chunk.endsWith('\r')) {
+        _buffer.write(lines.removeLast());
+      }
+      for (final line in lines) {
+        final trimmed = line.trim();
+        if (trimmed.isEmpty || trimmed.startsWith('\$PHGF')) continue;
+        // GPS 等非 PHGF 句留給上層若需擴充；現場連線主路徑為 PHGF
+      }
+    }
+
     return List.unmodifiable(_pending);
   }
 
   void reset() {
     _buffer.clear();
     _pending.clear();
+    _lastPhgfEnd = 0;
   }
 }
 
