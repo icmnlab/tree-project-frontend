@@ -1,6 +1,7 @@
 # 交接：外接 GNSS + 現場 BLE 量測（2026-05）
 
 > 給換電腦後接手的開發者。  
+> **换机必读**：[`HANDOFF_换电脑开发.md`](HANDOFF_换电脑开发.md)  
 > **精简交接文案**：[`HANDOFF_外接GNSS現場量測.md`](HANDOFF_外接GNSS現場量測.md)  
 > 儀器實測結論見 `test/vlgeo2_ble_analysis/docs/`。
 
@@ -39,7 +40,16 @@ _onPacket → BleLiveNmeaAssembler.feed
 
 4. 可選第二路線：`instrument_csv` = MEMORY ON + BLE SEND FILES，解析 `DATA.CSV` 最後一列（見 `verify_vlgeo2_gps_usb_watch.py`）
 
-## 規劃中的硬體（產品尚未買）
+## 硬體（已下單 2026-05）
+
+| 品项 | 状态 |
+|------|------|
+| LG290P GNSS RTK Module | 已买；**不带 RTC 电池**版（RTK/standalone 能力同电池版） |
+| ESP32-C3 | 已买 ¥20.79；**待确认是否带排针 -M** |
+| ML1220 | 未附；可选后补 |
+| 5V 电源 / 线 | 自备 |
+
+## 硬體架構
 
 ### 建議架構（量測與定位分步）
 
@@ -96,7 +106,7 @@ _onPacket → BleLiveNmeaAssembler.feed
 | # | 品名 | 数量 | 参考价 | 购买链接 |
 |---|------|------|--------|----------|
 | 1 | **LG290P GNSS RTK Module**（含天线、SH1.0 线、排针） | 1 | **¥499.95** | https://www.waveshare.net/shop/LG290P-GNSS-RTK-Module.htm |
-| 2 | **ESP32-C3-Zero**（BLE 桥，烧 TreeGNSS 固件） | 1 | **约 ¥35–55** | https://www.waveshare.net/shop/ESP32-C3-Zero.htm |
+| 2 | **ESP32-C3-Zero-M**（带排针，烧 TreeGNSS 固件） | 1 | **约 ¥35–55** | https://www.waveshare.net/shop/ESP32-C3-Zero-M.htm |
 
 **微雪淘宝同一货源**（可合并下单减运费）：https://world.taobao.com/dianpu/442244005.htm  
 
@@ -224,6 +234,17 @@ ESP32 固件：读 UART → 按行分包 BLE notify（可参考 [ArduSimple BLE 
 | VLGEO2 内建 | **2.5 m** | 基准 |
 
 **cm 级**需另配 **NTRIP**（如台湾 e-GNSS **NT$300/日/组** + 注册）；硬件同上，非再买 Trimble。
+
+### 台湾 GNSS / RTK 说明
+
+| 模式 | 台湾可用 | 费用 | 说明 |
+|------|----------|------|------|
+| **Standalone PVT** | ✅ | 无 | 本项目现阶段；~0.7 m，优于 Geo2 |
+| **RTK cm** | ✅ | e-GNSS 等付费 | 需 NTRIP + 手机网络 + 固件灌 RTCM；千寻（大陆）非台湾主方案 |
+| **RTC 电池 ML1220** | ✅ 可后补 | 约几十台币 | 仅缩短断电后再定位等待，**不影响精度** |
+
+- 国土地图 **e-GNSS**：https://egnss.nlsc.gov.tw/（法人注册 + 按日计费）  
+- **冷启动**：断电久再开，无电池时可能多等 ~20–30 s 才有 fix，非手动改时间。
 
 ---
 

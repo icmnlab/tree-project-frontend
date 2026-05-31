@@ -34,9 +34,12 @@
 | 項目 | 選型 | Standalone 精度 |
 |------|------|-----------------|
 | GNSS | 微雪 **LG290P**（移远四频 RTK 模块） | **~0.7 m CEP**（优于 Geo2 2.5 m） |
-| BLE 桥 | 微雪 **ESP32-C3-Zero** | 广播名 **`TreeGNSS`** |
+| BLE 桥 | 微雪 **ESP32-C3-Zero-M（带排针）** | 广播名 **`TreeGNSS`** |
 | 电源 | **既有** 5V 行动电源 / USB 线（不必另购） | ~220 mA，一场调查够用 |
-| ML1220 纽扣电池 | **可选**；五金行可买 | 热启动，非必须 |
+| ML1220 纽扣电池 | **已购为标准版（未附）**；五金行可补 | 仅缩短断电后再定位等待，**不影响精度** |
+
+**已下单（2026-05）**：LG290P ¥525.5（**不带 RTC 电池**）、ESP32-C3 ¥20.79——**请核对 ESP32 是否为带排针 -M**；贴片版需焊排针或补买 -M。  
+**零焊接接线**：LG290P 附 SH1.0 线 → 母杜邦 → ESP32 RX(GPIO20) + GND。
 
 **架设**：勿把大充电宝绑在 Geo2 握把。用 **1/4"-20 短杆 + 3D 打印盒** 固定 LG290P+ESP32，**天线垂直朝天**；Geo2 只管瞄准。
 
@@ -47,7 +50,7 @@
 | # | 品名 | 约价 | 链接 |
 |---|------|------|------|
 | 1 | **LG290P GNSS RTK Module**（含天线、SH1.0 线） | ¥500 | https://www.waveshare.net/shop/LG290P-GNSS-RTK-Module.htm |
-| 2 | **ESP32-C3-Zero** | ¥35–55 | https://www.waveshare.net/shop/ESP32-C3-Zero.htm |
+| 2 | **ESP32-C3-Zero-M（带排针）** | ¥35–55 | https://www.waveshare.net/shop/ESP32-C3-Zero-M.htm |
 
 **淘宝同源（合并下单）**：https://world.taobao.com/dianpu/442244005.htm  
 
@@ -63,7 +66,8 @@
 |------|------|
 | 开阔地 standalone | **0.7–1.5 m** 级（datasheet 0.7 m CEP；优于 Geo2 **2.5 m**） |
 | 林下 / 冠层 | 卫星数下降、误差变大（**所有 GNSS 共通**）；天线需朝上、尽量高于遮挡 |
-| RTK cm 级 | 需 **NTRIP**（如 e-GNSS）；**非本次必买** |
+| RTK cm 级 | 需 **NTRIP**（台湾 e-GNSS 等）；**非本次必买** |
+| 冷/热启动 | 无 ML1220 时**完全断电**后再开可能多等 ~20–30 s；**不影响坐标精度**；调查中途保持供电即可 |
 | BLE 稳定性 | ESP32 NUS 转发 NMEA 为业界常见做法；与 Geo2 使用 **相同 NUS UUID**，APP 已用 `flutter_blue_plus` |
 | 耗电 | LG290P ~100 mA + ESP32 ~120 mA @ 5V；**不耗電** |
 
@@ -116,7 +120,8 @@
 
 | 路径 | 内容 |
 |------|------|
-| `docs/HANDOFF_EXTERNAL_GNSS_AND_BLE.md` | 采购、接线、UUID、验收 |
+| `docs/HANDOFF_换电脑开发.md` | **换机 clone、环境、待办** |
+| `docs/HANDOFF_EXTERNAL_GNSS_AND_BLE.md` | 采购、接线、UUID、验收、台湾 RTK |
 | `test/vlgeo2_ble_analysis/docs/VLGEO2_GPS_SOLUTION.md` | 实测结论 |
 | `test/vlgeo2_ble_analysis/docs/EXTERNAL_GNSS_ENGINEERING.md` | Geo2 §10 对照 |
 | `lib/screens/ble_live_session_page.dart` | 现場 BLE 主流程 |
