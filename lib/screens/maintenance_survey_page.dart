@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:geolocator/geolocator.dart';
 
 import '../models/maintenance_target.dart';
 import '../services/tree_service.dart';
+import '../utils/location_helper.dart';
 import '../utils/tree_id_display.dart';
 import '../widgets/ble/ble_device_scanner.dart';
 import '../widgets/field/field_session_setup.dart';
@@ -33,6 +35,8 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
   String _search = '';
   int _step = 0; // 0=list 1=ble
   _MaintainView _view = _MaintainView.list;
+  double? _userLat;
+  double? _userLon;
 
   @override
   void initState() {
@@ -83,6 +87,20 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
           return loc == area || loc.contains(area) || area.contains(loc);
         }).toList();
       }
+      final pos = await Geolocator.getLastKnownPosition() ??
+          await getHighAccuracyPosition(timeout: const Duration(seconds: 5));
+      if (pos != null) {
+        _userLat = pos.latitude;
+        _userLon = pos.longitude;
+        list.sort((a, b) {
+          final da = _distanceToTreeM(a) ?? double.infinity;
+          final db = _distanceToTreeM(b) ?? double.infinity;
+          return da.compareTo(db);
+        });
+      } else {
+        _userLat = null;
+        _userLon = null;
+      }
       setState(() {
         _trees = list;
         _loadingTrees = false;
@@ -118,6 +136,27 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
     if (!mounted) return;
     setState(() => _step = 0);
     await _loadTrees();
+  }
+
+  double? _treeCoord(Map<String, dynamic> t, String en, String zh) {
+    final v = t[en] ?? t[zh];
+    if (v is num) return v.toDouble();
+    return double.tryParse(v?.toString() ?? '');
+  }
+
+  double? _distanceToTreeM(Map<String, dynamic> t) {
+    if (_userLat == null || _userLon == null) return null;
+    final lat = _treeCoord(t, 'y_coord', 'Y坐標');
+    final lon = _treeCoord(t, 'x_coord', 'X坐標');
+    if (lat == null || lon == null || lat == 0 || lon == 0) return null;
+    return Geolocator.distanceBetween(_userLat!, _userLon!, lat, lon);
+  }
+
+  String? _distanceLabel(Map<String, dynamic> t) {
+    final m = _distanceToTreeM(t);
+    if (m == null) return null;
+    if (m >= 1000) return '約 ${(m / 1000).toStringAsFixed(1)} km';
+    return context.tr('maintain_distance_m').replaceAll('{n}', '${m.round()}');
   }
 
   int? _treeId(Map<String, dynamic> t) {
@@ -287,6 +326,14 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
             onSubmitted: (_) => _loadTrees(),
           ),
         ),
+        if (_userLat != null && _trees.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Text(
+              context.tr('maintain_sorted_nearby'),
+              style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+            ),
+          ),
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
           child: SegmentedButton<_MaintainView>(
@@ -356,6 +403,10 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
                                       t['樹高（公尺）'];
                                   final dbh =
                                       t['dbh_cm'] ?? t['胸徑（公分）'];
+                                  final dist = _distanceLabel(t);
+                                  final sub = dist == null
+                                      ? '$species · H $h m · DBH $dbh cm'
+                                      : '$species · H $h m · DBH $dbh cm · $dist';
                                   return ListTile(
                                     title: Text(
                                       TreeIdDisplay.fieldListLabel(
@@ -367,9 +418,7 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
                                         fontSize: 18,
                                       ),
                                     ),
-                                    subtitle: Text(
-                                      '$species · H $h m · DBH $dbh cm',
-                                    ),
+                                    subtitle: Text(sub),
                                     trailing: const Icon(Icons.chevron_right),
                                     onTap: id == null
                                         ? null

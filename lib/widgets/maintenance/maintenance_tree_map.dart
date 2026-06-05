@@ -143,7 +143,7 @@ class _MaintenanceTreeMapState extends State<MaintenanceTreeMap> {
                         zoom: 14,
                       ),
                       markers: markers,
-                      myLocationButtonEnabled: false,
+                      myLocationButtonEnabled: true,
                       myLocationEnabled: true,
                       zoomControlsEnabled: false,
                       mapToolbarEnabled: false,

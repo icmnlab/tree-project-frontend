@@ -933,11 +933,11 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
                   const SizedBox(height: 12),
                   TextField(
                     controller: areaController,
-                    decoration: const InputDecoration(
+                    decoration: InputDecoration(
                       labelText: context.tr('pending_block_label'),
                       hintText: context.tr('field_setup_project_hint'),
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.location_on),
+                      border: const OutlineInputBorder(),
+                      prefixIcon: const Icon(Icons.location_on),
                     ),
                   ),
                   const SizedBox(height: 12),
