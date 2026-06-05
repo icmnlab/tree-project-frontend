@@ -1,11 +1,15 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../models/maintenance_target.dart';
 import '../models/pending_tree_measurement.dart';
 import '../services/ble_live_packet_decoder.dart';
 import '../utils/field_gps_capture.dart';
+import '../utils/field_log.dart';
 import '../services/pending_measurement_service.dart';
 import '../widgets/ble/ble_device_scanner.dart';
 import '../widgets/field/field_session_setup.dart';
@@ -49,10 +53,24 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   BluetoothDevice? _device;
   final List<StreamSubscription<List<int>>> _dataSubs = [];
   StreamSubscription<BluetoothConnectionState>? _connSub;
+  Timer? _reconnectTimer;
   bool _isConnected = false;
   bool _isListening = false;
   bool _isProcessingTree = false;
+  bool _userDisconnect = false;
+  bool _reconnecting = false;
+  bool _reconnectAfterProcessing = false;
+  int _reconnectAttempt = 0;
+  static const _maxReconnectAttempts = 5;
+  BleLiveMeasurement? _gpsRetryLive;
+  int? _gpsRetrySeq;
   String _status = '';
+
+  bool get _canAutoReconnect =>
+      _device != null && !_userDisconnect && !_isConnected;
+
+  bool get _showBleScanner =>
+      !_isConnected && !_isProcessingTree && (_device == null || _userDisconnect);
 
   int _liveSeq = 0;
   int _completedCount = 0;
@@ -71,6 +89,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   @override
   void initState() {
     super.initState();
+    FieldLog.uiSink = _onFieldLogLine;
     _status = ''; // set in didChangeDependencies
     _gpsSource = 'tree';
     final setup = widget.initialSessionSetup;
@@ -86,6 +105,28 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         if (mounted) _connect(pre);
       });
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _logSessionStart());
+  }
+
+  Future<void> _logSessionStart() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      FieldLog.ble(
+        '啟動 ${info.version}+${info.buildNumber} '
+        '${kReleaseMode ? "release" : "debug"} '
+        'logcat=${FieldLog.logcatEnabled}',
+      );
+    } catch (_) {
+      FieldLog.ble('啟動 session');
+    }
+    if (widget.maintenanceTarget != null) {
+      FieldLog.ble(
+        '維護目標 id=${widget.maintenanceTarget!.treeSurveyId}',
+      );
+    }
+    if (_projectCode != null) {
+      FieldLog.ble('專案=$_projectCode 區=$_projectArea 場次=$_batchName');
+    }
   }
 
   @override
@@ -100,6 +141,10 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
 
   @override
   void dispose() {
+    if (FieldLog.uiSink == _onFieldLogLine) {
+      FieldLog.uiSink = null;
+    }
+    _reconnectTimer?.cancel();
     for (final sub in _dataSubs) {
       sub.cancel();
     }
@@ -108,34 +153,124 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
     super.dispose();
   }
 
-  Future<void> _connect(BluetoothDevice device) async {
+  Future<void> _connect(BluetoothDevice device, {bool isReconnect = false}) async {
+    _userDisconnect = false;
+    if (!isReconnect) _reconnectAttempt = 0;
+    _reconnectTimer?.cancel();
+
     setState(() {
       _device = device;
-      _status = '連線中 ${device.platformName}…';
+      _status = isReconnect
+          ? '重新連線 ${device.platformName}…'
+          : '連線中 ${device.platformName}…';
     });
 
     try {
       await device.connect(timeout: const Duration(seconds: 15));
-      _connSub = device.connectionState.listen((state) {
-        if (!mounted) return;
-        if (state == BluetoothConnectionState.disconnected) {
-          setState(() {
-            _isConnected = false;
-            _isListening = false;
-            _status = '連線已中斷';
-          });
-        }
-      });
+      _connSub?.cancel();
+      _connSub = device.connectionState.listen(_onConnectionState);
 
       await _subscribeTx(device);
       if (!mounted) return;
       setState(() {
         _isConnected = true;
+        _reconnectAttempt = 0;
         _status = context.tr('ble_status_connected');
       });
+      _appendLog('已連線 ${device.platformName} (${device.remoteId.str})');
+      if (isReconnect) {
+        _appendLog('自動重連成功');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(context.tr('ble_reconnect_ok')),
+              backgroundColor: Colors.green,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
     } catch (e) {
       if (!mounted) return;
-      setState(() => _status = '連線失敗: $e');
+      if (isReconnect) {
+        _appendLog('重連失敗: $e');
+        _scheduleReconnect();
+      } else {
+        setState(() => _status = '連線失敗: $e');
+      }
+    }
+  }
+
+  void _onConnectionState(BluetoothConnectionState state) {
+    if (!mounted) return;
+    if (state == BluetoothConnectionState.connected) {
+      _reconnectAttempt = 0;
+      return;
+    }
+    if (state == BluetoothConnectionState.disconnected) {
+      _handleUnexpectedDisconnect();
+    }
+  }
+
+  void _handleUnexpectedDisconnect() {
+    if (_userDisconnect || _device == null) return;
+    setState(() {
+      _isConnected = false;
+      _isListening = false;
+      _status = context.tr('ble_status_disconnected');
+    });
+    if (_isProcessingTree) {
+      _reconnectAfterProcessing = true;
+      _appendLog('連線中斷（表單處理中），完成後將自動重連');
+      setState(() => _status = context.tr('ble_disconnected_during_form'));
+      return;
+    }
+    _appendLog('連線中斷，嘗試自動重連…');
+    _scheduleReconnect();
+  }
+
+  Future<void> _manualReconnectNow() async {
+    _reconnectTimer?.cancel();
+    _reconnectAttempt = 0;
+    await _reconnect();
+  }
+
+  void _scheduleReconnect() {
+    _reconnectTimer?.cancel();
+    if (_userDisconnect || _device == null || !mounted) return;
+    if (_reconnectAttempt >= _maxReconnectAttempts) {
+      setState(() => _status = context.tr('ble_reconnect_failed'));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(context.tr('ble_reconnect_failed'))),
+      );
+      return;
+    }
+    final delay = Duration(seconds: 2 << _reconnectAttempt.clamp(0, 3));
+    _reconnectAttempt++;
+    setState(() {
+      _status = context
+          .tr('ble_reconnecting')
+          .replaceAll('{n}', '$_reconnectAttempt')
+          .replaceAll('{max}', '$_maxReconnectAttempts');
+    });
+    _reconnectTimer = Timer(delay, () async {
+      if (!mounted || _userDisconnect || _device == null) return;
+      await _reconnect();
+    });
+  }
+
+  Future<void> _reconnect() async {
+    final device = _device;
+    if (device == null || _reconnecting || _userDisconnect) return;
+    _reconnecting = true;
+    try {
+      for (final sub in _dataSubs) {
+        await sub.cancel();
+      }
+      _dataSubs.clear();
+      await _connect(device, isReconnect: true);
+    } finally {
+      _reconnecting = false;
     }
   }
 
@@ -156,10 +291,10 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       }
     }
 
-    // 僅訂閱一個 TX，避免 Haglof + NUS 重複 notify 觸發兩次 _onPacket
-    tryAdd(_haglofServiceUuid, _haglofTxUuid);
+    // 實機 VLGEO2：PHGF 由 NUS TX 送出；Haglof TX 多為 §9.3 前綴。僅訂閱一個 TX。
+    tryAdd(_nusServiceUuid, _nusTxUuid);
     if (txChars.isEmpty) {
-      tryAdd(_nusServiceUuid, _nusTxUuid);
+      tryAdd(_haglofServiceUuid, _haglofTxUuid);
     }
 
     if (txChars.isEmpty) {
@@ -260,154 +395,39 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         return;
       }
 
-      // 資料必須有 GPS 座標：取消／取不到定位 → 不建立任務，提示重新 SEND
       final gps = await _resolveGpsForLiveMeasurement(seq);
       if (gps == null) {
         if (mounted) {
-          _appendLog('#$seq 未取得 GPS — 未建立任務，請重新 SEND');
+          setState(() {
+            _gpsRetryLive = live;
+            _gpsRetrySeq = seq;
+            _status = context
+                .tr('ble_gps_retry_banner')
+                .replaceAll('{n}', '$seq');
+          });
+          _appendLog('#$seq 未取得 GPS — 可重測 GPS，無需再按 SEND');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(context.tr('ble_gps_required')),
+              content: Text(context.tr('ble_gps_retry_hint')),
               backgroundColor: Colors.orange,
-              duration: const Duration(seconds: 4),
+              duration: const Duration(seconds: 5),
+              action: SnackBarAction(
+                label: context.tr('ble_gps_retry_btn'),
+                onPressed: _retryPendingGps,
+              ),
             ),
           );
         }
         return;
       }
       if (!mounted) return;
-
-      final lat = gps.latitude;
-      final lon = gps.longitude;
-      const hasGps = true;
-
-      fieldGpsLog(
-        'live seq=$seq mode=$_gpsSource lat=$lat lon=$lon acc=${gps.accuracyM}m',
-      );
-
-      _liveSessionId ??= PendingMeasurementService.generateSessionId();
-
-      final recordId = 'LIVE-${DateTime.now().millisecondsSinceEpoch}';
-      final maint = widget.maintenanceTarget;
-      final bleRecord = live.toBleRecordMap(
-        id: recordId,
-        lat: lat,
-        lon: lon,
-        hasGps: hasGps,
-        gpsSource: _gpsSource!,
-        extraMetadata: {
-          'phone_gps_accuracy_m': gps.accuracyM,
-          'gps_sample_count': gps.sampleCount,
-          'live_session_index': seq,
-          if (_batchName != null) 'batch_name': _batchName,
-          if (maint != null) ...{
-            'survey_mode': 'maintenance',
-            'target_tree_id': maint.treeSurveyId,
-            'match_status': 'user_selected',
-          },
-        },
-      );
-      if (maint != null) {
-        bleRecord['_survey_mode'] = 'maintenance';
-        bleRecord['_target_tree_id'] = maint.treeSurveyId;
-        bleRecord['_match_status'] = 'user_selected';
-      }
-
-      if (mounted) {
-        setState(() => _status = '第 $seq 棵：上傳任務…');
-      }
-
-      final result = await _pendingService.createAndUploadFromBle(
-        bleData: [bleRecord],
-        batchName: _batchName,
-        projectArea: _projectArea,
-        projectCode: _projectCode,
-        projectName: _projectName,
-        sessionId: _liveSessionId,
-      );
-
-      if (result['success'] != true || !mounted) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(result['message']?.toString() ?? '建立任務失敗'),
-            ),
-          );
-        }
-        return;
-      }
-
-      _liveSessionId = result['sessionId'] as String? ?? _liveSessionId;
-
-      await _syncSessionProjectToServer();
-
-      final tasks = result['tasks'] as List<PendingTreeMeasurement>?;
-      if (tasks == null || tasks.isEmpty || tasks.first.id == null) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('任務已上傳但無法取得 ID')),
-          );
-        }
-        return;
-      }
-
-      var task = tasks.first;
-      final lockTs = await _pendingService.updateTaskStatus(
-        task.id!,
-        MeasurementStatus.inProgress,
-      );
-      task = task.copyWith(
-        status: MeasurementStatus.inProgress,
-        updatedAt: lockTs ?? task.updatedAt,
-      );
-
-      if (!mounted) return;
-      setState(() => _status = '第 $seq 棵：現場紀錄（拍照 / DBH / 提交）…');
-
-      final nav = Navigator.of(context);
-      final messenger = ScaffoldMessenger.of(context);
-
-      final success = await nav.push<bool>(
-        MaterialPageRoute(
-          builder: (_) => IntegratedTreeFormPage(
-            task: task,
-            autoTransferToTreeSurvey: true,
-            transferSessionId: _liveSessionId,
-          ),
-        ),
-      );
-
-      if (!mounted) return;
-
-      if (success == true) {
-        _completedCount++;
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              context
-                  .tr('ble_tree_done')
-                  .replaceAll('{n}', '$seq')
-                  .replaceAll('{total}', '$_completedCount'),
-            ),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
-        );
-      } else {
-        await _pendingService
-            .updateTaskStatus(task.id!, MeasurementStatus.pending)
-            .catchError((_) => null);
-        if (!mounted) return;
-        messenger.showSnackBar(
-          SnackBar(
-            content: Text(
-              context.tr('ble_tree_cancel').replaceAll('{n}', '$seq'),
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      debugPrint('[BleLive] process tree error: $e');
+      setState(() {
+        _gpsRetryLive = null;
+        _gpsRetrySeq = null;
+      });
+      await _completeLiveMeasurementAfterGps(live, seq, gps);
+    } catch (e, st) {
+      FieldLog.ble('process tree error: $e\n$st', toUi: true);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('處理失敗: $e')),
@@ -417,11 +437,274 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       _isProcessingTree = false;
       if (mounted) {
         setState(() {
+          if (_gpsRetryLive == null) {
+            _status = _isConnected
+                ? context.tr('ble_status_connected')
+                : _status;
+          }
+        });
+      }
+      if (_reconnectAfterProcessing && !_userDisconnect && _device != null) {
+        _reconnectAfterProcessing = false;
+        _appendLog('表單完成，恢復自動重連…');
+        _scheduleReconnect();
+      }
+    }
+  }
+
+  Future<void> _completeLiveMeasurementAfterGps(
+    BleLiveMeasurement live,
+    int seq,
+    FieldGpsCaptureResult gps,
+  ) async {
+    final lat = gps.latitude;
+    final lon = gps.longitude;
+    const hasGps = true;
+
+    fieldGpsLog(
+      'live seq=$seq mode=$_gpsSource lat=$lat lon=$lon acc=${gps.accuracyM}m',
+    );
+
+    _liveSessionId ??= PendingMeasurementService.generateSessionId();
+
+    final recordId = 'LIVE-${DateTime.now().millisecondsSinceEpoch}';
+    final maint = widget.maintenanceTarget;
+    final bleRecord = live.toBleRecordMap(
+      id: recordId,
+      lat: lat,
+      lon: lon,
+      hasGps: hasGps,
+      gpsSource: _gpsSource!,
+      extraMetadata: {
+        'phone_gps_accuracy_m': gps.accuracyM,
+        'gps_sample_count': gps.sampleCount,
+        'live_session_index': seq,
+        if (_batchName != null) 'batch_name': _batchName,
+        if (maint != null) ...{
+          'survey_mode': 'maintenance',
+          'target_tree_id': maint.treeSurveyId,
+          'match_status': 'user_selected',
+        },
+      },
+    );
+    if (maint != null) {
+      bleRecord['_survey_mode'] = 'maintenance';
+      bleRecord['_target_tree_id'] = maint.treeSurveyId;
+      bleRecord['_match_status'] = 'user_selected';
+    }
+
+    if (mounted) {
+      setState(() => _status = '第 $seq 棵：上傳任務…');
+    }
+
+    final result = await _pendingService.createAndUploadFromBle(
+      bleData: [bleRecord],
+      batchName: _batchName,
+      projectArea: _projectArea,
+      projectCode: _projectCode,
+      projectName: _projectName,
+      sessionId: _liveSessionId,
+    );
+
+    if (result['success'] != true || !mounted) {
+      _appendLog('#$seq 建立任務失敗: ${result['message']}');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result['message']?.toString() ?? '建立任務失敗'),
+          ),
+        );
+      }
+      return;
+    }
+
+    _liveSessionId = result['sessionId'] as String? ?? _liveSessionId;
+    _appendLog('#$seq pending 已建立 session=$_liveSessionId');
+    await _syncSessionProjectToServer();
+
+    final tasks = result['tasks'] as List<PendingTreeMeasurement>?;
+    if (tasks == null || tasks.isEmpty || tasks.first.id == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('任務已上傳但無法取得 ID')),
+        );
+      }
+      return;
+    }
+
+    var task = tasks.first;
+    final lockTs = await _pendingService.updateTaskStatus(
+      task.id!,
+      MeasurementStatus.inProgress,
+    );
+    task = task.copyWith(
+      status: MeasurementStatus.inProgress,
+      updatedAt: lockTs ?? task.updatedAt,
+    );
+
+    if (!mounted) return;
+    setState(() => _status = '第 $seq 棵：現場紀錄（拍照 / DBH / 提交）…');
+
+    final nav = Navigator.of(context);
+    final messenger = ScaffoldMessenger.of(context);
+
+    final success = await nav.push<bool>(
+      MaterialPageRoute(
+        builder: (_) => IntegratedTreeFormPage(
+          task: task,
+          autoTransferToTreeSurvey: true,
+          transferSessionId: _liveSessionId,
+        ),
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (success == true) {
+      _completedCount++;
+      _appendLog('#$seq 表單提交成功（累計 $_completedCount 棵）');
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            context
+                .tr('ble_tree_done')
+                .replaceAll('{n}', '$seq')
+                .replaceAll('{total}', '$_completedCount'),
+          ),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } else {
+      _appendLog('#$seq 表單取消，退回 pending id=${task.id}');
+      await _pendingService
+          .updateTaskStatus(task.id!, MeasurementStatus.pending)
+          .catchError((_) => null);
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text(
+            context.tr('ble_tree_cancel').replaceAll('{n}', '$seq'),
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _retryPendingGps() async {
+    final live = _gpsRetryLive;
+    final seq = _gpsRetrySeq;
+    if (live == null || seq == null || _isProcessingTree) return;
+    _isProcessingTree = true;
+    if (mounted) {
+      setState(() => _status = '第 $seq 棵：重測 GPS…');
+    }
+    try {
+      if (!await _ensureLiveSessionConfigured()) return;
+      final gps = await _resolveGpsForLiveMeasurement(seq);
+      if (gps == null) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(context.tr('ble_gps_required')),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+      if (!mounted) return;
+      setState(() {
+        _gpsRetryLive = null;
+        _gpsRetrySeq = null;
+      });
+      await _completeLiveMeasurementAfterGps(live, seq, gps);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('重測 GPS 失敗: $e')),
+        );
+      }
+    } finally {
+      _isProcessingTree = false;
+      if (mounted && _gpsRetryLive == null) {
+        setState(() {
           _status = _isConnected
               ? context.tr('ble_status_connected')
               : _status;
         });
       }
+      if (_reconnectAfterProcessing && !_userDisconnect && _device != null) {
+        _reconnectAfterProcessing = false;
+        _scheduleReconnect();
+      }
+    }
+  }
+
+  void _dismissGpsRetry() {
+    setState(() {
+      _gpsRetryLive = null;
+      _gpsRetrySeq = null;
+      _status = _isConnected
+          ? context.tr('ble_status_connected')
+          : _status;
+    });
+    _appendLog('已放棄 GPS 重測（量測資料已捨棄，請重新 SEND）');
+  }
+
+  Future<void> _changeSessionProject() async {
+    if (_isProcessingTree) return;
+    if (_completedCount > 0) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(context.tr('ble_change_project_title')),
+          content: Text(context.tr('ble_change_project_warn')),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: Text(context.tr('ble_change_project_cancel')),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: Text(context.tr('ble_change_project_confirm')),
+            ),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+    final setup = await showFieldSessionSetupDialog(
+      context,
+      initial: FieldSessionSetup(
+        batchName: _batchName ?? '',
+        projectName: _projectName ?? '',
+        projectCode: _projectCode ?? '',
+        projectArea: _projectArea ?? '',
+        gpsSource: 'tree',
+      ),
+    );
+    if (setup == null || !mounted) return;
+    setState(() {
+      _batchName = setup.batchName;
+      _projectName = setup.projectName;
+      _projectCode = setup.projectCode;
+      _projectArea = setup.projectArea;
+      _gpsSource = 'tree';
+    });
+    await _syncSessionProjectToServer();
+    _appendLog('已切換：${setup.projectName} · ${setup.projectArea}');
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            context
+                .tr('ble_change_project_ok')
+                .replaceAll('{project}', setup.projectName)
+                .replaceAll('{area}', setup.projectArea),
+          ),
+        ),
+      );
     }
   }
 
@@ -487,16 +770,31 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         projectName: _projectName,
       );
     } catch (e) {
-      debugPrint('[BleLive] updateSessionProject: $e');
+      FieldLog.ble('updateSessionProject: $e', toUi: true);
     }
   }
 
-  void _appendLog(String line) {
+  void _onFieldLogLine(String line) {
     if (!mounted) return;
     setState(() {
       _logLines.insert(0, line);
-      if (_logLines.length > 40) _logLines.removeLast();
+      if (_logLines.length > 80) _logLines.removeLast();
     });
+  }
+
+  void _appendLog(String line) => FieldLog.ble(line, toUi: true);
+
+  Future<void> _copyLogsToClipboard() async {
+    if (_logLines.isEmpty) return;
+    final text = _logLines.reversed.join('\n');
+    await Clipboard.setData(ClipboardData(text: text));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('日誌已複製（可貼到 LINE / 郵件回報）'),
+        duration: Duration(seconds: 2),
+      ),
+    );
   }
 
   Future<void> _openSessionTaskList() async {
@@ -515,6 +813,8 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   }
 
   Future<void> _disconnect() async {
+    _userDisconnect = true;
+    _reconnectTimer?.cancel();
     for (final sub in _dataSubs) {
       await sub.cancel();
     }
@@ -534,6 +834,112 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
     }
   }
 
+  Color _statusBannerColor(BuildContext context) {
+    if (_canAutoReconnect && _reconnectAttempt >= _maxReconnectAttempts) {
+      return Colors.red.shade50;
+    }
+    if (_canAutoReconnect || _reconnecting || _reconnectAfterProcessing) {
+      return Colors.orange.shade50;
+    }
+    if (_isConnected) return Theme.of(context).colorScheme.primaryContainer;
+    return Colors.grey.shade100;
+  }
+
+  Widget _buildReconnectPanel() {
+    final deviceName = _device?.platformName.isNotEmpty == true
+        ? _device!.platformName
+        : (_device?.remoteId.str ?? 'VLGEO2');
+    final failed = _reconnectAttempt >= _maxReconnectAttempts;
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              failed ? Icons.bluetooth_disabled : Icons.bluetooth_searching,
+              size: 48,
+              color: failed ? Colors.red.shade700 : Colors.orange.shade800,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _status,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              context.tr('ble_reconnect_device').replaceAll('{name}', deviceName),
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: Colors.grey.shade700),
+            ),
+            if (!failed && (_reconnecting || _reconnectAttempt > 0)) ...[
+              const SizedBox(height: 20),
+              const CircularProgressIndicator(),
+            ],
+            const SizedBox(height: 24),
+            if (failed || _reconnectAttempt > 0)
+              FilledButton.icon(
+                onPressed: _reconnecting ? null : _manualReconnectNow,
+                icon: const Icon(Icons.refresh),
+                label: Text(context.tr('ble_reconnect_now')),
+              ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: _isProcessingTree
+                  ? null
+                  : () {
+                      _userDisconnect = true;
+                      _reconnectTimer?.cancel();
+                      setState(() {
+                        _device = null;
+                        _reconnectAttempt = 0;
+                        _status = context.tr('ble_status_pick_device');
+                      });
+                    },
+              child: Text(context.tr('ble_reconnect_scan_other')),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGpsRetryBanner() {
+    final seq = _gpsRetrySeq ?? 0;
+    return Material(
+      color: Colors.orange.shade100,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        child: Row(
+          children: [
+            Icon(Icons.gps_off, color: Colors.orange.shade900),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                context.tr('ble_gps_retry_banner').replaceAll('{n}', '$seq'),
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.orange.shade900,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: _isProcessingTree ? null : _retryPendingGps,
+              child: Text(context.tr('ble_gps_retry_btn')),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close, size: 20),
+              tooltip: context.tr('ble_gps_retry_dismiss'),
+              onPressed: _isProcessingTree ? null : _dismissGpsRetry,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final last = _lastMeasurement;
@@ -541,6 +947,18 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       appBar: AppBar(
         title: Text(context.tr('ble_live_title')),
         actions: [
+          if (_logLines.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.copy_all),
+              tooltip: '複製日誌',
+              onPressed: _isProcessingTree ? null : _copyLogsToClipboard,
+            ),
+          if (_projectCode != null && !_isProcessingTree)
+            IconButton(
+              icon: const Icon(Icons.swap_horiz),
+              tooltip: context.tr('ble_change_project_title'),
+              onPressed: _changeSessionProject,
+            ),
           if (_liveSessionId != null)
             IconButton(
               icon: const Icon(Icons.list_alt),
@@ -558,15 +976,42 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       body: Column(
         children: [
           Material(
-            color: Theme.of(context).colorScheme.primaryContainer,
+            color: _statusBannerColor(context),
             child: Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '$_status${_isListening ? ' · ${context.tr('ble_listening')}' : ''}',
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  Row(
+                    children: [
+                      if (_isConnected)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: Icon(
+                            Icons.bluetooth_connected,
+                            size: 18,
+                            color: Colors.green.shade700,
+                          ),
+                        ),
+                      if (_canAutoReconnect && !_reconnectAfterProcessing)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 8),
+                          child: SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.orange.shade800,
+                            ),
+                          ),
+                        ),
+                      Expanded(
+                        child: Text(
+                          '$_status${_isListening ? ' · ${context.tr('ble_listening')}' : ''}',
+                          style: const TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 8),
                   Text(
@@ -588,7 +1033,9 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
               ),
             ),
           ),
-          if (!_isConnected && !_isProcessingTree)
+          if (_gpsRetryLive != null) _buildGpsRetryBanner(),
+          if (_canAutoReconnect && !_isProcessingTree) _buildReconnectPanel()
+          else if (_showBleScanner)
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(12),

@@ -21,6 +21,7 @@ class _CsvImportPageState extends State<CsvImportPage> {
   Map<String, dynamic>? _previewData;
   String? _errorMessage;
   Map<String, dynamic>? _importReport;
+  bool _importFailed = false;
 
   // ===================== 上傳並預覽 =====================
   Future<void> _pickAndPreview() async {
@@ -51,6 +52,7 @@ class _CsvImportPageState extends State<CsvImportPage> {
       _errorMessage = null;
       _previewData = null;
       _importReport = null;
+      _importFailed = false;
       _fileName = file.name;
     });
 
@@ -115,10 +117,18 @@ class _CsvImportPageState extends State<CsvImportPage> {
       if (response['success'] == true) {
         setState(() {
           _importReport = response['report'];
+          _importFailed = false;
           _previewData = null;
         });
       } else {
-        setState(() => _errorMessage = response['message'] ?? '匯入失敗');
+        final report = response['report'];
+        setState(() {
+          _errorMessage = response['message'] ?? '匯入失敗';
+          _importFailed = true;
+          if (report is Map<String, dynamic>) {
+            _importReport = report;
+          }
+        });
       }
     } catch (e) {
       setState(() => _errorMessage = '匯入失敗: $e');
@@ -132,6 +142,7 @@ class _CsvImportPageState extends State<CsvImportPage> {
     setState(() {
       _previewData = null;
       _importReport = null;
+      _importFailed = false;
       _errorMessage = null;
       _fileName = null;
     });
@@ -188,7 +199,8 @@ class _CsvImportPageState extends State<CsvImportPage> {
         ),
         const SizedBox(height: 4),
         Text(
-          '上傳港務公司格式的 CSV 檔案，系統將自動偵測重複資料、極端值，並顯示匯入預覽。',
+          '上傳港務公司格式的 CSV 檔案，系統將自動偵測重複資料、極端值，並顯示匯入預覽。'
+          '執行匯入時若任一笔失敗，整批會自動復原（不寫入資料庫）。',
           style: TextStyle(color: Colors.grey[600], fontSize: 14),
         ),
       ],
@@ -548,6 +560,7 @@ class _CsvImportPageState extends State<CsvImportPage> {
   Widget _buildImportReport() {
     final report = _importReport!;
     final errors = report['errors'] as List? ?? [];
+    final failed = _importFailed;
 
     return Card(
       elevation: 3,
@@ -559,29 +572,90 @@ class _CsvImportPageState extends State<CsvImportPage> {
           children: [
             Row(
               children: [
-                Icon(Icons.check_circle, color: Colors.green.shade700, size: 28),
+                Icon(
+                  failed ? Icons.error_outline : Icons.check_circle,
+                  color: failed ? Colors.red.shade700 : Colors.green.shade700,
+                  size: 28,
+                ),
                 const SizedBox(width: 8),
-                Text(
-                  '匯入完成',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.green.shade800,
+                Expanded(
+                  child: Text(
+                    failed ? '匯入已復原（未寫入）' : '匯入完成',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: failed
+                          ? Colors.red.shade800
+                          : Colors.green.shade800,
+                    ),
                   ),
                 ),
               ],
             ),
+            if (failed) ...[
+              const SizedBox(height: 8),
+              Text(
+                '有部分列無法寫入，系統已執行 ROLLBACK，資料庫維持匯入前狀態。請修正下列錯誤後再試。',
+                style: TextStyle(fontSize: 13, color: Colors.red.shade900),
+              ),
+            ],
             const Divider(height: 24),
-            _reportRow('新增成功', report['inserted'], Colors.green),
-            _reportRow('更新成功', report['updated'], Colors.blue),
-            _reportRow('略過', report['skipped'], Colors.grey),
+            if (!failed) ...[
+              _reportRow('新增成功', report['inserted'], Colors.green),
+              _reportRow('更新成功', report['updated'], Colors.blue),
+              _reportRow('略過', report['skipped'], Colors.grey),
+            ],
             if (errors.isNotEmpty) _reportRow('失敗', errors.length, Colors.red),
+            if (errors.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                '錯誤明細',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: Colors.red.shade800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              SizedBox(
+                height: 220,
+                child: ListView.builder(
+                  itemCount: errors.length,
+                  itemBuilder: (ctx, idx) {
+                    final err = errors[idx];
+                    if (err is! Map) {
+                      return ListTile(
+                        dense: true,
+                        title: Text(err.toString()),
+                      );
+                    }
+                    final row = err['row'];
+                    final msg = err['error'] ?? err['errors'];
+                    return Card(
+                      margin: const EdgeInsets.only(bottom: 6),
+                      color: Colors.red.shade50,
+                      child: ListTile(
+                        dense: true,
+                        title: Text('第 $row 列',
+                            style: const TextStyle(fontWeight: FontWeight.w600)),
+                        subtitle: Text(
+                          msg is List ? msg.join('；') : msg?.toString() ?? '',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.red.shade900,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             Center(
               child: ElevatedButton.icon(
                 onPressed: _reset,
                 icon: const Icon(Icons.refresh),
-                label: const Text('匯入更多資料'),
+                label: Text(failed ? '修正後重新匯入' : '匯入更多資料'),
               ),
             ),
           ],

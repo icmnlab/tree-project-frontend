@@ -70,6 +70,21 @@ flutter build appbundle --release     # Play Store bundle
 flutter build ios --release           # requires macOS + Xcode
 ```
 
+### 現場量測 Release 偵錯
+
+現場連線頁（`BleLiveSessionPage`）**畫面底部日誌**在 release 亦會顯示；可點 AppBar **複製日誌**回報問題。
+
+若要同時寫入 **adb logcat**（接電腦除錯）：
+
+```bash
+flutter run --release --dart-define=ENABLE_FIELD_LOGS=true
+# 或建 APK：
+flutter build apk --release --dart-define=ENABLE_FIELD_LOGS=true
+adb logcat -s BleLive FieldGPS Pending Maintain
+```
+
+文件與交接索引見 [`docs/README.md`](docs/README.md)。
+
 The first run takes you to `LoginPage`. After login, JWT is written to
 `flutter_secure_storage` under `auth_jwt_token`, and the user profile under
 `user_info`.
@@ -287,6 +302,21 @@ flutter test
 
 Unit tests live under `test/`. There is no integration_test harness in this
 repo today; manual QA is performed against the Tailscale-hosted backend.
+
+---
+
+## Handoff / documentation
+
+| 對象 | 文件 |
+|------|------|
+| 接手開發 | [`docs/SYSTEM_HANDOFF_MANUAL.md`](docs/SYSTEM_HANDOFF_MANUAL.md) |
+| 機密備份 | [`docs/HANDOFF_SECRETS_CHECKLIST.md`](docs/HANDOFF_SECRETS_CHECKLIST.md) |
+| 現場調查員 | [`docs/FIELD_SURVEY_SOP.md`](docs/FIELD_SURVEY_SOP.md) |
+| 文件總索引 | [`docs/README.md`](docs/README.md) |
+
+本機備份至 `G:\`：`powershell -ExecutionPolicy Bypass -File scripts\handoff_backup.ps1`
+
+> **業界慣例**：根目錄 README 保持精簡（入門 + 連結）；長篇手冊放 `docs/`，避免單一 README 過長難維護。
 
 ---
 

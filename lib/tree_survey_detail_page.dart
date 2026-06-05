@@ -269,7 +269,7 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
               if (_numericTreeId() != null)
                 TreeMeasurementHistoryPanel(
                   treeId: _numericTreeId()!,
-                  limit: 20,
+                  initialLimit: 20,
                 )
               else
                 const Padding(

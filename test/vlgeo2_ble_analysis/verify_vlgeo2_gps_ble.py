@@ -278,26 +278,145 @@ def check_csv_gps(csv_path: Path) -> None:
     )
 
 
-async def find_vlgeo2(timeout: float = 12.0):
-    print("掃描 VLGEO2…（請確認儀器已開機、Mac 藍牙已開）")
-    devices = await BleakScanner.discover(timeout=timeout)
-    candidates = []
-    for d in devices:
-        name = (d.name or "").upper()
-        if "VLGEO" in name or "HAGLOF" in name or "3190" in name:
-            candidates.append(d)
+HAGLOF_SVC_SHORT = "9e000000-f685-4ea5-b58a-85287cb04965"
+
+
+@dataclass
+class ScanEntry:
+    """對齊 APP [BleDeviceScanner]：platformName + RSSI + 廣播名。"""
+    device: object
+    display_name: str
+    rssi: int
+    service_uuids: list[str]
+
+    @property
+    def address(self) -> str:
+        return self.device.address
+
+
+def _entry_display_name(device, advertisement_data) -> str:
+    # Windows 上 device.name 常為空；APP 用 platformName（來自廣播 local_name）
+    name = (device.name or getattr(advertisement_data, "local_name", None) or "").strip()
+    return name or "未知裝置"
+
+
+def _is_vlgeo_candidate(entry: ScanEntry) -> bool:
+    n = entry.display_name.upper()
+    if "VLGEO" in n or "HAGLOF" in n:
+        return True
+    uuids = {u.lower() for u in entry.service_uuids}
+    if HAGLOF_SVC_SHORT in uuids:
+        return True
+    return False
+
+
+async def scan_like_app(timeout: float = 15.0) -> list[ScanEntry]:
+    """與 APP 相同：掃描 15s、累積 scanResults、依 RSSI 排序。"""
+    entries: dict[str, ScanEntry] = {}
+
+    def detection_callback(device, advertisement_data):
+        name = _entry_display_name(device, advertisement_data)
+        rssi = getattr(advertisement_data, "rssi", None)
+        if rssi is None:
+            rssi = -999
+        uuids = list(getattr(advertisement_data, "service_uuids", []) or [])
+        entries[device.address] = ScanEntry(
+            device=device,
+            display_name=name,
+            rssi=int(rssi),
+            service_uuids=uuids,
+        )
+
+    scanner = BleakScanner(detection_callback=detection_callback)
+    print(f"掃描 BLE 裝置 {timeout:.0f}s（同 APP BleDeviceScanner）…")
+    await scanner.start()
+    await asyncio.sleep(timeout)
+    await scanner.stop()
+    return sorted(entries.values(), key=lambda e: e.rssi, reverse=True)
+
+
+def _print_scan_list(title: str, items: list[ScanEntry]) -> None:
+    print(f"\n{title}（{len(items)}）")
+    if not items:
+        print("  （無）")
+        return
+    for i, e in enumerate(items):
+        print(f"  [{i}] {e.display_name}  {e.address}  RSSI {e.rssi}")
+
+
+async def find_vlgeo2(
+    timeout: float = 15.0,
+    *,
+    address: str | None = None,
+    pick_index: int | None = None,
+) -> object | None:
+    if address:
+        print(f"略過掃描，直接連線（--address）: {address}")
+        # BleakClient 接受 address 字串；建立輕量 device 物件
+        class _AddrOnly:
+            def __init__(self, addr: str):
+                self.address = addr
+                self.name = addr
+
+        return _AddrOnly(address.strip())
+
+    all_entries = await scan_like_app(timeout)
+    candidates = [e for e in all_entries if _is_vlgeo_candidate(e)]
+
+    _print_scan_list("VLGEO / HAGLÖF 候選（APP 篩選 VLGEO|HAGLOF）", candidates)
+    if not candidates and all_entries:
+        _print_scan_list(
+            "未符合名稱篩選；完整掃描列表（可從 APP 複製 MAC 用 --address）",
+            all_entries[:20],
+        )
+
     if not candidates:
-        print("\n未找到 VLGEO2。附近裝置：")
-        for d in devices[:15]:
-            print(f"  - {d.name or '(無名)'}  {d.address}")
+        print(
+            "\n未找到 VLGEO2。"
+            "請確認儀器藍牙已開；若 APP 看得到，請在 APP 點裝置複製 MAC，"
+            "再執行: --address XX:XX:XX:XX:XX:XX"
+        )
         return None
-    if len(candidates) == 1:
-        return candidates[0]
-    print("\n找到多個候選，請選序号：")
-    for i, d in enumerate(candidates):
-        print(f"  [{i}] {d.name}  {d.address}")
-    choice = input("序号 [0]: ").strip() or "0"
-    return candidates[int(choice)]
+
+    if pick_index is not None:
+        idx = pick_index
+    elif len(candidates) == 1:
+        idx = 0
+    else:
+        print("\n找到多個候選，請選序號（與 APP 列表相同）：")
+        choice = input("序號 [0]: ").strip() or "0"
+        idx = int(choice)
+
+    chosen = candidates[idx]
+    print(f"\n已選: {chosen.display_name}  {chosen.address}  RSSI {chosen.rssi}")
+    return chosen.device
+
+
+@dataclass
+class LiveSessionSim:
+    """對齊 ble_live_session_page：_liveSeq + _isProcessingTree。"""
+
+    is_processing: bool = False
+    live_seq: int = 0
+
+    def accept_phgf(self, info: dict | None, raw_line: str) -> bool:
+        if self.is_processing:
+            print("  ⚠ 上一棵尚未處理完（_isProcessingTree）— 本封包略過")
+            return False
+        self.is_processing = True
+        self.live_seq += 1
+        n = self.live_seq
+        print(f"\n>>> 第 {n} 棵 · APP 流程模擬")
+        if info:
+            print(
+                f"    #${n} NMEA H={info.get('height')} HD={info.get('hd')} "
+                f"SD={info.get('sd')} AZ={info.get('az')} pitch={info.get('pitch')}"
+            )
+        print(f"    raw: {raw_line}")
+        # 實機 APP 會等 GPS+表單；監聽模式立即解鎖以驗證「第二棵 SEND」
+        self.is_processing = False
+        print(f"    → 第 {n} 棵可繼續（已解鎖，請再按 SEND 測第二棵）")
+        return True
 
 
 async def run_ble_monitor(
@@ -307,13 +426,21 @@ async def run_ble_monitor(
     verbose: bool = False,
     both_channels: bool = False,
     tx: str = "auto",
+    ble_address: str | None = None,
+    pick_index: int | None = None,
+    scan_timeout: float = 15.0,
 ) -> SessionStats:
-    device = await find_vlgeo2()
+    device = await find_vlgeo2(
+        scan_timeout,
+        address=ble_address,
+        pick_index=pick_index,
+    )
     if not device:
         sys.exit(1)
 
     stats = SessionStats()
     assembler = NmeaAssembler()
+    live_sim = LiveSessionSim()
     last_notify_at = datetime.now()
     log_file = log_path.open("w", encoding="utf-8")
     raw_log = log_path.with_suffix(".hex.log").open("w", encoding="utf-8")
@@ -332,13 +459,11 @@ async def run_ble_monitor(
         snap = stats.last_gga
         if snap and snap.get("lat") is not None:
             stats.phgf_with_prior_gga.append({"phgf": info, "gga": snap})
-        print(f"\n>>> PHGF #{len(stats.phgf_lines)}  HD={info and info.get('hd')} "
-              f"H={info and info.get('height')}")
+        live_sim.accept_phgf(info, line)
         if snap:
-            print(f"    配對前最新 GGA: fix={snap.get('fix')} "
-                  f"lat={snap.get('lat')} lon={snap.get('lon')}")
+            print(f"    （儀器 GGA 快照 fix={snap.get('fix')} — APP 現場改用手機 GPS）")
         else:
-            print("    ⚠ 此 PHGF 之前尚無有效 GGA 快照")
+            print("    （無儀器 GGA；與現行 APP 一致，現場用手機 GPS）")
 
     def on_gps_line(source: str, line: str) -> None:
         ts = datetime.now().strftime("%H:%M:%S")
@@ -377,6 +502,13 @@ async def run_ble_monitor(
             for line in gps_lines:
                 on_gps_line(source, line)
 
+            # 對齊 APP：無完整 PHGF 時印分片預覽
+            if not phgf_lines and any(b in raw for b in (0x24, 0x2C)):
+                preview = raw.decode("ascii", errors="replace")
+                preview = "".join(c for c in preview if c.isprintable())
+                if preview:
+                    print(f"分片 ({len(raw)}B): {preview[:120]}")
+
             if verbose and not phgf_lines and not gps_lines and raw:
                 tail = assembler.buffer_tail
                 if tail:
@@ -401,7 +533,18 @@ async def run_ble_monitor(
     print("\n連線後請在儀器上量測并按 SEND。Ctrl+C 結束。")
     print("（第二棵起可能為 §9.3 前綴+PHGF 無換行，腳本已支援 regex 擷取）\n")
 
-    async with BleakClient(device.address, timeout=20.0) as client:
+    # Windows：掃描結束後僅用 MAC 字串常連不上；須傳 BLEDevice 物件或立即重找
+    connect_target = device
+    if not hasattr(device, "address") or type(device).__name__ == "_AddrOnly":
+        connect_target = await BleakScanner.find_device_by_address(
+            device.address, timeout=10.0
+        )
+        if connect_target is None:
+            raise RuntimeError(
+                f"無法連線 {device.address}：掃描快取已過期，請再執行一次讓腳本重新掃描"
+            )
+
+    async with BleakClient(connect_target, timeout=20.0) as client:
         print(f"已連線: {client.is_connected}")
         services = client.services
         subscribed = []
@@ -498,6 +641,24 @@ def main() -> None:
         default=Path(__file__).parent / "raw_captures",
         help="log 輸出目錄",
     )
+    parser.add_argument(
+        "--address",
+        type=str,
+        default=None,
+        help="直接連線 MAC（APP 藍牙頁裝置列 subtitle 上的位址）",
+    )
+    parser.add_argument(
+        "--pick",
+        type=int,
+        default=None,
+        help="掃描後自動選第 N 個 VLGEO 候選（0-based）",
+    )
+    parser.add_argument(
+        "--scan-timeout",
+        type=float,
+        default=15.0,
+        help="掃描秒數（APP 預設 15）",
+    )
     args = parser.parse_args()
 
     if args.csv:
@@ -526,6 +687,9 @@ def main() -> None:
                 verbose=args.verbose,
                 both_channels=args.both_channels,
                 tx=args.tx,
+                ble_address=args.address,
+                pick_index=args.pick,
+                scan_timeout=args.scan_timeout,
             )
         )
     except KeyboardInterrupt:

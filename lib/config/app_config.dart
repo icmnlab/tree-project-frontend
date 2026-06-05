@@ -26,6 +26,13 @@ class AppConfig {
     defaultValue: false,
   );
 
+  /// 現場量測 adb logcat（Release 預設關閉）。
+  /// 啟用：flutter run --release --dart-define=ENABLE_FIELD_LOGS=true
+  static const bool enableFieldLogs = bool.fromEnvironment(
+    'ENABLE_FIELD_LOGS',
+    defaultValue: false,
+  );
+
   static final AppConfig _instance = AppConfig._internal();
 
   factory AppConfig() {

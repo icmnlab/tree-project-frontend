@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
+import 'field_log.dart';
 import 'location_helper.dart';
 import 'field_gps_settings.dart';
 
@@ -31,7 +32,7 @@ class FieldGpsCaptureResult {
 }
 
 void fieldGpsLog(String message) {
-  debugPrint('[FieldGPS] $message');
+  FieldLog.gps(message, toUi: FieldLog.uiSink != null);
 }
 
 Future<FieldGpsCaptureResult?> showFieldGpsCaptureDialog(

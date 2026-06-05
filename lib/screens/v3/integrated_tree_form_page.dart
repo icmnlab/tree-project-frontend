@@ -1957,7 +1957,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
               ],
             ),
             const Divider(),
-            TreeMeasurementHistoryPanel(treeId: treeId, limit: 10),
+            TreeMeasurementHistoryPanel(treeId: treeId, initialLimit: 10),
           ],
         ),
       ),

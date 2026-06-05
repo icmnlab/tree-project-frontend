@@ -1,0 +1,11 @@
+# 複製為 key.properties（此檔可進 Git；key.properties 已在 .gitignore）
+#
+# storeFile 路徑相對於 android/ 目錄。
+
+storePassword=YOUR_STORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=YOUR_KEY_ALIAS
+storeFile=debug-keystore.jks
+
+# Google Maps（須與 Android package + SHA-1 綁定）
+GOOGLE_MAPS_API_KEY=YOUR_GOOGLE_MAPS_API_KEY
