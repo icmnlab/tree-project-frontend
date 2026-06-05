@@ -44,6 +44,7 @@ class AppVerificationHarness {
     await _sectionCarbon();
     await _sectionBoundary();
     await _sectionAuthApi();
+    await _sectionFieldFixtures();
 
     final ms = DateTime.now().difference(started).inMilliseconds;
     _banner('驗證摘要 PASS=$_pass FAIL=$_fail SKIP=$_skip (${ms}ms)');
@@ -209,5 +210,99 @@ class AppVerificationHarness {
 
     _line('INFO', 'LOCK-MANUAL', 'L1–L5 409 樂觀鎖需兩裝置或同任務實測 — 無法全自動');
     _line('INFO', 'FIELD-MANUAL', 'F1–F3 現場測量 / 拍照模式需 BLE 與相機實測');
+  }
+
+  static const _fixtureMarker = 'QA-FIXTURE';
+
+  static Future<void> _sectionFieldFixtures() async {
+    _section('現場測試資料集（seed_field_test_dataset）');
+    const projectCode = String.fromEnvironment('FIXTURE_PROJECT_CODE');
+    final token = ApiService.getJwtToken();
+    final loggedIn = await AuthService.isLoggedIn();
+
+    if (token == null || !loggedIn) {
+      _skipCheck('FIX-001', '未登入 — 略過 QA-FIXTURE 探測');
+      return;
+    }
+    if (projectCode.isEmpty) {
+      _skipCheck(
+        'FIX-001',
+        '未設定 FIXTURE_PROJECT_CODE — 略過（種子後加 --dart-define=FIXTURE_PROJECT_CODE=你的區代碼）',
+      );
+      _line('INFO', 'FIX-HINT',
+          'python test/field_test_dataset/seed_field_test_dataset.py --lat ... --lon ... --project-code ... --apply');
+      return;
+    }
+
+    try {
+      final listRes = await ApiService.get(
+        'tree_survey?q=${Uri.encodeComponent(_fixtureMarker)}&project_code=${Uri.encodeComponent(projectCode)}&limit=50',
+      );
+      final raw = listRes['data'];
+      final fixtures = <Map<String, dynamic>>[];
+      if (raw is List) {
+        for (final e in raw) {
+          if (e is! Map) continue;
+          final m = Map<String, dynamic>.from(e);
+          final notes = '${m['調查備註'] ?? m['survey_notes'] ?? ''}';
+          if (notes.contains(_fixtureMarker)) fixtures.add(m);
+        }
+      }
+
+      if (fixtures.isEmpty) {
+        _failCheck(
+          'FIX-001',
+          'project_code=$projectCode 找不到 QA-FIXTURE 樹 — 請先跑 seed --apply',
+        );
+        return;
+      }
+      _passCheck('FIX-001', '找到 ${fixtures.length} 棵 QA-FIXTURE（$projectCode）');
+
+      var histOk = 0;
+      var maintOk = 0;
+      for (final t in fixtures) {
+        final id = t['id'] ?? t['ID'];
+        final notes = '${t['調查備註'] ?? ''}';
+        final x = double.tryParse('${t['X坐標'] ?? t['x_coord'] ?? 0}') ?? 0;
+        final y = double.tryParse('${t['Y坐標'] ?? t['y_coord'] ?? 0}') ?? 0;
+        if (id == null) continue;
+
+        if (notes.contains('HIST')) {
+          final histRes = await ApiService.get('tree_survey/by_id/$id/measurements?limit=20');
+          final total = histRes['total'] is int
+              ? histRes['total'] as int
+              : int.tryParse('${histRes['total']}') ?? 0;
+          if (total >= 2) {
+            histOk++;
+            _passCheck('FIX-HIST-$id', '歷次 $total 筆');
+          } else {
+            _failCheck('FIX-HIST-$id', '歷次僅 $total 筆（HIST 樹應 ≥2）');
+          }
+        }
+        if (notes.contains('MAINT')) {
+          if (x != 0 && y != 0) {
+            maintOk++;
+            _passCheck('FIX-MAINT-$id', 'GPS ($x, $y)');
+          } else {
+            _failCheck('FIX-MAINT-$id', '座標為 0 — 維護地圖不會顯示');
+          }
+        }
+      }
+
+      if (histOk >= 2) {
+        _passCheck('FIX-002', '歷史測試樹 $histOk 棵通過');
+      } else {
+        _failCheck('FIX-002', '歷史測試樹僅 $histOk 棵通過（預期 ≥2）');
+      }
+      if (maintOk >= 2) {
+        _passCheck('FIX-003', '維護測試樹 $maintOk 棵有有效 GPS');
+      } else {
+        _failCheck('FIX-003', '維護測試樹僅 $maintOk 棵有 GPS（預期 ≥2）');
+      }
+
+      _line('INFO', 'FIX-MANUAL', '維護量測 → 相同專案／區 → 地圖選 MAINT-1 → BLE 重測 → logcat VERIFY');
+    } catch (e) {
+      _failCheck('FIX-API', 'QA-FIXTURE API 例外: $e');
+    }
   }
 }
