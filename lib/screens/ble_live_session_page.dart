@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../models/maintenance_target.dart';
@@ -60,7 +59,9 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   bool _userDisconnect = false;
   bool _reconnecting = false;
   bool _reconnectAfterProcessing = false;
+  bool _formOpen = false;
   int _reconnectAttempt = 0;
+  int _processGen = 0;
   static const _maxReconnectAttempts = 5;
   BleLiveMeasurement? _gpsRetryLive;
   int? _gpsRetrySeq;
@@ -84,12 +85,10 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   String? _projectArea;
 
   BleLiveMeasurement? _lastMeasurement;
-  final List<String> _logLines = [];
 
   @override
   void initState() {
     super.initState();
-    FieldLog.uiSink = _onFieldLogLine;
     _status = ''; // set in didChangeDependencies
     _gpsSource = 'tree';
     final setup = widget.initialSessionSetup;
@@ -105,7 +104,36 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         if (mounted) _connect(pre);
       });
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) => _logSessionStart());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _logSessionStart();
+      _restoreBleConnection();
+    });
+  }
+
+  Future<void> _restoreBleConnection() async {
+    if (widget.initialDevice != null || _userDisconnect || _isConnected) {
+      return;
+    }
+    try {
+      final devices = FlutterBluePlus.connectedDevices;
+      for (final d in devices) {
+        final n = d.platformName.toUpperCase();
+        if (n.isNotEmpty &&
+            !n.contains('VLGEO') &&
+            !n.contains('HAGLOF')) {
+          continue;
+        }
+        if (await d.isConnected) {
+          FieldLog.ble(
+            'restore connected ${d.platformName.isNotEmpty ? d.platformName : d.remoteId.str}',
+          );
+          await _connect(d, isReconnect: true);
+          return;
+        }
+      }
+    } catch (e) {
+      FieldLog.ble('restore connection check: $e');
+    }
   }
 
   Future<void> _logSessionStart() async {
@@ -141,15 +169,11 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
 
   @override
   void dispose() {
-    if (FieldLog.uiSink == _onFieldLogLine) {
-      FieldLog.uiSink = null;
-    }
     _reconnectTimer?.cancel();
     for (final sub in _dataSubs) {
       sub.cancel();
     }
     _connSub?.cancel();
-    _disconnect();
     super.dispose();
   }
 
@@ -367,21 +391,34 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       _appendLog('  raw: ${live.rawNmea}');
 
       if (_isProcessingTree) {
-        _appendLog('  ⚠ 上一棵尚未處理完，請完成表單後再按 SEND');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('請先完成目前這棵樹的現場紀錄，再量下一棵'),
-              backgroundColor: Colors.orange,
-            ),
-          );
+        if (_formOpen) {
+          _appendLog('  ⚠ 表單進行中，請完成或取消後再 SEND');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('請先完成或取消目前表單，再量下一棵'),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
+          return;
         }
+        // GPS／上傳階段：新 SEND 取代前一筆
+        _processGen++;
+        final gen = _processGen;
+        _appendLog('  新 SEND 取代進行中流程 → #$_liveSeq');
+        if (mounted && Navigator.of(context).canPop()) {
+          Navigator.of(context).pop();
+        }
+        unawaited(_processLiveMeasurement(live, seq: _liveSeq, gen: gen));
         return;
       }
 
-      // 同步加鎖，避免 setState 完成前重複 notify 啟動第二個 _processLiveMeasurement
+      _processGen++;
       _isProcessingTree = true;
-      unawaited(_processLiveMeasurement(live, seq: _liveSeq));
+      unawaited(
+        _processLiveMeasurement(live, seq: _liveSeq, gen: _processGen),
+      );
       return;
     }
 
@@ -399,8 +436,9 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   Future<void> _processLiveMeasurement(
     BleLiveMeasurement live, {
     required int seq,
+    required int gen,
   }) async {
-    if (!mounted) return;
+    if (!mounted || gen != _processGen) return;
 
     if (mounted) {
       setState(() => _status = '第 $seq 棵：取得 GPS 並建立任務…');
@@ -410,8 +448,10 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       if (!await _ensureLiveSessionConfigured()) {
         return;
       }
+      if (!mounted || gen != _processGen) return;
 
       final gps = await _resolveGpsForLiveMeasurement(seq);
+      if (!mounted || gen != _processGen) return;
       if (gps == null) {
         if (mounted) {
           setState(() {
@@ -436,29 +476,31 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         }
         return;
       }
-      if (!mounted) return;
+      if (!mounted || gen != _processGen) return;
       setState(() {
         _gpsRetryLive = null;
         _gpsRetrySeq = null;
       });
-      await _completeLiveMeasurementAfterGps(live, seq, gps);
+      await _completeLiveMeasurementAfterGps(live, seq, gps, gen: gen);
     } catch (e, st) {
-      FieldLog.ble('process tree error: $e\n$st', toUi: true);
+      FieldLog.ble('process tree error: $e\n$st');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('處理失敗: $e')),
         );
       }
     } finally {
-      _isProcessingTree = false;
-      if (mounted) {
-        setState(() {
-          if (_gpsRetryLive == null) {
-            _status = _isConnected
-                ? context.tr('ble_status_connected')
-                : _status;
-          }
-        });
+      if (gen == _processGen) {
+        _isProcessingTree = false;
+        if (mounted) {
+          setState(() {
+            if (_gpsRetryLive == null) {
+              _status = _isConnected
+                  ? context.tr('ble_status_connected')
+                  : _status;
+            }
+          });
+        }
       }
       if (_reconnectAfterProcessing && !_userDisconnect && _device != null) {
         _reconnectAfterProcessing = false;
@@ -471,8 +513,10 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   Future<void> _completeLiveMeasurementAfterGps(
     BleLiveMeasurement live,
     int seq,
-    FieldGpsCaptureResult gps,
-  ) async {
+    FieldGpsCaptureResult gps, {
+    required int gen,
+  }) async {
+    if (!mounted || gen != _processGen) return;
     final lat = gps.latitude;
     final lon = gps.longitude;
     const hasGps = true;
@@ -558,12 +602,13 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       updatedAt: lockTs ?? task.updatedAt,
     );
 
-    if (!mounted) return;
+    if (!mounted || gen != _processGen) return;
     setState(() => _status = '第 $seq 棵：現場紀錄（拍照 / DBH / 提交）…');
 
     final nav = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
 
+    _formOpen = true;
     final success = await nav.push<bool>(
       MaterialPageRoute(
         builder: (_) => IntegratedTreeFormPage(
@@ -573,8 +618,9 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         ),
       ),
     );
+    _formOpen = false;
 
-    if (!mounted) return;
+    if (!mounted || gen != _processGen) return;
 
     if (success == true) {
       _completedCount++;
@@ -631,6 +677,8 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
     final live = _gpsRetryLive;
     final seq = _gpsRetrySeq;
     if (live == null || seq == null || _isProcessingTree) return;
+    _processGen++;
+    final gen = _processGen;
     _isProcessingTree = true;
     if (mounted) {
       setState(() => _status = '第 $seq 棵：重測 GPS…');
@@ -649,12 +697,12 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         }
         return;
       }
-      if (!mounted) return;
+      if (!mounted || gen != _processGen) return;
       setState(() {
         _gpsRetryLive = null;
         _gpsRetrySeq = null;
       });
-      await _completeLiveMeasurementAfterGps(live, seq, gps);
+      await _completeLiveMeasurementAfterGps(live, seq, gps, gen: gen);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -662,13 +710,15 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         );
       }
     } finally {
-      _isProcessingTree = false;
-      if (mounted && _gpsRetryLive == null) {
-        setState(() {
-          _status = _isConnected
-              ? context.tr('ble_status_connected')
-              : _status;
-        });
+      if (gen == _processGen) {
+        _isProcessingTree = false;
+        if (mounted && _gpsRetryLive == null) {
+          setState(() {
+            _status = _isConnected
+                ? context.tr('ble_status_connected')
+                : _status;
+          });
+        }
       }
       if (_reconnectAfterProcessing && !_userDisconnect && _device != null) {
         _reconnectAfterProcessing = false;
@@ -810,28 +860,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
     }
   }
 
-  void _onFieldLogLine(String line) {
-    if (!mounted) return;
-    setState(() {
-      _logLines.insert(0, line);
-      if (_logLines.length > 80) _logLines.removeLast();
-    });
-  }
-
-  void _appendLog(String line) => FieldLog.ble(line, toUi: true);
-
-  Future<void> _copyLogsToClipboard() async {
-    if (_logLines.isEmpty) return;
-    final text = _logLines.reversed.join('\n');
-    await Clipboard.setData(ClipboardData(text: text));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('日誌已複製（可貼到 LINE / 郵件回報）'),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
+  void _appendLog(String line) => FieldLog.ble(line);
 
   Future<void> _openSessionTaskList() async {
     if (_liveSessionId == null) {
@@ -983,12 +1012,6 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       appBar: AppBar(
         title: Text(context.tr('ble_live_title')),
         actions: [
-          if (_logLines.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.copy_all),
-              tooltip: '複製日誌',
-              onPressed: _isProcessingTree ? null : _copyLogsToClipboard,
-            ),
           if (_projectCode != null && !_isProcessingTree)
             IconButton(
               icon: const Icon(Icons.swap_horiz),
@@ -1065,6 +1088,18 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
                           .replaceAll('{area}', _projectArea ?? '—'),
                       style: const TextStyle(fontSize: 11),
                     ),
+                  if (_device != null)
+                    Text(
+                      _isConnected
+                          ? '已連線：${_device!.platformName.isNotEmpty ? _device!.platformName : _device!.remoteId.str}'
+                          : '儀器：${_device!.remoteId.str}（未連線）',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: _isConnected
+                            ? Colors.green.shade800
+                            : Colors.orange.shade800,
+                      ),
+                    ),
                 ],
               ),
             ),
@@ -1098,19 +1133,6 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
                 subtitle: Text(
                   'HD ${last.horizontalDistanceM} m · AZ ${last.azimuthDeg}°',
                   style: const TextStyle(fontSize: 12),
-                ),
-              ),
-            ),
-          if (_isConnected && _logLines.isNotEmpty)
-            Expanded(
-              child: Container(
-                width: double.infinity,
-                color: Colors.grey.shade100,
-                padding: const EdgeInsets.all(8),
-                child: ListView(
-                  children: _logLines
-                      .map((l) => Text(l, style: const TextStyle(fontSize: 11)))
-                      .toList(),
                 ),
               ),
             ),

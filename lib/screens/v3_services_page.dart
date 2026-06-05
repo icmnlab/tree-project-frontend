@@ -5,8 +5,6 @@ import '../services/locale_service.dart';
 import '../services/v3/tree_image_service.dart';
 import '../services/v3/conflict_resolution_service.dart';
 import '../services/v3/ml_data_sync_service.dart';
-import '../utils/field_gps_settings.dart';
-
 /// V3 同步與補救管理頁面
 /// 
 /// 功能：
@@ -34,20 +32,13 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
   int _pendingImageCount = 0;
   int _pendingConflictCount = 0;
   int _pendingMlDataCount = 0;
-  bool _gpsRelaxedAccuracy = false;
-  
+
   @override
   void initState() {
     super.initState();
     _loadServiceStatus();
-    _loadGpsTestSettings();
   }
 
-  Future<void> _loadGpsTestSettings() async {
-    final relaxed = await FieldGpsSettings.isRelaxedAccuracy();
-    if (mounted) setState(() => _gpsRelaxedAccuracy = relaxed);
-  }
-  
   Future<void> _loadServiceStatus() async {
     setState(() => _isLoading = true);
     
@@ -131,8 +122,6 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
                     ),
                   ],
                   const SizedBox(height: 24),
-                  _buildGpsTestSection(),
-                  const SizedBox(height: 24),
                   _buildInfoSection(),
                 ],
               ),
@@ -140,23 +129,6 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
     );
   }
   
-  Widget _buildGpsTestSection() {
-    return Card(
-      elevation: 2,
-      child: SwitchListTile(
-        title: const Text('GPS 測試模式'),
-        subtitle: const Text(
-          '開啟後現場定位不檢查 ±5m 精度（僅供測試，正式調查請關閉）',
-        ),
-        value: _gpsRelaxedAccuracy,
-        onChanged: (v) async {
-          await FieldGpsSettings.setRelaxedAccuracy(v);
-          if (mounted) setState(() => _gpsRelaxedAccuracy = v);
-        },
-      ),
-    );
-  }
-
   Widget _buildHeader() {
     return Container(
       padding: const EdgeInsets.all(20),

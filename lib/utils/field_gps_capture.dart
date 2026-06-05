@@ -1,19 +1,13 @@
 import 'dart:async';
-import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
 import 'field_log.dart';
 import 'location_helper.dart';
-import 'field_gps_settings.dart';
 
-class FieldGpsQuality {
-  static const double maxAccuracyM = 5.0;
-  static const int requiredSamples = 5;
-  static const double maxSampleSpreadM = 5.0;
-  static const Duration autoTimeout = Duration(seconds: 90);
-}
+/// 僅供參考：精度較差時顯示提醒，不阻擋確認
+const double kGpsAccuracyWarnM = 20.0;
 
 class FieldGpsCaptureResult {
   final double latitude;
@@ -32,7 +26,7 @@ class FieldGpsCaptureResult {
 }
 
 void fieldGpsLog(String message) {
-  FieldLog.gps(message, toUi: FieldLog.uiSink != null);
+  FieldLog.gps(message);
 }
 
 Future<FieldGpsCaptureResult?> showFieldGpsCaptureDialog(
@@ -58,49 +52,31 @@ class _FieldGpsCaptureDialog extends StatefulWidget {
 }
 
 class _FieldGpsCaptureDialogState extends State<_FieldGpsCaptureDialog> {
-  StreamSubscription<Position>? _sub;
-  Timer? _timeoutTimer;
   bool _busy = false;
-  bool _relaxedAccuracy = false;
-  String _status = '準備中…';
+  String _status = '請站定樹旁後按「取得 GPS」';
   Position? _lastPosition;
-  final List<Position> _samples = [];
 
-  bool get _isTreeMode => widget.mode == 'tree';
+  static bool _coordsValid(Position p) =>
+      p.latitude != 0 || p.longitude != 0;
 
-  @override
-  void initState() {
-    super.initState();
-    fieldGpsLog('open mode=${widget.mode}');
-    _initRelaxed();
-    if (_isTreeMode) {
-      _status = '請站定位置後按「取得 GPS」';
-    } else {
-      _startAutoCapture();
+  String? get _accuracyHint {
+    final p = _lastPosition;
+    if (p == null) return null;
+    if (p.accuracy <= 0) {
+      return '未取得精度資訊，請確認座標是否合理';
     }
-  }
-
-  Future<void> _initRelaxed() async {
-    final relaxed = await FieldGpsSettings.isRelaxedAccuracy();
-    if (mounted) setState(() => _relaxedAccuracy = relaxed);
-  }
-
-  @override
-  void dispose() {
-    _stopStream();
-    _timeoutTimer?.cancel();
-    super.dispose();
-  }
-
-  void _stopStream() {
-    _sub?.cancel();
-    _sub = null;
+    if (p.accuracy > kGpsAccuracyWarnM) {
+      return '精度約 ±${p.accuracy.toStringAsFixed(0)} m，建議移至空曠處或稍後再測';
+    }
+    return '精度約 ±${p.accuracy.toStringAsFixed(0)} m';
   }
 
   Future<bool> _ensurePermission() async {
     var permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.deniedForever) {
-      setState(() => _status = '位置權限被永久拒絕，請至設定開啟');
+      if (mounted) {
+        setState(() => _status = '位置權限被永久拒絕，請至設定開啟');
+      }
       return false;
     }
     if (permission == LocationPermission.denied) {
@@ -108,130 +84,16 @@ class _FieldGpsCaptureDialogState extends State<_FieldGpsCaptureDialog> {
     }
     if (permission == LocationPermission.denied ||
         permission == LocationPermission.deniedForever) {
-      setState(() => _status = '需要位置權限才能定位');
+      if (mounted) {
+        setState(() => _status = '需要位置權限才能定位');
+      }
       return false;
     }
     return true;
   }
 
-  bool _accuracyOk(double accuracy) {
-    if (accuracy <= 0) return false;
-    if (_relaxedAccuracy) return true;
-    return accuracy <= FieldGpsQuality.maxAccuracyM;
-  }
-
-  void _pushSample(Position p) {
-    if (p.latitude == 0 && p.longitude == 0) return;
-    if (!_accuracyOk(p.accuracy)) return;
-    _samples.add(p);
-    if (_samples.length > FieldGpsQuality.requiredSamples + 2) {
-      _samples.removeAt(0);
-    }
-  }
-
-  bool _samplesStable() {
-    if (_relaxedAccuracy) {
-      return _samples.isNotEmpty;
-    }
-    if (_samples.length < FieldGpsQuality.requiredSamples) return false;
-    final recent =
-        _samples.sublist(_samples.length - FieldGpsQuality.requiredSamples);
-    final lat =
-        recent.map((p) => p.latitude).reduce((a, b) => a + b) / recent.length;
-    final lon =
-        recent.map((p) => p.longitude).reduce((a, b) => a + b) / recent.length;
-    for (final p in recent) {
-      if (Geolocator.distanceBetween(
-            lat,
-            lon,
-            p.latitude,
-            p.longitude,
-          ) >
-          FieldGpsQuality.maxSampleSpreadM) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  FieldGpsCaptureResult? _buildResult() {
-    if (_samples.isEmpty) return null;
-    final recent = _samples.length >= FieldGpsQuality.requiredSamples
-        ? _samples.sublist(_samples.length - FieldGpsQuality.requiredSamples)
-        : _samples;
-    final lat =
-        recent.map((p) => p.latitude).reduce((a, b) => a + b) / recent.length;
-    final lon =
-        recent.map((p) => p.longitude).reduce((a, b) => a + b) / recent.length;
-    final acc = recent.map((p) => p.accuracy).reduce(math.min);
-    return FieldGpsCaptureResult(
-      latitude: lat,
-      longitude: lon,
-      accuracyM: acc,
-      sampleCount: recent.length,
-      mode: widget.mode,
-    );
-  }
-
-  void _onPosition(Position p) {
-    if (!mounted) return;
-    _lastPosition = p;
-    final ok = _accuracyOk(p.accuracy);
-    fieldGpsLog(
-      'mode=${widget.mode} acc=${p.accuracy.toStringAsFixed(1)}m '
-      'samples=${_samples.length} ok=$ok',
-    );
-    if (!ok) {
-      setState(() {
-        _status = _relaxedAccuracy
-            ? '無法取得有效 GPS'
-            : '等待高品質 GPS… ±${p.accuracy.toStringAsFixed(0)}m (需 ≤${FieldGpsQuality.maxAccuracyM.toStringAsFixed(0)}m)';
-      });
-      return;
-    }
-    _pushSample(p);
-    final stable = !_isTreeMode && _samplesStable();
-    setState(() {
-      _status = stable
-          ? 'GPS 已鎖定 ±${p.accuracy.toStringAsFixed(1)}m'
-          : '取樣 ${_samples.length}/${FieldGpsQuality.requiredSamples}';
-    });
-    if (stable) {
-      final result = _buildResult();
-      if (result != null) {
-        _stopStream();
-        Navigator.pop(context, result);
-      }
-    }
-  }
-
-  Future<void> _startAutoCapture() async {
-    if (!await _ensurePermission()) return;
-    setState(() {
-      _busy = true;
-      _status = '自動定位中…';
-    });
-    _timeoutTimer?.cancel();
-    _timeoutTimer = Timer(FieldGpsQuality.autoTimeout, () {
-      if (!mounted || _isTreeMode) return;
-      setState(() {
-        _status = '定位逾時，請移至空曠處後重試';
-        _busy = false;
-      });
-      _stopStream();
-    });
-    _sub = Geolocator.getPositionStream(
-      locationSettings: buildLocationSettings(
-        distanceFilter: 1,
-        intervalMs: 800,
-      ),
-    ).listen(_onPosition, onError: (e) {
-      if (mounted) setState(() => _status = 'GPS 錯誤: $e');
-    });
-  }
-
   Future<void> _manualCapture() async {
-    if (_busy) return;
+    if (_busy || !mounted) return;
     setState(() {
       _busy = true;
       _status = '取得 GPS 中…';
@@ -241,70 +103,61 @@ class _FieldGpsCaptureDialogState extends State<_FieldGpsCaptureDialog> {
       final p = await getHighAccuracyPosition(
         timeout: const Duration(seconds: 15),
       );
-      if (p == null) {
-        setState(() => _status = '無法取得 GPS');
+      if (!mounted) return;
+      if (p == null || !_coordsValid(p)) {
+        setState(() => _status = '無法取得 GPS，請確認定位已開啟');
         return;
       }
       _lastPosition = p;
-      if (!_accuracyOk(p.accuracy)) {
-        setState(() {
-          _status = _relaxedAccuracy
-              ? '無法取得有效 GPS'
-              : '精度 ±${p.accuracy.toStringAsFixed(0)}m 不足，需 ≤${FieldGpsQuality.maxAccuracyM.toStringAsFixed(0)}m';
-        });
-        return;
-      }
-      _samples
-        ..clear()
-        ..add(p);
-      setState(() => _status = '已取得 ±${p.accuracy.toStringAsFixed(1)}m');
+      fieldGpsLog(
+        'capture lat=${p.latitude} lon=${p.longitude} acc=${p.accuracy}m',
+      );
+      setState(() => _status = '已取得座標，請確認後按「確認」');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
   }
 
-  void _confirmManual() {
-    final result = _buildResult();
-    if (result != null) Navigator.pop(context, result);
+  void _confirm() {
+    final p = _lastPosition;
+    if (p == null || !_coordsValid(p)) return;
+    Navigator.pop(
+      context,
+      FieldGpsCaptureResult(
+        latitude: p.latitude,
+        longitude: p.longitude,
+        accuracyM: p.accuracy > 0 ? p.accuracy : 999,
+        sampleCount: 1,
+        mode: widget.mode,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final canConfirm = _isTreeMode &&
-        _samples.isNotEmpty &&
-        _lastPosition != null &&
-        (_relaxedAccuracy || _accuracyOk(_lastPosition!.accuracy));
+    final p = _lastPosition;
+    final canConfirm = p != null && _coordsValid(p);
     return AlertDialog(
-      title: Text(widget.title ??
-          (_isTreeMode ? '樹旁 GPS 定位' : '測站 GPS 自動定位')),
+      title: Text(widget.title ?? '樹旁 GPS 定位'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (_relaxedAccuracy)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(
-                '測試模式：不檢查 ±5m 精度',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.orange.shade800,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
           Text(_status, style: const TextStyle(fontWeight: FontWeight.w600)),
-          if (_lastPosition != null)
+          if (p != null) ...[
+            const SizedBox(height: 8),
             Text(
-              '${_lastPosition!.latitude.toStringAsFixed(6)}, '
-              '${_lastPosition!.longitude.toStringAsFixed(6)}',
+              '${p.latitude.toStringAsFixed(6)}, ${p.longitude.toStringAsFixed(6)}',
               style: const TextStyle(fontSize: 12),
             ),
-          if (!_isTreeMode)
-            LinearProgressIndicator(
-              value: (_samples.length / FieldGpsQuality.requiredSamples)
-                  .clamp(0.0, 1.0),
+          ],
+          if (_accuracyHint != null) ...[
+            const SizedBox(height: 8),
+            Text(
+              _accuracyHint!,
+              style: TextStyle(fontSize: 12, color: Colors.orange.shade800),
             ),
+          ],
         ],
       ),
       actions: [
@@ -312,20 +165,14 @@ class _FieldGpsCaptureDialogState extends State<_FieldGpsCaptureDialog> {
           onPressed: () => Navigator.pop(context),
           child: const Text('取消'),
         ),
-        if (_isTreeMode) ...[
-          TextButton(
-            onPressed: _busy ? null : _manualCapture,
-            child: const Text('取得 GPS'),
-          ),
-          ElevatedButton(
-            onPressed: canConfirm ? _confirmManual : null,
-            child: const Text('確認'),
-          ),
-        ] else
-          TextButton(
-            onPressed: _busy ? null : _startAutoCapture,
-            child: const Text('重試'),
-          ),
+        TextButton(
+          onPressed: _busy ? null : _manualCapture,
+          child: const Text('取得 GPS'),
+        ),
+        ElevatedButton(
+          onPressed: canConfirm && !_busy ? _confirm : null,
+          child: const Text('確認'),
+        ),
       ],
     );
   }
