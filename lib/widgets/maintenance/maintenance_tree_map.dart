@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
+import '../../utils/safe_map_camera.dart';
 import '../../utils/tree_id_display.dart';
 
 /// 維護量測：區內樹木地圖（點選標記 → 由父層顯示確認）
@@ -25,7 +26,7 @@ class MaintenanceTreeMap extends StatefulWidget {
 }
 
 class _MaintenanceTreeMapState extends State<MaintenanceTreeMap> {
-  GoogleMapController? _controller;
+  final SafeMapCamera _camera = SafeMapCamera(logTag: 'MaintMap');
   static const _defaultCenter = LatLng(23.7, 121.0);
 
   LatLng? _parsePosition(Map<String, dynamic> tree) {
@@ -67,37 +68,23 @@ class _MaintenanceTreeMapState extends State<MaintenanceTreeMap> {
   }
 
   Future<void> _fitBounds(Set<Marker> markers) async {
-    final ctrl = _controller;
-    if (ctrl == null || markers.isEmpty) return;
-    if (markers.length == 1) {
-      await ctrl.animateCamera(
-        CameraUpdate.newLatLngZoom(markers.first.position, 17),
-      );
-      return;
-    }
-    double minLat = 90, maxLat = -90, minLng = 180, maxLng = -180;
-    for (final m in markers) {
-      final p = m.position;
-      if (p.latitude < minLat) minLat = p.latitude;
-      if (p.latitude > maxLat) maxLat = p.latitude;
-      if (p.longitude < minLng) minLng = p.longitude;
-      if (p.longitude > maxLng) maxLng = p.longitude;
-    }
-    final bounds = LatLngBounds(
-      southwest: LatLng(minLat, minLng),
-      northeast: LatLng(maxLat, maxLng),
-    );
-    await ctrl.animateCamera(CameraUpdate.newLatLngBounds(bounds, 56));
+    await _camera.fitMarkers(markers);
   }
 
   @override
   void didUpdateWidget(MaintenanceTreeMap oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.trees != widget.trees) {
+    if (oldWidget.trees != widget.trees && _camera.ready) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _fitBounds(_buildMarkers());
+        if (mounted) _fitBounds(_buildMarkers());
       });
     }
+  }
+
+  @override
+  void dispose() {
+    _camera.detach();
+    super.dispose();
   }
 
   @override
@@ -146,7 +133,9 @@ class _MaintenanceTreeMapState extends State<MaintenanceTreeMap> {
                   children: [
                     GoogleMap(
                       onMapCreated: (c) async {
-                        _controller = c;
+                        _camera.attach(c);
+                        await _camera.markReadyAfterPlatformInit();
+                        if (!mounted) return;
                         await _fitBounds(markers);
                       },
                       initialCameraPosition: const CameraPosition(
@@ -164,17 +153,7 @@ class _MaintenanceTreeMapState extends State<MaintenanceTreeMap> {
                       bottom: 16,
                       child: FloatingActionButton.small(
                         heroTag: 'maint_map_loc',
-                        onPressed: () async {
-                          final ctrl = _controller;
-                          if (ctrl == null) return;
-                          await ctrl.animateCamera(
-                            CameraUpdate.newLatLngZoom(
-                              markers.first.position,
-                              16,
-                            ),
-                          );
-                          await _fitBounds(markers);
-                        },
+                        onPressed: () => _fitBounds(markers),
                         tooltip: widget.tapHint,
                         child: const Icon(Icons.fit_screen),
                       ),
