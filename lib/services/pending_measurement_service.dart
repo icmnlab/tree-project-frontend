@@ -71,7 +71,7 @@ class PendingMeasurementService {
 
         // [v21.0] GPS 來源辨識：'tree' = lat/lon 已是樹位置，不需偏移；
         //                    'surveyor' / 'gnss' (預設舊行為) = 用 HD+AZ 計算樹位置。
-        final gpsSource = metadata['gps_source'] as String? ?? 'gnss';
+        final gpsSource = metadata['gps_source'] as String? ?? 'tree';
         if (gpsSource == 'mixed_pending') {
           final recordId = record['id'];
           debugPrint('━━━ 記錄 ID=$recordId — GPS source 尚未逐筆確認，跳過 ━━━');

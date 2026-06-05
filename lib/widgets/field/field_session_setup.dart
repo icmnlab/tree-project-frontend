@@ -15,7 +15,8 @@ class FieldSessionSetup {
   final String projectName;
   final String projectCode;
   final String projectArea;
-  final String gpsSource; // 'surveyor' | 'tree'
+  /// 固定為樹旁座標（2026-05-28 會議：不再提供 GPS 取點模式選擇）
+  final String gpsSource; // always 'tree'
 
   const FieldSessionSetup({
     required this.batchName,
@@ -58,7 +59,7 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
   final _projectAreaService = ProjectAreaService();
 
   String? _projectCode;
-  String _gpsSource = 'surveyor';
+  static const _fixedGpsSource = 'tree';
   bool _loadingAreas = true;
   bool _loadingProjects = false;
   bool _canAddProject = false;
@@ -74,7 +75,6 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
     _areaCtrl.text = initial?.projectArea ?? '';
     _projectNameCtrl.text = initial?.projectName ?? '';
     _projectCode = initial?.projectCode;
-    _gpsSource = initial?.gpsSource ?? 'surveyor';
     _bootstrap();
   }
 
@@ -502,7 +502,7 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
               readOnly: true,
               decoration: InputDecoration(
                 labelText: context.tr('field_setup_area'),
-                hintText: '請選擇專案區位',
+                hintText: '請選擇專案',
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.arrow_drop_down),
                   onPressed: _showProjectAreaDialog,
@@ -518,7 +518,7 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
               readOnly: true,
               decoration: InputDecoration(
                 labelText: context.tr('field_setup_project'),
-                hintText: '請選擇專案',
+                hintText: '請選擇區（Block）',
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.arrow_drop_down),
                   onPressed: _showProjectDialog,
@@ -528,27 +528,10 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
                 fillColor: Colors.teal.shade50,
               ),
             ),
-            const SizedBox(height: 16),
-            Text(context.tr('field_setup_gps_title'),
-                style: const TextStyle(fontWeight: FontWeight.w600)),
-            const SizedBox(height: 4),
+            const SizedBox(height: 8),
             Text(
-              context.tr('field_setup_gps_hint'),
+              context.tr('field_setup_gps_note'),
               style: TextStyle(fontSize: 12, color: Colors.grey[700]),
-            ),
-            RadioListTile<String>(
-              dense: true,
-              title: Text(context.tr('field_setup_gps_surveyor')),
-              value: 'surveyor',
-              groupValue: _gpsSource,
-              onChanged: (v) => setState(() => _gpsSource = v!),
-            ),
-            RadioListTile<String>(
-              dense: true,
-              title: Text(context.tr('field_setup_gps_tree')),
-              value: 'tree',
-              groupValue: _gpsSource,
-              onChanged: (v) => setState(() => _gpsSource = v!),
             ),
           ],
         ),
@@ -568,7 +551,7 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
                       projectName: _projectNameCtrl.text.trim(),
                       projectCode: _projectCode!,
                       projectArea: _areaCtrl.text.trim(),
-                      gpsSource: _gpsSource,
+                      gpsSource: _fixedGpsSource,
                     ),
                   );
                 }

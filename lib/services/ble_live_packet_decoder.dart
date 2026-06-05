@@ -58,7 +58,7 @@ class BleLiveMeasurement {
     required double lat,
     required double lon,
     required bool hasGps,
-    String gpsSource = 'surveyor',
+    String gpsSource = 'tree',
     Map<String, dynamic>? extraMetadata,
   }) {
     final remoteDia = remoteDiameterCm;

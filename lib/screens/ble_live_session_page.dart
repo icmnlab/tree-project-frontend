@@ -67,13 +67,13 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   void initState() {
     super.initState();
     _status = ''; // set in didChangeDependencies
+    _gpsSource = 'tree';
     final setup = widget.initialSessionSetup;
     if (setup != null) {
       _batchName = setup.batchName;
       _projectName = setup.projectName;
       _projectCode = setup.projectCode;
       _projectArea = setup.projectArea;
-      _gpsSource = setup.gpsSource;
     }
     final pre = widget.initialDevice;
     if (pre != null) {
@@ -255,15 +255,29 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         return;
       }
 
+      // 資料必須有 GPS 座標：取消／取不到定位 → 不建立任務，提示重新 SEND
       final gps = await _resolveGpsForLiveMeasurement(seq);
-      if (gps == null || !mounted) return;
+      if (gps == null) {
+        if (mounted) {
+          _appendLog('#$seq 未取得 GPS — 未建立任務，請重新 SEND');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(context.tr('ble_gps_required')),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+        return;
+      }
+      if (!mounted) return;
 
       final lat = gps.latitude;
       final lon = gps.longitude;
       const hasGps = true;
 
       fieldGpsLog(
-        'live seq=$seq mode=${_gpsSource} lat=$lat lon=$lon acc=${gps.accuracyM}m',
+        'live seq=$seq mode=$_gpsSource lat=$lat lon=$lon acc=${gps.accuracyM}m',
       );
 
       _liveSessionId ??= PendingMeasurementService.generateSessionId();
@@ -395,13 +409,12 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
     }
   }
 
-  /// 每次 SEND 皆手動定位（測站／樹旁模式 UI 標題不同，皆附精度）
+  /// 每次 SEND 皆於樹旁手動取得手機 GPS（2026-05-28 會議：固定樹木位置）
   Future<FieldGpsCaptureResult?> _resolveGpsForLiveMeasurement(int seq) async {
-    final isTree = _gpsSource == 'tree';
     return showFieldGpsCaptureDialog(
       context,
       mode: 'tree',
-      title: isTree ? '第 $seq 棵 · 樹旁 GPS' : '第 $seq 棵 · 測站 GPS',
+      title: '第 $seq 棵 · 樹旁 GPS',
     );
   }
 
@@ -423,7 +436,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
                   projectName: _projectName ?? '',
                   projectCode: _projectCode!,
                   projectArea: _projectArea ?? '',
-                  gpsSource: _gpsSource ?? 'surveyor',
+                  gpsSource: 'tree',
                 )
               : null),
     );
@@ -435,7 +448,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         _projectName = setup.projectName;
         _projectCode = setup.projectCode;
         _projectArea = setup.projectArea;
-        _gpsSource = setup.gpsSource;
+        _gpsSource = 'tree';
       });
     }
     await _syncSessionProjectToServer();
@@ -552,13 +565,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
                       context
                           .tr('ble_session_line')
                           .replaceAll('{project}', _projectName!)
-                          .replaceAll('{area}', _projectArea ?? '—')
-                          .replaceAll(
-                            '{gps}',
-                            _gpsSource == 'tree'
-                                ? context.tr('ble_gps_tree')
-                                : context.tr('ble_gps_surveyor'),
-                          ),
+                          .replaceAll('{area}', _projectArea ?? '—'),
                       style: const TextStyle(fontSize: 11),
                     ),
                 ],
