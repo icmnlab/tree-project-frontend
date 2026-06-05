@@ -8,6 +8,7 @@ import '../tree_list_page.dart';
 import 'ble_import_page.dart';
 import 'ble_live_session_page.dart';
 import 'maintenance_survey_page.dart';
+import '../widgets/field/field_session_setup.dart';
 import '../services/locale_service.dart';
 import 'species_identification_page.dart';
 import 'pending_measurement_task_page.dart';
@@ -348,6 +349,17 @@ class _DashboardPageState extends State<DashboardPage>
 
   String _cardSubtitleKey(String id) => '${_cardTitleKey(id)}_sub';
 
+  Future<void> _openFieldLiveSession() async {
+    final setup = await showFieldSessionSetupDialog(context);
+    if (!mounted || setup == null) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => BleLiveSessionPage(initialSessionSetup: setup),
+      ),
+    );
+  }
+
   void _onCardTap(String id) {
     switch (id) {
       case 'survey': Navigator.pushNamed(context, '/tree-survey'); break;
@@ -358,10 +370,7 @@ class _DashboardPageState extends State<DashboardPage>
       case 'cities': Navigator.pushNamed(context, '/cities'); break;
       case 'field_survey':
       case 'ble_live':
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const BleLiveSessionPage()),
-        );
+        _openFieldLiveSession();
         break;
       case 'maintenance':
         Navigator.push(
