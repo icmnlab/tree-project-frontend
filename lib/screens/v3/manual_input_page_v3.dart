@@ -1264,16 +1264,14 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
               ? ((rawScore as num).toDouble() * 100).toStringAsFixed(1)
               : '0.0';
 
-          // [Policy] 學名優先；若無則退回完整學名/俗名，總之要把名字填進去
+          // [Policy] 現場以中文俗名為主（與 DB species_name、碳計算一致）；學名作對照
           final String? commonHint =
               (commonNames != null && commonNames.isNotEmpty)
                   ? commonNames.first?.toString()
                   : null;
-          String displayName = (sciNoAuthor ?? '').trim();
+          String displayName = (commonHint ?? '').trim();
+          if (displayName.isEmpty) displayName = (sciNoAuthor ?? '').trim();
           if (displayName.isEmpty) displayName = (sciFull ?? '').trim();
-          if (displayName.isEmpty && commonHint != null) {
-            displayName = commonHint.trim();
-          }
           if (displayName.isEmpty) {
             _showSnackBar('辨識結果不完整，請手動輸入樹種');
             return;
@@ -1311,8 +1309,13 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
             }
           }
 
-          // 構建提示訊息
-          final hint = commonHint != null ? ' / $commonHint' : '';
+          // 構建提示訊息（學名僅作括號對照）
+          final sciLabel = (sciNoAuthor ?? sciFull)?.trim();
+          final hint = (sciLabel != null &&
+                  sciLabel.isNotEmpty &&
+                  sciLabel != displayName)
+              ? ' ($sciLabel)'
+              : '';
           String snackMsg = '辨識成功: $displayName$hint (信心度 $score%)';
           if (wasAutoAdded) {
             snackMsg += ' [新樹種已自動建檔]';
@@ -1452,10 +1455,12 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
           final score = rawScore != null
               ? ((rawScore as num).toDouble() * 100).toStringAsFixed(1)
               : '0.0';
-          String displayName = speciesName ?? '';
-          if (commonNames != null && commonNames.isNotEmpty) {
-            displayName = commonNames.first?.toString() ?? displayName;
-          }
+          final String? commonHint =
+              (commonNames != null && commonNames.isNotEmpty)
+                  ? commonNames.first?.toString()
+                  : null;
+          String displayName = (commonHint ?? '').trim();
+          if (displayName.isEmpty) displayName = (speciesName ?? '').trim();
           if (displayName.isEmpty) return;
 
           // 優先使用後端回傳的 localMatch（含自動新增結果）
