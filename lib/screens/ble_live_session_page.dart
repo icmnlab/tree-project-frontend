@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import '../models/maintenance_target.dart';
 import '../models/pending_tree_measurement.dart';
 import '../services/ble_live_packet_decoder.dart';
 import '../utils/field_gps_capture.dart';
@@ -21,10 +22,14 @@ class BleLiveSessionPage extends StatefulWidget {
   /// 進入連線前已完成的專案／區位設定（建議由現場測量 Wizard 傳入）
   final FieldSessionSetup? initialSessionSetup;
 
+  /// 維護量測：重測既有樹（transfer 時寫入歷次並更新 tree_survey）
+  final MaintenanceTarget? maintenanceTarget;
+
   const BleLiveSessionPage({
     super.key,
     this.initialDevice,
     this.initialSessionSetup,
+    this.maintenanceTarget,
   });
 
   @override
@@ -283,6 +288,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       _liveSessionId ??= PendingMeasurementService.generateSessionId();
 
       final recordId = 'LIVE-${DateTime.now().millisecondsSinceEpoch}';
+      final maint = widget.maintenanceTarget;
       final bleRecord = live.toBleRecordMap(
         id: recordId,
         lat: lat,
@@ -294,8 +300,18 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
           'gps_sample_count': gps.sampleCount,
           'live_session_index': seq,
           if (_batchName != null) 'batch_name': _batchName,
+          if (maint != null) ...{
+            'survey_mode': 'maintenance',
+            'target_tree_id': maint.treeSurveyId,
+            'match_status': 'user_selected',
+          },
         },
       );
+      if (maint != null) {
+        bleRecord['_survey_mode'] = 'maintenance';
+        bleRecord['_target_tree_id'] = maint.treeSurveyId;
+        bleRecord['_match_status'] = 'user_selected';
+      }
 
       if (mounted) {
         setState(() => _status = '第 $seq 棵：上傳任務…');

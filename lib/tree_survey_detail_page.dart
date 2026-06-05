@@ -8,6 +8,9 @@ import '../services/tree_service.dart';
 import 'services/auth_service.dart';
 import 'services/v3/tree_image_service.dart';
 import 'constants/colors.dart';
+import 'utils/tree_id_display.dart';
+import 'widgets/tree_measurement_history_panel.dart';
+import 'services/locale_service.dart';
 
 class TreeSurveyDetailPage extends StatefulWidget {
   final dynamic treeData;
@@ -24,6 +27,12 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
   bool _canDelete = false;
   List<TreeImage> _treeImages = [];
   final TreeImageService _imageService = TreeImageService();
+
+  int? _numericTreeId() {
+    final v = _treeData['id'];
+    if (v is int) return v;
+    return int.tryParse(v?.toString() ?? '');
+  }
 
   /// Bilingual field accessor — tries English key first, then Chinese
   String _f(String enKey, String zhKey) {
@@ -149,7 +158,9 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    String projectTreeId = _f('project_tree_id', '專案樹木');
+    final rawProjectTreeId = _f('project_tree_id', '專案樹木');
+    final displayProjectTreeId =
+        TreeIdDisplay.projectTreeDigits(rawProjectTreeId == '無' ? null : rawProjectTreeId);
 
     final species = _f('species_name', '樹種名稱');
     final height = double.tryParse(_f('tree_height_m', '樹高（公尺）')) ?? 0.0;
@@ -195,7 +206,7 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
           ),
         ),
         title: Text(
-          '${species == '無' ? '未知樹種' : species} ($projectTreeId)',
+          '${species == '無' ? '未知樹種' : species} ($displayProjectTreeId)',
           style: const TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.w600,
@@ -247,8 +258,25 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
             const SizedBox(height: 16),
             _buildInfoCard('樹木編號', [
               _buildInfoRow('系統樹木', _f('system_tree_id', '系統樹木')),
-              _buildInfoRow('專案樹木', _f('project_tree_id', '專案樹木'),
+              _buildInfoRow('專案樹木（現場）', displayProjectTreeId,
                   isHighlighted: true),
+              if (rawProjectTreeId != displayProjectTreeId &&
+                  rawProjectTreeId != '無')
+                _buildInfoRow('完整編號', rawProjectTreeId),
+            ]),
+            const SizedBox(height: 16),
+            _buildInfoCard(context.tr('history_title'), [
+              if (_numericTreeId() != null)
+                TreeMeasurementHistoryPanel(
+                  treeId: _numericTreeId()!,
+                  limit: 20,
+                )
+              else
+                const Padding(
+                  padding: EdgeInsets.all(8),
+                  child: Text('無法載入歷史（缺少樹木 ID）',
+                      style: TextStyle(color: Colors.grey)),
+                ),
             ]),
             const SizedBox(height: 16),
             _buildInfoCard('樹種資訊', [

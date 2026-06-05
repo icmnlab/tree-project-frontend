@@ -4,6 +4,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import '../../widgets/ble/ble_device_scanner.dart';
 import '../../widgets/field/field_session_setup.dart';
 import '../ble_live_session_page.dart';
+import '../maintenance_survey_page.dart';
 import '../pending_measurement_task_page.dart';
 import '../../services/locale_service.dart';
 
@@ -81,6 +82,19 @@ class _FieldSurveyFlowPageState extends State<FieldSurveyFlowPage> {
           title: context.tr('field_ble_title'),
           subtitle: context.tr('field_ble_sub'),
           onTap: () => setState(() => _step = 1),
+        ),
+        const SizedBox(height: 12),
+        _FlowCard(
+          icon: Icons.build_circle_outlined,
+          title: context.tr('maintain_title'),
+          subtitle: context.tr('maintain_sub'),
+          onTap: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => const MaintenanceSurveyPage(),
+              ),
+            );
+          },
         ),
         const SizedBox(height: 12),
         _FlowCard(

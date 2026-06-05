@@ -10,8 +10,10 @@
 - [x] **歷次量測 schema** — `tree_survey_measurements` 表 + migration `15_*`
 - [x] **transfer 寫入歷次** — 初測 `new`、維護 `maintenance` 皆 INSERT 歷次，維護仍 UPDATE 最新快照
 - [x] **歷次查詢 API** — `GET /tree-survey/by_id/:id/measurements`
-- [ ] **維護量測入口** — 區 → 樹清單/地圖 → 選樹 → BLE 逐棵重測 + 新增樹木
-- [ ] **歷史紀錄 UI** — 整合表單頁 + 樹詳情頁時間序列（日期/樹高/DBH）
+- [x] **維護量測入口** — `MaintenanceSurveyPage`：區 → 樹清單 → 重測/新增 → BLE
+- [x] **歷史紀錄 UI** — 整合表單（維護任務）+ 樹詳情頁 `TreeMeasurementHistoryPanel`
+- [x] **物種辨識填入** — 整合表單改中文俗名優先（學名對照）
+- [x] **ID 顯示慣例** — `TreeIdDisplay`：現場純數字、系統 ST- 完整
 
 ---
 

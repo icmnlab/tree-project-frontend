@@ -20,6 +20,7 @@ import '../../services/camera_capture_service.dart';
 import '../../services/ar_measurement_service.dart';
 import '../../models/camera_capture_mode.dart';
 import '../../services/locale_service.dart';
+import '../../widgets/tree_measurement_history_panel.dart';
 import '../../widgets/conflict_resolution_dialog.dart';
 
 /// V3 整合式樹木測量表單
@@ -1015,16 +1016,14 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
           final scoreNum = ((bestMatch['score'] as num?) ?? 0).toDouble();
           final score = (scoreNum * 100).toStringAsFixed(1);
 
-          // [Policy] 學名優先；若無則退回完整學名/俗名。總之先把名字填進去，信心度只做提示
+          // [Policy] 現場以中文俗名為主（與 DB species_name、碳計算一致）；學名作對照
           final String? commonHint =
               (commonNames != null && commonNames.isNotEmpty)
                   ? commonNames.first.toString()
                   : null;
-          String displayName = (sciNoAuthor ?? '').trim();
+          String displayName = (commonHint ?? '').trim();
+          if (displayName.isEmpty) displayName = (sciNoAuthor ?? '').trim();
           if (displayName.isEmpty) displayName = (sciFull ?? '').trim();
-          if (displayName.isEmpty && commonHint != null) {
-            displayName = commonHint.trim();
-          }
           if (displayName.isEmpty) {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -1694,6 +1693,10 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
                       ),
                     const SizedBox(height: 24),
                     _buildInfoCard(),
+                    if (widget.task.targetTreeId != null) ...[
+                      const SizedBox(height: 16),
+                      _buildHistoryCard(),
+                    ],
                     const SizedBox(height: 24),
                     _buildMeasurementForm(),
                     const SizedBox(height: 32),
@@ -1930,6 +1933,34 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       child: Text(label,
           style: const TextStyle(
               color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold)),
+    );
+  }
+
+  Widget _buildHistoryCard() {
+    final treeId = widget.task.targetTreeId;
+    if (treeId == null) return const SizedBox.shrink();
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.history, color: Colors.orange),
+                const SizedBox(width: 8),
+                Text(
+                  context.tr('history_title'),
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            const Divider(),
+            TreeMeasurementHistoryPanel(treeId: treeId, limit: 10),
+          ],
+        ),
+      ),
     );
   }
 
