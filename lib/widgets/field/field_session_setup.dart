@@ -162,7 +162,7 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
                   TextField(
                     controller: searchCtrl,
                     decoration: InputDecoration(
-                      hintText: '搜尋或新增專案區位',
+                      hintText: ctx2.tr('field_setup_search_project'),
                       prefixIcon: const Icon(Icons.search),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -187,7 +187,9 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
                     child: _loadingAreas
                         ? const Center(child: CircularProgressIndicator())
                         : filtered.isEmpty
-                            ? const Center(child: Text('尚無專案區位'))
+                            ? Center(
+                                child: Text(ctx2.tr('field_setup_no_project_list')),
+                              )
                             : ListView.builder(
                                 itemCount: filtered.length,
                                 itemBuilder: (_, i) {
@@ -222,7 +224,7 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
                   Navigator.pop(ctx2);
                   await _addProjectArea(name);
                 },
-                child: const Text('新增區位'),
+                child: Text(ctx2.tr('field_setup_add_project_btn')),
               ),
             ],
           );
@@ -243,7 +245,7 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
 
       final response = await _projectAreaService.addProjectArea({
         'area_name': areaName,
-        'description': '$areaName專案區位',
+        'description': '$areaName（專案）',
         'isSubmit': true,
         if (position != null) 'xCoord': position.longitude,
         if (position != null) 'yCoord': position.latitude,
@@ -257,14 +259,15 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
         setState(() => _filteredProjects = []);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('專案區位新增成功')),
+            SnackBar(content: Text(context.tr('field_setup_project_added'))),
           );
         }
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(response['message']?.toString() ?? '新增失敗')),
         );
-        if (response['message'] == '區位已存在') {
+        if (response['message'] == '區位已存在' ||
+            response['message']?.toString().contains('已存在') == true) {
           _areaCtrl.text = areaName;
           await _loadProjectsForArea(areaName);
           setState(() {});
@@ -273,7 +276,7 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('新增區位失敗: $e')),
+          SnackBar(content: Text('${context.tr('field_setup_add_project_btn')}: $e')),
         );
       }
     }
@@ -282,7 +285,7 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
   void _showProjectDialog() {
     if (_areaCtrl.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('請先選擇或新增專案區位')),
+        SnackBar(content: Text(context.tr('field_setup_select_project_first'))),
       );
       return;
     }
@@ -313,8 +316,8 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
                   ? Center(
                       child: Text(
                         _canAddProject
-                            ? '此區位下沒有專案，請新增專案'
-                            : '此區位下沒有專案，請聯絡管理員建立',
+                            ? ctx.tr('field_setup_no_block_in_project')
+                            : ctx.tr('field_setup_no_block_admin'),
                       ),
                     )
                   : ListView.builder(
@@ -349,7 +352,7 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
     }
     if (_areaCtrl.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('請先選擇專案區位')),
+        SnackBar(content: Text(context.tr('field_setup_select_project_first'))),
       );
       return;
     }
@@ -502,7 +505,7 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
               readOnly: true,
               decoration: InputDecoration(
                 labelText: context.tr('field_setup_area'),
-                hintText: '請選擇專案',
+                hintText: context.tr('field_setup_area_hint'),
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.arrow_drop_down),
                   onPressed: _showProjectAreaDialog,
@@ -518,7 +521,7 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
               readOnly: true,
               decoration: InputDecoration(
                 labelText: context.tr('field_setup_project'),
-                hintText: '請選擇區（Block）',
+                hintText: context.tr('field_setup_project_hint'),
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.arrow_drop_down),
                   onPressed: _showProjectDialog,

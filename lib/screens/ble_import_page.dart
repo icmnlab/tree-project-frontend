@@ -16,7 +16,7 @@ import '../services/v3/project_boundary_coordinator.dart'; // 自動匹配專案
 import '../widgets/network_aware_widgets.dart'; // 網路感知元件
 import 'manual_input_page_v2.dart'; // V2 批次匯入
 import 'pending_measurement_task_page.dart'; // 引入待測量任務頁面
-import 'field_survey/field_survey_flow_page.dart';
+import 'ble_live_session_page.dart';
 
 class BleImportPage extends StatefulWidget {
   const BleImportPage({super.key});
@@ -832,13 +832,12 @@ class _BleImportPageState extends State<BleImportPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.sensors),
-            tooltip: '現場測量（VLGEO2 連線）',
+            tooltip: 'VLGEO2 現場連線',
             onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) =>
-                      const FieldSurveyFlowPage(openBleDeviceStep: true),
+                  builder: (_) => const BleLiveSessionPage(),
                 ),
               );
             },

@@ -82,8 +82,28 @@
 - [x] **2026-05-28 會議紀錄** — `MEETING_MINUTES_20260528.md`
 - [x] **文件索引與交接清單** — `docs/README.md`、`HANDOFF_SECRETS_CHECKLIST.md`
 - [x] **Release 現場日誌** — `FieldLog` + BLE 頁複製日誌 + `ENABLE_FIELD_LOGS`
+- [x] **首頁導航** — VLGEO2 直連、維護量測獨立入口
+- [x] **專案／區用詞** — 場次設定、待測量指定（`field_session_setup`、l10n）
+- [x] **Ubuntu SSH 說明** — `UBUNTU_SSH_ACCESS.md`
+- [ ] **舊版頁面用詞** — V2/V3 手動輸入、統計等仍殘留「區位」（低優先）
 - [ ] **整理資料夾結構** — 待下一階段
 - [ ] **註解重寫**（對齊程式碼、去除 AI 口吻）— 待下一階段
+- [ ] **圖資中心正式部署** — 待主機就緒
+
+---
+
+## 待實機驗證（多人／現場）
+
+| 優先 | 項目 | 怎麼測 |
+|------|------|--------|
+| P0 | BLE 逐棵 3+ 棵 | `flutter run --release --dart-define=ENABLE_FIELD_LOGS=true` |
+| P0 | 提交後離開待測量 | 成功後日誌「已轉入正式資料庫」；待測量批次消失 |
+| P1 | 兩人同專案 transfer | 兩支手機快速各提交一棵 → `tree_survey` 無重複 |
+| P1 | pending 409 | `VERIFICATION_CHECKLIST.md` L3 |
+| P2 | CSV 全批 rollback | 管理員故意錯一列 |
+| P2 | 維護量測 + 歷次 | 重測後詳情頁多一筆 |
+
+併發機制（程式已完成，需抽樣驗證）：transfer `FOR UPDATE`、advisory lock、pending 樂觀鎖、CSV rollback、專案權限。
 
 ---
 

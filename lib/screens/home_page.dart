@@ -6,7 +6,8 @@ import '../services/theme_service.dart';
 import '../tree_survey_page.dart';
 import '../tree_list_page.dart';
 import 'ble_import_page.dart';
-import 'field_survey/field_survey_flow_page.dart';
+import 'ble_live_session_page.dart';
+import 'maintenance_survey_page.dart';
 import '../services/locale_service.dart';
 import 'species_identification_page.dart';
 import 'pending_measurement_task_page.dart';
@@ -171,7 +172,8 @@ class _DashboardPageState extends State<DashboardPage>
   // All available cards — order controlled by _cardOrder
   static const _allCards = [
     // 現場作業
-    {'id': 'field_survey', 'title': '現場測量', 'subtitle': 'VLGEO2 連線／待測量', 'icon': 'forest', 'category': 'field', 'needsNetwork': true},
+    {'id': 'field_survey', 'title': 'VLGEO2 現場連線', 'subtitle': '掃描儀器 · 逐棵提交', 'icon': 'bluetooth_connected', 'category': 'field', 'needsNetwork': true},
+    {'id': 'maintenance', 'title': '維護量測', 'subtitle': '選區重測既有樹木', 'icon': 'build', 'category': 'field', 'needsNetwork': true},
     {'id': 'ble', 'title': '藍牙匯入', 'subtitle': '儀器同步', 'icon': 'bluetooth', 'category': 'field', 'needsNetwork': false},
     {'id': 'pending', 'title': '待測量任務', 'subtitle': '批次導航測量', 'icon': 'assignment', 'category': 'field', 'needsNetwork': true},
     // 數據管理
@@ -249,8 +251,15 @@ class _DashboardPageState extends State<DashboardPage>
           _cardOrder.add(card['id'] as String);
         }
       }
-      // 現場連線已併入「現場測量」，移除舊卡片 id
       _cardOrder.removeWhere((id) => id == 'ble_live');
+      if (!_cardOrder.contains('maintenance')) {
+        final i = _cardOrder.indexOf('field_survey');
+        if (i >= 0) {
+          _cardOrder.insert(i + 1, 'maintenance');
+        } else {
+          _cardOrder.insert(0, 'maintenance');
+        }
+      }
     });
   }
   
@@ -262,6 +271,8 @@ class _DashboardPageState extends State<DashboardPage>
   IconData _getIcon(String name) {
     switch (name) {
       case 'forest': return Icons.forest_rounded;
+      case 'bluetooth_connected': return Icons.bluetooth_connected_rounded;
+      case 'build': return Icons.build_circle_outlined;
       case 'bluetooth': return Icons.bluetooth_rounded;
       case 'assignment': return Icons.assignment_rounded;
       case 'nature': return Icons.nature_rounded;
@@ -283,6 +294,7 @@ class _DashboardPageState extends State<DashboardPage>
       case 'ble':
       case 'ble_live':
         return AppColors.tipcRed;
+      case 'maintenance': return Colors.teal.shade700;
       case 'pending': return Colors.deepOrange;
       case 'survey': return AppColors.primary;
       case 'map': return AppColors.chartOrange;
@@ -303,6 +315,8 @@ class _DashboardPageState extends State<DashboardPage>
     switch (id) {
       case 'field_survey':
         return 'card_field_survey';
+      case 'maintenance':
+        return 'card_maintenance';
       case 'ble':
         return 'card_ble';
       case 'ble_live':
@@ -344,8 +358,16 @@ class _DashboardPageState extends State<DashboardPage>
       case 'cities': Navigator.pushNamed(context, '/cities'); break;
       case 'field_survey':
       case 'ble_live':
-        Navigator.push(context,
-            MaterialPageRoute(builder: (_) => const FieldSurveyFlowPage()));
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const BleLiveSessionPage()),
+        );
+        break;
+      case 'maintenance':
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const MaintenanceSurveyPage()),
+        );
         break;
       case 'ble': Navigator.push(context, MaterialPageRoute(builder: (_) => const BleImportPage())); break;
       case 'pending': Navigator.push(context, MaterialPageRoute(builder: (_) => const PendingMeasurementTaskPage())); break;

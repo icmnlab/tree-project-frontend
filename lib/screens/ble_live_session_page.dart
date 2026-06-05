@@ -20,7 +20,7 @@ import '../services/locale_service.dart';
 /// 現場連線模式：儀器關閉 ENABLE MEM，每測一棵按 SEND → **立即**建立任務並開表單，
 /// 處理完畢後再量下一棵（非批次累積）。
 class BleLiveSessionPage extends StatefulWidget {
-  /// 由 [FieldSurveyFlowPage] 等入口預先選定的裝置
+  /// 由首頁等入口預先選定的裝置
   final BluetoothDevice? initialDevice;
 
   /// 進入連線前已完成的專案／區位設定（建議由現場測量 Wizard 傳入）

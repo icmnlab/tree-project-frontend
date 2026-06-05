@@ -847,7 +847,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                '尚未指定專案／區位 — 點此選擇',
+                context.tr('pending_project_area_unset'),
                 style: TextStyle(
                     fontSize: 13,
                     color: Colors.orange.shade800,
@@ -896,7 +896,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '指定專案與區位',
+                    context.tr('pending_pick_project_area'),
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -934,8 +934,8 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
                   TextField(
                     controller: areaController,
                     decoration: const InputDecoration(
-                      labelText: '專案區位',
-                      hintText: '可選既有區位或輸入新名稱',
+                      labelText: context.tr('pending_block_label'),
+                      hintText: context.tr('field_setup_project_hint'),
                       border: OutlineInputBorder(),
                       prefixIcon: Icon(Icons.location_on),
                     ),
