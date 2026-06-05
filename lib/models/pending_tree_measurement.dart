@@ -509,6 +509,7 @@ class MeasurementSession {
   final int totalTrees;
   final int completedTrees;
   final int pendingTrees;
+  final int transferredTrees;
   final String? projectArea;
   final String? projectCode;
 
@@ -521,6 +522,7 @@ class MeasurementSession {
     required this.totalTrees,
     required this.completedTrees,
     this.pendingTrees = 0,
+    this.transferredTrees = 0,
     this.projectArea,
     this.projectCode,
   });
@@ -528,8 +530,10 @@ class MeasurementSession {
   double get progressPercent =>
       totalTrees > 0 ? (completedTrees / totalTrees * 100) : 0;
 
-  bool get isComplete => pendingTrees <= 0 && completedTrees >= totalTrees;
-  bool get hasActiveTasks => pendingTrees > 0;
+  bool get isComplete =>
+      pendingTrees <= 0 && completedTrees <= 0 && transferredTrees > 0;
+  /// 仍有待填／待轉移（不含已全部 transferred 的場次）
+  bool get hasActiveTasks => pendingTrees > 0 || completedTrees > 0;
 
   factory MeasurementSession.fromJson(Map<String, dynamic> json) {
     return MeasurementSession(
@@ -542,6 +546,7 @@ class MeasurementSession {
       totalTrees: _jsonToInt(json['total_trees']),
       completedTrees: _jsonToInt(json['completed_trees']),
       pendingTrees: _jsonToInt(json['pending_trees']),
+      transferredTrees: _jsonToInt(json['transferred_trees']),
       projectArea: json['project_area']?.toString(),
       projectCode: json['project_code']?.toString(),
     );

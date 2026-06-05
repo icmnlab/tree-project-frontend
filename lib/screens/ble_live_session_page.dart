@@ -166,10 +166,26 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
     });
 
     try {
-      await device.connect(timeout: const Duration(seconds: 15));
+      try {
+        await FlutterBluePlus.stopScan();
+      } catch (_) {}
+      _appendLog('停止掃描，連線 ${device.remoteId.str}…');
+
+      try {
+        if (await device.isConnected) {
+          await device.disconnect();
+          await Future<void>.delayed(const Duration(milliseconds: 400));
+        }
+      } catch (_) {}
+
+      await device.connect(
+        timeout: const Duration(seconds: 20),
+        autoConnect: false,
+      );
       _connSub?.cancel();
       _connSub = device.connectionState.listen(_onConnectionState);
 
+      await Future<void>.delayed(const Duration(milliseconds: 300));
       await _subscribeTx(device);
       if (!mounted) return;
       setState(() {
@@ -563,6 +579,26 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
     if (success == true) {
       _completedCount++;
       _appendLog('#$seq 表單提交成功（累計 $_completedCount 棵）');
+      final sid = _liveSessionId;
+      if (sid != null && sid.isNotEmpty) {
+        try {
+          final tr = await _pendingService.transferToTreeSurvey(sessionId: sid);
+          if (tr['success'] == true) {
+            final n = (tr['transferred_tree_ids'] as List?)?.length ?? 0;
+            _appendLog(
+              n > 0
+                  ? '#$seq 已轉入正式資料庫（本批 $n 筆）'
+                  : '#$seq 已在正式資料庫（冪等略過）',
+            );
+          } else {
+            _appendLog(
+              '#$seq 自動轉移未完成: ${tr['message'] ?? '未知'}',
+            );
+          }
+        } catch (e) {
+          _appendLog('#$seq 自動轉移失敗: $e');
+        }
+      }
       messenger.showSnackBar(
         SnackBar(
           content: Text(

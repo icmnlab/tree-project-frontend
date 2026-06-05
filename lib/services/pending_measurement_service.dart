@@ -455,11 +455,16 @@ class PendingMeasurementService {
           )
           .timeout(_timeout);
 
+      final body = jsonDecode(response.body);
       if (response.statusCode == 200) {
-        return jsonDecode(response.body);
-      } else {
-        throw Exception('轉移數據失敗: ${response.statusCode}');
+        return body is Map<String, dynamic>
+            ? body
+            : {'success': true, 'data': body};
       }
+      if (response.statusCode == 400 && body is Map<String, dynamic>) {
+        return {...body, 'success': false};
+      }
+      throw Exception('轉移數據失敗: ${response.statusCode}');
     } catch (e) {
       debugPrint('轉移數據失敗: $e');
       rethrow;

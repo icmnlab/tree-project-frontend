@@ -32,6 +32,18 @@ class _BleDeviceScannerState extends State<BleDeviceScanner> {
     super.dispose();
   }
 
+  static String _deviceLabel(ScanResult r) {
+    if (r.device.platformName.isNotEmpty) return r.device.platformName;
+    final adv = r.advertisementData.advName;
+    if (adv.isNotEmpty) return adv;
+    return r.device.remoteId.str;
+  }
+
+  static bool _isVlgeoCandidate(ScanResult r) {
+    final n = _deviceLabel(r).toUpperCase();
+    return n.contains('VLGEO') || n.contains('HAGLOF') || n.contains('VERTEX');
+  }
+
   Future<void> _startScan() async {
     await _stopScan();
     setState(() {
@@ -40,15 +52,22 @@ class _BleDeviceScannerState extends State<BleDeviceScanner> {
       _status = '掃描中…';
     });
 
-    await FlutterBluePlus.startScan(timeout: const Duration(seconds: 15));
+    try {
+      await FlutterBluePlus.startScan(
+        timeout: const Duration(seconds: 15),
+        androidUsesFineLocation: true,
+      );
+    } catch (e) {
+      if (mounted) {
+        setState(() => _status = '掃描失敗: $e');
+      }
+      return;
+    }
 
     _scanSub = FlutterBluePlus.scanResults.listen((list) {
       if (!mounted) return;
       final filtered = widget.vlgeoOnly
-          ? list.where((r) {
-              final n = r.device.platformName.toUpperCase();
-              return n.contains('VLGEO') || n.contains('HAGLOF');
-            })
+          ? list.where(_isVlgeoCandidate)
           : list;
       setState(() {
         _results
@@ -122,9 +141,7 @@ class _BleDeviceScannerState extends State<BleDeviceScanner> {
                   separatorBuilder: (_, __) => const Divider(height: 1),
                   itemBuilder: (context, i) {
                     final r = _results[i];
-                    final name = r.device.platformName.isNotEmpty
-                        ? r.device.platformName
-                        : '未知裝置';
+                    final name = _deviceLabel(r);
                     return ListTile(
                       leading: const Icon(Icons.sensors),
                       title: Text(name),

@@ -702,7 +702,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
               color: Colors.teal.shade700,
             )),
         const SizedBox(height: 4),
-        Text('僅顯示仍有待測量任務的批次；已完成批次在下方。',
+        Text('僅顯示仍有待填或待轉移的批次；已全部轉入正式資料庫的場次不再列出。',
             style: TextStyle(color: Colors.grey.shade600)),
         const SizedBox(height: 16),
         if (activeSessions.isEmpty)
