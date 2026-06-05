@@ -104,36 +104,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         if (mounted) _connect(pre);
       });
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _logSessionStart();
-      _restoreBleConnection();
-    });
-  }
-
-  Future<void> _restoreBleConnection() async {
-    if (widget.initialDevice != null || _userDisconnect || _isConnected) {
-      return;
-    }
-    try {
-      final devices = FlutterBluePlus.connectedDevices;
-      for (final d in devices) {
-        final n = d.platformName.toUpperCase();
-        if (n.isNotEmpty &&
-            !n.contains('VLGEO') &&
-            !n.contains('HAGLOF')) {
-          continue;
-        }
-        if (await d.isConnected) {
-          FieldLog.ble(
-            'restore connected ${d.platformName.isNotEmpty ? d.platformName : d.remoteId.str}',
-          );
-          await _connect(d, isReconnect: true);
-          return;
-        }
-      }
-    } catch (e) {
-      FieldLog.ble('restore connection check: $e');
-    }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _logSessionStart());
   }
 
   Future<void> _logSessionStart() async {
@@ -174,7 +145,21 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       sub.cancel();
     }
     _connSub?.cancel();
+    unawaited(_teardownBleOnExit());
     super.dispose();
+  }
+
+  /// 離開頁面時釋放掃描與連線，避免下次進入掃不到儀器
+  Future<void> _teardownBleOnExit() async {
+    try {
+      await FlutterBluePlus.stopScan();
+    } catch (_) {}
+    final d = _device;
+    if (d != null) {
+      try {
+        if (d.isConnected) await d.disconnect();
+      } catch (_) {}
+    }
   }
 
   Future<void> _connect(BluetoothDevice device, {bool isReconnect = false}) async {
@@ -196,7 +181,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       _appendLog('停止掃描，連線 ${device.remoteId.str}…');
 
       try {
-        if (await device.isConnected) {
+        if (device.isConnected) {
           await device.disconnect();
           await Future<void>.delayed(const Duration(milliseconds: 400));
         }
@@ -885,9 +870,12 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
     }
     _dataSubs.clear();
     _connSub?.cancel();
+    try {
+      await FlutterBluePlus.stopScan();
+    } catch (_) {}
     if (_device != null) {
       try {
-        await _device!.disconnect();
+        if (_device!.isConnected) await _device!.disconnect();
       } catch (_) {}
     }
     _device = null;
@@ -895,6 +883,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       setState(() {
         _isConnected = false;
         _isListening = false;
+        _status = context.tr('ble_status_pick_device');
       });
     }
   }
@@ -908,6 +897,12 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
     }
     if (_isConnected) return Theme.of(context).colorScheme.primaryContainer;
     return Colors.grey.shade100;
+  }
+
+  Future<void> _pickAnotherDevice() async {
+    await _disconnect();
+    if (!mounted) return;
+    setState(() => _reconnectAttempt = 0);
   }
 
   Widget _buildReconnectPanel() {
@@ -951,17 +946,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
               ),
             const SizedBox(height: 8),
             TextButton(
-              onPressed: _isProcessingTree
-                  ? null
-                  : () {
-                      _userDisconnect = true;
-                      _reconnectTimer?.cancel();
-                      setState(() {
-                        _device = null;
-                        _reconnectAttempt = 0;
-                        _status = context.tr('ble_status_pick_device');
-                      });
-                    },
+              onPressed: _isProcessingTree ? null : _pickAnotherDevice,
               child: Text(context.tr('ble_reconnect_scan_other')),
             ),
           ],
@@ -1111,6 +1096,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: BleDeviceScanner(
+                  key: ValueKey('ble_scan_$_userDisconnect${_device?.remoteId.str ?? "none"}'),
                   onDeviceSelected: (device) {
                     if (_isProcessingTree) return;
                     _connect(device);
