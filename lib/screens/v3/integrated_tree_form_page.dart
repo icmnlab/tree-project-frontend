@@ -22,6 +22,7 @@ import '../../models/camera_capture_mode.dart';
 import '../../services/locale_service.dart';
 import '../../widgets/tree_measurement_history_panel.dart';
 import '../../widgets/conflict_resolution_dialog.dart';
+import '../../config/survey_settings.dart';
 
 /// V3 整合式樹木測量表單
 ///
@@ -39,11 +40,15 @@ class IntegratedTreeFormPage extends StatefulWidget {
   /// 與 [autoTransferToTreeSurvey] 搭配；未提供則用 [task.sessionId]
   final String? transferSessionId;
 
+  /// 碳匯手冊合規：DBH 僅接受現場人工量測。null 時依 [SurveySettings]。
+  final bool? handbookCompliantMode;
+
   const IntegratedTreeFormPage({
     super.key,
     required this.task,
     this.autoTransferToTreeSurvey = false,
     this.transferSessionId,
+    this.handbookCompliantMode,
   });
 
   @override
@@ -127,9 +132,16 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
   bool _showMultiShotHint = false;
   Timer? _speciesSearchDebounce;
 
+  bool get _handbook =>
+      widget.handbookCompliantMode ?? SurveySettings.instance.handbookCompliantMode;
+
   @override
   void initState() {
     super.initState();
+    _preferredCaptureMode = _handbook
+        ? CameraCaptureMode.plainPhoto
+        : CameraCaptureMode.integrated;
+    if (_handbook) _activeDbhSource = 'manual';
     _lockUpdatedAt = widget.task.updatedAt;
     _refreshLockBaseline();
     _initializeForm();
@@ -345,7 +357,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
 
   void _initializeForm() {
     _heightController.text = widget.task.treeHeight.toStringAsFixed(1);
-    if (widget.task.hasInstrumentDbh) {
+    if (!_handbook && widget.task.hasInstrumentDbh) {
       _activeDbhSource = 'remote_diameter';
       _applyDbhFromSource(silent: true);
       _logDbh(
@@ -434,6 +446,15 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
     double? trunkDepthM,
     List<String>? notes,
   }) async {
+    if (_handbook) {
+      if (!mounted) return;
+      setState(() {
+        _mainImage = image;
+        if (exif != null) _lastExif = exif;
+        if (!_capturedImages.contains(image)) _capturedImages.add(image);
+      });
+      return;
+    }
     _storedVisionDbhCm = visionDbhCm;
     _storedVisionConfidence = confidence;
     _storedVisionMethod = method;
@@ -541,6 +562,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
   }
 
   String _resolveSubmitMethod() {
+    if (_handbook) return DbhEngine.manual.defaultMeasurementMethod;
     final engine = DbhEngineResolver.fromFormSource(_activeDbhSource);
     if (engine == DbhEngine.visionMono &&
         _storedVisionMethod != null &&
@@ -551,6 +573,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
   }
 
   double _resolveSubmitConfidence() {
+    if (_handbook) return 1.0;
     final engine = DbhEngineResolver.fromFormSource(_activeDbhSource);
     switch (engine) {
       case DbhEngine.instrumentRemote:
@@ -581,8 +604,8 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
     super.dispose();
   }
 
-  /// 預設整合表單使用「整合拍照」（DBH + 樹種 + YOLO 框）
-  CameraCaptureMode _preferredCaptureMode = CameraCaptureMode.integrated;
+  /// 手冊模式：單純拍照；研究模式：整合拍照（DBH + 樹種）
+  late CameraCaptureMode _preferredCaptureMode;
 
   Future<void> _showCaptureModeSheet({ImageSource source = ImageSource.camera}) async {
     final mode = await showModalBottomSheet<CameraCaptureMode>(
@@ -598,7 +621,12 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
                   style: const TextStyle(
                       fontSize: 18, fontWeight: FontWeight.bold)),
             ),
-            for (final m in CameraCaptureMode.values)
+            for (final m in _handbook
+                ? [
+                    CameraCaptureMode.plainPhoto,
+                    CameraCaptureMode.photoWithSpecies,
+                  ]
+                : CameraCaptureMode.values)
               ListTile(
                 leading: Icon(_iconForCaptureMode(m)),
                 title: Text(ctx.tr(m.titleKey)),
@@ -665,6 +693,14 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
           }
           break;
         case CameraCaptureMode.integrated:
+          if (_handbook) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(context.tr('handbook_photo_hint'))),
+              );
+            }
+            break;
+          }
           if (result.measurement != null) {
             await _applyScannerMeasurement(result.measurement!);
             if (mounted &&
@@ -706,6 +742,14 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
 
   Future<void> _applyScannerMeasurement(MeasurementResult m) async {
     if (!mounted) return;
+    if (_handbook) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(context.tr('handbook_photo_hint'))),
+        );
+      }
+      return;
+    }
     setState(() {
       _measuredDbh = m.diameterCm;
       _measurementConfidence = m.confidenceScore;
@@ -746,11 +790,14 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       _speciesReady = false;
     });
 
-    // 並行執行 DBH 量測和樹種辨識
-    await Future.wait([
-      _autoMeasureDbh(image),
-      _identifySpecies(image),
-    ]);
+    if (_handbook) {
+      await _identifySpecies(image);
+    } else {
+      await Future.wait([
+        _autoMeasureDbh(image),
+        _identifySpecies(image),
+      ]);
+    }
 
     if (mounted) {
       setState(() {
@@ -808,6 +855,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
 
   /// 自動 DBH 量測（附帶 EXIF 焦距提取）
   Future<void> _autoMeasureDbh(File image) async {
+    if (_handbook) return;
     try {
       if (mounted) setState(() => _autoPilotStatus = '深度估計中...');
 
@@ -1292,9 +1340,10 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
         return;
       }
 
+      final submitSource = _handbook ? 'manual' : _activeDbhSource;
       _logDbh(
         'submit task=$taskId dbh=${dbh.toStringAsFixed(1)} cm '
-        'source=$_activeDbhSource engine=${DbhEngineResolver.fromFormSource(_activeDbhSource).logTag} '
+        'source=$submitSource engine=${DbhEngineResolver.fromFormSource(submitSource).logTag} '
         'method=${_resolveSubmitMethod()} confidence=${_resolveSubmitConfidence()}',
       );
 
@@ -1402,6 +1451,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
         notes: combinedNotes.isEmpty ? _selectedStatus : combinedNotes,
         speciesName: _speciesController.text,
         expectedUpdatedAt: expectedUpdatedAt,
+        dbhSource: _handbook ? 'manual' : _activeDbhSource,
       );
 
       // [T6] 409 衝突 → 三選一
@@ -1833,10 +1883,13 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
                                 ),
                               ),
                               const SizedBox(height: 2),
-                              const Text(
-                                '建議：整合拍照（含即時樹幹框）',
-                                style:
-                                    TextStyle(fontSize: 11, color: Colors.grey),
+                              Text(
+                                _handbook
+                                    ? context.tr('handbook_photo_hint')
+                                    : '建議：整合拍照（含即時樹幹框）',
+                                style: const TextStyle(
+                                    fontSize: 11, color: Colors.grey),
+                                textAlign: TextAlign.center,
                               ),
                             ],
                           ),
@@ -1879,19 +1932,20 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
                           ),
                         ),
                         // AutoPilot 結果指標
-                        if (!_isAutoPilotRunning &&
-                            (_dbhReady || _speciesReady))
+                        if (!_isAutoPilotRunning && _speciesReady)
                           Positioned(
                             top: 8,
                             left: 8,
-                            child: Row(
-                              children: [
-                                if (_dbhReady) _buildBadge('DBH', Colors.green),
-                                if (_dbhReady) const SizedBox(width: 4),
-                                if (_speciesReady)
-                                  _buildBadge('樹種', Colors.green),
-                              ],
-                            ),
+                            child: _buildBadge('樹種', Colors.green),
+                          ),
+                        if (!_handbook &&
+                            !_isAutoPilotRunning &&
+                            _dbhReady &&
+                            !_speciesReady)
+                          Positioned(
+                            top: 8,
+                            left: 8,
+                            child: _buildBadge('DBH', Colors.green),
                           ),
                       ],
                     ),
@@ -1999,7 +2053,56 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
     );
   }
 
+  Widget _buildHandbookDbhBanner() {
+    return Card(
+      color: Colors.teal.shade50,
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.straighten, size: 18, color: Colors.teal.shade800),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    context.tr('handbook_dbh_title'),
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.teal.shade900,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              context.tr('handbook_dbh_hint'),
+              style: TextStyle(fontSize: 12, color: Colors.teal.shade900),
+            ),
+            if (widget.task.hasInstrumentDbh) ...[
+              const SizedBox(height: 8),
+              Text(
+                '儀器 Remote Dia 參考：'
+                '${widget.task.instrumentDbhCm!.toStringAsFixed(1)} cm'
+                '（非手冊 DBH）',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey.shade700,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildDbhSourceCard() {
+    if (_handbook) return const SizedBox.shrink();
     final chips = <Widget>[];
 
     if (widget.task.hasInstrumentDbh) {
@@ -2165,10 +2268,11 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
 
         const SizedBox(height: 16),
 
-        if (widget.task.hasInstrumentDbh || _storedVisionDbhCm != null)
+        if (_handbook)
+          _buildHandbookDbhBanner()
+        else if (widget.task.hasInstrumentDbh || _storedVisionDbhCm != null)
           _buildDbhSourceCard(),
 
-        // DBH 輸入（AutoPilot 失敗或人工覆核時可手動補值）
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -2181,9 +2285,11 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
                   border: const OutlineInputBorder(),
                   suffixText: 'cm',
                   prefixIcon: const Icon(Icons.circle_outlined),
-                  helperText: _activeDbhSource != null
-                      ? '目前採用：${_dbhSourceLabel(_activeDbhSource!)}'
-                      : null,
+                  helperText: _handbook
+                      ? '請於 1.3 m 胸高以胸徑尺／捲尺量測'
+                      : (_activeDbhSource != null
+                          ? '目前採用：${_dbhSourceLabel(_activeDbhSource!)}'
+                          : null),
                 ),
               ),
             ),

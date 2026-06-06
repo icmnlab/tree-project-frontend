@@ -1,6 +1,7 @@
 ﻿import 'dart:io';
 import 'package:flutter/material.dart';
 import '../config/app_config.dart';
+import '../config/survey_settings.dart';
 import '../services/locale_service.dart';
 import '../services/v3/tree_image_service.dart';
 import '../services/v3/conflict_resolution_service.dart';
@@ -32,10 +33,12 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
   int _pendingImageCount = 0;
   int _pendingConflictCount = 0;
   int _pendingMlDataCount = 0;
+  bool _researchMode = false;
 
   @override
   void initState() {
     super.initState();
+    _researchMode = SurveySettings.instance.researchModeEnabled;
     _loadServiceStatus();
   }
 
@@ -122,6 +125,8 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
                     ),
                   ],
                   const SizedBox(height: 24),
+                  _buildSurveySettingsCard(),
+                  const SizedBox(height: 16),
                   _buildInfoSection(),
                 ],
               ),
@@ -236,6 +241,63 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
     );
   }
   
+  Widget _buildSurveySettingsCard() {
+    final t = LocaleService.instance.t;
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(8, 4, 16, 4),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(8, 12, 0, 0),
+              child: Text(
+                t('settings_survey_section'),
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.deepPurple,
+                ),
+              ),
+            ),
+            SwitchListTile(
+              title: Text(t('settings_research_mode')),
+              subtitle: Text(
+                _researchMode
+                    ? t('settings_research_mode_on')
+                    : t('settings_research_mode_off'),
+                style: const TextStyle(fontSize: 12),
+              ),
+              secondary: Icon(
+                _researchMode ? Icons.science : Icons.fact_check,
+                color: _researchMode ? Colors.orange : Colors.teal,
+              ),
+              value: _researchMode,
+              onChanged: (v) async {
+                await SurveySettings.instance.setResearchModeEnabled(v);
+                if (!mounted) return;
+                setState(() => _researchMode = v);
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      v
+                          ? t('settings_research_mode_enabled')
+                          : t('settings_research_mode_disabled'),
+                    ),
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildServiceCard({
     required String title,
     required String subtitle,

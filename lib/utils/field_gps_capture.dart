@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 
 import 'field_log.dart';
 import 'location_helper.dart';
+import '../debug/debug_session_log.dart';
 
 /// 僅供參考：精度較差時顯示提醒，不阻擋確認
 const double kGpsAccuracyWarnM = 20.0;
@@ -103,7 +104,16 @@ class _FieldGpsCaptureDialogState extends State<_FieldGpsCaptureDialog> {
       final p = await getHighAccuracyPosition(
         timeout: const Duration(seconds: 15),
       );
-      if (!mounted) return;
+      if (!mounted) {
+        // #region agent log
+        DebugSessionLog.emit(
+          'field_gps_capture.dart:_manualCapture',
+          'unmounted after gps',
+          hypothesisId: 'H-C',
+        );
+        // #endregion
+        return;
+      }
       if (p == null || !_coordsValid(p)) {
         setState(() => _status = '無法取得 GPS，請確認定位已開啟');
         return;

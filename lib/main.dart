@@ -20,6 +20,7 @@ import 'screens/v3_services_page.dart';
 import 'routes/auth_guard.dart';
 import 'themes/app_theme.dart';
 import 'config/app_config.dart';
+import 'config/survey_settings.dart';
 import 'services/theme_service.dart';
 import 'config/global_keys.dart';
 import 'services/api_service.dart';
@@ -82,6 +83,7 @@ void main() async {
   // 初始化網路連線監聯
   await NetworkService().init();
   await LocaleService.instance.load();
+  await SurveySettings.instance.load();
 
   // 設置系統 UI 樣式
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(

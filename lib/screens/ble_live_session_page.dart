@@ -11,10 +11,12 @@ import '../utils/field_gps_capture.dart';
 import '../utils/field_log.dart';
 import '../services/pending_measurement_service.dart';
 import '../widgets/ble/ble_device_scanner.dart';
+import '../widgets/ble/ble_instrument_checklist.dart';
 import '../widgets/field/field_session_setup.dart';
 import 'pending_measurement_task_page.dart';
 import 'v3/integrated_tree_form_page.dart';
 import '../services/locale_service.dart';
+import '../debug/debug_session_log.dart';
 
 /// 現場連線模式：儀器關閉 ENABLE MEM，每測一棵按 SEND → **立即**建立任務並開表單，
 /// 處理完畢後再量下一棵（非批次累積）。
@@ -60,9 +62,11 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   bool _reconnecting = false;
   bool _reconnectAfterProcessing = false;
   bool _formOpen = false;
+  bool _gpsDialogOpen = false;
   int _reconnectAttempt = 0;
   int _processGen = 0;
   static const _maxReconnectAttempts = 5;
+  static const _connectMaxAttempts = 3;
   BleLiveMeasurement? _gpsRetryLive;
   int? _gpsRetrySeq;
   String _status = '';
@@ -85,6 +89,9 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   String? _projectArea;
 
   BleLiveMeasurement? _lastMeasurement;
+  Completer<void>? _blePrepare;
+  int _scannerEpoch = 0;
+  bool _checklistReady = false;
 
   @override
   void initState() {
@@ -98,13 +105,68 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       _projectCode = setup.projectCode;
       _projectArea = setup.projectArea;
     }
-    final pre = widget.initialDevice;
-    if (pre != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _connect(pre);
-      });
+    if (widget.initialDevice == null) {
+      _beginBlePrepare();
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) => _logSessionStart());
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await _logSessionStart();
+      await _ensureInstrumentChecklist();
+    });
+  }
+
+  Future<void> _ensureInstrumentChecklist() async {
+    final ok = await BleInstrumentChecklist.ensureAcknowledged(context);
+    if (!mounted) return;
+    setState(() => _checklistReady = ok);
+    if (!ok) return;
+    final pre = widget.initialDevice;
+    if (pre != null && !_isConnected && _device == null) {
+      await _connect(pre);
+    }
+  }
+
+  void _beginBlePrepare() {
+    _blePrepare = Completer<void>();
+    unawaited(() async {
+      await _releaseBleForRescan();
+      _blePrepare?.complete();
+    }());
+  }
+
+  Future<void> _safeStopScan() async {
+    try {
+      if (await FlutterBluePlus.isScanning.first) {
+        await FlutterBluePlus.stopScan();
+      }
+    } catch (_) {}
+  }
+
+  /// 進入掃描前釋放殘留連線（避免掃不到儀器）
+  Future<void> _releaseBleForRescan() async {
+    try {
+      await _safeStopScan();
+      for (final d in FlutterBluePlus.connectedDevices) {
+        if (d.isConnected) {
+          await d.disconnect();
+        }
+      }
+      // #region agent log
+      DebugSessionLog.emit(
+        'ble_live_session_page.dart:_releaseBleForRescan',
+        'released stale ble',
+        hypothesisId: 'H-E',
+        runId: 'post-fix',
+      );
+      // #endregion
+    } catch (e) {
+      DebugSessionLog.emit(
+        'ble_live_session_page.dart:_releaseBleForRescan',
+        'release failed',
+        hypothesisId: 'H-E',
+        data: {'error': e.toString()},
+        runId: 'post-fix',
+      );
+    }
   }
 
   Future<void> _logSessionStart() async {
@@ -151,15 +213,34 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
 
   /// 離開頁面時釋放掃描與連線，避免下次進入掃不到儀器
   Future<void> _teardownBleOnExit() async {
-    try {
-      await FlutterBluePlus.stopScan();
-    } catch (_) {}
+    // #region agent log
+    DebugSessionLog.emit(
+      'ble_live_session_page.dart:_teardownBleOnExit',
+      'page dispose teardown',
+      hypothesisId: 'H-E',
+      data: {
+        'hadDevice': _device != null,
+        'wasConnected': _isConnected,
+        'userDisconnect': _userDisconnect,
+      },
+    );
+    // #endregion
+    await _safeStopScan();
     final d = _device;
     if (d != null) {
       try {
         if (d.isConnected) await d.disconnect();
       } catch (_) {}
     }
+  }
+
+  bool _isRetriableConnectError(Object e) {
+    final m = e.toString().toLowerCase();
+    return m.contains('133') ||
+        m.contains('android_specific') ||
+        m.contains('timeout') ||
+        m.contains('gatt') ||
+        m.contains('connection');
   }
 
   Future<void> _connect(BluetoothDevice device, {bool isReconnect = false}) async {
@@ -174,56 +255,107 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
           : '連線中 ${device.platformName}…';
     });
 
-    try {
-      try {
-        await FlutterBluePlus.stopScan();
-      } catch (_) {}
-      _appendLog('停止掃描，連線 ${device.remoteId.str}…');
-
-      try {
-        if (device.isConnected) {
-          await device.disconnect();
-          await Future<void>.delayed(const Duration(milliseconds: 400));
-        }
-      } catch (_) {}
-
-      await device.connect(
-        timeout: const Duration(seconds: 20),
-        autoConnect: false,
-      );
-      _connSub?.cancel();
-      _connSub = device.connectionState.listen(_onConnectionState);
-
-      await Future<void>.delayed(const Duration(milliseconds: 300));
-      await _subscribeTx(device);
+    Object? lastError;
+    for (var attempt = 1; attempt <= _connectMaxAttempts; attempt++) {
       if (!mounted) return;
-      setState(() {
-        _isConnected = true;
-        _reconnectAttempt = 0;
-        _status = context.tr('ble_status_connected');
-      });
-      _appendLog('已連線 ${device.platformName} (${device.remoteId.str})');
-      if (isReconnect) {
-        _appendLog('自動重連成功');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(context.tr('ble_reconnect_ok')),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
+      if (attempt > 1) {
+        setState(() {
+          _status = context
+              .tr('ble_connect_retry')
+              .replaceAll('{n}', '$attempt')
+              .replaceAll('{max}', '$_connectMaxAttempts');
+        });
+        _appendLog('連線重試 $attempt/$_connectMaxAttempts…');
+        try {
+          if (device.isConnected) await device.disconnect();
+        } catch (_) {}
+        await Future<void>.delayed(Duration(milliseconds: 500 + attempt * 350));
       }
-    } catch (e) {
-      if (!mounted) return;
-      if (isReconnect) {
-        _appendLog('重連失敗: $e');
-        _scheduleReconnect();
-      } else {
-        setState(() => _status = '連線失敗: $e');
+
+      try {
+        await _connectOnce(device);
+        if (!mounted) return;
+        // #region agent log
+        DebugSessionLog.emit(
+          'ble_live_session_page.dart:_connect',
+          'connected',
+          hypothesisId: 'H-B',
+          data: {
+            'device': device.remoteId.str,
+            'isReconnect': isReconnect,
+            'attempt': attempt,
+          },
+        );
+        // #endregion
+        setState(() {
+          _isConnected = true;
+          _reconnectAttempt = 0;
+          _status = context.tr('ble_status_ready');
+        });
+        _appendLog('已連線 ${device.platformName} (${device.remoteId.str})');
+        if (isReconnect) {
+          _appendLog('自動重連成功');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(context.tr('ble_reconnect_ok')),
+                backgroundColor: Colors.green,
+                duration: const Duration(seconds: 2),
+              ),
+            );
+          }
+        }
+        return;
+      } catch (e) {
+        lastError = e;
+        _appendLog('連線失敗 (attempt $attempt): $e');
+        if (!_isRetriableConnectError(e) || attempt >= _connectMaxAttempts) {
+          break;
+        }
       }
     }
+
+    if (!mounted) return;
+    if (isReconnect) {
+      _scheduleReconnect();
+    } else {
+      setState(() {
+        _isConnected = false;
+        _status = context.tr('ble_connect_failed');
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            lastError != null
+                ? '${context.tr('ble_connect_failed')}\n$lastError'
+                : context.tr('ble_connect_failed'),
+          ),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
+  Future<void> _connectOnce(BluetoothDevice device) async {
+    await _safeStopScan();
+    _appendLog('停止掃描，連線 ${device.remoteId.str}…');
+
+    try {
+      if (device.isConnected) {
+        await device.disconnect();
+        await Future<void>.delayed(const Duration(milliseconds: 500));
+      }
+    } catch (_) {}
+
+    await device.connect(
+      timeout: const Duration(seconds: 20),
+      autoConnect: false,
+    );
+    _connSub?.cancel();
+    _connSub = device.connectionState.listen(_onConnectionState);
+
+    await Future<void>.delayed(const Duration(milliseconds: 450));
+    await _subscribeTx(device);
   }
 
   void _onConnectionState(BluetoothConnectionState state) {
@@ -392,7 +524,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         _processGen++;
         final gen = _processGen;
         _appendLog('  新 SEND 取代進行中流程 → #$_liveSeq');
-        if (mounted && Navigator.of(context).canPop()) {
+        if (_gpsDialogOpen && mounted) {
           Navigator.of(context).pop();
         }
         unawaited(_processLiveMeasurement(live, seq: _liveSeq, gen: gen));
@@ -588,7 +720,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
     );
 
     if (!mounted || gen != _processGen) return;
-    setState(() => _status = '第 $seq 棵：現場紀錄（拍照 / DBH / 提交）…');
+    setState(() => _status = '第 $seq 棵：現場紀錄（人工 DBH / 拍照 / 提交）…');
 
     final nav = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
@@ -630,6 +762,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
           _appendLog('#$seq 自動轉移失敗: $e');
         }
       }
+      if (!mounted) return;
       messenger.showSnackBar(
         SnackBar(
           content: Text(
@@ -744,6 +877,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         ),
       );
       if (ok != true) return;
+      if (!mounted) return;
     }
     final setup = await showFieldSessionSetupDialog(
       context,
@@ -781,11 +915,16 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
 
   /// 每次 SEND 皆於樹旁手動取得手機 GPS（2026-05-28 會議：固定樹木位置）
   Future<FieldGpsCaptureResult?> _resolveGpsForLiveMeasurement(int seq) async {
-    return showFieldGpsCaptureDialog(
-      context,
-      mode: 'tree',
-      title: '第 $seq 棵 · 樹旁 GPS',
-    );
+    _gpsDialogOpen = true;
+    try {
+      return await showFieldGpsCaptureDialog(
+        context,
+        mode: 'tree',
+        title: '第 $seq 棵 · 樹旁 GPS',
+      );
+    } finally {
+      _gpsDialogOpen = false;
+    }
   }
 
   /// 第一棵前：專案、區位、GPS 語意、場次名稱（整場共用）
@@ -870,9 +1009,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
     }
     _dataSubs.clear();
     _connSub?.cancel();
-    try {
-      await FlutterBluePlus.stopScan();
-    } catch (_) {}
+    await _safeStopScan();
     if (_device != null) {
       try {
         if (_device!.isConnected) await _device!.disconnect();
@@ -900,9 +1037,37 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   }
 
   Future<void> _pickAnotherDevice() async {
+    // #region agent log
+    DebugSessionLog.emit(
+      'ble_live_session_page.dart:_pickAnotherDevice',
+      'pick another device',
+      hypothesisId: 'H-B',
+      data: {
+        'beforeConnected': _isConnected,
+        'deviceId': _device?.remoteId.str,
+      },
+      runId: 'post-fix',
+    );
+    // #endregion
     await _disconnect();
     if (!mounted) return;
-    setState(() => _reconnectAttempt = 0);
+    setState(() {
+      _reconnectAttempt = 0;
+      _scannerEpoch++;
+    });
+    _beginBlePrepare();
+    // #region agent log
+    DebugSessionLog.emit(
+      'ble_live_session_page.dart:_pickAnotherDevice',
+      'after disconnect',
+      hypothesisId: 'H-B',
+      data: {
+        'showScanner': _showBleScanner,
+        'userDisconnect': _userDisconnect,
+        'deviceNull': _device == null,
+      },
+    );
+    // #endregion
   }
 
   Widget _buildReconnectPanel() {
@@ -950,6 +1115,121 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
               child: Text(context.tr('ble_reconnect_scan_other')),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReadyPanel() {
+    final hasData = _lastMeasurement != null;
+    return Expanded(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
+          children: [
+            Card(
+              elevation: 0,
+              color: Colors.green.shade50,
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    Icon(
+                      hasData ? Icons.check_circle : Icons.touch_app,
+                      size: 52,
+                      color: Colors.green.shade700,
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      context.tr('ble_ready_title'),
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.green.shade900,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    _readyStep(context.tr('ble_ready_step1')),
+                    _readyStep(context.tr('ble_ready_step2')),
+                    _readyStep(context.tr('ble_ready_step3')),
+                    if (!hasData) ...[
+                      const SizedBox(height: 16),
+                      Text(
+                        context.tr('ble_ready_waiting'),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.orange.shade900,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const Spacer(),
+            if (!_isProcessingTree)
+              TextButton.icon(
+                onPressed: _pickAnotherDevice,
+                icon: const Icon(Icons.bluetooth_searching),
+                label: Text(context.tr('ble_reconnect_scan_other')),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _readyStep(String text) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.arrow_right, size: 20, color: Colors.green.shade700),
+          const SizedBox(width: 4),
+          Expanded(child: Text(text, style: const TextStyle(fontSize: 14))),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildChecklistGate() {
+    return Expanded(
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.fact_check_outlined,
+                  size: 48, color: Colors.teal.shade700),
+              const SizedBox(height: 16),
+              Text(
+                context.tr('ble_checklist_title'),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 20),
+              FilledButton.icon(
+                onPressed: () async {
+                  final ok = await BleInstrumentChecklist.show(context);
+                  if (!mounted) return;
+                  setState(() => _checklistReady = ok);
+                  if (ok && widget.initialDevice != null && _device == null) {
+                    await _connect(widget.initialDevice!);
+                  }
+                },
+                icon: const Icon(Icons.play_arrow),
+                label: Text(context.tr('ble_checklist_confirm')),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1090,20 +1370,26 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
             ),
           ),
           if (_gpsRetryLive != null) _buildGpsRetryBanner(),
-          if (_canAutoReconnect && !_isProcessingTree) _buildReconnectPanel()
+          if (_canAutoReconnect && !_isProcessingTree)
+            _buildReconnectPanel()
+          else if (!_checklistReady)
+            _buildChecklistGate()
           else if (_showBleScanner)
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: BleDeviceScanner(
-                  key: ValueKey('ble_scan_$_userDisconnect${_device?.remoteId.str ?? "none"}'),
+                  key: ValueKey('ble_scan_$_scannerEpoch'),
+                  prepareFuture: _blePrepare?.future,
                   onDeviceSelected: (device) {
                     if (_isProcessingTree) return;
                     _connect(device);
                   },
                 ),
               ),
-            ),
+            )
+          else if (_isConnected && !_isProcessingTree)
+            _buildReadyPanel(),
           if (last != null)
             Card(
               margin: const EdgeInsets.symmetric(horizontal: 12),

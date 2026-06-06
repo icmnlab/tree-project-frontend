@@ -326,6 +326,7 @@ class PendingMeasurementService {
     String? notes,
     String? speciesName,
     String? expectedUpdatedAt,
+    String? dbhSource,
   }) async {
     try {
       final body = {
@@ -336,6 +337,9 @@ class PendingMeasurementService {
         'status': MeasurementStatus.completed.value,
         'completed_at': DateTime.now().toIso8601String(),
       };
+      if (dbhSource != null) {
+        body['dbh_source'] = dbhSource;
+      }
 
       if (speciesName != null) {
         body['species_name'] = speciesName;

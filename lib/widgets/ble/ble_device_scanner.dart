@@ -1,8 +1,11 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
+
+import '../../debug/debug_session_log.dart';
 
 /// 共用 BLE 掃描列表：權限／藍牙狀態檢查後掃描，供使用者點選（不自動連線第一台）
 class BleDeviceScanner extends StatefulWidget {
@@ -11,9 +14,13 @@ class BleDeviceScanner extends StatefulWidget {
 
   final void Function(BluetoothDevice device) onDeviceSelected;
 
+  /// 父層釋放殘留 BLE 後再掃描（避免與 disconnect 搶佔）
+  final Future<void>? prepareFuture;
+
   const BleDeviceScanner({
     super.key,
     this.vlgeoOnly = true,
+    this.prepareFuture,
     required this.onDeviceSelected,
   });
 
@@ -92,10 +99,15 @@ class _BleDeviceScannerState extends State<BleDeviceScanner> {
     });
     if (!ok) return;
 
+    if (widget.prepareFuture != null) {
+      await widget.prepareFuture;
+    }
+
     final state = await FlutterBluePlus.adapterState.first;
     if (!mounted) return;
     setState(() => _adapterState = state);
     if (state == BluetoothAdapterState.on) {
+      await _releaseStaleConnections();
       await _startScan();
     } else {
       setState(() => _status = '請先開啟手機藍牙');
@@ -168,6 +180,25 @@ class _BleDeviceScannerState extends State<BleDeviceScanner> {
     }
   }
 
+  Future<void> _safeStopScan() async {
+    try {
+      if (await FlutterBluePlus.isScanning.first) {
+        await FlutterBluePlus.stopScan();
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _releaseStaleConnections() async {
+    try {
+      for (final d in FlutterBluePlus.connectedDevices) {
+        if (d.isConnected) {
+          await d.disconnect();
+        }
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 400));
+    } catch (_) {}
+  }
+
   Future<void> _startScan() async {
     if (!_permissionsReady) {
       final ok = await _ensurePermissions();
@@ -181,6 +212,7 @@ class _BleDeviceScannerState extends State<BleDeviceScanner> {
     }
 
     await _stopScan();
+    await _releaseStaleConnections();
     setState(() {
       _isScanning = true;
       _allResults.clear();
@@ -188,11 +220,33 @@ class _BleDeviceScannerState extends State<BleDeviceScanner> {
     });
 
     try {
+      final useFineLoc = Platform.isAndroid;
       await FlutterBluePlus.startScan(
         timeout: const Duration(seconds: 20),
-        androidUsesFineLocation: false,
+        androidUsesFineLocation: useFineLoc,
       );
+      // #region agent log
+      DebugSessionLog.emit(
+        'ble_device_scanner.dart:_startScan',
+        'scan started',
+        hypothesisId: 'H-A',
+        data: {
+          'adapter': _adapterState.name,
+          'showAll': _showAllDevices,
+          'androidUsesFineLocation': useFineLoc,
+        },
+        runId: 'post-fix-v2',
+      );
+      // #endregion
     } catch (e) {
+      // #region agent log
+      DebugSessionLog.emit(
+        'ble_device_scanner.dart:_startScan',
+        'scan failed',
+        hypothesisId: 'H-A',
+        data: {'error': e.toString()},
+      );
+      // #endregion
       if (mounted) {
         setState(() {
           _isScanning = false;
@@ -218,13 +272,19 @@ class _BleDeviceScannerState extends State<BleDeviceScanner> {
   }
 
   Future<void> _stopScan() async {
-    try {
-      await FlutterBluePlus.stopScan();
-    } catch (_) {}
+    await _safeStopScan();
     await _scanSub?.cancel();
     _scanSub = null;
     if (mounted) {
       final n = _visibleResults.length;
+      // #region agent log
+      DebugSessionLog.emit(
+        'ble_device_scanner.dart:_stopScan',
+        'scan stopped',
+        hypothesisId: 'H-A',
+        data: {'visible': n, 'raw': _allResults.length},
+      );
+      // #endregion
       setState(() {
         _isScanning = false;
         _status = n == 0 ? '掃描結束，可再試一次' : '掃描結束（$n 台）';
