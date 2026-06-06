@@ -491,10 +491,13 @@ class _MapPageState extends State<MapPage> with RouteAware {
                 .where((c) => c.isNotEmpty)
                 .toList() ??
             [];
+        final sortedNames = names.toList()..sort();
+        await _mergeBoundaryNamesIntoProjects(sortedNames, nameToCode);
         _safeSetState(() {
           _projectNameToCode = nameToCode;
-          _projects = ['全部', ...names];
+          _projects = ['全部', ...sortedNames];
           _filteredProjects = _projects;
+          _sanitizeSelectedProject();
           _cities = ['全部', ..._extractCitiesFromList(cities)];
           _totalTreeCount = (meta['totalTrees'] as num?)?.toInt() ?? 0;
         });
@@ -524,6 +527,34 @@ class _MapPageState extends State<MapPage> with RouteAware {
       '臺東縣', '澎湖縣', '金門縣', '連江縣',
     ]);
     return cities.toList()..sort();
+  }
+
+  /// 合併邊界表中的專案名（手繪邊界可能不在 /projects API 清單）。
+  Future<void> _mergeBoundaryNamesIntoProjects(
+    List<String> names,
+    Map<String, String> nameToCode,
+  ) async {
+    try {
+      final boundaries = await ProjectBoundaryService().getAllBoundaries();
+      final seen = names.toSet();
+      for (final b in boundaries) {
+        final n = b.projectName.trim();
+        if (n.isEmpty || !seen.add(n)) continue;
+        names.add(n);
+        final code = b.projectCode?.trim();
+        if (code != null && code.isNotEmpty && code != '無') {
+          nameToCode.putIfAbsent(n, () => code);
+        }
+      }
+      names.sort();
+    } catch (e) {
+      _mapLog('merge boundary names failed: $e');
+    }
+  }
+
+  void _sanitizeSelectedProject() {
+    if (_filteredProjects.contains(_selectedProject)) return;
+    _selectedProject = '全部';
   }
 
   // 依縣市／專案一次載入標記（預設不用 bbox；拖曳不再自動重載）
@@ -697,15 +728,13 @@ class _MapPageState extends State<MapPage> with RouteAware {
           }
         }
       }
-      final list = names.toList()..sort((a, b) {
-            if (a == '全部') return -1;
-            if (b == '全部') return 1;
-            return a.compareTo(b);
-          });
+      final nameList = names.where((n) => n != '全部').toList();
+      await _mergeBoundaryNamesIntoProjects(nameList, nameToCode);
+      final list = ['全部', ...nameList];
       _safeSetState(() {
         _filteredProjects = list;
         _projectNameToCode = nameToCode;
-        if (!list.contains(_selectedProject)) _selectedProject = '全部';
+        _sanitizeSelectedProject();
       });
     } catch (e) {
       debugPrint('依縣市載入專案列表失敗: $e');
@@ -1161,7 +1190,9 @@ class _MapPageState extends State<MapPage> with RouteAware {
                         Expanded(
                           child: DropdownButton<String>(
                             isExpanded: true,
-                            value: _selectedProject,
+                            value: _filteredProjects.contains(_selectedProject)
+                                ? _selectedProject
+                                : '全部',
                             underline: Container(height: 1, color: Colors.grey.shade300),
                             items: _filteredProjects.map((project) {
                               return DropdownMenuItem<String>(

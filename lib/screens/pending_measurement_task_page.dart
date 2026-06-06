@@ -1107,6 +1107,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
               ? Colors.teal.shade50
               : null),
       child: ListTile(
+        tileColor: Colors.transparent,
         leading: CircleAvatar(
           backgroundColor: _getPriorityColor(task.priority ?? 3),
           foregroundColor: Colors.white,

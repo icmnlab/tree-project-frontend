@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/pending_tree_measurement.dart';
 import '../config/app_config.dart';
+import '../config/survey_settings.dart';
 import 'api_service.dart';
 import 'v3/station_service.dart'; // Import StationService
 
@@ -127,6 +128,15 @@ class PendingMeasurementService {
               '  驗證距離: ${verifyDist.toStringAsFixed(2)}m (應≈${horizontalDistance}m)');
         }
 
+        final bool handbook = SurveySettings.instance.handbookCompliantMode;
+        final bool hasBleDia = bleDia != null && bleDia > 0;
+        final double? pendingDbhCm =
+            handbook ? null : (hasBleDia ? bleDia : null);
+        final double? instrumentDbhCm = hasBleDia ? bleDia : null;
+        final String pendingDbhSource = handbook
+            ? 'manual'
+            : (dbhSource ?? (hasBleDia ? 'remote_diameter' : 'manual'));
+
         final pending = PendingTreeMeasurement(
           sessionId: resolvedSessionId,
           originalRecordId: record['id']?.toString(),
@@ -137,9 +147,9 @@ class PendingMeasurementService {
           projectName:
               (record['_assigned_project_name'] as String?) ?? projectName,
           treeHeight: height,
-          dbhCm: bleDia,
-          instrumentDbhCm: (dbhSource == 'remote_diameter') ? bleDia : null,
-          dbhSource: dbhSource,
+          dbhCm: pendingDbhCm,
+          instrumentDbhCm: instrumentDbhCm,
+          dbhSource: pendingDbhSource,
           treeLatitude: treeLat,
           treeLongitude: treeLon,
           stationLatitude: stationLat,

@@ -96,7 +96,8 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
       
       // 載入現有邊界
       _existingBoundaries = await _boundaryService.getAllBoundaries(forceRefresh: true);
-      
+      _refreshProjectOptions();
+
       // 如果有選定專案，載入該專案的樹木位置
       if (_selectedProject != null) {
         final project = _selectedProject!;
@@ -735,6 +736,37 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
            '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
+  /// 合併 API 專案與邊界紀錄中的專案名，去重並校正 Dropdown value。
+  void _refreshProjectOptions() {
+    final seen = <String>{};
+    final names = <String>[];
+    void add(String? raw) {
+      final s = raw?.trim() ?? '';
+      if (s.isEmpty || !seen.add(s)) return;
+      names.add(s);
+    }
+    for (final n in _availableProjects) {
+      add(n);
+    }
+    for (final b in _existingBoundaries) {
+      add(b.projectName);
+    }
+    names.sort((a, b) => a.compareTo(b));
+    _availableProjects = names;
+    _sanitizeSelectedProject();
+  }
+
+  void _sanitizeSelectedProject() {
+    final current = _selectedProject?.trim();
+    if (current == null || current.isEmpty) {
+      _selectedProject = null;
+      return;
+    }
+    if (_availableProjects.contains(current)) return;
+    _selectedProject =
+        _availableProjects.isNotEmpty ? _availableProjects.first : null;
+  }
+
   void _onProjectChanged(String? project) async {
     if (project == null || project == _selectedProject) return;
     
@@ -881,7 +913,9 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: DropdownButton<String>(
-                                  value: _selectedProject,
+                                  value: _availableProjects.contains(_selectedProject)
+                                      ? _selectedProject
+                                      : null,
                                   hint: const Text('選擇專案'),
                                   isExpanded: true,
                                   items: _availableProjects.map((p) => DropdownMenuItem(

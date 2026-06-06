@@ -7,6 +7,7 @@ import '../../services/locale_service.dart';
 import '../../services/project_area_service.dart';
 import '../../services/project_service.dart';
 import '../../services/v3/project_boundary_coordinator.dart';
+import '../../services/v3/project_boundary_service.dart';
 import '../../utils/location_helper.dart';
 
 /// 現場場次共用：專案／區位／GPS 語意／場次名稱
@@ -109,6 +110,34 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
     }
   }
 
+  /// 合併邊界表專案名（手繪邊界可能不在 /projects API）。
+  Future<void> _mergeBoundaryProjectsIntoList(
+    List<Map<String, dynamic>> list,
+    String area,
+  ) async {
+    try {
+      final boundaries = await ProjectBoundaryService().getAllBoundaries();
+      final seen = list
+          .map((p) => p['name']?.toString().trim() ?? '')
+          .where((s) => s.isNotEmpty)
+          .toSet();
+      for (final b in boundaries) {
+        final name = b.projectName.trim();
+        if (name.isEmpty || seen.contains(name)) continue;
+        final bArea = b.projectArea?.trim() ?? '';
+        if (bArea.isNotEmpty && bArea != area) continue;
+        seen.add(name);
+        list.add({
+          'name': name,
+          'code': b.projectCode,
+          'from_boundary': true,
+        });
+      }
+      list.sort((a, b) =>
+          (a['name']?.toString() ?? '').compareTo(b['name']?.toString() ?? ''));
+    } catch (_) {}
+  }
+
   Future<void> _loadProjectsForArea(String area) async {
     setState(() => _loadingProjects = true);
     try {
@@ -122,6 +151,7 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
           }
         }
       }
+      await _mergeBoundaryProjectsIntoList(list, area);
       if (mounted) {
         setState(() {
           _filteredProjects = list;
@@ -135,6 +165,14 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
             if (!stillExists) {
               _projectCode = null;
               _projectNameCtrl.clear();
+            }
+          } else if (_projectNameCtrl.text.trim().isNotEmpty) {
+            final name = _projectNameCtrl.text.trim();
+            final match = list.where((p) => p['name']?.toString() == name);
+            if (match.isEmpty) {
+              _projectNameCtrl.clear();
+            } else {
+              _projectCode = match.first['code']?.toString();
             }
           }
         });
@@ -156,35 +194,39 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
             title: Text(ctx2.tr('field_setup_area')),
             content: SizedBox(
               width: double.maxFinite,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextField(
-                    controller: searchCtrl,
-                    decoration: InputDecoration(
-                      hintText: ctx2.tr('field_setup_search_project'),
-                      prefixIcon: const Icon(Icons.search),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: searchCtrl,
+                      decoration: InputDecoration(
+                        hintText: ctx2.tr('field_setup_search_project'),
+                        prefixIcon: const Icon(Icons.search),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
+                      onChanged: (v) {
+                        setDialog(() {
+                          filtered = v.isEmpty
+                              ? List.from(_projectAreas)
+                              : _projectAreas
+                                  .where((a) => (a['area_name'] ?? '')
+                                      .toString()
+                                      .toLowerCase()
+                                      .contains(v.toLowerCase()))
+                                  .toList();
+                        });
+                      },
                     ),
-                    onChanged: (v) {
-                      setDialog(() {
-                        filtered = v.isEmpty
-                            ? List.from(_projectAreas)
-                            : _projectAreas
-                                .where((a) => (a['area_name'] ?? '')
-                                    .toString()
-                                    .toLowerCase()
-                                    .contains(v.toLowerCase()))
-                                .toList();
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    height: 260,
-                    child: _loadingAreas
+                    const SizedBox(height: 12),
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: (MediaQuery.of(ctx2).size.height * 0.35)
+                            .clamp(120.0, 260.0),
+                      ),
+                      child: _loadingAreas
                         ? const Center(child: CircularProgressIndicator())
                         : filtered.isEmpty
                             ? Center(
@@ -208,8 +250,9 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
                                   );
                                 },
                               ),
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
             ),
             actions: [

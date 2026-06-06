@@ -10,6 +10,7 @@ import 'services/api_service.dart';
 import 'services/auth_service.dart'; // 角色權限
 import 'constants/colors.dart';
 import 'services/locale_service.dart';
+import 'services/v3/project_boundary_service.dart';
 
 /// [T6 cleanup] 中文表頭→V2 (English) DB 欄位映射
 /// 用于 Excel 匯入 + 批次更新改走 createTreeV2 / updateTreeV2。
@@ -157,14 +158,43 @@ class _TreeListPageState extends State<TreeListPage> {
         }
       }
       final sorted = names.toList()..sort();
+      await _mergeBoundaryNamesIntoProjects(sorted, nameToCode);
       setState(() {
         _projectNameToCode = nameToCode;
         _projects = ['全部', ...sorted];
+        _sanitizeSelectedProject();
       });
       _treeListLog('projects loaded: ${sorted.length}');
     } catch (e) {
       _treeListLog('load projects failed: $e');
     }
+  }
+
+  Future<void> _mergeBoundaryNamesIntoProjects(
+    List<String> names,
+    Map<String, String> nameToCode,
+  ) async {
+    try {
+      final boundaries = await ProjectBoundaryService().getAllBoundaries();
+      final seen = names.toSet();
+      for (final b in boundaries) {
+        final n = b.projectName.trim();
+        if (n.isEmpty || !seen.add(n)) continue;
+        names.add(n);
+        final code = b.projectCode?.trim();
+        if (code != null && code.isNotEmpty && code != '無') {
+          nameToCode.putIfAbsent(n, () => code);
+        }
+      }
+      names.sort();
+    } catch (e) {
+      _treeListLog('merge boundary names failed: $e');
+    }
+  }
+
+  void _sanitizeSelectedProject() {
+    if (_projects.contains(_selectedProject)) return;
+    _selectedProject = '全部';
   }
 
   String? get _selectedProjectCode {
@@ -839,7 +869,9 @@ class _TreeListPageState extends State<TreeListPage> {
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
-                            value: _selectedProject,
+                            value: _projects.contains(_selectedProject)
+                                ? _selectedProject
+                                : '全部',
                             icon: Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.portBlue),
                             items: _projects.map((String project) {
                               return DropdownMenuItem<String>(
