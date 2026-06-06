@@ -18,6 +18,7 @@ import 'screens/pending_password_resets_page.dart';
 import 'screens/role_permissions_page.dart';
 import '../services/auth_service.dart';
 import '../services/locale_service.dart';
+import 'config/survey_settings.dart';
 
 class AdminPage extends StatefulWidget {
   const AdminPage({super.key});
@@ -44,6 +45,7 @@ class _AdminPageState extends State<AdminPage> {
   bool _isLoadingProjects = false;
   bool _isExportingExcel = false;
   bool _isExportingPdf = false;
+  bool _researchMode = false;
 
   // Services
   final UserService _userService = UserService();
@@ -61,6 +63,7 @@ class _AdminPageState extends State<AdminPage> {
     _fetchUsers();
     _fetchProjectsForExport();
     _loadPermissions();
+    _researchMode = SurveySettings.instance.researchModeEnabled;
   }
 
   // [T7] 載入角色權限 -> 控制 tab 顯示
@@ -1178,6 +1181,38 @@ class _AdminPageState extends State<AdminPage> {
             //   populateSpeciesRegionScore 依賴已刪除的 tree_carbon_data 表，
             //   不再適用。
 
+            Card(
+              elevation: 2,
+              child: SwitchListTile(
+                secondary: Icon(
+                  _researchMode ? Icons.science : Icons.fact_check,
+                  color: _researchMode ? Colors.orange : Colors.teal,
+                ),
+                title: Text(context.tr('settings_research_mode')),
+                subtitle: Text(
+                  _researchMode
+                      ? context.tr('settings_research_mode_on')
+                      : context.tr('settings_research_mode_off'),
+                ),
+                value: _researchMode,
+                onChanged: (v) async {
+                  await SurveySettings.instance.setResearchModeEnabled(v);
+                  if (!mounted) return;
+                  setState(() => _researchMode = v);
+                  if (!context.mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        v
+                            ? context.tr('settings_research_mode_enabled')
+                            : context.tr('settings_research_mode_disabled'),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
             // [Research] DBH 校準資料蒐集（給研究/論文 §結果用的乾淨資料集）
             Card(
               elevation: 2,

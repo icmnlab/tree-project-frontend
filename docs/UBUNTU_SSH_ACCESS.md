@@ -30,7 +30,17 @@ tailscale ssh richardhualienserver
 
 首次連線若出現 host key 提示，輸入 `yes` 接受。
 
-傳統 SSH（需知道 Linux 使用者名，常見為部署帳號）：
+### 常見錯誤與處理
+
+| 現象 | 原因 | 建議 |
+|------|------|------|
+| `No ED25519 host key is known for richardhualienserver...` | Ubuntu 尚未在 Tailscale 上公告 SSH host key，或 Tailscale SSH 未完整啟用 | 在**本機互動式終端**執行 `tailscale ssh richardhualienserver`；若仍失敗，請伺服器管理員在 Ubuntu 啟用 Tailscale SSH（`tailscale set --ssh`）並確認 ACL |
+| `Permission denied (publickey)`（`ssh user@100.118.203.75`） | 伺服器**僅允許公鑰**，不接受密碼；或本機金鑰未加入 `authorized_keys` | 使用已加入伺服器的本機金鑰（例如 `~/.ssh/id_ed25519`）連線；或改用 `tailscale ssh richardhualienserver` |
+| `Permission denied (publickey,password)` | 同上：密碼登入已停用 | 勿用密碼；確認 `ssh -i ~/.ssh/id_ed25519 kyleliu@100.118.203.75` 可用 |
+| `connectex ... port 22 ... failed` | 主機未對 tailnet 開放 22，或僅允許 Tailscale SSH 通道 | 同上，用 `tailscale ssh`；必要時由管理員檢查 `ufw` / `sshd` |
+| `curl /health` 回 `OK` 但不知是否最新版 | health 只代表程序在跑 | SSH 後 `git log -1`，或帶 token 查 `GET /webhook/status` |
+
+傳統 SSH（需知道 Linux 使用者名，且金鑰已加入伺服器；**非預設路徑**）：
 
 ```powershell
 ssh <使用者>@100.118.203.75
@@ -62,9 +72,20 @@ curl -s http://127.0.0.1:3000/health
 pm2 list
 pm2 logs tree-backend --lines 30
 
-# 手動部署（webhook 失敗時）
-/opt/tree-app/scripts/deploy.sh
+# 手動部署（webhook 失敗時；需用 bash 執行）
+bash /opt/tree-app/scripts/deploy.sh
 ```
+
+### 部署卡住／未更新到最新 commit
+
+若 `deploy.log` 有 `Deploy started` 但 `git log -1` 仍為舊版，常見原因：
+
+| 現象 | 處理 |
+|------|------|
+| `untracked working tree files would be overwritten by merge`（例如 `scripts/list_users.js`） | `mv scripts/list_users.js scripts/list_users.js.bak` 後再 `git pull origin main` |
+| `git pull` 已成功但 PM2 uptime 仍為數天 | 手動 pull 會讓 `deploy.sh` 判定「Already up to date」而跳過重啟；需執行 `npm install --production`、`node scripts/migrate.js`、`pm2 reload tree-backend` |
+| `Permission denied` 執行 deploy.sh | 腳本為 symlink，請用 `bash /opt/tree-app/scripts/deploy.sh` |
+
 
 ---
 

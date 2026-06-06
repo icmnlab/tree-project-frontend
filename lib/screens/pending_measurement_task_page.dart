@@ -1112,10 +1112,15 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
           foregroundColor: Colors.white,
           child: Text('${index + 1}'),
         ),
-        title: Row(
+        title: Wrap(
+          spacing: 4,
+          runSpacing: 4,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
-            Text('ID: ${task.originalRecordId ?? "未知"}'),
-            const SizedBox(width: 8),
+            Text(
+              'ID: ${task.originalRecordId ?? "未知"}',
+              overflow: TextOverflow.ellipsis,
+            ),
             if (task.requiresGpsFix) ...[
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1132,7 +1137,6 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
                   ),
                 ),
               ),
-              const SizedBox(width: 4),
             ],
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1150,7 +1154,6 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
                 ),
               ),
             ),
-            const SizedBox(width: 4),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
@@ -1175,7 +1178,6 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
                 ),
               ),
             ),
-            const SizedBox(width: 4),
             if (typeLabel.isNotEmpty) ...[
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1193,7 +1195,6 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
                   ),
                 ),
               ),
-              const SizedBox(width: 4),
             ],
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
@@ -1209,14 +1210,12 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
                 ),
               ),
             ),
-            if (statusLabel.isNotEmpty) ...[
-              const SizedBox(width: 4),
+            if (statusLabel.isNotEmpty)
               Text(statusLabel,
                   style: TextStyle(
                       fontSize: 11,
                       color: Colors.teal.shade700,
                       fontWeight: FontWeight.bold)),
-            ],
           ],
         ),
         subtitle: Column(
