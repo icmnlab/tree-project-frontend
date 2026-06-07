@@ -23,6 +23,7 @@ import '../../services/locale_service.dart';
 import '../../widgets/tree_measurement_history_panel.dart';
 import '../../widgets/conflict_resolution_dialog.dart';
 import '../../config/survey_settings.dart';
+import '../../utils/field_log.dart';
 
 /// V3 整合式樹木測量表單
 ///
@@ -160,7 +161,11 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
     if (id == null) return;
     final fresh = await _pendingService.fetchTaskById(id);
     if (!mounted || fresh?.updatedAt == null) return;
-    setState(() => _lockUpdatedAt = fresh!.updatedAt);
+    FieldLog.pending(
+      'lock refresh task=$id ${_lockUpdatedAt?.toUtc().toIso8601String()} → '
+      '${fresh!.updatedAt!.toUtc().toIso8601String()}',
+    );
+    setState(() => _lockUpdatedAt = fresh.updatedAt);
   }
 
   String? _lockIsoString() =>
@@ -1443,6 +1448,9 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
 
       // [T6][Phase1.5] 帶上載入當下的 updated_at 做樂觀鎖（UTC ISO）
       final expectedUpdatedAt = _lockIsoString();
+      FieldLog.pending(
+        'submit PATCH task=$taskId expected_updated_at=$expectedUpdatedAt',
+      );
       var updateResp = await _pendingService.updateMeasurement(
         id: taskId,
         dbhCm: dbh,
@@ -1456,6 +1464,10 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
 
       // [T6] 409 衝突 → 三選一
       if (updateResp['code'] == 'CONFLICT' && mounted) {
+        FieldLog.pending(
+          '409 CONFLICT task=$taskId sent=$expectedUpdatedAt '
+          'server=${updateResp['serverVersion']?['updated_at']}',
+        );
         final server =
             (updateResp['serverVersion'] as Map?)?.cast<String, dynamic>() ??
                 {};

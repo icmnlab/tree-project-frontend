@@ -1,24 +1,42 @@
 # 同一棵樹的多次調查（歷次資料）
 
-## 目前機制（已存在）
+> 更新：2026-06-07
 
-| 層級 | 行為 |
+## 目前機制（已上線）
+
+| 層級 | 表 / 元件 | 行為 |
+|------|-----------|------|
+| **快照** | `tree_survey` | 每棵樹一筆「目前值」；最新 transfer / 維護 / 手動編輯會更新 |
+| **量測歷次** | `tree_survey_measurements` | 每次 **pending transfer**（`new` / `maintenance`）追加一列；migration 17 回填 `snapshot` |
+| **儀器原始** | `tree_measurement_raw` | BLE 距離、GPS、raw JSON；transfer 時寫入 |
+| **操作稽核** | `audit_logs` | 登入、建樹、改樹、CSV 等（**不含 transfer**） |
+| **前端** | `TreeMeasurementHistoryPanel` | 樹詳情、維護量測、整合表單內時間軸 |
+
+### survey_mode 語意
+
+| 值 | 來源 |
+|----|------|
+| `new` | 現場 transfer 新建 tree_survey |
+| `maintenance` | 對既有 `target_tree_id` 複查 |
+| `snapshot` | migration 17 對歷史資料的 baseline 回填 |
+
+## 已知缺口（2026-06-07 修復進度）
+
+| 缺口 | 狀態 |
 |------|------|
-| **tree_survey** | 每棵樹一筆「目前快照」：`survey_time`、`dbh_cm`、`tree_height_m` 等會在最新一次寫入時更新 |
-| **tree_measurement_raw** | 轉移待測量或匯入時，儀器原始量測（距離、方位、GPS、raw snapshot、`measured_at`）會掛在 `tree_id` 上，可累積多筆 |
-| **待測量 survey_mode** | `new`：新建 tree_survey；`maintenance`：更新既有 `target_tree_id`（複查／維護） |
-| **照片 tree_images** | `owner_type=survey`，轉移時由 pending 改掛正式樹 id |
-
-因此：**同一棵樹再次調查**時，若走「維護／對應既有樹木」流程，正式表會更新最新調查結果，儀器細節留在 `tree_measurement_raw` 供研究追溯。
-
-## 尚未完整建置（研究用長期願景）
-
-- 獨立的 **`tree_survey_events`**（或類似）表：每次調查一列，不覆寫歷史 DBH／樹高
-- 前端「調查時間軸」：同一 system_tree_id 列出歷次事件
-- 碳匯年流量依歷次調查差分計算（需與手冊／TIPC 欄位對齊後再實作）
+| transfer 寫歷次失敗被 silent skip | **已修**（失敗則整批 rollback） |
+| 手動 `update_v2` / CSV 不寫歷次 | 待辦（P1） |
+| transfer 無 audit log | 待辦（P1） |
+| `UPDATE_TREE` 無 before/after | 待辦（P1） |
+| 刪樹 CASCADE 刪歷次 | 待辦（P3 soft delete） |
 
 ## 實務建議
 
-1. 複查既有樹：BLE／待測量請設 `survey_mode=maintenance` 並帶 `target_tree_id`（或事後在樹木清單編輯對應）。
-2. 新植／新點：維持 `new`，轉移後產生新 `system_tree_id`。
-3. 研究匯出：現階段可從 `tree_measurement_raw` + `tree_survey.survey_time` 做初步分析；完整歷次快照待 events 表上線。
+1. **複查既有樹**：走維護量測 + `survey_mode=maintenance` + `target_tree_id`。
+2. **新植／新點**：`survey_mode=new`，transfer 後產生新 `system_tree_id`。
+3. **研究匯出**：現階段可查 `tree_survey_measurements` + `tree_measurement_raw`；手動修正尚未全進時間軸。
+
+## 相關文件
+
+- `backend/docs/WORK_STATUS.md`
+- `backend/database/initial_data/15_tree_survey_measurements.pg.sql`

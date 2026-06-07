@@ -4,9 +4,10 @@ import 'package:flutter/foundation.dart';
 
 /// 現場量測偵錯日誌。
 ///
-/// - **畫面日誌**：BLE 連線頁透過 [uiSink] 顯示（release 亦有效）。
-/// - **Logcat / adb**：Debug 預設開啟；Release 需
+/// - **flutter run 終端機**：Debug 預設開啟；Release 需
 ///   `--dart-define=ENABLE_FIELD_LOGS=true`。
+/// - **畫面日誌**：BLE 連線頁透過 [uiSink] 顯示（release 亦有效）。
+/// - **adb logcat**：`adb logcat -s flutter` 或依 tag 過濾 `BleLive` 等。
 typedef FieldLogUiSink = void Function(String line);
 
 class FieldLog {
@@ -34,6 +35,14 @@ class FieldLog {
   static void _emit(String tag, String message, {required bool toUi}) {
     if (logcatEnabled) {
       developer.log(message, name: tag, time: DateTime.now());
+      // developer.log 不一定出現在 flutter run 終端；明確寫 stdout 方便現場除錯。
+      final line = '[$tag] $message';
+      if (kDebugMode) {
+        debugPrint(line);
+      } else {
+        // ignore: avoid_print
+        print(line);
+      }
     }
     if (toUi && uiSink != null) {
       final hh = DateTime.now().hour.toString().padLeft(2, '0');

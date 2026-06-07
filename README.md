@@ -74,7 +74,13 @@ flutter build ios --release           # requires macOS + Xcode
 
 現場連線頁（`BleLiveSessionPage`）**畫面底部日誌**在 release 亦會顯示；可點 AppBar **複製日誌**回報問題。
 
-若要同時寫入 **adb logcat**（接電腦除錯）：
+**本機 `flutter run` 終端機**（Debug 預設即有 `[BleLive]` / `[Pending]` 等行；可加 `--dart-define=ENABLE_FIELD_LOGS=true` 保險）：
+
+```bash
+flutter run --dart-define=ENABLE_FIELD_LOGS=true
+```
+
+若要同時寫入 **adb logcat**（接實機 release 除錯）：
 
 ```bash
 flutter run --release --dart-define=ENABLE_FIELD_LOGS=true

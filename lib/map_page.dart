@@ -9,6 +9,7 @@ import 'package:geolocator/geolocator.dart';
 import 'services/api_service.dart';
 import 'services/tree_service.dart';
 import 'utils/location_helper.dart';
+import 'services/project_service.dart';
 import 'services/v3/project_boundary_service.dart';
 import 'screens/v3/project_boundary_draw_page.dart';
 import 'services/auth_service.dart'; // [T7] 角色權限
@@ -473,14 +474,14 @@ class _MapPageState extends State<MapPage> with RouteAware {
     try {
       _mapLog('meta load start');
       final meta = await _treeService.getMapMeta();
+      final projResp = await ProjectService().getProjects(forceRefresh: true);
       if (meta['success'] == true) {
-        final projects = (meta['projects'] as List?) ?? [];
         final nameToCode = <String, String>{};
         final names = <String>{};
-        for (final p in projects) {
+        for (final p in ProjectService.projectListFromResponse(projResp)) {
           if (p is! Map) continue;
           final name = p['name']?.toString();
-          final code = p['code']?.toString();
+          final code = (p['code'] ?? p['project_code'])?.toString();
           if (name != null && name.isNotEmpty) {
             names.add(name);
             if (code != null && code.isNotEmpty) nameToCode[name] = code;
@@ -492,7 +493,6 @@ class _MapPageState extends State<MapPage> with RouteAware {
                 .toList() ??
             [];
         final sortedNames = names.toList()..sort();
-        await _mergeBoundaryNamesIntoProjects(sortedNames, nameToCode);
         _safeSetState(() {
           _projectNameToCode = nameToCode;
           _projects = ['全部', ...sortedNames];
@@ -527,29 +527,6 @@ class _MapPageState extends State<MapPage> with RouteAware {
       '臺東縣', '澎湖縣', '金門縣', '連江縣',
     ]);
     return cities.toList()..sort();
-  }
-
-  /// 合併邊界表中的專案名（手繪邊界可能不在 /projects API 清單）。
-  Future<void> _mergeBoundaryNamesIntoProjects(
-    List<String> names,
-    Map<String, String> nameToCode,
-  ) async {
-    try {
-      final boundaries = await ProjectBoundaryService().getAllBoundaries();
-      final seen = names.toSet();
-      for (final b in boundaries) {
-        final n = b.projectName.trim();
-        if (n.isEmpty || !seen.add(n)) continue;
-        names.add(n);
-        final code = b.projectCode?.trim();
-        if (code != null && code.isNotEmpty && code != '無') {
-          nameToCode.putIfAbsent(n, () => code);
-        }
-      }
-      names.sort();
-    } catch (e) {
-      _mapLog('merge boundary names failed: $e');
-    }
   }
 
   void _sanitizeSelectedProject() {
@@ -710,26 +687,24 @@ class _MapPageState extends State<MapPage> with RouteAware {
 
   Future<void> _refreshProjectsForCity(String city) async {
     try {
-      final meta = await _treeService.getMapMeta(city: city);
-      if (meta['success'] != true || !mounted) {
+      final resp = await ProjectService().getProjectsByArea(city);
+      if (resp['success'] != true || !mounted) {
         _onFilterChanged();
         return;
       }
-      final projects = (meta['projects'] as List?) ?? [];
       final names = <String>{'全部'};
-      final nameToCode = Map<String, String>.from(_projectNameToCode);
-      for (final p in projects) {
+      final nameToCode = <String, String>{};
+      for (final p in ProjectService.projectListFromResponse(resp)) {
         if (p is Map) {
           final name = p['name']?.toString();
-          final code = p['code']?.toString();
+          final code = (p['code'] ?? p['project_code'])?.toString();
           if (name != null && name.isNotEmpty) {
             names.add(name);
             if (code != null && code.isNotEmpty) nameToCode[name] = code;
           }
         }
       }
-      final nameList = names.where((n) => n != '全部').toList();
-      await _mergeBoundaryNamesIntoProjects(nameList, nameToCode);
+      final nameList = names.where((n) => n != '全部').toList()..sort();
       final list = ['全部', ...nameList];
       _safeSetState(() {
         _filteredProjects = list;

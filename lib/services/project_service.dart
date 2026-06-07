@@ -7,7 +7,7 @@ class ProjectService {
   static const Duration _cacheDuration = Duration(minutes: 5);
 
   /// 後端 GET /projects 回傳 `{ success, data: [...] }`；部分舊 UI 讀 `projects`。
-  static List<dynamic> _projectListFromResponse(Map<String, dynamic> response) {
+  static List<dynamic> projectListFromResponse(Map<String, dynamic> response) {
     final raw = response['data'] ?? response['projects'];
     if (raw is List) return raw;
     return [];
@@ -23,7 +23,7 @@ class ProjectService {
 
     final response = await ApiService.get('projects');
     if (response['success'] == true) {
-      final list = _projectListFromResponse(response);
+      final list = projectListFromResponse(response);
       final normalized = <String, dynamic>{
         ...response,
         'data': list,

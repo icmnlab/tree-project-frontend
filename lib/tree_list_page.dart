@@ -10,7 +10,7 @@ import 'services/api_service.dart';
 import 'services/auth_service.dart'; // 角色權限
 import 'constants/colors.dart';
 import 'services/locale_service.dart';
-import 'services/v3/project_boundary_service.dart';
+import 'services/project_service.dart';
 
 /// [T6 cleanup] 中文表頭→V2 (English) DB 欄位映射
 /// 用于 Excel 匯入 + 批次更新改走 createTreeV2 / updateTreeV2。
@@ -144,51 +144,28 @@ class _TreeListPageState extends State<TreeListPage> {
   Future<void> _loadProjectOptions() async {
     try {
       final meta = await _treeService.getMapMeta();
-      if (meta['success'] != true || !mounted) return;
-      final projects = (meta['projects'] as List?) ?? [];
+      final projResp = await ProjectService().getProjects(forceRefresh: true);
+      if (!mounted) return;
       final names = <String>{};
       final nameToCode = <String, String>{};
-      for (final p in projects) {
+      for (final p in ProjectService.projectListFromResponse(projResp)) {
         if (p is! Map) continue;
         final name = p['name']?.toString();
-        final code = p['code']?.toString();
+        final code = (p['code'] ?? p['project_code'])?.toString();
         if (name != null && name.isNotEmpty) {
           names.add(name);
           if (code != null && code.isNotEmpty) nameToCode[name] = code;
         }
       }
       final sorted = names.toList()..sort();
-      await _mergeBoundaryNamesIntoProjects(sorted, nameToCode);
       setState(() {
         _projectNameToCode = nameToCode;
         _projects = ['全部', ...sorted];
         _sanitizeSelectedProject();
       });
-      _treeListLog('projects loaded: ${sorted.length}');
+      _treeListLog('projects loaded: ${sorted.length} (meta trees=${meta['totalTrees']})');
     } catch (e) {
       _treeListLog('load projects failed: $e');
-    }
-  }
-
-  Future<void> _mergeBoundaryNamesIntoProjects(
-    List<String> names,
-    Map<String, String> nameToCode,
-  ) async {
-    try {
-      final boundaries = await ProjectBoundaryService().getAllBoundaries();
-      final seen = names.toSet();
-      for (final b in boundaries) {
-        final n = b.projectName.trim();
-        if (n.isEmpty || !seen.add(n)) continue;
-        names.add(n);
-        final code = b.projectCode?.trim();
-        if (code != null && code.isNotEmpty && code != '無') {
-          nameToCode.putIfAbsent(n, () => code);
-        }
-      }
-      names.sort();
-    } catch (e) {
-      _treeListLog('merge boundary names failed: $e');
     }
   }
 

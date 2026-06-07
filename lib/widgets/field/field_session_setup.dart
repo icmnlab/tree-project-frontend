@@ -110,48 +110,13 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
     }
   }
 
-  /// 合併邊界表專案名（手繪邊界可能不在 /projects API）。
-  Future<void> _mergeBoundaryProjectsIntoList(
-    List<Map<String, dynamic>> list,
-    String area,
-  ) async {
-    try {
-      final boundaries = await ProjectBoundaryService().getAllBoundaries();
-      final seen = list
-          .map((p) => p['name']?.toString().trim() ?? '')
-          .where((s) => s.isNotEmpty)
-          .toSet();
-      for (final b in boundaries) {
-        final name = b.projectName.trim();
-        if (name.isEmpty || seen.contains(name)) continue;
-        final bArea = b.projectArea?.trim() ?? '';
-        if (bArea.isNotEmpty && bArea != area) continue;
-        seen.add(name);
-        list.add({
-          'name': name,
-          'code': b.projectCode,
-          'from_boundary': true,
-        });
-      }
-      list.sort((a, b) =>
-          (a['name']?.toString() ?? '').compareTo(b['name']?.toString() ?? ''));
-    } catch (_) {}
-  }
-
   Future<void> _loadProjectsForArea(String area) async {
     setState(() => _loadingProjects = true);
     try {
       final resp = await _projectService.getProjectsByArea(area);
-      final list = <Map<String, dynamic>>[];
-      if (resp['success'] == true) {
-        final raw = resp['data'] ?? resp['projects'];
-        if (raw is List) {
-          for (final p in raw) {
-            if (p is Map) list.add(Map<String, dynamic>.from(p));
-          }
-        }
-      }
-      await _mergeBoundaryProjectsIntoList(list, area);
+      final list = ProjectService.projectListFromResponse(resp)
+          .map((p) => Map<String, dynamic>.from(p as Map))
+          .toList();
       if (mounted) {
         setState(() {
           _filteredProjects = list;

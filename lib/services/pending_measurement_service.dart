@@ -5,6 +5,7 @@ import '../models/pending_tree_measurement.dart';
 import '../config/app_config.dart';
 import '../config/survey_settings.dart';
 import 'api_service.dart';
+import '../utils/field_log.dart';
 import 'v3/station_service.dart'; // Import StationService
 
 /// 待測量樹木服務
@@ -370,7 +371,13 @@ class PendingMeasurementService {
       if (response.statusCode == 200 ||
           response.statusCode == 409 ||
           response.statusCode == 410) {
-        return jsonDecode(response.body) as Map<String, dynamic>;
+        final body = jsonDecode(response.body) as Map<String, dynamic>;
+        FieldLog.pending(
+          'PATCH $id → ${response.statusCode} '
+          'code=${body['code'] ?? 'ok'} '
+          'updated_at=${body['updated_at'] ?? body['serverVersion']?['updated_at']}',
+        );
+        return body;
       } else {
         throw Exception('更新測量結果失敗: ${response.statusCode}');
       }
