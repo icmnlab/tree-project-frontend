@@ -80,6 +80,9 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   int _liveSeq = 0;
   int _completedCount = 0;
 
+  /// UI「第幾棵」：僅在表單提交成功後遞增 [_completedCount]；連續 SEND 覆蓋不變。
+  int get _displayTreeSeq => _completedCount + 1;
+
   /// 同一現場場次共用 session
   String? _liveSessionId;
   String? _batchName;
@@ -500,9 +503,10 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
     final completed = _nmeaAssembler.feed(data);
     for (final live in completed) {
       _liveSeq++;
+      final displaySeq = _displayTreeSeq;
       _lastMeasurement = live;
       _appendLog(
-        '#$_liveSeq NMEA H=${live.heightM} HD=${live.horizontalDistanceM} '
+        '[樹 $displaySeq] SEND#$_liveSeq NMEA H=${live.heightM} HD=${live.horizontalDistanceM} '
         'SD=${live.slopeDistanceM} AZ=${live.azimuthDeg} pitch=${live.pitchDeg}',
       );
       _appendLog('  raw: ${live.rawNmea}');
@@ -523,18 +527,28 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         // GPS／上傳階段：新 SEND 取代前一筆
         _processGen++;
         final gen = _processGen;
-        _appendLog('  新 SEND 取代進行中流程 → #$_liveSeq');
+        _appendLog('  新 SEND 覆蓋進行中流程（仍為第 $displaySeq 棵）');
         if (_gpsDialogOpen && mounted) {
           Navigator.of(context).pop();
         }
-        unawaited(_processLiveMeasurement(live, seq: _liveSeq, gen: gen));
+        unawaited(_processLiveMeasurement(
+          live,
+          displaySeq: displaySeq,
+          sendSeq: _liveSeq,
+          gen: gen,
+        ));
         return;
       }
 
       _processGen++;
       _isProcessingTree = true;
       unawaited(
-        _processLiveMeasurement(live, seq: _liveSeq, gen: _processGen),
+        _processLiveMeasurement(
+          live,
+          displaySeq: displaySeq,
+          sendSeq: _liveSeq,
+          gen: _processGen,
+        ),
       );
       return;
     }
@@ -552,13 +566,14 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   /// 收到一筆 NMEA → 上傳單棵 → 開 IntegratedTreeFormPage → 回來後才可下一棵
   Future<void> _processLiveMeasurement(
     BleLiveMeasurement live, {
-    required int seq,
+    required int displaySeq,
+    required int sendSeq,
     required int gen,
   }) async {
     if (!mounted || gen != _processGen) return;
 
     if (mounted) {
-      setState(() => _status = '第 $seq 棵：取得 GPS 並建立任務…');
+      setState(() => _status = '第 $displaySeq 棵：取得 GPS 並建立任務…');
     }
 
     try {
@@ -567,18 +582,18 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       }
       if (!mounted || gen != _processGen) return;
 
-      final gps = await _resolveGpsForLiveMeasurement(seq);
+      final gps = await _resolveGpsForLiveMeasurement(displaySeq);
       if (!mounted || gen != _processGen) return;
       if (gps == null) {
         if (mounted) {
           setState(() {
             _gpsRetryLive = live;
-            _gpsRetrySeq = seq;
+            _gpsRetrySeq = displaySeq;
             _status = context
                 .tr('ble_gps_retry_banner')
-                .replaceAll('{n}', '$seq');
+                .replaceAll('{n}', '$displaySeq');
           });
-          _appendLog('#$seq 未取得 GPS — 可重測 GPS，無需再按 SEND');
+          _appendLog('[樹 $displaySeq] 未取得 GPS — 可重測 GPS，無需再按 SEND');
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(context.tr('ble_gps_retry_hint')),
@@ -598,7 +613,13 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         _gpsRetryLive = null;
         _gpsRetrySeq = null;
       });
-      await _completeLiveMeasurementAfterGps(live, seq, gps, gen: gen);
+      await _completeLiveMeasurementAfterGps(
+        live,
+        displaySeq: displaySeq,
+        sendSeq: sendSeq,
+        gps: gps,
+        gen: gen,
+      );
     } catch (e, st) {
       FieldLog.ble('process tree error: $e\n$st');
       if (mounted) {
@@ -628,9 +649,10 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   }
 
   Future<void> _completeLiveMeasurementAfterGps(
-    BleLiveMeasurement live,
-    int seq,
-    FieldGpsCaptureResult gps, {
+    BleLiveMeasurement live, {
+    required int displaySeq,
+    required int sendSeq,
+    required FieldGpsCaptureResult gps,
     required int gen,
   }) async {
     if (!mounted || gen != _processGen) return;
@@ -639,7 +661,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
     const hasGps = true;
 
     fieldGpsLog(
-      'live seq=$seq mode=$_gpsSource lat=$lat lon=$lon acc=${gps.accuracyM}m',
+      'live tree=$displaySeq send=$sendSeq mode=$_gpsSource lat=$lat lon=$lon acc=${gps.accuracyM}m',
     );
 
     _liveSessionId ??= PendingMeasurementService.generateSessionId();
@@ -655,7 +677,8 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       extraMetadata: {
         'phone_gps_accuracy_m': gps.accuracyM,
         'gps_sample_count': gps.sampleCount,
-        'live_session_index': seq,
+        'live_session_index': displaySeq,
+        'live_send_index': sendSeq,
         if (_batchName != null) 'batch_name': _batchName,
         if (maint != null) ...{
           'survey_mode': 'maintenance',
@@ -671,7 +694,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
     }
 
     if (mounted) {
-      setState(() => _status = '第 $seq 棵：上傳任務…');
+      setState(() => _status = '第 $displaySeq 棵：上傳任務…');
     }
 
     final result = await _pendingService.createAndUploadFromBle(
@@ -684,7 +707,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
     );
 
     if (result['success'] != true || !mounted) {
-      _appendLog('#$seq 建立任務失敗: ${result['message']}');
+      _appendLog('[樹 $displaySeq] 建立任務失敗: ${result['message']}');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -696,7 +719,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
     }
 
     _liveSessionId = result['sessionId'] as String? ?? _liveSessionId;
-    _appendLog('#$seq pending 已建立 session=$_liveSessionId');
+    _appendLog('[樹 $displaySeq] pending 已建立 session=$_liveSessionId');
     await _syncSessionProjectToServer();
 
     final tasks = result['tasks'] as List<PendingTreeMeasurement>?;
@@ -720,7 +743,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
     );
 
     if (!mounted || gen != _processGen) return;
-    setState(() => _status = '第 $seq 棵：現場紀錄（人工 DBH / 拍照 / 提交）…');
+    setState(() => _status = '第 $displaySeq 棵：現場紀錄（人工 DBH / 拍照 / 提交）…');
 
     final nav = Navigator.of(context);
     final messenger = ScaffoldMessenger.of(context);
@@ -741,7 +764,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
 
     if (success == true) {
       _completedCount++;
-      _appendLog('#$seq 表單提交成功（累計 $_completedCount 棵）');
+      _appendLog('[樹 $displaySeq] 表單提交成功（累計 $_completedCount 棵）');
       final sid = _liveSessionId;
       if (sid != null && sid.isNotEmpty) {
         try {
@@ -750,16 +773,16 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
             final n = (tr['transferred_tree_ids'] as List?)?.length ?? 0;
             _appendLog(
               n > 0
-                  ? '#$seq 已轉入正式資料庫（本批 $n 筆）'
-                  : '#$seq 已在正式資料庫（冪等略過）',
+                  ? '[樹 $displaySeq] 已轉入正式資料庫（本批 $n 筆）'
+                  : '[樹 $displaySeq] 已在正式資料庫（冪等略過）',
             );
           } else {
             _appendLog(
-              '#$seq 自動轉移未完成: ${tr['message'] ?? '未知'}',
+              '[樹 $displaySeq] 自動轉移未完成: ${tr['message'] ?? '未知'}',
             );
           }
         } catch (e) {
-          _appendLog('#$seq 自動轉移失敗: $e');
+          _appendLog('[樹 $displaySeq] 自動轉移失敗: $e');
         }
       }
       if (!mounted) return;
@@ -768,7 +791,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
           content: Text(
             context
                 .tr('ble_tree_done')
-                .replaceAll('{n}', '$seq')
+                .replaceAll('{n}', '$displaySeq')
                 .replaceAll('{total}', '$_completedCount'),
           ),
           backgroundColor: Colors.green,
@@ -776,7 +799,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         ),
       );
     } else {
-      _appendLog('#$seq 表單取消，退回 pending id=${task.id}');
+      _appendLog('[樹 $displaySeq] 表單取消，退回 pending id=${task.id}');
       await _pendingService
           .updateTaskStatus(task.id!, MeasurementStatus.pending)
           .catchError((_) => null);
@@ -784,7 +807,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            context.tr('ble_tree_cancel').replaceAll('{n}', '$seq'),
+            context.tr('ble_tree_cancel').replaceAll('{n}', '$displaySeq'),
           ),
         ),
       );
@@ -820,7 +843,13 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         _gpsRetryLive = null;
         _gpsRetrySeq = null;
       });
-      await _completeLiveMeasurementAfterGps(live, seq, gps, gen: gen);
+      await _completeLiveMeasurementAfterGps(
+        live,
+        displaySeq: seq,
+        sendSeq: _liveSeq,
+        gps: gps,
+        gen: gen,
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1342,7 +1371,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
                     _isProcessingTree
                         ? '⏳ ${context.tr('ble_processing')}'
                         : '${context.tr('ble_flow_hint')}\n'
-                            '$_completedCount · $_liveSeq NMEA',
+                            '已完成 $_completedCount 棵 · 目前第 $_displayTreeSeq 棵',
                     style: const TextStyle(fontSize: 12),
                   ),
                   if (_projectName != null)
@@ -1395,7 +1424,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
               margin: const EdgeInsets.symmetric(horizontal: 12),
               child: ListTile(
                 leading: CircleAvatar(
-                  child: Text('$_liveSeq'),
+                  child: Text('$_displayTreeSeq'),
                 ),
                 title: Text(
                   last.remoteDiameterCm != null
