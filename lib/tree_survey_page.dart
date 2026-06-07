@@ -651,20 +651,22 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                                                     ],
                                                   ),
                                                   const SizedBox(height: 6),
-                                                  Row(
+                                                  Wrap(
+                                                    spacing: 8,
+                                                    runSpacing: 4,
+                                                    crossAxisAlignment:
+                                                        WrapCrossAlignment.center,
                                                     children: [
                                                       _buildInfoChip(
                                                         Icons.height_rounded,
                                                         '${(tree['樹高（公尺）'] ?? 0).toString()}m',
                                                         AppColors.forestGreen,
                                                       ),
-                                                      const SizedBox(width: 8),
                                                       _buildInfoChip(
                                                         Icons.circle_outlined,
                                                         '${(tree['胸徑（公分）'] ?? 0).toString()}cm',
                                                         AppColors.warmOrange,
                                                       ),
-                                                      const Spacer(),
                                                       Container(
                                                         padding:
                                                             const EdgeInsets
