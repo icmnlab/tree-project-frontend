@@ -33,7 +33,7 @@ class AppConfig {
     defaultValue: false,
   );
 
-  /// 首頁實驗／研究入口（AI 助理、掃描 Demo、獨立樹種辨識、V3 設定等）。
+  /// 首頁實驗／研究入口（AI 助理、掃描 Demo、V3 設定等；樹種辨識預設保留）。
   /// 正式現場版預設關閉；教授續開發：--dart-define=ENABLE_EXPERIMENTAL_UI=true
   static const bool enableExperimentalUi = bool.fromEnvironment(
     'ENABLE_EXPERIMENTAL_UI',
@@ -41,9 +41,9 @@ class AppConfig {
   );
 
   /// 首頁隱藏但程式保留的卡片 id（見 docs/EXPERIMENTAL_FEATURES.md）
+  /// 樹種辨識 (species) 為現場常用，預設保留。
   static const Set<String> experimentalDashboardCardIds = {
     'test_scan',
-    'species',
     'ai',
     'report',
     'v3',

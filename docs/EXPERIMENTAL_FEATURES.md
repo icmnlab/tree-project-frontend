@@ -4,11 +4,12 @@
 
 | 功能 | 路由／檔案 | 重新啟用 |
 |------|------------|----------|
-| AI 助理 | `/ai-chat` | `--dart-define=ENABLE_EXPERIMENTAL_UI=true` |
+| AI 助理 | `/ai-chat`、樹木列表 AppBar 🤖 | `--dart-define=ENABLE_EXPERIMENTAL_UI=true` |
 | 永續報告 | `/ai-sustainability-report` | 同上 |
 | 掃描測試 Demo | `ScannerPage` | 同上 |
-| 獨立樹種辨識 | `SpeciesIdentificationPage` | 同上（表單內辨識仍可用） |
 | V3 同步設定 | `V3ServicesPage` | 同上 |
 | 視覺 DBH | `ScannerPage` / `PureVisionDbhService` | 管理後台開啟「研究模式」 |
+
+**預設保留：** 獨立「樹種辨識」卡片（`SpeciesIdentificationPage`）；表單內拍照辨識亦可用。
 
 視覺 DBH 在**手冊合規模式**（預設）下，整合表單已不啟用自動影像 DBH。

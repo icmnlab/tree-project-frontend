@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'config/app_config.dart';
 import 'tree_survey_page.dart';
 import 'screens/ai_chat_page.dart';
 import '../services/project_service.dart'; // 引入 ProjectService
@@ -185,11 +186,12 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
             icon: const Icon(Icons.refresh),
             onPressed: _fetchProjectData,
           ),
-          IconButton(
-            icon: const Icon(Icons.support_agent),
-            tooltip: 'AI 小助手',
-            onPressed: _showAiAssistant,
-          ),
+          if (AppConfig.enableExperimentalUi)
+            IconButton(
+              icon: const Icon(Icons.support_agent),
+              tooltip: 'AI 小助手',
+              onPressed: _showAiAssistant,
+            ),
         ],
       ),
       body: _isLoading

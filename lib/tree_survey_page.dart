@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'config/app_config.dart';
 import 'screens/ai_chat_page.dart';
 import 'tree_survey_detail_page.dart';
 import 'services/tree_service.dart'; // 引入 TreeService
@@ -263,11 +264,12 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
               _cleanupUnusedData().then((_) => _fetchTrees());
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.smart_toy_outlined),
-            tooltip: 'AI 小助手',
-            onPressed: _showAiAssistant,
-          ),
+          if (AppConfig.enableExperimentalUi)
+            IconButton(
+              icon: const Icon(Icons.smart_toy_outlined),
+              tooltip: 'AI 小助手',
+              onPressed: _showAiAssistant,
+            ),
           const SizedBox(width: 8),
         ],
       ),
