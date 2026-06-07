@@ -409,7 +409,7 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
         // 主要結果
         if (primaryResult != null) _buildPrimaryResultCard(primaryResult),
         
-        // 本地資料庫匹配
+        // 系統樹種庫匹配
         if (localMatch != null) ...[
           const SizedBox(height: 16),
           _buildLocalMatchCard(localMatch),
@@ -663,7 +663,7 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
                 ),
                 const SizedBox(width: 10),
                 Text(
-                  '本地資料庫匹配',
+                  '系統樹種庫匹配',
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     color: AppColors.portBlueDark,
@@ -677,19 +677,13 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
             padding: const EdgeInsets.all(14),
             child: Column(
               children: [
+                if (match['id'] != null)
+                  _buildInfoRow('樹種編號', match['id'].toString()),
                 _buildInfoRow('名稱', match['name'] ?? ''),
-                _buildInfoRow('碳匯效率', '${match['carbonEfficiency'] ?? 0} kg CO₂/年'),
-                _buildInfoRow('適合土壤', match['soilType'] ?? ''),
-                _buildInfoRow('日照需求', match['sunExposure'] ?? ''),
-                _buildInfoRow('適合區域', (match['suitableRegions'] as List?)?.join('、') ?? ''),
-                if (match['description'] != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 10),
-                    child: Text(
-                      match['description'],
-                      style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                    ),
-                  ),
+                if ((match['scientificName'] ?? '').toString().isNotEmpty)
+                  _buildInfoRow('學名', match['scientificName']),
+                if ((match['matchedVariant'] ?? '').toString().isNotEmpty)
+                  _buildInfoRow('同義詞', match['matchedVariant']),
               ],
             ),
           ),

@@ -412,14 +412,22 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
           projectName: _projectNameCtrl.text,
         );
         if (mounted) {
+          final code = response['code']?.toString();
+          final msg = code == 'PROJECT_REASSIGNED'
+              ? '專案「$projectName」已存在，已指派到此港區'
+              : code == 'PROJECT_ALREADY_IN_AREA'
+                  ? '專案「$projectName」已在此港區'
+                  : '專案 "$projectName" 新增成功';
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('專案 "$projectName" 新增成功')),
+            SnackBar(content: Text(msg)),
           );
           setState(() {});
-          await _promptDrawBoundaryAfterCreate(
-            projectName: _projectNameCtrl.text,
-            projectCode: _projectCode,
-          );
+          if (code != 'PROJECT_ALREADY_IN_AREA') {
+            await _promptDrawBoundaryAfterCreate(
+              projectName: _projectNameCtrl.text,
+              projectCode: _projectCode,
+            );
+          }
         }
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -427,6 +435,10 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
             content: Text(response['message']?.toString() ?? '新增專案失敗'),
           ),
         );
+        if (response['code'] == 'DUPLICATE_PROJECT_NAME') {
+          await _loadProjectsForArea(_areaCtrl.text.trim());
+          setState(() {});
+        }
       }
     } catch (e) {
       if (mounted) {

@@ -14,6 +14,7 @@ import 'species_identification_page.dart';
 import 'pending_measurement_task_page.dart';
 import 'v3_services_page.dart';
 import 'scanner_page.dart';
+import '../config/app_config.dart';
 import '../constants/colors.dart';
 import '../themes/app_theme.dart';
 import '../widgets/network_aware_widgets.dart';
@@ -252,6 +253,7 @@ class _DashboardPageState extends State<DashboardPage>
           _cardOrder.add(card['id'] as String);
         }
       }
+      _cardOrder.removeWhere((id) => !AppConfig.isDashboardCardVisible(id));
       _cardOrder.removeWhere((id) => id == 'ble_live');
       if (!_cardOrder.contains('maintenance')) {
         final i = _cardOrder.indexOf('field_survey');
@@ -398,6 +400,7 @@ class _DashboardPageState extends State<DashboardPage>
     // Build ordered card list grouped by category
     final orderedCards = <Map<String, dynamic>>[];
     for (final id in _cardOrder) {
+      if (!AppConfig.isDashboardCardVisible(id)) continue;
       final card = _allCards.where((c) => c['id'] == id).firstOrNull;
       if (card != null) orderedCards.add(card);
     }
