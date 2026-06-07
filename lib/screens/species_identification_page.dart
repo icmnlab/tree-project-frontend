@@ -684,6 +684,17 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
                   _buildInfoRow('學名', match['scientificName']),
                 if ((match['matchedVariant'] ?? '').toString().isNotEmpty)
                   _buildInfoRow('同義詞', match['matchedVariant']),
+                if (match['source'] == 'synonym')
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      '以同義詞對照至系統樹種；若與上方 Pl@ntNet 學名不符，請以學名為準。',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange.shade800,
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),

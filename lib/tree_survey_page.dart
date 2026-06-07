@@ -651,23 +651,26 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                                                     ],
                                                   ),
                                                   const SizedBox(height: 6),
-                                                  Wrap(
-                                                    spacing: 8,
-                                                    runSpacing: 4,
-                                                    crossAxisAlignment:
-                                                        WrapCrossAlignment.center,
+                                                  Row(
                                                     children: [
-                                                      _buildInfoChip(
-                                                        Icons.height_rounded,
-                                                        '${(tree['樹高（公尺）'] ?? 0).toString()}m',
-                                                        AppColors.forestGreen,
+                                                      Flexible(
+                                                        child: _buildInfoChip(
+                                                          Icons.height_rounded,
+                                                          '${(tree['樹高（公尺）'] ?? 0).toString()}m',
+                                                          AppColors.forestGreen,
+                                                        ),
                                                       ),
-                                                      _buildInfoChip(
-                                                        Icons.circle_outlined,
-                                                        '${(tree['胸徑（公分）'] ?? 0).toString()}cm',
-                                                        AppColors.warmOrange,
+                                                      const SizedBox(width: 8),
+                                                      Flexible(
+                                                        child: _buildInfoChip(
+                                                          Icons.circle_outlined,
+                                                          '${(tree['胸徑（公分）'] ?? 0).toString()}cm',
+                                                          AppColors.warmOrange,
+                                                        ),
                                                       ),
-                                                      Container(
+                                                      const SizedBox(width: 4),
+                                                      Flexible(
+                                                        child: Container(
                                                         padding:
                                                             const EdgeInsets
                                                                 .symmetric(
@@ -692,6 +695,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                                                                 FontWeight.w500,
                                                           ),
                                                         ),
+                                                      ),
                                                       ),
                                                     ],
                                                   ),
