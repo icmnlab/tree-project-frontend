@@ -1,13 +1,13 @@
 # Ubuntu 後端主機 — Tailscale SSH 與部署確認
 
 > 主機為自架後端（非 Render）。App 目前連線：  
-> `https://richardhualienserver.tail124a1b.ts.net/api`
+> `https://<TAILSCALE_HOST>/api`
 
 ---
 
 ## 1. 前置：加入 Tailscale
 
-1. 電腦與手機安裝 [Tailscale](https://tailscale.com/download) 並登入**與後端相同的 tailnet**（目前為 `KyleliuNDHU@`）。
+1. 電腦與手機安裝 [Tailscale](https://tailscale.com/download) 並登入**與後端相同的 tailnet**（目前為 `<GITHUB_OWNER>@`）。
 2. 本機確認看得到 Ubuntu：
 
 ```powershell
@@ -18,14 +18,14 @@ tailscale status
 
 | Tailscale IP | 主機名 | OS |
 |--------------|--------|-----|
-| `100.118.203.75` | `richardhualienserver` | linux |
+| `<TAILSCALE_SERVER_IP>` | `<TAILSCALE_HOST_SHORT>` | linux |
 
 ---
 
 ## 2. SSH 連線（建議）
 
 ```powershell
-tailscale ssh richardhualienserver
+tailscale ssh <TAILSCALE_HOST_SHORT>
 ```
 
 首次連線若出現 host key 提示，輸入 `yes` 接受。
@@ -34,18 +34,18 @@ tailscale ssh richardhualienserver
 
 | 現象 | 原因 | 建議 |
 |------|------|------|
-| `No ED25519 host key is known for richardhualienserver...` | Ubuntu 尚未在 Tailscale 上公告 SSH host key，或 Tailscale SSH 未完整啟用 | 在**本機互動式終端**執行 `tailscale ssh richardhualienserver`；若仍失敗，請伺服器管理員在 Ubuntu 啟用 Tailscale SSH（`tailscale set --ssh`）並確認 ACL |
-| `Permission denied (publickey)`（`ssh user@100.118.203.75`） | 伺服器**僅允許公鑰**，不接受密碼；或本機金鑰未加入 `authorized_keys` | 使用已加入伺服器的本機金鑰（例如 `~/.ssh/id_ed25519`）連線；或改用 `tailscale ssh richardhualienserver` |
-| `Permission denied (publickey,password)` | 同上：密碼登入已停用 | 勿用密碼；確認 `ssh -i ~/.ssh/id_ed25519 kyleliu@100.118.203.75` 可用 |
+| `No ED25519 host key is known for <TAILSCALE_HOST_SHORT>...` | Ubuntu 尚未在 Tailscale 上公告 SSH host key，或 Tailscale SSH 未完整啟用 | 在**本機互動式終端**執行 `tailscale ssh <TAILSCALE_HOST_SHORT>`；若仍失敗，請伺服器管理員在 Ubuntu 啟用 Tailscale SSH（`tailscale set --ssh`）並確認 ACL |
+| `Permission denied (publickey)`（`ssh user@<TAILSCALE_SERVER_IP>`） | 伺服器**僅允許公鑰**，不接受密碼；或本機金鑰未加入 `authorized_keys` | 使用已加入伺服器的本機金鑰（例如 `~/.ssh/id_ed25519`）連線；或改用 `tailscale ssh <TAILSCALE_HOST_SHORT>` |
+| `Permission denied (publickey,password)` | 同上：密碼登入已停用 | 勿用密碼；確認 `ssh -i ~/.ssh/id_ed25519 <SERVER_USER>@<TAILSCALE_SERVER_IP>` 可用 |
 | `connectex ... port 22 ... failed` | 主機未對 tailnet 開放 22，或僅允許 Tailscale SSH 通道 | 同上，用 `tailscale ssh`；必要時由管理員檢查 `ufw` / `sshd` |
 | `curl /health` 回 `OK` 但不知是否最新版 | health 只代表程序在跑 | SSH 後 `git log -1`，或帶 token 查 `GET /webhook/status` |
 
 傳統 SSH（需知道 Linux 使用者名，且金鑰已加入伺服器；**非預設路徑**）：
 
 ```powershell
-ssh <使用者>@100.118.203.75
+ssh <使用者>@<TAILSCALE_SERVER_IP>
 # 或
-ssh <使用者>@richardhualienserver
+ssh <使用者>@<TAILSCALE_HOST_SHORT>
 ```
 
 ---
@@ -92,7 +92,7 @@ bash /opt/tree-app/scripts/deploy.sh
 ## 4. 從 Windows 確認（不 SSH）
 
 ```powershell
-curl.exe -sk https://richardhualienserver.tail124a1b.ts.net/health
+curl.exe -sk https://<TAILSCALE_HOST>/health
 ```
 
 回 `OK` 表示服務在線；**不代表**已拉到最新 commit，仍須 SSH 看 `git log` 或 `deploy.log`。
@@ -100,7 +100,7 @@ curl.exe -sk https://richardhualienserver.tail124a1b.ts.net/health
 部署狀態 API（需正式機 `ADMIN_API_TOKEN`）：
 
 ```powershell
-curl.exe -sk -H "X-Admin-Token: <token>" https://richardhualienserver.tail124a1b.ts.net/webhook/status
+curl.exe -sk -H "X-Admin-Token: <token>" https://<TAILSCALE_HOST>/webhook/status
 ```
 
 ---

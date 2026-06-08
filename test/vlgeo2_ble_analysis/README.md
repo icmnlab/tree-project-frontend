@@ -110,4 +110,4 @@ VLGEO2 儀器透過 BLE 傳輸 CSV 時，會夾雜 PacketLogger 的封包頭：
 ## 📞 聯絡資訊
 
 - **Email**: 411135055@gms.ndhu.edu.tw
-- **Repository**: KyleliuNDHU/tree-project-frontend
+- **Repository**: <GITHUB_OWNER>/tree-project-frontend

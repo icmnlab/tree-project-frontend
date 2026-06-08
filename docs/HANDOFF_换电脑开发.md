@@ -1,7 +1,7 @@
 # 换电脑开发交接（2026-05）
 
-> **Repo**：https://github.com/KyleliuNDHU/tree-project-frontend  
-> **Clone**：`git clone https://github.com/KyleliuNDHU/tree-project-frontend.git`  
+> **Repo**：https://github.com/<GITHUB_OWNER>/tree-project-frontend  
+> **Clone**：`git clone https://github.com/<GITHUB_OWNER>/tree-project-frontend.git`  
 > **主分支**：`main`（与 GitHub 同步后再开发）
 
 ---

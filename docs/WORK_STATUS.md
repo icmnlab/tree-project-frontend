@@ -63,8 +63,8 @@
 
 | Repo | Remote | 路徑 |
 |------|--------|------|
-| 後端 | `github.com/KyleliuNDHU/tree-project-backend` | `project_code/backend` |
-| 前端 | `github.com/KyleliuNDHU/tree-project-frontend` | `project_code/frontend` |
+| 後端 | `github.com/<GITHUB_OWNER>/tree-project-backend` | `project_code/backend` |
+| 前端 | `github.com/<GITHUB_OWNER>/tree-project-frontend` | `project_code/frontend` |
 
 **原則**：功能完成 + 通過相關測試後 push `main`；不提交 `.env`、大型 third_party 子模組變更。
 

@@ -30,10 +30,10 @@
 
 | 位置 | 目前值（原作者） | 交接時改成 |
 |------|------------------|------------|
-| `frontend/lib/config/app_config.dart` → `defaultBaseUrl` | `https://richardhualienserver.tail124a1b.ts.net/api` | 接手者後端網址；或清空，改用 `--dart-define=API_BASE_URL=...` |
-| `frontend/lib/main.dart` → `SelfHostedHttpOverrides` | 信任 `100.118.203.75`、`100.81.214.9`、`*.ts.net` | 移除個人 Tailscale IP；`.ts.net` 規則視新部署是否續用 Tailscale 決定保留與否 |
+| `frontend/lib/config/app_config.dart` → `defaultBaseUrl` | `https://<TAILSCALE_HOST>/api` | 接手者後端網址；或清空，改用 `--dart-define=API_BASE_URL=...` |
+| `frontend/lib/main.dart` → `SelfHostedHttpOverrides` | 信任 `<TAILSCALE_SERVER_IP>`、`<TAILSCALE_DEV_IP>`、`*.ts.net` | 移除個人 Tailscale IP；`.ts.net` 規則視新部署是否續用 Tailscale 決定保留與否 |
 | `backend/.env` → `ML_SERVICE_PUBLIC_URL` | 原作者 Tailscale / ngrok | 新 ML 主機位址 |
-| 文件中的 Tailscale 主機名 / SSH IP | `richardhualienserver`、`kyleliu@100.118.203.75` | 新主機；見 `UBUNTU_SSH_ACCESS.md` |
+| 文件中的 Tailscale 主機名 / SSH IP | `<TAILSCALE_HOST_SHORT>`、`<SERVER_USER>@<TAILSCALE_SERVER_IP>` | 新主機；見 `UBUNTU_SSH_ACCESS.md` |
 
 > 前端連線方式：`flutter run --dart-define=API_BASE_URL=https://新主機/api`（不帶則用程式內 `defaultBaseUrl`）。
 
@@ -43,9 +43,9 @@
 
 | 項目 | 目前 | 交接動作 |
 |------|------|----------|
-| GitHub repo | `KyleliuNDHU/tree-project-backend`、`tree-project-frontend` | 轉移所有權或 fork 到接手者帳號，更新 remote 與 webhook |
-| Tailscale tailnet | `KyleliuNDHU@` | 接手者建立自己的 tailnet 或建立專用帳號 |
-| 伺服器 Linux 帳號 | `kyleliu@`（Ubuntu） | 建立接手者帳號與 SSH 公鑰 |
+| GitHub repo | `<GITHUB_OWNER>/tree-project-backend`、`tree-project-frontend` | 轉移所有權或 fork 到接手者帳號，更新 remote 與 webhook |
+| Tailscale tailnet | `<GITHUB_OWNER>@` | 接手者建立自己的 tailnet 或建立專用帳號 |
+| 伺服器 Linux 帳號 | `<SERVER_USER>@`（Ubuntu） | 建立接手者帳號與 SSH 公鑰 |
 | 種子使用者 | `backend/database/initial_data/users.pg.sql` 內含真實姓名 + bcrypt | 全新部署請改用新的管理員種子帳密 |
 
 ---

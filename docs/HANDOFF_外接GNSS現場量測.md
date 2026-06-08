@@ -1,6 +1,6 @@
 # 交接文案：外接 GNSS + VLGEO2 現場 BLE 量測
 
-> **Repo**：https://github.com/KyleliuNDHU/tree-project-frontend  
+> **Repo**：https://github.com/<GITHUB_OWNER>/tree-project-frontend  
 > **詳細規格**：[`HANDOFF_EXTERNAL_GNSS_AND_BLE.md`](HANDOFF_EXTERNAL_GNSS_AND_BLE.md)  
 > **儀器實測**：`test/vlgeo2_ble_analysis/docs/VLGEO2_GPS_SOLUTION.md`  
 > **日期**：2026-05
