@@ -18,6 +18,17 @@ class AppConfig {
     defaultValue: '',
   );
 
+  /// 後端 API base URL。可於建置時覆寫：
+  ///   flutter run --dart-define=API_BASE_URL=https://your-host/api
+  ///
+  /// 交接須知：defaultValue 目前指向開發者自架的 Tailscale 後端。
+  /// 交接給下一棒時，請把 defaultValue 改為新主機（或清為空字串，強制以
+  /// --dart-define 提供），詳見 docs/HANDOFF_SECRETS_CHECKLIST。
+  static const String defaultBaseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'https://richardhualienserver.tail124a1b.ts.net/api',
+  );
+
   /// 是否收集並上傳「使用者覆寫自動值」的修正紀錄（DBH／樹種等）。
   /// 預設關閉；研究用高品質資料請用管理後台「研究資料蒐集」。
   /// 啟用：flutter run --dart-define=ENABLE_ML_CORRECTION_UPLOAD=true
@@ -82,8 +93,8 @@ class AppConfig {
   // Private method to set URLs
   void _setEnvironment(Environment env) {
     environment = env;
-    // 目前唯一環境：自架後端（Tailscale）
-    baseUrl = 'https://richardhualienserver.tail124a1b.ts.net/api';
+    // 後端 base URL：優先採用建置期 --dart-define=API_BASE_URL，否則用內建預設。
+    baseUrl = defaultBaseUrl;
     final configuredUrl =
         (_configuredMlServiceUrl != null && _configuredMlServiceUrl!.isNotEmpty)
             ? _configuredMlServiceUrl!
