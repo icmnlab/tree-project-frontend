@@ -1,8 +1,21 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sustainable_treeai/config/survey_settings.dart';
 import 'package:sustainable_treeai/services/ble_live_packet_decoder.dart';
 import 'package:sustainable_treeai/services/pending_measurement_service.dart';
 
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(() async {
+    // 「儀器 remote diameter → dbh」屬研究模式（非手冊合規）行為，
+    // 故測試需把全域 SurveySettings 設為研究模式（handbook=false）。
+    SharedPreferences.setMockInitialValues({
+      'survey_research_mode_enabled': true,
+    });
+    await SurveySettings.instance.load();
+  });
+
   group('BleLiveNmeaParser', () {
     test('解析使用者實測 PHGF 句（無 Remote Diameter）', () {
       const line =

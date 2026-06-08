@@ -9,7 +9,9 @@ Map<String, dynamic> _tp(Map<String, dynamic> row) => {'type': '1P', ...row};
 
 void main() {
   group('DataFilterService 測試', () {
-    test('過濾不完整資料 - 缺少必要欄位', () {
+    test('過濾不完整資料 - 缺少 id（唯一必要欄位）', () {
+      // v21.0：上游 BleDataProcessor 已驗過 GPS/HD/AZ，過濾層只要求 id 存在；
+      // 缺 height 或缺座標不再判為不完整（HEIGHT DME 等可無 GPS）。
       final testData = [
         _tp({
           'id': '10001',
@@ -18,36 +20,30 @@ void main() {
           'height': 12.5,
         }),
         _tp({
-          'id': '10002',
+          'id': '',
+          'lat': 25.0331,
           'lon': 121.5655,
           'height': 10.0,
         }),
         _tp({
           'id': '10003',
-          'lat': 25.0331,
+          'lat': 25.0332,
           'lon': 121.5656,
-        }),
-        _tp({
-          'id': '10004',
-          'lat': 0.0,
-          'lon': 121.5657,
-          'height': 8.0,
         }),
       ];
 
       final result = DataFilterService.filterBleData(testData);
 
-      expect(result.validRecords.length, 1, 
-          reason: '只有第一筆記錄是完整的');
-      expect(result.incompleteRecords.length, 3,
-          reason: '有 3 筆不完整記錄');
-      expect(result.stats.incompleteCount, 3);
-      expect(result.stats.missingFieldCounts['lat'], 2,
-          reason: '2 筆缺少 lat（一筆未提供，一筆為 0）');
-      expect(result.stats.missingFieldCounts['height'], 1);
+      expect(result.validRecords.length, 2,
+          reason: '有 id 即視為完整（缺 height/座標不再判為不完整）');
+      expect(result.incompleteRecords.length, 1,
+          reason: '只有空 id 那筆不完整');
+      expect(result.stats.incompleteCount, 1);
+      expect(result.stats.missingFieldCounts['id'], 1);
     });
 
-    test('過濾重複資料 - 相同座標保留最後一筆', () {
+    test('過濾重複資料 - 同 id 同座標保留最後一筆', () {
+      // v21.0：座標鍵含 id（同測站可量多棵樹），故「重複」需 id+座標都相同。
       final now = DateTime.now();
       final testData = [
         _tp({
@@ -58,14 +54,14 @@ void main() {
           'timestamp': now.subtract(const Duration(minutes: 10)),
         }),
         _tp({
-          'id': '10002',
+          'id': '10001',
           'lat': 25.033000,
           'lon': 121.565400,
           'height': 13.0,
           'timestamp': now.subtract(const Duration(minutes: 5)),
         }),
         _tp({
-          'id': '10003',
+          'id': '10001',
           'lat': 25.033000,
           'lon': 121.565400,
           'height': 14.0,
@@ -83,14 +79,14 @@ void main() {
       final result = DataFilterService.filterBleData(testData);
 
       expect(result.validRecords.length, 2,
-          reason: '重複的 3 筆只保留 1 筆，加上另一筆不同位置');
+          reason: '同 id 同座標 3 筆收斂為 1，加上另一棵不同 id');
       expect(result.duplicateRecords.length, 2,
           reason: '2 筆被過濾的重複記錄');
-      
-      // 確認保留的是最後一筆（id=10003）
+
+      // 確認保留的是最後一筆（最新 timestamp，height=14.0）
       final keptRecord = result.validRecords
-          .firstWhere((r) => r['lat'] == 25.033000);
-      expect(keptRecord['id'], '10003');
+          .firstWhere((r) => r['id'] == '10001');
+      expect(keptRecord['height'], 14.0);
     });
 
     test('座標精度到小數點後 6 位', () {
@@ -132,13 +128,14 @@ void main() {
     });
 
     test('與已存在資料比對', () {
+      // v21.0：座標鍵含 id，故「已存在」需 id+座標都相同才會被過濾。
       final existingData = [
         _tp({'id': 'existing_1', 'lat': 25.0330, 'lon': 121.5654}),
       ];
 
       final newData = [
         _tp({
-          'id': '10001',
+          'id': 'existing_1',
           'lat': 25.0330,
           'lon': 121.5654,
           'height': 12.5,
@@ -157,13 +154,14 @@ void main() {
       );
 
       expect(result.validRecords.length, 1,
-          reason: '已存在於資料庫的應被過濾');
+          reason: '同 id 同座標、已存在於資料庫的應被過濾');
       expect(result.validRecords.first['id'], '10002');
     });
 
     test('keepIncomplete 選項', () {
+      // 空 id → 不完整；keepIncomplete 決定是否仍保留。
       final testData = [
-        _tp({'id': '10001', 'lat': 25.0330, 'lon': 121.5654}),
+        _tp({'id': '', 'lat': 25.0330, 'lon': 121.5654, 'height': 12.5}),
       ];
 
       // 預設不保留
@@ -193,10 +191,11 @@ void main() {
     });
 
     test('統計報告生成', () {
+      // 同 id+座標+height → 精確重複；空 id → 不完整。
       final testData = [
         _tp({'id': '1', 'lat': 25.0, 'lon': 121.0, 'height': 10.0}),
-        _tp({'id': '2', 'lat': 25.0, 'lon': 121.0, 'height': 11.0}),
-        _tp({'id': '3', 'lat': 25.1, 'lon': 121.1}),
+        _tp({'id': '1', 'lat': 25.0, 'lon': 121.0, 'height': 10.0}),
+        _tp({'id': '', 'lat': 25.1, 'lon': 121.1, 'height': 5.0}),
       ];
 
       final result = DataFilterService.filterBleData(testData);
