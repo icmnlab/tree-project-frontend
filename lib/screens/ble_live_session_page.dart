@@ -95,7 +95,6 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   String? _projectName;
   String? _projectCode;
   String? _projectArea;
-  InstrumentHeightMode _instrumentHeightMode = InstrumentHeightMode.auto;
 
   /// 維護重測：SEND 後 GPS 流程決定是否寫回 tree_survey 座標
   bool _pendingUpdateTreeLocation = false;
@@ -116,7 +115,6 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       _projectName = setup.projectName;
       _projectCode = setup.projectCode;
       _projectArea = setup.projectArea;
-      _instrumentHeightMode = setup.instrumentHeightMode;
     }
     if (widget.initialDevice == null) {
       _beginBlePrepare();
@@ -654,10 +652,6 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         'live_session_index': displaySeq,
         'live_send_index': sendSeq,
         if (_batchName != null) 'batch_name': _batchName,
-        if (_instrumentHeightMode != InstrumentHeightMode.auto)
-          'height_method': _instrumentHeightMode.wireValue,
-        if (_instrumentHeightMode != InstrumentHeightMode.auto)
-          'instrument_height_mode': _instrumentHeightMode.wireValue,
         if (maint != null) ...{
           'survey_mode': 'maintenance',
           'target_tree_id': maint.treeSurveyId,
@@ -929,7 +923,6 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         projectCode: _projectCode ?? '',
         projectArea: _projectArea ?? '',
         gpsSource: 'tree',
-        instrumentHeightMode: _instrumentHeightMode,
       ),
     );
     if (setup == null || !mounted) return;
@@ -938,7 +931,6 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       _projectName = setup.projectName;
       _projectCode = setup.projectCode;
       _projectArea = setup.projectArea;
-      _instrumentHeightMode = setup.instrumentHeightMode;
       _gpsSource = 'tree';
     });
     await _syncSessionProjectToServer();
@@ -1039,7 +1031,6 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
                   projectCode: _projectCode!,
                   projectArea: _projectArea ?? '',
                   gpsSource: 'tree',
-                  instrumentHeightMode: _instrumentHeightMode,
                 )
               : null),
     );
@@ -1051,7 +1042,6 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         _projectName = setup.projectName;
         _projectCode = setup.projectCode;
         _projectArea = setup.projectArea;
-        _instrumentHeightMode = setup.instrumentHeightMode;
         _gpsSource = 'tree';
       });
     }

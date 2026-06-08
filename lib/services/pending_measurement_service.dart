@@ -51,14 +51,10 @@ class PendingMeasurementService {
         final double azimuth = (metadata['azimuth'] as num?)?.toDouble() ?? 0;
         final double pitch = (metadata['pitch'] as num?)?.toDouble() ?? 0;
         final double? altitude = (metadata['altitude'] as num?)?.toDouble();
-        final String type = record['type'] as String? ?? '';
-        final String? heightMethod =
-            metadata['height_method'] as String? ??
-                metadata['instrument_height_mode'] as String?;
-        final String resolvedMeasurementType = _resolveMeasurementType(
-          type,
-          heightMethod,
-        );
+        // 整檔 DATA.CSV：type 為韌體 TYPE（1P/3P/DME…）；
+        // 現場 PHGF：儀器已算好樹高、無 TYPE 欄，一律標 LIVE。
+        final String resolvedMeasurementType =
+            (record['type'] as String? ?? '').trim();
         final bool hasGps = record['hasGps'] as bool? ?? (lat != 0 || lon != 0);
         final double? bleDia = (record['dbh'] as num?)?.toDouble();
         final String? dbhSource = metadata['dbh_source'] as String?;
@@ -200,14 +196,6 @@ class PendingMeasurementService {
   static String generateSessionId() {
     final now = DateTime.now();
     return 'MS-${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}-${now.millisecondsSinceEpoch % 100000}';
-  }
-
-  static String _resolveMeasurementType(String type, String? heightMethod) {
-    final t = type.trim();
-    if (t == 'LIVE' && heightMethod != null && heightMethod.isNotEmpty) {
-      return heightMethod.toUpperCase();
-    }
-    return t;
   }
 
   static int? _toInt(dynamic value) {

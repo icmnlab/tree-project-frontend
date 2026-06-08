@@ -27,7 +27,6 @@ class ProjectScope {
   FieldSessionSetup toFieldSessionSetup({
     required String batchName,
     String gpsSource = 'tree',
-    InstrumentHeightMode instrumentHeightMode = InstrumentHeightMode.auto,
   }) {
     return FieldSessionSetup(
       batchName: batchName,
@@ -35,7 +34,6 @@ class ProjectScope {
       projectName: blockName.trim(),
       projectCode: projectCode.trim(),
       gpsSource: gpsSource,
-      instrumentHeightMode: instrumentHeightMode,
     );
   }
 

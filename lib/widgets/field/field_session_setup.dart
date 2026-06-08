@@ -11,44 +11,10 @@ import '../../services/project_service.dart';
 import '../../services/v3/project_boundary_coordinator.dart';
 import '../../utils/location_helper.dart';
 
-/// 對應 STD 選單 HEIGHT 1P / 3P / DME；PHGF 無 TYPE 欄，由場次補齊。
-enum InstrumentHeightMode {
-  /// pending.measurement_type = LIVE（不覆寫）
-  auto,
-  onePoint,
-  threePoint,
-  dme,
-}
-
-extension InstrumentHeightModeWire on InstrumentHeightMode {
-  String? get wireValue {
-    switch (this) {
-      case InstrumentHeightMode.auto:
-        return null;
-      case InstrumentHeightMode.onePoint:
-        return '1P';
-      case InstrumentHeightMode.threePoint:
-        return '3P';
-      case InstrumentHeightMode.dme:
-        return 'DME';
-    }
-  }
-
-  String get label {
-    switch (this) {
-      case InstrumentHeightMode.auto:
-        return '依儀器（LIVE）';
-      case InstrumentHeightMode.onePoint:
-        return 'HEIGHT 1P';
-      case InstrumentHeightMode.threePoint:
-        return 'HEIGHT 3P';
-      case InstrumentHeightMode.dme:
-        return 'HEIGHT DME';
-    }
-  }
-}
-
 /// 現場場次共用：專案／區位／GPS 語意／場次名稱
+///
+/// 註：現場 PHGF 不含 TYPE 欄，儀器已算好樹高 H，App 無法（也無需）判斷
+/// HEIGHT 1P/3P/DME，故現場一律標 `LIVE`；整檔 DATA.CSV 仍讀韌體真實 TYPE。
 class FieldSessionSetup {
   final String batchName;
   final String projectName;
@@ -56,8 +22,6 @@ class FieldSessionSetup {
   final String projectArea;
   /// 固定為樹旁座標（2026-05-28 會議：不再提供 GPS 取點模式選擇）
   final String gpsSource; // always 'tree'
-  /// PHGF 現場無 TYPE；非 auto 時寫入 pending.measurement_type / snapshot.height_method
-  final InstrumentHeightMode instrumentHeightMode;
 
   const FieldSessionSetup({
     required this.batchName,
@@ -65,7 +29,6 @@ class FieldSessionSetup {
     required this.projectCode,
     required this.projectArea,
     required this.gpsSource,
-    this.instrumentHeightMode = InstrumentHeightMode.auto,
   });
 }
 
@@ -102,7 +65,6 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
 
   String? _projectCode;
   static const _fixedGpsSource = 'tree';
-  InstrumentHeightMode _instrumentHeightMode = InstrumentHeightMode.auto;
   bool _loadingAreas = true;
   bool _loadingProjects = false;
   bool _canAddProject = false;
@@ -120,8 +82,6 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
     _areaCtrl.text = initial?.projectArea ?? '';
     _projectNameCtrl.text = initial?.projectName ?? '';
     _projectCode = initial?.projectCode;
-    _instrumentHeightMode =
-        initial?.instrumentHeightMode ?? InstrumentHeightMode.auto;
     _bootstrap();
   }
 
@@ -651,28 +611,6 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
               context.tr('field_setup_gps_note'),
               style: TextStyle(fontSize: 12, color: Colors.grey[700]),
             ),
-            const SizedBox(height: 12),
-            Text(
-              '樹高模式（對應 STD HEIGHT 選單；PHGF 無 TYPE 欄）',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[800],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: InstrumentHeightMode.values.map((mode) {
-                return ChoiceChip(
-                  label: Text(mode.label),
-                  selected: _instrumentHeightMode == mode,
-                  onSelected: (_) =>
-                      setState(() => _instrumentHeightMode = mode),
-                );
-              }).toList(),
-            ),
           ],
         ),
       ),
@@ -690,7 +628,6 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
                     projectCode: _projectCode!,
                     projectArea: _areaCtrl.text.trim(),
                     gpsSource: _fixedGpsSource,
-                    instrumentHeightMode: _instrumentHeightMode,
                   );
                   await _scopeStore.remember(
                     ProjectScope.fromFieldSessionSetup(setup),
