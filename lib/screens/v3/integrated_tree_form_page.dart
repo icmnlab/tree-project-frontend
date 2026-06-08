@@ -44,12 +44,16 @@ class IntegratedTreeFormPage extends StatefulWidget {
   /// 碳匯手冊合規：DBH 僅接受現場人工量測。null 時依 [SurveySettings]。
   final bool? handbookCompliantMode;
 
+  /// 維護重測：由 BLE SEND 後 GPS 流程決定（表單不再顯示開關）
+  final bool? initialUpdateTreeLocation;
+
   const IntegratedTreeFormPage({
     super.key,
     required this.task,
     this.autoTransferToTreeSurvey = false,
     this.transferSessionId,
     this.handbookCompliantMode,
+    this.initialUpdateTreeLocation,
   });
 
   @override
@@ -76,6 +80,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
   final List<String> _statusOptions = [
     '正常',
     '枯死',
+    '已移除',
     '病蟲害',
     '傾斜',
     '斷梢',
@@ -126,6 +131,9 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
   bool _dbhReady = false;
   bool _speciesReady = false;
   double? _previewCarbonKg;
+  bool _updateTreeLocation = false;
+
+  bool get _isMaintenance => widget.task.surveyMode == 'maintenance';
 
   // Multi-shot: stored images for precision boost
   final List<File> _capturedImages = [];
@@ -139,6 +147,9 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
   @override
   void initState() {
     super.initState();
+    if (widget.initialUpdateTreeLocation != null) {
+      _updateTreeLocation = widget.initialUpdateTreeLocation!;
+    }
     _preferredCaptureMode = _handbook
         ? CameraCaptureMode.plainPhoto
         : CameraCaptureMode.integrated;
@@ -1281,18 +1292,21 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
 
   Future<void> _submitForm() async {
     if (_isLoading) return;
+
     if (_dbhController.text.isEmpty) {
       _showError('請輸入胸徑 (DBH)');
       return;
     }
 
-    // 提前檢查 task.id — 不能為 null 才能更新後端
     final taskId = widget.task.id;
     if (taskId == null) {
       _showError('任務 ID 不存在，無法提交');
       return;
     }
 
+    setState(() => _isLoading = true);
+
+    try {
     final projectName = widget.task.projectName?.trim() ?? '';
     final tLat = widget.task.treeLatitude;
     final tLon = widget.task.treeLongitude;
@@ -1333,15 +1347,11 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       }
     }
 
-    setState(() => _isLoading = true);
-
-    try {
       await _refreshLockBaseline();
 
       final dbh = double.tryParse(_dbhController.text);
       if (dbh == null) {
         _showError('請輸入有效的數值');
-        setState(() => _isLoading = false);
         return;
       }
 
@@ -1355,7 +1365,6 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       // [Auto-Add] 提交前確保樹種已建檔（取代舊的「新增樹種」按鈕；多人並發安全）
       final speciesOk = await _ensureSpeciesId();
       if (!speciesOk) {
-        if (mounted) setState(() => _isLoading = false);
         return;
       }
 
@@ -1460,14 +1469,47 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
         speciesName: _speciesController.text,
         expectedUpdatedAt: expectedUpdatedAt,
         dbhSource: _handbook ? 'manual' : _activeDbhSource,
+        rawDataSnapshotMerge: _isMaintenance
+            ? {'update_tree_location': _updateTreeLocation}
+            : null,
       );
 
-      // [T6] 409 衝突 → 三選一
+      // [T6] 409 衝突：已完成任務視為冪等成功；否則用 server updated_at 自動重試一次
       if (updateResp['code'] == 'CONFLICT' && mounted) {
+        final server =
+            (updateResp['serverVersion'] as Map?)?.cast<String, dynamic>() ??
+                {};
         FieldLog.pending(
           '409 CONFLICT task=$taskId sent=$expectedUpdatedAt '
-          'server=${updateResp['serverVersion']?['updated_at']}',
+          'server=${server['updated_at']} status=${server['status']}',
         );
+        if (server['status']?.toString() == 'completed') {
+          FieldLog.pending('409 idempotent: task=$taskId already completed');
+          updateResp = {'success': true, 'data': server};
+        } else {
+          final serverLock = server['updated_at']?.toString();
+          if (serverLock != null && serverLock.isNotEmpty) {
+            FieldLog.pending(
+              '409 auto-retry task=$taskId expected_updated_at=$serverLock',
+            );
+            updateResp = await _pendingService.updateMeasurement(
+              id: taskId,
+              dbhCm: dbh,
+              confidence: _resolveSubmitConfidence(),
+              method: _resolveSubmitMethod(),
+              notes: combinedNotes.isEmpty ? _selectedStatus : combinedNotes,
+              speciesName: _speciesController.text,
+              expectedUpdatedAt: serverLock,
+              dbhSource: _handbook ? 'manual' : _activeDbhSource,
+              rawDataSnapshotMerge: _isMaintenance
+                  ? {'update_tree_location': _updateTreeLocation}
+                  : null,
+            );
+          }
+        }
+      }
+
+      if (updateResp['code'] == 'CONFLICT' && mounted) {
         final server =
             (updateResp['serverVersion'] as Map?)?.cast<String, dynamic>() ??
                 {};
@@ -2346,6 +2388,36 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
           ),
 
         const SizedBox(height: 16),
+
+        if (_isMaintenance && widget.initialUpdateTreeLocation != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              widget.initialUpdateTreeLocation!
+                  ? '樹位 GPS：將以 SEND 後定位更新至正式資料'
+                  : '樹位 GPS：沿用原座標（未更新）',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+            ),
+          ),
+        if (_isMaintenance && widget.initialUpdateTreeLocation == null) ...[
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('更新樹位 GPS'),
+            subtitle: const Text(
+              '預設沿用原座標；僅在樹位明顯偏移或重植後才開啟',
+            ),
+            value: _updateTreeLocation,
+            onChanged: (v) => setState(() => _updateTreeLocation = v),
+          ),
+        ],
+        if (_isMaintenance && widget.task.targetTreeId != null)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              '重測樹木 #${widget.task.targetTreeId} · 樹種可修正，歷次會保留',
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+            ),
+          ),
 
         // 備註輸入
         TextFormField(

@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 
+import '../../models/project_scope.dart';
+import '../../services/project_scope_store.dart';
 import '../../screens/v3/project_boundary_draw_page.dart';
 import '../../services/auth_service.dart';
 import '../../services/locale_service.dart';
 import '../../services/project_area_service.dart';
 import '../../services/project_service.dart';
 import '../../services/v3/project_boundary_coordinator.dart';
-import '../../services/v3/project_boundary_service.dart';
 import '../../utils/location_helper.dart';
 
 /// 現場場次共用：專案／區位／GPS 語意／場次名稱
@@ -66,6 +67,8 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
   bool _canAddProject = false;
   List<Map<String, dynamic>> _projectAreas = [];
   List<Map<String, dynamic>> _filteredProjects = [];
+  List<ProjectScope> _recentScopes = [];
+  final _scopeStore = ProjectScopeStore();
 
   @override
   void initState() {
@@ -81,10 +84,31 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
 
   Future<void> _bootstrap() async {
     _canAddProject = await AuthService.canImportCsv();
+    _recentScopes = await _scopeStore.loadRecent();
     await _loadProjectAreas();
-    if (_areaCtrl.text.trim().isNotEmpty) {
+    final initial = widget.initial;
+    if (initial == null &&
+        _areaCtrl.text.trim().isEmpty &&
+        _projectNameCtrl.text.trim().isEmpty) {
+      final last = await _scopeStore.loadLast();
+      if (last != null) {
+        await _applyScope(last, remember: false);
+      }
+    } else if (_areaCtrl.text.trim().isNotEmpty) {
       await _loadProjectsForArea(_areaCtrl.text.trim());
     }
+  }
+
+  Future<void> _applyScope(ProjectScope scope, {bool remember = false}) async {
+    _areaCtrl.text = scope.programName;
+    _projectNameCtrl.text = scope.blockName;
+    _projectCode = scope.projectCode;
+    await _loadProjectsForArea(scope.programName);
+    if (remember) {
+      await _scopeStore.remember(scope);
+      _recentScopes = await _scopeStore.loadRecent();
+    }
+    if (mounted) setState(() {});
   }
 
   @override
@@ -511,6 +535,34 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
               context.tr('field_setup_hint'),
               style: const TextStyle(fontSize: 13),
             ),
+            if (_recentScopes.isNotEmpty) ...[
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  '最近使用',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade700,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: _recentScopes.map((scope) {
+                  return ActionChip(
+                    label: Text(
+                      scope.displayLabel,
+                      style: const TextStyle(fontSize: 11),
+                    ),
+                    onPressed: () => _applyScope(scope),
+                  );
+                }).toList(),
+              ),
+            ],
             const SizedBox(height: 12),
             TextField(
               controller: _batchCtrl,
@@ -566,17 +618,20 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
         ),
         ElevatedButton(
           onPressed: _canConfirm
-              ? () {
-                  Navigator.pop(
-                    context,
-                    FieldSessionSetup(
-                      batchName: _batchCtrl.text.trim(),
-                      projectName: _projectNameCtrl.text.trim(),
-                      projectCode: _projectCode!,
-                      projectArea: _areaCtrl.text.trim(),
-                      gpsSource: _fixedGpsSource,
-                    ),
+              ? () async {
+                  final setup = FieldSessionSetup(
+                    batchName: _batchCtrl.text.trim(),
+                    projectName: _projectNameCtrl.text.trim(),
+                    projectCode: _projectCode!,
+                    projectArea: _areaCtrl.text.trim(),
+                    gpsSource: _fixedGpsSource,
                   );
+                  await _scopeStore.remember(
+                    ProjectScope.fromFieldSessionSetup(setup),
+                  );
+                  if (context.mounted) {
+                    Navigator.pop(context, setup);
+                  }
                 }
               : null,
           child: Text(context.tr('field_setup_confirm')),

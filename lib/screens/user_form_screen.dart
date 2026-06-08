@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 // dart:convert, provider, auth_service imports removed - unused
 import '../services/api_service.dart';
+import '../utils/password_validator.dart';
 
 class UserFormScreen extends StatefulWidget {
   final Map<String, dynamic>? user;
@@ -218,6 +219,10 @@ class _UserFormScreenState extends State<UserFormScreen> {
                         if (widget.user == null &&
                             (value == null || value.isEmpty)) {
                           return '請輸入密碼';
+                        }
+                        if (value != null && value.isNotEmpty) {
+                          return validatePasswordStrength(value,
+                              required: widget.user == null);
                         }
                         return null;
                       },

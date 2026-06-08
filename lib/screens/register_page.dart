@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../services/locale_service.dart';
 import '../constants/colors.dart';
+import '../utils/password_validator.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -122,8 +123,14 @@ class _RegisterPageState extends State<RegisterPage> {
                       onPressed: () => setState(() => _obscure = !_obscure),
                     ),
                   ),
-                  validator: (v) =>
-                      (v == null || v.length < 8) ? '至少 8 字元' : null,
+                  validator: (v) => validatePasswordStrength(v),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 6),
+                  child: Text(
+                    passwordStrengthHint,
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
+                  ),
                 ),
                 const SizedBox(height: 24),
                 FilledButton(

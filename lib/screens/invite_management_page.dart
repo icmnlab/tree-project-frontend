@@ -166,8 +166,12 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
                 }),
                 if (areasForSelection().isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  const Text('綁定區位（可多選，對應註冊後專案區位）',
+                  const Text('綁定專案區位（可多選，僅供管理紀錄）',
                       style: TextStyle(fontWeight: FontWeight.w600)),
+                  const Text(
+                    '註：目前註冊僅套用「綁定專案」；區位欄位尚未寫入新帳號，請勿依賴此設定做權限控管。',
+                    style: TextStyle(fontSize: 12, color: Colors.orange),
+                  ),
                   Wrap(
                     spacing: 6,
                     runSpacing: 0,
@@ -193,8 +197,9 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
                 TextField(
                   controller: locationsCtrl,
                   decoration: const InputDecoration(
-                    labelText: '預設區位（逗號分隔，可手動增修）',
+                    labelText: '區位備註（逗號分隔，僅存檔）',
                     hintText: '例如：A區, B區',
+                    helperText: '尚未套用至註冊帳號，僅供管理員對照',
                   ),
                   onChanged: (_) {
                     selectedAreas
@@ -484,8 +489,42 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
                                 onPressed: () async {
                                   final id = inv['invite_id'];
                                   if (id == null) return;
-                                  await _inviteService.deactivateInvite(id as int);
-                                  await _load();
+                                  final ok = await showDialog<bool>(
+                                    context: context,
+                                    builder: (ctx) => AlertDialog(
+                                      title: const Text('停用邀請碼'),
+                                      content: Text('確定停用 $code？已發出的碼將無法再註冊。'),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(ctx, false),
+                                          child: const Text('取消'),
+                                        ),
+                                        FilledButton(
+                                          onPressed: () =>
+                                              Navigator.pop(ctx, true),
+                                          child: const Text('停用'),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  if (ok != true || !mounted) return;
+                                  try {
+                                    final inviteId = id is int
+                                        ? id
+                                        : (id as num).toInt();
+                                    await _inviteService
+                                        .deactivateInvite(inviteId);
+                                    await _load();
+                                  } catch (e) {
+                                    if (!mounted) return;
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('停用失敗: $e'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
                                 },
                               )
                             : null,

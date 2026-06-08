@@ -22,6 +22,8 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
   List<Map<String, dynamic>> _trees = [];
   bool _isLoading = true;
   String _errorMessage = '';
+  bool _unscopedLoad = false;
+  int? _totalTreeCount;
   final TreeService _treeService = TreeService();
   bool _canEdit = false;
 
@@ -56,18 +58,21 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
       Map<String, dynamic> response;
 
       if (widget.projectName != null) {
+        _unscopedLoad = false;
         // 如果有專案名稱，則按專案名稱過濾
         _logDebug('按專案名稱過濾: ${widget.projectName}');
         response =
             await _treeService.getTreesByProjectName(widget.projectName!);
       } else if (widget.areaName != null) {
+        _unscopedLoad = false;
         // 如果有區位名稱，則按區位名稱過濾
         _logDebug('按區位名稱過濾: ${widget.areaName}');
         response = await _treeService.getTreesByArea(widget.areaName!);
       } else {
-        // 否則獲取所有樹木
-        _logDebug('獲取所有樹木');
-        response = await _treeService.getAllTrees();
+        // 無專案／區位篩選時禁止全量載入（7000+ 棵會拖垮裝置）
+        _logDebug('未指定專案／區位，僅載入前 200 筆');
+        _unscopedLoad = true;
+        response = await _treeService.getAllTrees(limit: 200);
       }
 
       _logDebug('API 響應成功');
@@ -80,6 +85,9 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
 
         setState(() {
           _trees = List<Map<String, dynamic>>.from(data);
+          _totalTreeCount = response['totalCount'] is int
+              ? response['totalCount'] as int
+              : int.tryParse('${response['totalCount']}');
 
           // 根據專案名稱決定排序方式
           if (widget.projectName != null) {
@@ -446,6 +454,25 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                       )
                     : Column(
                         children: [
+                          if (_unscopedLoad)
+                            Material(
+                              color: Colors.amber.shade50,
+                              child: ListTile(
+                                leading: Icon(Icons.info_outline,
+                                    color: Colors.amber.shade900),
+                                title: const Text(
+                                  '請從「專案管理」選定專案後查看',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                                subtitle: Text(
+                                  _totalTreeCount != null &&
+                                          _totalTreeCount! > _trees.length
+                                      ? '共 $_totalTreeCount 棵，此處僅預覽前 ${_trees.length} 筆。'
+                                          '完整搜尋請用底部「樹木列表」。'
+                                      : '資料量大時請用底部「樹木列表」分頁與搜尋。',
+                                ),
+                              ),
+                            ),
                           // 樹木數量標籤
                           Padding(
                             padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),

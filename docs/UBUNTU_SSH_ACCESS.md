@@ -24,11 +24,39 @@ tailscale status
 
 ## 2. SSH 連線（建議）
 
+### 2a. 已驗證可用（2026-06-08）
+
+本機需有已加入伺服器 `authorized_keys` 的金鑰（例如 `~/.ssh/id_ed25519`）：
+
 ```powershell
-tailscale ssh <TAILSCALE_HOST_SHORT>
+ssh -i $env:USERPROFILE\.ssh\id_ed25519 kyleliu@100.118.203.75
 ```
 
-首次連線若出現 host key 提示，輸入 `yes` 接受。
+| 項目 | 值 |
+|------|-----|
+| Linux 使用者 | `kyleliu` |
+| Tailscale IP | `100.118.203.75` |
+| 主機名 | `richardhualienserver` |
+| 後端目錄 | `/opt/tree-app/backend` |
+| 部署日誌 | `/opt/tree-app/logs/deploy.log` |
+
+連線後常用指令：
+
+```bash
+cd /opt/tree-app/backend && git log -1 --oneline
+tail -30 /opt/tree-app/logs/deploy.log
+pm2 list
+pm2 logs tree-backend --lines 50 --nostream
+curl -s http://127.0.0.1:3000/health
+```
+
+### 2b. Tailscale SSH（若 host key 已公告）
+
+```powershell
+tailscale ssh richardhualienserver
+```
+
+首次連線若出現 host key 提示，輸入 `yes` 接受。若出現 `No ED25519 host key is known`，請改用 **§2a** 傳統 SSH。
 
 ### 常見錯誤與處理
 

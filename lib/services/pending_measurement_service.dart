@@ -338,6 +338,7 @@ class PendingMeasurementService {
     String? speciesName,
     String? expectedUpdatedAt,
     String? dbhSource,
+    Map<String, dynamic>? rawDataSnapshotMerge,
   }) async {
     try {
       final body = {
@@ -357,6 +358,9 @@ class PendingMeasurementService {
       }
       if (expectedUpdatedAt != null) {
         body['expected_updated_at'] = expectedUpdatedAt;
+      }
+      if (rawDataSnapshotMerge != null && rawDataSnapshotMerge.isNotEmpty) {
+        body['raw_data_snapshot_merge'] = rawDataSnapshotMerge;
       }
 
       final response = await http

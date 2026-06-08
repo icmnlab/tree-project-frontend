@@ -9,6 +9,8 @@ import '../models/pending_tree_measurement.dart';
 import '../services/ble_live_packet_decoder.dart';
 import '../utils/field_gps_capture.dart';
 import '../utils/field_log.dart';
+import '../utils/maintenance_gps_flow.dart';
+import '../utils/tree_id_display.dart';
 import '../services/pending_measurement_service.dart';
 import '../widgets/ble/ble_device_scanner.dart';
 import '../widgets/ble/ble_instrument_checklist.dart';
@@ -30,11 +32,15 @@ class BleLiveSessionPage extends StatefulWidget {
   /// 維護量測：重測既有樹（transfer 時寫入歷次並更新 tree_survey）
   final MaintenanceTarget? maintenanceTarget;
 
+  /// 由 [MaintenanceSurveyPage] 進入：新增樹完成後返回清單（非留 BLE 連測）
+  final bool maintenanceSessionContext;
+
   const BleLiveSessionPage({
     super.key,
     this.initialDevice,
     this.initialSessionSetup,
     this.maintenanceTarget,
+    this.maintenanceSessionContext = false,
   });
 
   @override
@@ -69,6 +75,9 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   static const _connectMaxAttempts = 3;
   BleLiveMeasurement? _gpsRetryLive;
   int? _gpsRetrySeq;
+  /// GPS 階段若儀器連按 SEND，只更新此值，避免重複建立 pending
+  BleLiveMeasurement? _inProgressLive;
+  int? _inProgressSendSeq;
   String _status = '';
 
   bool get _canAutoReconnect =>
@@ -90,6 +99,9 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   String? _projectName;
   String? _projectCode;
   String? _projectArea;
+
+  /// 維護重測：SEND 後 GPS 流程決定是否寫回 tree_survey 座標
+  bool _pendingUpdateTreeLocation = false;
 
   BleLiveMeasurement? _lastMeasurement;
   Completer<void>? _blePrepare;
@@ -524,24 +536,17 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
           }
           return;
         }
-        // GPS／上傳階段：新 SEND 取代前一筆
-        _processGen++;
-        final gen = _processGen;
+        // GPS 階段：只保留最新 NMEA，不重跑 GPS／不重複建立 pending
+        _inProgressLive = live;
+        _inProgressSendSeq = _liveSeq;
         _appendLog('  新 SEND 覆蓋進行中流程（仍為第 $displaySeq 棵）');
-        if (_gpsDialogOpen && mounted) {
-          Navigator.of(context).pop();
-        }
-        unawaited(_processLiveMeasurement(
-          live,
-          displaySeq: displaySeq,
-          sendSeq: _liveSeq,
-          gen: gen,
-        ));
         return;
       }
 
       _processGen++;
       _isProcessingTree = true;
+      _inProgressLive = live;
+      _inProgressSendSeq = _liveSeq;
       unawaited(
         _processLiveMeasurement(
           live,
@@ -613,10 +618,12 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         _gpsRetryLive = null;
         _gpsRetrySeq = null;
       });
+      final effectiveLive = _inProgressLive ?? live;
+      final effectiveSend = _inProgressSendSeq ?? sendSeq;
       await _completeLiveMeasurementAfterGps(
-        live,
+        effectiveLive,
         displaySeq: displaySeq,
-        sendSeq: sendSeq,
+        sendSeq: effectiveSend,
         gps: gps,
         gen: gen,
       );
@@ -749,16 +756,20 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
     final messenger = ScaffoldMessenger.of(context);
 
     _formOpen = true;
+    final isMaintRemeasure = widget.maintenanceTarget != null;
     final success = await nav.push<bool>(
       MaterialPageRoute(
         builder: (_) => IntegratedTreeFormPage(
           task: task,
           autoTransferToTreeSurvey: true,
           transferSessionId: _liveSessionId,
+          initialUpdateTreeLocation:
+              isMaintRemeasure ? _pendingUpdateTreeLocation : null,
         ),
       ),
     );
     _formOpen = false;
+    _pendingUpdateTreeLocation = false;
 
     if (!mounted || gen != _processGen) return;
 
@@ -766,9 +777,11 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       _completedCount++;
       _appendLog('[樹 $displaySeq] 表單提交成功（累計 $_completedCount 棵）');
       final sid = _liveSessionId;
+      Map<String, dynamic>? transferResult;
       if (sid != null && sid.isNotEmpty) {
         try {
           final tr = await _pendingService.transferToTreeSurvey(sessionId: sid);
+          transferResult = tr;
           if (tr['success'] == true) {
             final n = (tr['transferred_tree_ids'] as List?)?.length ?? 0;
             _appendLog(
@@ -786,6 +799,35 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         }
       }
       if (!mounted) return;
+      if (widget.maintenanceSessionContext && widget.maintenanceTarget == null) {
+        final newId = _treeSurveyIdFromTransfer(transferResult);
+        nav.pop(
+          MaintenanceSessionResult(
+            success: true,
+            treeSurveyId: newId,
+            isNewTree: true,
+          ),
+        );
+        return;
+      }
+      if (widget.maintenanceTarget != null) {
+        messenger.showSnackBar(
+          SnackBar(
+            content: Text(context.tr('maintain_done_short')),
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+        nav.pop(
+          MaintenanceSessionResult(
+            success: true,
+            treeSurveyId: widget.maintenanceTarget!.treeSurveyId,
+            projectTreeId: widget.maintenanceTarget!.projectTreeId,
+            isNewTree: false,
+          ),
+        );
+        return;
+      }
       messenger.showSnackBar(
         SnackBar(
           content: Text(
@@ -943,9 +985,38 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   }
 
   /// 每次 SEND 皆於樹旁手動取得手機 GPS（2026-05-28 會議：固定樹木位置）
+  /// 維護重測：先問是否更新樹位；若要才定位，否則沿用原座標。
   Future<FieldGpsCaptureResult?> _resolveGpsForLiveMeasurement(int seq) async {
     _gpsDialogOpen = true;
     try {
+      final maint = widget.maintenanceTarget;
+      if (maint != null) {
+        final label = TreeIdDisplay.fieldListLabel(
+          projectTreeId: maint.projectTreeId,
+          systemTreeId: maint.systemTreeId,
+        );
+        final decision = await showMaintenanceRemeasureGpsFlow(
+          context,
+          treeLabel: label,
+        );
+        if (decision == null) return null;
+        _pendingUpdateTreeLocation = decision.updateTreeLocation;
+        final gps = resolveMaintenancePendingGps(
+          decision: decision,
+          existingLat: maint.treeLatitude,
+          existingLon: maint.treeLongitude,
+        );
+        if (gps == null && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('此樹尚無座標，請選擇「更新 GPS」'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return gps;
+      }
+      _pendingUpdateTreeLocation = false;
       return await showFieldGpsCaptureDialog(
         context,
         mode: 'tree',
@@ -954,6 +1025,26 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
     } finally {
       _gpsDialogOpen = false;
     }
+  }
+
+  int? _treeSurveyIdFromTransfer(Map<String, dynamic>? tr) {
+    if (tr == null || tr['success'] != true) return null;
+    final mapping = tr['id_mapping'];
+    if (mapping is List && mapping.isNotEmpty) {
+      final last = mapping.last;
+      if (last is Map) {
+        final id = last['tree_survey_id'];
+        if (id is int) return id;
+        return int.tryParse(id?.toString() ?? '');
+      }
+    }
+    final ids = tr['transferred_tree_ids'];
+    if (ids is List && ids.isNotEmpty) {
+      final last = ids.last;
+      if (last is int) return last;
+      return int.tryParse(last.toString());
+    }
+    return null;
   }
 
   /// 第一棵前：專案、區位、GPS 語意、場次名稱（整場共用）

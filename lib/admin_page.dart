@@ -1354,39 +1354,71 @@ class _AdminPageState extends State<AdminPage> {
   }
 
   Future<void> _confirmDeleteProject(Project project) async {
+    final codeController = TextEditingController();
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('確認刪除專案'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('您確定要刪除專案 "${project.name}" (代碼: ${project.code}) 嗎？'),
-            const SizedBox(height: 12),
-            const Text(
-              '此操作將會刪除該專案下所有的樹木資料！',
-              style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            const Text('請輸入專案代碼以確認刪除：'),
-            const SizedBox(height: 8),
-            // Note: In a real app, we might add a text field here for double confirmation
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('確認刪除'),
-          ),
-        ],
-      ),
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final codeMatches =
+                codeController.text.trim() == project.code.trim();
+            return AlertDialog(
+              title: const Text('確認刪除專案'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '您確定要刪除專案 "${project.name}" (代碼: ${project.code}) 嗎？',
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      '此操作將會刪除該專案下所有的樹木資料，且無法復原。',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text('請輸入專案代碼「${project.code}」以確認刪除：'),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: codeController,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        hintText: project.code,
+                        border: const OutlineInputBorder(),
+                        errorText: codeController.text.isEmpty
+                            ? null
+                            : codeMatches
+                                ? null
+                                : '代碼不符',
+                      ),
+                      onChanged: (_) => setDialogState(() {}),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext, false),
+                  child: const Text('取消'),
+                ),
+                ElevatedButton(
+                  onPressed: codeMatches
+                      ? () => Navigator.pop(dialogContext, true)
+                      : null,
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  child: const Text('確認刪除'),
+                ),
+              ],
+            );
+          },
+        );
+      },
     );
+    codeController.dispose();
 
     if (confirmed == true) {
       await _deleteProject(project.code);

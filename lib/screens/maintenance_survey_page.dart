@@ -3,6 +3,7 @@ import 'package:flutter_blue_plus/flutter_blue_plus.dart';
 import 'package:geolocator/geolocator.dart';
 
 import '../models/maintenance_target.dart';
+import '../services/maintenance_lock_service.dart';
 import '../services/tree_service.dart';
 import '../utils/location_helper.dart';
 import '../utils/tree_id_display.dart';
@@ -15,7 +16,7 @@ import '../services/locale_service.dart';
 
 enum _MaintainView { list, map }
 
-/// 維護量測：選區 → 樹清單 → 選樹重測或新增樹木
+/// 維護量測：選區 → 開始場次 → 重測（本場已完成者自清單／地圖移除）→ 使用者按「完成維護」結束
 class MaintenanceSurveyPage extends StatefulWidget {
   const MaintenanceSurveyPage({super.key});
 
@@ -25,6 +26,7 @@ class MaintenanceSurveyPage extends StatefulWidget {
 
 class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
   final _treeService = TreeService();
+  final _lockService = MaintenanceLockService();
   FieldSessionSetup? _setup;
   MaintenanceTarget? _targetTree;
   BluetoothDevice? _selectedDevice;
@@ -35,9 +37,27 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
   String _search = '';
   int _step = 0; // 0=list 1=ble
   _MaintainView _view = _MaintainView.list;
+
+  /// 本場次已成功重測的 tree_survey.id（自待辦清單／地圖隱藏）
+  final Set<int> _completedThisSession = {};
+  /// 本場次「新增樹木」入庫的 id（非待重測，自待辦清單／地圖隱藏）
+  final Set<int> _addedThisSession = {};
+  int _sessionInitialCount = 0;
+  bool _allDoneDialogShown = false;
+
   double? _userLat;
   double? _userLon;
+  Map<int, MaintenanceLockInfo> _locksByTreeId = {};
+  int? _heldLockTreeId;
 
+  @override
+  void dispose() {
+    final held = _heldLockTreeId;
+    if (held != null) {
+      _lockService.releaseLock(held);
+    }
+    super.dispose();
+  }
   @override
   void initState() {
     super.initState();
@@ -57,6 +77,29 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
     }
     setState(() => _setup = setup);
     await _loadTrees();
+    if (!mounted) return;
+    setState(() => _sessionInitialCount = _trees.length);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(context.tr('maintain_session_started')),
+        duration: const Duration(seconds: 3),
+      ),
+    );
+  }
+
+  Future<void> _loadLocks() async {
+    final code = _setup?.projectCode;
+    if (code == null || code.isEmpty) return;
+    final locks = await _lockService.fetchLocks(code);
+    if (!mounted) return;
+    setState(() => _locksByTreeId = locks);
+  }
+
+  String? _lockLabelForTree(int treeId) {
+    final lock = _locksByTreeId[treeId];
+    if (lock == null) return null;
+    final name = lock.displayName ?? '?';
+    return context.tr('maintain_locked_by').replaceAll('{name}', name);
   }
 
   Future<void> _loadTrees() async {
@@ -92,19 +135,16 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
       if (pos != null) {
         _userLat = pos.latitude;
         _userLon = pos.longitude;
-        list.sort((a, b) {
-          final da = _distanceToTreeM(a) ?? double.infinity;
-          final db = _distanceToTreeM(b) ?? double.infinity;
-          return da.compareTo(db);
-        });
       } else {
         _userLat = null;
         _userLon = null;
       }
+      _sortTreesByDistance(list);
       setState(() {
         _trees = list;
         _loadingTrees = false;
       });
+      await _loadLocks();
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -112,6 +152,50 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
         _loadingTrees = false;
       });
     }
+  }
+
+  void _sortTreesByDistance(List<Map<String, dynamic>> list) {
+    list.sort((a, b) {
+      final da = _distanceToTreeM(a) ?? double.infinity;
+      final db = _distanceToTreeM(b) ?? double.infinity;
+      return da.compareTo(db);
+    });
+  }
+
+  int? _treeId(Map<String, dynamic> t) {
+    final v = t['id'] ?? t['ID'];
+    if (v is int) return v;
+    return int.tryParse(v?.toString() ?? '');
+  }
+
+  bool _isPendingInSession(Map<String, dynamic> t) {
+    final id = _treeId(t);
+    if (id == null) return false;
+    if (_completedThisSession.contains(id)) return false;
+    if (_addedThisSession.contains(id)) return false;
+    return true;
+  }
+
+  int get _pendingCount =>
+      _trees.where(_isPendingInSession).length;
+
+  int get _doneCount => _completedThisSession.length;
+
+  List<Map<String, dynamic>> get _displayTrees {
+    final q = _search.trim().toLowerCase();
+    return _trees.where((t) {
+      if (!_isPendingInSession(t)) return false;
+      if (q.isEmpty) return true;
+      final pt = (t['project_tree_id'] ?? t['專案樹木'] ?? '').toString();
+      final st = (t['system_tree_id'] ?? t['系統樹木'] ?? '').toString();
+      final species =
+          (t['species_name'] ?? t['樹種名稱'] ?? '').toString().toLowerCase();
+      final digits = TreeIdDisplay.projectTreeDigits(pt);
+      return digits.contains(q) ||
+          pt.toLowerCase().contains(q) ||
+          st.toLowerCase().contains(q) ||
+          species.contains(q);
+    }).toList();
   }
 
   void _startBle({MaintenanceTarget? target}) {
@@ -124,18 +208,170 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
 
   Future<void> _openLiveSession() async {
     if (_selectedDevice == null || _setup == null) return;
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => BleLiveSessionPage(
-          initialDevice: _selectedDevice,
-          initialSessionSetup: _setup,
-          maintenanceTarget: _targetTree,
+    final target = _targetTree;
+    int? lockTreeId;
+    if (target != null) {
+      final acquire = await _lockService.acquireLock(
+        target.treeSurveyId,
+        sessionHint: _setup!.batchName,
+      );
+      if (!mounted) return;
+      if (!acquire.success) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              acquire.message ?? context.tr('maintain_lock_blocked'),
+            ),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        await _loadLocks();
+        return;
+      }
+      lockTreeId = target.treeSurveyId;
+      _heldLockTreeId = lockTreeId;
+    }
+    MaintenanceSessionResult? result;
+    try {
+      result = await Navigator.of(context).push<MaintenanceSessionResult>(
+        MaterialPageRoute(
+          builder: (_) => BleLiveSessionPage(
+            initialDevice: _selectedDevice,
+            initialSessionSetup: _setup,
+            maintenanceTarget: target,
+            maintenanceSessionContext: true,
+          ),
         ),
+      );
+    } finally {
+      if (lockTreeId != null) {
+        await _lockService.releaseLock(lockTreeId);
+        if (_heldLockTreeId == lockTreeId) {
+          _heldLockTreeId = null;
+        }
+        if (mounted) await _loadLocks();
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _step = 0;
+      _targetTree = null;
+    });
+    if (result?.success != true) return;
+    final successResult = result!;
+    if (successResult.isNewTree) {
+      if (successResult.treeSurveyId != null) {
+        setState(() {
+          _addedThisSession.add(successResult.treeSurveyId!);
+        });
+      }
+      await _loadTrees();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.tr('maintain_new_tree_done')),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: context.tr('maintain_add_another'),
+            onPressed: () => _startBle(),
+          ),
+        ),
+      );
+      return;
+    }
+    if (successResult.treeSurveyId != null) {
+      setState(() {
+        _completedThisSession.add(successResult.treeSurveyId!);
+        _allDoneDialogShown = false;
+      });
+      await _loadTrees();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.tr('maintain_done_pick_next')),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      _maybeShowAllTreesDoneDialog();
+    }
+  }
+
+  void _maybeShowAllTreesDoneDialog() {
+    if (_allDoneDialogShown) return;
+    if (_sessionInitialCount <= 0) return;
+    if (_pendingCount > 0) return;
+    if (_completedThisSession.isEmpty) return;
+    _allDoneDialogShown = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _showAllTreesDoneDialog();
+    });
+  }
+
+  Future<void> _showAllTreesDoneDialog() async {
+    final action = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: Text(context.tr('maintain_all_done_title')),
+        content: Text(
+          context
+              .tr('maintain_all_done_body')
+              .replaceAll('{done}', '$_doneCount'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'add'),
+            child: Text(context.tr('maintain_all_done_add')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, 'finish'),
+            child: Text(context.tr('maintain_finish')),
+          ),
+        ],
       ),
     );
     if (!mounted) return;
-    setState(() => _step = 0);
-    await _loadTrees();
+    if (action == 'add') {
+      _startBle();
+    } else if (action == 'finish') {
+      await _finishMaintenanceSession();
+    } else {
+      _allDoneDialogShown = false;
+    }
+  }
+
+  Future<bool> _confirmFinishSession() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(context.tr('maintain_finish_confirm_title')),
+        content: Text(
+          context
+              .tr('maintain_finish_confirm_body')
+              .replaceAll('{done}', '$_doneCount')
+              .replaceAll('{remaining}', '$_pendingCount'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(context.tr('cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(context.tr('maintain_finish')),
+          ),
+        ],
+      ),
+    );
+    return confirmed == true;
+  }
+
+  Future<void> _finishMaintenanceSession() async {
+    if (!await _confirmFinishSession()) return;
+    if (!mounted) return;
+    Navigator.of(context).pop();
   }
 
   double? _treeCoord(Map<String, dynamic> t, String en, String zh) {
@@ -159,12 +395,6 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
     return context.tr('maintain_distance_m').replaceAll('{n}', '${m.round()}');
   }
 
-  int? _treeId(Map<String, dynamic> t) {
-    final v = t['id'] ?? t['ID'];
-    if (v is int) return v;
-    return int.tryParse(v?.toString() ?? '');
-  }
-
   MaintenanceTarget? _targetFromTree(Map<String, dynamic> t) {
     final id = _treeId(t);
     if (id == null) return null;
@@ -172,28 +402,16 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
     final st = (t['system_tree_id'] ?? t['系統樹木'])?.toString();
     final species =
         (t['species_name'] ?? t['樹種名稱'] ?? '—').toString();
+    final lat = _treeCoord(t, 'y_coord', 'Y坐標');
+    final lon = _treeCoord(t, 'x_coord', 'X坐標');
     return MaintenanceTarget(
       treeSurveyId: id,
       projectTreeId: pt,
       systemTreeId: st,
       speciesName: species != '—' ? species : null,
+      treeLatitude: lat,
+      treeLongitude: lon,
     );
-  }
-
-  List<Map<String, dynamic>> get _displayTrees {
-    final q = _search.trim().toLowerCase();
-    if (q.isEmpty) return _trees;
-    return _trees.where((t) {
-      final pt = (t['project_tree_id'] ?? t['專案樹木'] ?? '').toString();
-      final st = (t['system_tree_id'] ?? t['系統樹木'] ?? '').toString();
-      final species =
-          (t['species_name'] ?? t['樹種名稱'] ?? '').toString().toLowerCase();
-      final digits = TreeIdDisplay.projectTreeDigits(pt);
-      return digits.contains(q) ||
-          pt.toLowerCase().contains(q) ||
-          st.toLowerCase().contains(q) ||
-          species.contains(q);
-    }).toList();
   }
 
   void _confirmTreeSelection(Map<String, dynamic> t) {
@@ -241,12 +459,24 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
                 initialLimit: 5,
                 compact: true,
               ),
+              if (_lockLabelForTree(target.treeSurveyId) != null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  _lockLabelForTree(target.treeSurveyId)!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.orange.shade800,
+                  ),
+                ),
+              ],
               const SizedBox(height: 16),
               FilledButton.icon(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  _startBle(target: target);
-                },
+                onPressed: _locksByTreeId.containsKey(target.treeSurveyId)
+                    ? null
+                    : () {
+                        Navigator.pop(ctx);
+                        _startBle(target: target);
+                      },
                 icon: const Icon(Icons.sensors),
                 label: Text(context.tr('maintain_map_remeasure')),
                 style: FilledButton.styleFrom(
@@ -267,13 +497,54 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(context.tr('maintain_title')),
-        backgroundColor: Colors.orange.shade800,
-        foregroundColor: Colors.white,
+    return PopScope(
+      canPop: _completedThisSession.isEmpty,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final leave = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: Text(context.tr('maintain_leave_title')),
+            content: Text(
+              context
+                  .tr('maintain_leave_body')
+                  .replaceAll('{done}', '$_doneCount'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: Text(context.tr('cancel')),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: Text(context.tr('maintain_leave_confirm')),
+              ),
+            ],
+          ),
+        );
+        if (leave != true) return;
+        if (!context.mounted) return;
+        Navigator.of(context).pop();
+      },
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(context.tr('maintain_title')),
+          backgroundColor: Colors.orange.shade800,
+          foregroundColor: Colors.white,
+          actions: [
+            if (_setup != null && _step == 0)
+              TextButton(
+                onPressed: _finishMaintenanceSession,
+                child: Text(
+                  context.tr('maintain_finish'),
+                  style: const TextStyle(color: Colors.white),
+                ),
+              ),
+          ],
+        ),
+        body: _step == 0 ? _buildListStep() : _buildBleStep(),
       ),
-      body: _step == 0 ? _buildListStep() : _buildBleStep(),
     );
   }
 
@@ -282,81 +553,140 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (setup != null)
-          Material(
-            color: Colors.orange.shade50,
-            child: ListTile(
-              leading: const Icon(Icons.location_on_outlined),
-              title: Text('${setup.projectName} · ${setup.projectArea}'),
-              subtitle: Text(setup.projectCode),
-              trailing: IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () async {
-                  final s = await showFieldSessionSetupDialog(
-                    context,
-                    initial: setup,
-                  );
-                  if (s != null && mounted) {
-                    setState(() => _setup = s);
-                    await _loadTrees();
-                  }
-                },
-              ),
-            ),
-          ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          child: TextField(
-            decoration: InputDecoration(
-              hintText: context.tr('maintain_search_hint'),
-              prefixIcon: const Icon(Icons.search),
-              border: const OutlineInputBorder(),
-              isDense: true,
-              suffixIcon: _search.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear),
-                      onPressed: () {
-                        setState(() => _search = '');
-                        _loadTrees();
-                      },
-                    )
-                  : null,
-            ),
-            onChanged: (v) => setState(() => _search = v),
-            onSubmitted: (_) => _loadTrees(),
-          ),
-        ),
-        if (_userLat != null && _trees.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-            child: Text(
-              context.tr('maintain_sorted_nearby'),
-              style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
-            ),
-          ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-          child: SegmentedButton<_MaintainView>(
-            segments: [
-              ButtonSegment(
-                value: _MaintainView.list,
-                label: Text(
-                  context
-                      .tr('maintain_tab_list')
-                      .replaceAll('{n}', '${_displayTrees.length}'),
+        Flexible(
+          fit: FlexFit.loose,
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                if (setup != null)
+                  Material(
+                    color: Colors.orange.shade50,
+                    child: ListTile(
+                      leading: const Icon(Icons.location_on_outlined),
+                      title: Text('${setup.projectName} · ${setup.projectArea}'),
+                      subtitle: Text(setup.projectCode),
+                      trailing: IconButton(
+                        icon: const Icon(Icons.edit),
+                        tooltip: context.tr('field_setup_title'),
+                        onPressed: () async {
+                          if (_completedThisSession.isNotEmpty) {
+                            final reset = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                title:
+                                    Text(context.tr('maintain_scope_change_title')),
+                                content: Text(
+                                    context.tr('maintain_scope_change_body')),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx, false),
+                                    child: Text(context.tr('cancel')),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () => Navigator.pop(ctx, true),
+                                    child: Text(context.tr('field_setup_confirm')),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (reset != true || !mounted) return;
+                          }
+                          final s = await showFieldSessionSetupDialog(
+                            context,
+                            initial: setup,
+                          );
+                          if (s != null && mounted) {
+                            setState(() {
+                              _setup = s;
+                              _completedThisSession.clear();
+                              _addedThisSession.clear();
+                              _allDoneDialogShown = false;
+                            });
+                            await _loadTrees();
+                            if (mounted) {
+                              setState(() => _sessionInitialCount = _trees.length);
+                            }
+                          }
+                        },
+                      ),
+                    ),
+                  ),
+                if (_setup != null)
+                  Material(
+                    color: Colors.orange.shade100,
+                    child: ListTile(
+                      dense: true,
+                      leading: Icon(Icons.playlist_add_check,
+                          color: Colors.orange.shade900),
+                      title: Text(
+                        context
+                            .tr('maintain_session_progress')
+                            .replaceAll('{remaining}', '$_pendingCount')
+                            .replaceAll('{done}', '$_doneCount')
+                            .replaceAll('{total}', '$_sessionInitialCount'),
+                      ),
+                      subtitle: Text(context.tr('maintain_session_hint')),
+                    ),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: TextField(
+                    decoration: InputDecoration(
+                      hintText: context.tr('maintain_search_hint'),
+                      prefixIcon: const Icon(Icons.search),
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                      suffixIcon: _search.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                setState(() => _search = '');
+                                _loadTrees();
+                              },
+                            )
+                          : null,
+                    ),
+                    onChanged: (v) => setState(() => _search = v),
+                    onSubmitted: (_) => _loadTrees(),
+                  ),
                 ),
-                icon: const Icon(Icons.list, size: 18),
-              ),
-              ButtonSegment(
-                value: _MaintainView.map,
-                label: Text(context.tr('maintain_tab_map')),
-                icon: const Icon(Icons.map_outlined, size: 18),
-              ),
-            ],
-            selected: {_view},
-            onSelectionChanged: (s) {
-              setState(() => _view = s.first);
-            },
+                if (_userLat != null && _pendingCount > 0)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: Text(
+                      context.tr('maintain_sorted_nearby'),
+                      style:
+                          TextStyle(fontSize: 11, color: Colors.grey.shade700),
+                    ),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+                  child: SegmentedButton<_MaintainView>(
+                    segments: [
+                      ButtonSegment(
+                        value: _MaintainView.list,
+                        label: Text(
+                          context
+                              .tr('maintain_tab_list')
+                              .replaceAll('{n}', '${_displayTrees.length}'),
+                        ),
+                        icon: const Icon(Icons.list, size: 18),
+                      ),
+                      ButtonSegment(
+                        value: _MaintainView.map,
+                        label: Text(context.tr('maintain_tab_map')),
+                        icon: const Icon(Icons.map_outlined, size: 18),
+                      ),
+                    ],
+                    selected: {_view},
+                    onSelectionChanged: (s) {
+                      setState(() => _view = s.first);
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
         Expanded(
@@ -366,10 +696,17 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
                   ? Center(child: Text(_loadError!))
                   : _displayTrees.isEmpty
                       ? Center(
-                          child: Text(
-                            _trees.isEmpty
-                                ? context.tr('maintain_empty')
-                                : context.tr('maintain_search_empty'),
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Text(
+                              _trees.isEmpty
+                                  ? context.tr('maintain_empty')
+                                  : _pendingCount == 0 &&
+                                          _sessionInitialCount > 0
+                                      ? context.tr('maintain_pending_empty')
+                                      : context.tr('maintain_search_empty'),
+                              textAlign: TextAlign.center,
+                            ),
                           ),
                         )
                       : _view == _MaintainView.map
@@ -388,7 +725,6 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
                                 itemCount: _displayTrees.length,
                                 itemBuilder: (ctx, i) {
                                   final t = _displayTrees[i];
-                                  final id = _treeId(t);
                                   final pt = (t['project_tree_id'] ??
                                           t['專案樹木'])
                                       ?.toString();
@@ -404,9 +740,15 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
                                   final dbh =
                                       t['dbh_cm'] ?? t['胸徑（公分）'];
                                   final dist = _distanceLabel(t);
-                                  final sub = dist == null
+                                  final tid = _treeId(t);
+                                  final lockLabel =
+                                      tid != null ? _lockLabelForTree(tid) : null;
+                                  var sub = dist == null
                                       ? '$species · H $h m · DBH $dbh cm'
                                       : '$species · H $h m · DBH $dbh cm · $dist';
+                                  if (lockLabel != null) {
+                                    sub = '$sub · $lockLabel';
+                                  }
                                   return ListTile(
                                     title: Text(
                                       TreeIdDisplay.fieldListLabel(
@@ -419,10 +761,9 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
                                       ),
                                     ),
                                     subtitle: Text(sub),
-                                    trailing: const Icon(Icons.chevron_right),
-                                    onTap: id == null
-                                        ? null
-                                        : () => _confirmTreeSelection(t),
+                                    trailing:
+                                        const Icon(Icons.chevron_right),
+                                    onTap: () => _confirmTreeSelection(t),
                                   );
                                 },
                               ),
@@ -431,14 +772,32 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
         SafeArea(
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: FilledButton.icon(
-              onPressed: setup == null ? null : () => _startBle(),
-              icon: const Icon(Icons.add),
-              label: Text(context.tr('maintain_add_tree')),
-              style: FilledButton.styleFrom(
-                backgroundColor: Colors.teal,
-                minimumSize: const Size.fromHeight(48),
-              ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed:
+                        setup == null ? null : _finishMaintenanceSession,
+                    icon: const Icon(Icons.check_circle_outline),
+                    label: Text(context.tr('maintain_finish')),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(48),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: setup == null ? null : () => _startBle(),
+                    icon: const Icon(Icons.add),
+                    label: Text(context.tr('maintain_add_tree')),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: Colors.teal,
+                      minimumSize: const Size.fromHeight(48),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),

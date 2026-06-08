@@ -11,6 +11,7 @@ import 'services/auth_service.dart'; // 角色權限
 import 'constants/colors.dart';
 import 'services/locale_service.dart';
 import 'services/project_service.dart';
+import 'services/project_scope_store.dart';
 
 /// [T6 cleanup] 中文表頭→V2 (English) DB 欄位映射
 /// 用于 Excel 匯入 + 批次更新改走 createTreeV2 / updateTreeV2。
@@ -145,6 +146,7 @@ class _TreeListPageState extends State<TreeListPage> {
     try {
       final meta = await _treeService.getMapMeta();
       final projResp = await ProjectService().getProjects(forceRefresh: true);
+      final lastScope = await ProjectScopeStore().loadLast();
       if (!mounted) return;
       final names = <String>{};
       final nameToCode = <String, String>{};
@@ -158,12 +160,26 @@ class _TreeListPageState extends State<TreeListPage> {
         }
       }
       final sorted = names.toList()..sort();
+      String? preselectBlock;
+      if (lastScope != null && lastScope.isComplete) {
+        if (sorted.contains(lastScope.blockName)) {
+          preselectBlock = lastScope.blockName;
+        }
+      }
       setState(() {
         _projectNameToCode = nameToCode;
         _projects = ['全部', ...sorted];
-        _sanitizeSelectedProject();
+        if (preselectBlock != null) {
+          _selectedProject = preselectBlock;
+        } else {
+          _sanitizeSelectedProject();
+        }
       });
       _treeListLog('projects loaded: ${sorted.length} (meta trees=${meta['totalTrees']})');
+      if (preselectBlock != null) {
+        _treeListLog('ProjectScope preselect block=$preselectBlock');
+        _fetchTrees(reset: true);
+      }
     } catch (e) {
       _treeListLog('load projects failed: $e');
     }

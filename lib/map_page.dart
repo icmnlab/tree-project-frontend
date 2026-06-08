@@ -10,6 +10,7 @@ import 'services/api_service.dart';
 import 'services/tree_service.dart';
 import 'utils/location_helper.dart';
 import 'services/project_service.dart';
+import 'services/project_scope_store.dart';
 import 'services/v3/project_boundary_service.dart';
 import 'screens/v3/project_boundary_draw_page.dart';
 import 'services/auth_service.dart'; // [T7] 角色權限
@@ -475,6 +476,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
       _mapLog('meta load start');
       final meta = await _treeService.getMapMeta();
       final projResp = await ProjectService().getProjects(forceRefresh: true);
+      final lastScope = await ProjectScopeStore().loadLast();
       if (meta['success'] == true) {
         final nameToCode = <String, String>{};
         final names = <String>{};
@@ -493,14 +495,27 @@ class _MapPageState extends State<MapPage> with RouteAware {
                 .toList() ??
             [];
         final sortedNames = names.toList()..sort();
+        String? preselectBlock;
+        if (lastScope != null && lastScope.isComplete) {
+          if (sortedNames.contains(lastScope.blockName)) {
+            preselectBlock = lastScope.blockName;
+          }
+        }
         _safeSetState(() {
           _projectNameToCode = nameToCode;
           _projects = ['全部', ...sortedNames];
           _filteredProjects = _projects;
-          _sanitizeSelectedProject();
+          if (preselectBlock != null) {
+            _selectedProject = preselectBlock;
+          } else {
+            _sanitizeSelectedProject();
+          }
           _cities = ['全部', ..._extractCitiesFromList(cities)];
           _totalTreeCount = (meta['totalTrees'] as num?)?.toInt() ?? 0;
         });
+        if (preselectBlock != null) {
+          _mapLog('ProjectScope preselect block=$preselectBlock');
+        }
         _mapLog(
           'meta loaded projects=${names.length} cities=${cities.length} '
           'totalTrees=$_totalTreeCount elapsed=${sw.elapsedMilliseconds}ms',
