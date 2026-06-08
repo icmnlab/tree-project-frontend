@@ -216,8 +216,9 @@ class MyApp extends StatelessWidget {
         '/register': (context) => const RegisterPage(),
         '/forgot-password': (context) => const ForgotPasswordPage(),
         '/home': (context) => const AuthGuard(child: HomePage()),
+        // 後端允許 調查/專案/業務/系統 管理員登入後台；AdminPage 內部再依角色顯示分頁。
         '/admin': (context) =>
-            const AuthGuard(requireAdmin: true, child: AdminPage()),
+            const AuthGuard(requiredRole: '調查管理員', child: AdminPage()),
         '/tree-survey': (context) =>
             const AuthGuard(child: TreeSurveyPage()),
         '/statistics': (context) =>

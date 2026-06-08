@@ -686,6 +686,9 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                                                         ),
                                                         child: Text(
                                                           '專案: ${_getLastPartOfId(projectTreeId)}',
+                                                          maxLines: 1,
+                                                          overflow: TextOverflow
+                                                              .ellipsis,
                                                           style:
                                                               const TextStyle(
                                                             color: AppColors
@@ -790,10 +793,15 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
         children: [
           Icon(icon, size: 12, color: color),
           const SizedBox(width: 4),
-          Text(
-            text,
-            style: TextStyle(
-                color: color, fontSize: 11, fontWeight: FontWeight.w500),
+          // 用 Flexible + ellipsis，讓 chip 放進窄欄位時可收縮不溢出。
+          Flexible(
+            child: Text(
+              text,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                  color: color, fontSize: 11, fontWeight: FontWeight.w500),
+            ),
           ),
         ],
       ),

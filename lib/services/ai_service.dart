@@ -44,21 +44,9 @@ class AiService {
     return ApiService.get('ai/llm-options$q');
   }
 
-  Future<Map<String, dynamic>> getSpeciesRecommendations(
-      String userId, List<String> selectedAreas) async {
-    return ApiService.post('ai/species_recommendations',
-        {'userId': userId, 'selectedAreas': selectedAreas});
-  }
-
-  Future<Map<String, dynamic>> getManagementAdvice(
-      String userId, List<String> selectedAreas) async {
-    return ApiService.post('ai/management_advice',
-        {'userId': userId, 'selectedAreas': selectedAreas});
-  }
-
-  Future<Map<String, dynamic>> compareSpecies(List<String> species) async {
-    return ApiService.post('ai/species_comparison', {'species': species});
-  }
+  // [Cleanup] 已移除 getSpeciesRecommendations / getManagementAdvice / compareSpecies：
+  //   對應後端 ai/species_recommendations、ai/management_advice、ai/species_comparison
+  //   路由已隨舊 AI 功能移除，前端亦無任何呼叫者（呼叫只會得到 404）。
 
   Future<Map<String, dynamic>> getDirectOpenAIChat(
       String message, String systemPrompt) async {
