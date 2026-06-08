@@ -6,6 +6,7 @@ import '../models/maintenance_target.dart';
 import '../services/maintenance_lock_service.dart';
 import '../services/tree_service.dart';
 import '../utils/location_helper.dart';
+import '../utils/maintenance_session.dart';
 import '../utils/tree_id_display.dart';
 import '../widgets/ble/ble_device_scanner.dart';
 import '../widgets/field/field_session_setup.dart';
@@ -162,19 +163,13 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
     });
   }
 
-  int? _treeId(Map<String, dynamic> t) {
-    final v = t['id'] ?? t['ID'];
-    if (v is int) return v;
-    return int.tryParse(v?.toString() ?? '');
-  }
+  int? _treeId(Map<String, dynamic> t) => maintenanceTreeIdOf(t);
 
-  bool _isPendingInSession(Map<String, dynamic> t) {
-    final id = _treeId(t);
-    if (id == null) return false;
-    if (_completedThisSession.contains(id)) return false;
-    if (_addedThisSession.contains(id)) return false;
-    return true;
-  }
+  bool _isPendingInSession(Map<String, dynamic> t) => isMaintenanceSessionPending(
+        treeId: _treeId(t),
+        completedThisSession: _completedThisSession,
+        addedThisSession: _addedThisSession,
+      );
 
   int get _pendingCount =>
       _trees.where(_isPendingInSession).length;
