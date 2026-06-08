@@ -208,13 +208,9 @@ class DataFilterService {
     // ========================================
     final List<Map<String, dynamic>> preFiltered = [];
     for (final record in rawRecords) {
-      // 非樹木類型丟棄（DME / 空 TYPE）
-      if (options.dropNonTreeTypes) {
-        final t = (record['type']?.toString() ?? '').trim().toUpperCase();
-        if (t == 'DME' || t.isEmpty) {
-          nonTreeDropped++;
-          continue;
-        }
+      if (options.dropNonTreeTypes && shouldDropAsNonTree(record)) {
+        nonTreeDropped++;
+        continue;
       }
 
       // GPS 品質標記
@@ -544,7 +540,10 @@ class DataFilterService {
     final lon = _parseDouble(record['lon']);
     final id = record['id']?.toString().trim();
 
-    if (lat == null || lon == null) return null;
+    if (lat == null || lon == null) {
+      if (id != null && id.isNotEmpty) return 'no_gps_$id';
+      return null;
+    }
 
     // 無 GPS 記錄用 ID 作為唯一鍵（避免所有 0,0 被歸為同一組）
     if (lat == 0.0 && lon == 0.0) {
@@ -686,6 +685,28 @@ class DataFilterService {
   }
 
   static double _toRadians(double degrees) => degrees * math.pi / 180.0;
+
+  /// 韌體 CSV TYPE 是否為非樹木列（校準 DME / 空 TYPE / 3D 林相）。
+  static bool shouldDropAsNonTree(Map<String, dynamic> record) {
+    final t = (record['type']?.toString() ?? '').trim().toUpperCase();
+    if (t.isEmpty) return true;
+    if (t == '3D') return true;
+    if (t == 'DME') return !isHeightDmeTreeRecord(record);
+    return false;
+  }
+
+  /// HEIGHT DME 樹木列：有效 ID + 淨樹高 + HD/SD（對照 `#;SET` 校準列）。
+  static bool isHeightDmeTreeRecord(Map<String, dynamic> record) {
+    final id = record['id']?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '';
+    if (id.isEmpty) return false;
+    final h = (record['height'] as num?)?.toDouble() ?? 0;
+    if (h <= 0) return false;
+    final meta = record['metadata'] as Map<String, dynamic>? ?? {};
+    final hd = (meta['horizontal_distance'] as num?)?.toDouble();
+    final sd = (meta['slope_distance'] as num?)?.toDouble();
+    if ((hd == null || hd <= 0) && (sd == null || sd <= 0)) return false;
+    return true;
+  }
 }
 
 /// 過濾選項
@@ -699,8 +720,8 @@ class FilterOptions {
   /// 與資料庫比對時，是否優先使用新資料
   final bool preferNewData;
 
-  /// [v21.0] 是否丟棄非樹木類型（TYPE='DME' 或空）
-  /// DME 是超音波測距校準記錄，不是樹木
+  /// [v21.0] 是否丟棄非樹木類型（校準 DME / 空 TYPE / 3D）
+  /// HEIGHT DME（有效 ID + H>0 + HD/SD）保留
   final bool dropNonTreeTypes;
 
   /// [v21.0] 最大允許 HDOP（>= maxHdop 會被標為 poor 但仍保留）

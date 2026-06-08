@@ -13,6 +13,9 @@ import '../services/tree_service.dart';
 import '../services/v3/data_filter_service.dart'; // V3 數據過濾服務
 import '../services/v3/project_boundary_service.dart'; // 專案邊界服務
 import '../services/v3/project_boundary_coordinator.dart'; // 自動匹配專案
+import '../utils/ble_uart_discovery.dart';
+import '../utils/ble_transfer_signals.dart';
+import '../services/ble_map_file_processor.dart';
 import '../widgets/network_aware_widgets.dart'; // 網路感知元件
 import 'manual_input_page_v2.dart'; // V2 批次匯入
 import 'pending_measurement_task_page.dart'; // 引入待測量任務頁面
@@ -40,14 +43,11 @@ class _BleImportPageState extends State<BleImportPage> {
   final StringBuffer _dataBuffer = StringBuffer();
   final List<String> _hexLog = [];
   List<String> _receivedCsvLines = [];
+  String? _mapTransferSummary;
   bool _isTransmissionSuccess = false;
   int _estimatedRecordCount = 0;
 
-  // 關鍵 UUID (Nordic UART Service)
-  final String _serviceUuid = "6E400001-B5A3-F393-E0A9-E50E24DCCA9E";
-  final String _txCharacteristicUuid = "6E400003-B5A3-F393-E0A9-E50E24DCCA9E";
-
-  final List<int> _eotSignal = [0x5A, 0xBF, 0xFB];
+  // 關鍵 UUID 由 [BleUartDiscovery] 統一（NUS + Haglof fallback）
 
   StreamSubscription? _scanSubscription;
   StreamSubscription? _isScanningSubscription;
@@ -155,6 +155,7 @@ class _BleImportPageState extends State<BleImportPage> {
       setState(() {
         _dataBuffer.clear();
         _receivedCsvLines.clear();
+        _mapTransferSummary = null;
         _hexLog.clear();
         _isTransmissionSuccess = false;
         _isReceiving = false;
@@ -434,13 +435,10 @@ class _BleImportPageState extends State<BleImportPage> {
       _connectionSubscription = device.connectionState.listen((state) {
         if (state == BluetoothConnectionState.disconnected) {
           if (mounted) {
-            // [FIX] 如果是在接收數據中斷線，視為傳輸完成，觸發解析邏輯
-            if (_isReceiving && _dataBuffer.isNotEmpty) {
-              print('設備斷線，觸發傳輸完成邏輯...');
-              _onTransferComplete();
+            if (_isReceiving && !_isTransmissionSuccess) {
+              _handleFailure();
             }
 
-            // [FIX] 斷線後取消監聽，釋放資源
             _connectionSubscription?.cancel();
             _connectionSubscription = null;
             _dataSubscription?.cancel();
@@ -505,21 +503,10 @@ class _BleImportPageState extends State<BleImportPage> {
     try {
       List<BluetoothService> services = await device.discoverServices();
 
-      BluetoothCharacteristic? txCharacteristic;
-
-      for (var service in services) {
-        // 尋找 Nordic UART Service (忽略大小寫)
-        if (service.uuid.toString().toUpperCase() == _serviceUuid) {
-          for (var characteristic in service.characteristics) {
-            // 尋找 TX Characteristic
-            if (characteristic.uuid.toString().toUpperCase() ==
-                _txCharacteristicUuid) {
-              txCharacteristic = characteristic;
-              break;
-            }
-          }
-        }
-      }
+      final txCharacteristic = BleUartDiscovery.findNotifyTx(
+        services,
+        preferNus: true,
+      );
 
       if (txCharacteristic != null) {
         // 設置通知 (這就是觸發儀器發送檔案的關鍵動作！)
@@ -544,8 +531,8 @@ class _BleImportPageState extends State<BleImportPage> {
           },
           onError: (error) {
             debugPrint('[BLE] Data stream error: $error');
-            if (mounted && _isReceiving) {
-              _onTransferComplete();
+            if (mounted && _isReceiving && !_isTransmissionSuccess) {
+              _handleFailure();
             }
           },
         );
@@ -562,7 +549,7 @@ class _BleImportPageState extends State<BleImportPage> {
           );
         }
       } else {
-        throw Exception("未找到 UART 服務或 TX 特徵值");
+        throw Exception('未找到 NUS / Haglof notify TX');
       }
     } catch (e) {
       print('服務發現錯誤: $e');
@@ -582,10 +569,7 @@ class _BleImportPageState extends State<BleImportPage> {
 
       _pendingHexEntries.add('(${data.length}) $hexString');
 
-      if (data.length == 3 &&
-          data[0] == _eotSignal[0] &&
-          data[1] == _eotSignal[1] &&
-          data[2] == _eotSignal[2]) {
+      if (BleTransferSignals.isBatchFileEot(data)) {
         debugPrint('[BLE] EOT signal received');
         _isTransmissionSuccess = true;
         _timeoutTimer?.cancel();
@@ -677,24 +661,43 @@ class _BleImportPageState extends State<BleImportPage> {
   void _parseAndShowData() {
     if (_dataBuffer.isEmpty) return;
 
-    String fullData = _dataBuffer.toString();
-    List<Map<String, dynamic>> parsedData =
-        BleDataProcessor.parseCsvData(fullData);
+    final fullData =
+        BleTransferSignals.stripFileNamePreamble(_dataBuffer.toString());
+    final isMap = BleMapFileProcessor.looksLikeMapTransfer(fullData);
+    final parsedData = isMap
+        ? BleMapFileProcessor.parseMapCsv(fullData)
+        : BleDataProcessor.parseCsvData(fullData);
 
     if (mounted) {
       setState(() {
+        _mapTransferSummary =
+            isMap ? BleMapFileProcessor.summarize(parsedData) : null;
         _receivedCsvLines = parsedData.map((data) {
-          String info = 'ID: ${data['id']} | H: ${data['height']}m';
+          final prefix = isMap ? '[MAP] ' : '';
+          var info =
+              '$prefix ID: ${data['id']} | TYPE: ${data['type']} | H: ${data['height']}m';
           if (data['metadata'] != null) {
             final meta = data['metadata'];
-            if (meta['horizontal_distance'] != null)
+            if (meta['horizontal_distance'] != null) {
               info += ' | HD: ${meta['horizontal_distance']}m';
+            }
           }
           return info;
         }).toList();
 
         _isReceiving = false;
       });
+    }
+
+    if (isMap && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'MAP 檔已解析：${_mapTransferSummary ?? ''}（非樹木調查，僅供製圖參考）',
+          ),
+          duration: const Duration(seconds: 4),
+        ),
+      );
     }
   }
 
@@ -727,6 +730,7 @@ class _BleImportPageState extends State<BleImportPage> {
     setState(() {
       _dataBuffer.clear();
       _receivedCsvLines.clear();
+      _mapTransferSummary = null;
       _hexLog.clear();
       _isReceiving = false;
       _isTransmissionSuccess = false;
@@ -1066,7 +1070,20 @@ class _BleImportPageState extends State<BleImportPage> {
                       onPressed: _receivedCsvLines.isNotEmpty
                           ? () {
                               // 解析當前緩衝區的數據 (再次確保是最新的)
-                              String fullData = _dataBuffer.toString();
+                              String fullData =
+                                  BleTransferSignals.stripFileNamePreamble(
+                                      _dataBuffer.toString());
+                              if (BleMapFileProcessor.looksLikeMapTransfer(
+                                  fullData)) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'MAP 檔為製圖量測，請使用樹木 DATA.CSV 匯入調查資料',
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
                               List<Map<String, dynamic>> parsedData =
                                   BleDataProcessor.parseCsvData(fullData);
 
@@ -1076,6 +1093,10 @@ class _BleImportPageState extends State<BleImportPage> {
                                 );
                                 return;
                               }
+
+                              parsedData =
+                                  BleDataProcessor.mergeMultiSeqRecords(
+                                      parsedData);
 
                               // V3: 應用數據過濾（不完整資料 + 重複資料）
                               final filterResult =
@@ -1227,7 +1248,8 @@ class _BleImportPageState extends State<BleImportPage> {
     bool loadingDialogShown = false;
     try {
       // 解析數據
-      String fullData = _dataBuffer.toString();
+      String fullData =
+        BleTransferSignals.stripFileNamePreamble(_dataBuffer.toString());
       List<Map<String, dynamic>> parsedData =
           BleDataProcessor.parseCsvData(fullData);
 

@@ -4,36 +4,35 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sustainable_treeai/services/v3/data_filter_service.dart';
 
+/// 韌體 CSV 必有 TYPE；測試列預設 1P。
+Map<String, dynamic> _tp(Map<String, dynamic> row) => {'type': '1P', ...row};
+
 void main() {
   group('DataFilterService 測試', () {
     test('過濾不完整資料 - 缺少必要欄位', () {
       final testData = [
-        // 完整記錄
-        {
+        _tp({
           'id': '10001',
           'lat': 25.0330,
           'lon': 121.5654,
           'height': 12.5,
-        },
-        // 缺少 lat
-        {
+        }),
+        _tp({
           'id': '10002',
           'lon': 121.5655,
           'height': 10.0,
-        },
-        // 缺少 height
-        {
+        }),
+        _tp({
           'id': '10003',
           'lat': 25.0331,
           'lon': 121.5656,
-        },
-        // lat 為 0（無效）
-        {
+        }),
+        _tp({
           'id': '10004',
           'lat': 0.0,
           'lon': 121.5657,
           'height': 8.0,
-        },
+        }),
       ];
 
       final result = DataFilterService.filterBleData(testData);
@@ -51,36 +50,34 @@ void main() {
     test('過濾重複資料 - 相同座標保留最後一筆', () {
       final now = DateTime.now();
       final testData = [
-        // 同一位置的三筆記錄
-        {
+        _tp({
           'id': '10001',
           'lat': 25.033000,
           'lon': 121.565400,
           'height': 12.5,
           'timestamp': now.subtract(const Duration(minutes: 10)),
-        },
-        {
+        }),
+        _tp({
           'id': '10002',
           'lat': 25.033000,
           'lon': 121.565400,
           'height': 13.0,
           'timestamp': now.subtract(const Duration(minutes: 5)),
-        },
-        {
+        }),
+        _tp({
           'id': '10003',
           'lat': 25.033000,
           'lon': 121.565400,
           'height': 14.0,
-          'timestamp': now, // 最新的一筆
-        },
-        // 不同位置
-        {
+          'timestamp': now,
+        }),
+        _tp({
           'id': '10004',
           'lat': 25.034000,
           'lon': 121.566000,
           'height': 10.0,
           'timestamp': now,
-        },
+        }),
       ];
 
       final result = DataFilterService.filterBleData(testData);
@@ -98,20 +95,18 @@ void main() {
 
     test('座標精度到小數點後 6 位', () {
       final testData = [
-        // 這兩筆座標差異在第 6 位，應被視為不同位置
-        // 因為 toStringAsFixed(6) 會產生不同的 key
-        {
+        _tp({
           'id': '10001',
           'lat': 25.0330001,
           'lon': 121.5654001,
           'height': 12.5,
-        },
-        {
+        }),
+        _tp({
           'id': '10002',
           'lat': 25.0330009,
           'lon': 121.5654009,
           'height': 13.0,
-        },
+        }),
       ];
 
       final result = DataFilterService.filterBleData(testData);
@@ -124,27 +119,9 @@ void main() {
 
     test('南北半球座標處理', () {
       final testData = [
-        // 北半球
-        {
-          'id': '10001',
-          'lat': 25.0330,
-          'lon': 121.5654,
-          'height': 12.5,
-        },
-        // 南半球（不同位置）
-        {
-          'id': '10002',
-          'lat': -25.0330,
-          'lon': 121.5654,
-          'height': 12.5,
-        },
-        // 西半球（不同位置）
-        {
-          'id': '10003',
-          'lat': 25.0330,
-          'lon': -121.5654,
-          'height': 12.5,
-        },
+        _tp({'id': '10001', 'lat': 25.0330, 'lon': 121.5654, 'height': 12.5}),
+        _tp({'id': '10002', 'lat': -25.0330, 'lon': 121.5654, 'height': 12.5}),
+        _tp({'id': '10003', 'lat': 25.0330, 'lon': -121.5654, 'height': 12.5}),
       ];
 
       final result = DataFilterService.filterBleData(testData);
@@ -156,28 +133,22 @@ void main() {
 
     test('與已存在資料比對', () {
       final existingData = [
-        {
-          'id': 'existing_1',
-          'lat': 25.0330,
-          'lon': 121.5654,
-        },
+        _tp({'id': 'existing_1', 'lat': 25.0330, 'lon': 121.5654}),
       ];
 
       final newData = [
-        // 與已存在記錄相同位置
-        {
+        _tp({
           'id': '10001',
           'lat': 25.0330,
           'lon': 121.5654,
           'height': 12.5,
-        },
-        // 新位置
-        {
+        }),
+        _tp({
           'id': '10002',
           'lat': 25.0340,
           'lon': 121.5660,
           'height': 10.0,
-        },
+        }),
       ];
 
       final result = DataFilterService.filterBleData(
@@ -192,12 +163,7 @@ void main() {
 
     test('keepIncomplete 選項', () {
       final testData = [
-        // 缺少 height
-        {
-          'id': '10001',
-          'lat': 25.0330,
-          'lon': 121.5654,
-        },
+        _tp({'id': '10001', 'lat': 25.0330, 'lon': 121.5654}),
       ];
 
       // 預設不保留
@@ -228,9 +194,9 @@ void main() {
 
     test('統計報告生成', () {
       final testData = [
-        {'id': '1', 'lat': 25.0, 'lon': 121.0, 'height': 10.0},
-        {'id': '2', 'lat': 25.0, 'lon': 121.0, 'height': 11.0}, // 重複
-        {'id': '3', 'lat': 25.1, 'lon': 121.1}, // 不完整
+        _tp({'id': '1', 'lat': 25.0, 'lon': 121.0, 'height': 10.0}),
+        _tp({'id': '2', 'lat': 25.0, 'lon': 121.0, 'height': 11.0}),
+        _tp({'id': '3', 'lat': 25.1, 'lon': 121.1}),
       ];
 
       final result = DataFilterService.filterBleData(testData);
@@ -240,6 +206,35 @@ void main() {
       expect(result.stats.incompleteCount, 1);
       expect(result.stats.duplicateCount, 1);
       expect(result.stats.duplicateGroups.length, 1);
+    });
+
+    test('HEIGHT DME 保留、校準 DME 丟棄', () {
+      final testData = [
+        {
+          'id': '2',
+          'type': 'DME',
+          'height': 2.5,
+          'metadata': {'horizontal_distance': 3.6},
+        },
+        {
+          'id': '',
+          'type': 'DME',
+          'height': 0.0,
+          'metadata': {'horizontal_distance': 1.0},
+        },
+        {
+          'id': '5',
+          'type': '3D',
+          'height': 1.0,
+          'metadata': {'horizontal_distance': 2.0},
+        },
+      ];
+
+      final result = DataFilterService.filterBleData(testData);
+
+      expect(result.validRecords.length, 1);
+      expect(result.validRecords.first['id'], '2');
+      expect(result.stats.nonTreeDropped, 2);
     });
   });
 

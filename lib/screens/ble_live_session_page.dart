@@ -10,6 +10,8 @@ import '../services/ble_live_packet_decoder.dart';
 import '../utils/field_gps_capture.dart';
 import '../utils/field_log.dart';
 import '../utils/maintenance_gps_flow.dart';
+import '../utils/ble_transfer_signals.dart';
+import '../utils/ble_uart_discovery.dart';
 import '../utils/tree_id_display.dart';
 import '../services/pending_measurement_service.dart';
 import '../widgets/ble/ble_device_scanner.dart';
@@ -48,12 +50,6 @@ class BleLiveSessionPage extends StatefulWidget {
 }
 
 class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
-  static const _haglofServiceUuid = '9E000000-F685-4EA5-B58A-85287CB04965';
-  static const _haglofTxUuid = '9E010000-F685-4EA5-B58A-85287CB04965';
-  static const _nusServiceUuid = '6E400001-B5A3-F393-E0A9-E50E24DCCA9E';
-  static const _nusTxUuid = '6E400003-B5A3-F393-E0A9-E50E24DCCA9E';
-  static const _eotBatch = [0x5A, 0xBF, 0xFB];
-
   final BleLiveNmeaAssembler _nmeaAssembler = BleLiveNmeaAssembler();
   final PendingMeasurementService _pendingService = PendingMeasurementService();
 
@@ -99,6 +95,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   String? _projectName;
   String? _projectCode;
   String? _projectArea;
+  InstrumentHeightMode _instrumentHeightMode = InstrumentHeightMode.auto;
 
   /// 維護重測：SEND 後 GPS 流程決定是否寫回 tree_survey 座標
   bool _pendingUpdateTreeLocation = false;
@@ -119,6 +116,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       _projectName = setup.projectName;
       _projectCode = setup.projectCode;
       _projectArea = setup.projectArea;
+      _instrumentHeightMode = setup.instrumentHeightMode;
     }
     if (widget.initialDevice == null) {
       _beginBlePrepare();
@@ -448,52 +446,21 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
 
   Future<void> _subscribeTx(BluetoothDevice device) async {
     final services = await device.discoverServices();
-    final txChars = <BluetoothCharacteristic>[];
-
-    void tryAdd(String svcUuid, String txUuid) {
-      for (final s in services) {
-        if (s.uuid.toString().toUpperCase() != svcUuid) continue;
-        for (final c in s.characteristics) {
-          if (c.uuid.toString().toUpperCase() == txUuid &&
-              c.properties.notify) {
-            txChars.add(c);
-            return;
-          }
-        }
-      }
-    }
-
-    // 實機 VLGEO2：PHGF 由 NUS TX 送出；Haglof TX 多為 §9.3 前綴。僅訂閱一個 TX。
-    tryAdd(_nusServiceUuid, _nusTxUuid);
-    if (txChars.isEmpty) {
-      tryAdd(_haglofServiceUuid, _haglofTxUuid);
-    }
-
-    if (txChars.isEmpty) {
+    final tx = BleUartDiscovery.findNotifyTx(services, preferNus: true);
+    if (tx == null) {
       throw Exception('找不到 Haglof / NUS 的 notify TX');
     }
 
-    for (final c in txChars) {
-      await c.setNotifyValue(true);
-      _dataSubs.add(c.lastValueStream.listen(_onPacket));
-      _appendLog('訂閱 ${c.uuid}');
-    }
+    await tx.setNotifyValue(true);
+    _dataSubs.add(tx.lastValueStream.listen(_onPacket));
+    _appendLog('訂閱 ${tx.uuid}');
 
     if (mounted) {
       setState(() => _isListening = true);
     }
   }
 
-  bool _isBatchEot(List<int> data) {
-    if (data.length != 3) return false;
-    if (data[0] == 0x04 && data[1] == 0x7C) return true;
-    if (data[0] == _eotBatch[0] &&
-        data[1] == _eotBatch[1] &&
-        data[2] == _eotBatch[2]) {
-      return true;
-    }
-    return false;
-  }
+  bool _isBatchEot(List<int> data) => BleTransferSignals.isBatchFileEot(data);
 
   void _onPacket(List<int> data) {
     if (data.isEmpty) return;
@@ -687,6 +654,10 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         'live_session_index': displaySeq,
         'live_send_index': sendSeq,
         if (_batchName != null) 'batch_name': _batchName,
+        if (_instrumentHeightMode != InstrumentHeightMode.auto)
+          'height_method': _instrumentHeightMode.wireValue,
+        if (_instrumentHeightMode != InstrumentHeightMode.auto)
+          'instrument_height_mode': _instrumentHeightMode.wireValue,
         if (maint != null) ...{
           'survey_mode': 'maintenance',
           'target_tree_id': maint.treeSurveyId,
@@ -958,6 +929,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         projectCode: _projectCode ?? '',
         projectArea: _projectArea ?? '',
         gpsSource: 'tree',
+        instrumentHeightMode: _instrumentHeightMode,
       ),
     );
     if (setup == null || !mounted) return;
@@ -966,6 +938,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       _projectName = setup.projectName;
       _projectCode = setup.projectCode;
       _projectArea = setup.projectArea;
+      _instrumentHeightMode = setup.instrumentHeightMode;
       _gpsSource = 'tree';
     });
     await _syncSessionProjectToServer();
@@ -1066,6 +1039,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
                   projectCode: _projectCode!,
                   projectArea: _projectArea ?? '',
                   gpsSource: 'tree',
+                  instrumentHeightMode: _instrumentHeightMode,
                 )
               : null),
     );
@@ -1077,6 +1051,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
         _projectName = setup.projectName;
         _projectCode = setup.projectCode;
         _projectArea = setup.projectArea;
+        _instrumentHeightMode = setup.instrumentHeightMode;
         _gpsSource = 'tree';
       });
     }

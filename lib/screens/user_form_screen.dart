@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-// dart:convert, provider, auth_service imports removed - unused
+
 import '../services/api_service.dart';
+import '../services/project_area_service.dart';
+import '../services/project_service.dart';
 import '../utils/password_validator.dart';
 
 class UserFormScreen extends StatefulWidget {
@@ -17,10 +19,20 @@ class _UserFormScreenState extends State<UserFormScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _displayNameController = TextEditingController();
+  final TextEditingController _projectSearchController =
+      TextEditingController();
+  final _projectAreaService = ProjectAreaService();
+  final _projectService = ProjectService();
+
   String _selectedRole = '一般使用者';
   List<String> _selectedProjects = [];
-  List<Map<String, dynamic>> _availableProjects = [];
+  List<Map<String, dynamic>> _allProjects = [];
+  List<Map<String, dynamic>> _projectAreas = [];
+  List<Map<String, dynamic>> _filteredProjects = [];
+  String? _selectedArea;
   bool _isLoading = false;
+  bool _loadingAreas = false;
+  bool _loadingProjects = false;
 
   @override
   void initState() {
@@ -29,63 +41,96 @@ class _UserFormScreenState extends State<UserFormScreen> {
   }
 
   Future<void> _initializeUserData() async {
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
-    // 設置基本使用者資料
     if (widget.user != null) {
       _usernameController.text = widget.user!['username'] ?? '';
       _displayNameController.text = widget.user!['display_name'] ?? '';
       _selectedRole = widget.user!['role'] ?? '一般使用者';
     }
 
-    // 載入所有可用專案
-    await _loadProjects();
+    await Future.wait([
+      _loadProjects(),
+      _loadProjectAreas(),
+    ]);
 
-    // 如果是編輯模式，載入使用者的關聯專案
     if (widget.user != null) {
       await _loadUserProjects();
     }
 
-    setState(() {
-      _isLoading = false;
-    });
+    if (mounted) setState(() => _isLoading = false);
   }
 
   Future<void> _loadProjects() async {
     try {
-      final response = await ApiService.get('projects');
-
-      if (response['success'] == true && response['data'] != null) {
+      final response = await _projectService.getProjects(forceRefresh: true);
+      if (response['success'] == true) {
+        final list = ProjectService.projectListFromResponse(response);
         setState(() {
-          _availableProjects =
-              List<Map<String, dynamic>>.from(response['data']);
+          _allProjects = List<Map<String, dynamic>>.from(list);
         });
       }
     } catch (e) {
-      print('載入專案列表錯誤: $e');
+      debugPrint('載入專案列表錯誤: $e');
+    }
+  }
+
+  Future<void> _loadProjectAreas() async {
+    setState(() => _loadingAreas = true);
+    try {
+      final areas = await _projectAreaService.getProjectAreas();
+      if (mounted) {
+        setState(() {
+          _projectAreas = areas;
+          _loadingAreas = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('載入專案區位錯誤: $e');
+      if (mounted) setState(() => _loadingAreas = false);
+    }
+  }
+
+  Future<void> _loadProjectsForArea(String area) async {
+    setState(() => _loadingProjects = true);
+    try {
+      final response = await _projectService.getProjectsByArea(area);
+      final list = ProjectService.projectListFromResponse(response);
+      if (mounted) {
+        setState(() {
+          _filteredProjects = List<Map<String, dynamic>>.from(list);
+          _loadingProjects = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('載入區內專案錯誤: $e');
+      if (mounted) {
+        setState(() {
+          _filteredProjects = _allProjects
+              .where((p) => (p['area'] ?? '').toString() == area)
+              .toList();
+          _loadingProjects = false;
+        });
+      }
     }
   }
 
   Future<void> _loadUserProjects() async {
     try {
-      if (widget.user != null) {
-        final response =
-            await ApiService.get('users/${widget.user!['user_id']}/projects');
+      if (widget.user == null) return;
+      final response =
+          await ApiService.get('users/${widget.user!['user_id']}/projects');
 
-        if (response['success'] == true && response['projects'] != null) {
-          setState(() {
-            _selectedProjects =
-                List<Map<String, dynamic>>.from(response['projects'])
-                    .map((project) => project['專案代碼'].toString())
-                    .toList();
-          });
-        }
+      if (response['success'] == true && response['projects'] != null) {
+        setState(() {
+          _selectedProjects =
+              List<Map<String, dynamic>>.from(response['projects'])
+                  .map((project) => project['專案代碼'].toString())
+                  .toList();
+        });
       }
     } catch (e) {
-      print('載入使用者專案錯誤: $e');
-      // 如果 API 呼叫失敗，嘗試從 user 物件中取得關聯專案
+      debugPrint('載入使用者專案錯誤: $e');
       if (widget.user?['associated_projects'] != null) {
         setState(() {
           _selectedProjects = widget.user!['associated_projects']
@@ -98,15 +143,114 @@ class _UserFormScreenState extends State<UserFormScreen> {
     }
   }
 
+  List<Map<String, dynamic>> get _visibleProjects {
+    final q = _projectSearchController.text.trim().toLowerCase();
+    if (q.isEmpty) return _filteredProjects;
+    return _filteredProjects.where((p) {
+      final name = (p['name'] ?? '').toString().toLowerCase();
+      final code = (p['code'] ?? '').toString().toLowerCase();
+      return name.contains(q) || code.contains(q);
+    }).toList();
+  }
+
+  Future<void> _pickArea() async {
+    final searchCtrl = TextEditingController();
+    await showDialog<void>(
+      context: context,
+      builder: (ctx) {
+        List<Map<String, dynamic>> filtered = List.from(_projectAreas);
+        return StatefulBuilder(
+          builder: (ctx2, setDialog) {
+            return AlertDialog(
+              title: const Text('選擇專案（區位）'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: searchCtrl,
+                      decoration: const InputDecoration(
+                        labelText: '搜尋專案名稱',
+                        prefixIcon: Icon(Icons.search),
+                        border: OutlineInputBorder(),
+                      ),
+                      onChanged: (v) {
+                        setDialog(() {
+                          filtered = v.isEmpty
+                              ? List.from(_projectAreas)
+                              : _projectAreas
+                                  .where((a) => (a['area_name'] ?? '')
+                                      .toString()
+                                      .toLowerCase()
+                                      .contains(v.toLowerCase()))
+                                  .toList();
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: (MediaQuery.of(ctx2).size.height * 0.35)
+                            .clamp(120.0, 260.0),
+                      ),
+                      child: _loadingAreas
+                          ? const Center(child: CircularProgressIndicator())
+                          : filtered.isEmpty
+                              ? const Center(child: Text('無符合的專案'))
+                              : ListView.builder(
+                                  itemCount: filtered.length,
+                                  itemBuilder: (_, i) {
+                                    final name =
+                                        filtered[i]['area_name']?.toString() ??
+                                            '';
+                                    return ListTile(
+                                      title: Text(name),
+                                      trailing: _selectedArea == name
+                                          ? const Icon(Icons.check,
+                                              color: Colors.teal)
+                                          : null,
+                                      onTap: () async {
+                                        Navigator.pop(ctx2);
+                                        setState(() {
+                                          _selectedArea = name;
+                                          _projectSearchController.clear();
+                                        });
+                                        await _loadProjectsForArea(name);
+                                      },
+                                    );
+                                  },
+                                ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx2),
+                  child: const Text('取消'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Map<String, dynamic>? _projectByCode(String code) {
+    for (final p in _allProjects) {
+      if ((p['code'] ?? '').toString() == code) return p;
+    }
+    return null;
+  }
+
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      // 1. 首先更新使用者基本資料
       final Map<String, dynamic> userData = {
         'username': _usernameController.text,
         'display_name': _displayNameController.text,
@@ -129,7 +273,6 @@ class _UserFormScreenState extends State<UserFormScreen> {
         throw Exception('更新使用者資料失敗：${response['message']}');
       }
 
-      // 2. 然後更新專案關聯
       if (widget.user != null) {
         final projectResponse = await ApiService.put(
             'users/${widget.user!['user_id']}/projects',
@@ -138,10 +281,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
         if (!projectResponse['success']) {
           throw Exception('更新專案關聯失敗：${projectResponse['message']}');
         }
-      }
-
-      // 3. 如果是新增使用者，需要在創建後立即更新專案關聯
-      else if (response['userId'] != null) {
+      } else if (response['userId'] != null) {
         final userId = response['userId'];
         final projectResponse = await ApiService.put(
             'users/$userId/projects', {'projects': _selectedProjects});
@@ -170,12 +310,108 @@ class _UserFormScreenState extends State<UserFormScreen> {
         ),
       );
     } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
+  }
+
+  Widget _buildProjectAssignmentSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Expanded(
+              child: Text(
+                '關聯專案',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              ),
+            ),
+            Text(
+              '已選 ${_selectedProjects.length} 個區',
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '先選「專案（區位）」，再勾選底下的「區」。與現場設定語意一致。',
+          style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+        ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          onPressed: _loadingAreas ? null : _pickArea,
+          icon: const Icon(Icons.folder_outlined),
+          label: Text(
+            _selectedArea == null || _selectedArea!.isEmpty
+                ? '選擇專案（區位）'
+                : '專案：$_selectedArea',
+          ),
+        ),
+        if (_selectedProjects.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: _selectedProjects.map((code) {
+              final p = _projectByCode(code);
+              final label = p != null
+                  ? '${p['area'] ?? ''} · ${p['name']} ($code)'
+                  : code;
+              return InputChip(
+                label: Text(label, style: const TextStyle(fontSize: 12)),
+                onDeleted: () {
+                  setState(() => _selectedProjects.remove(code));
+                },
+              );
+            }).toList(),
+          ),
+        ],
+        const SizedBox(height: 12),
+        if (_selectedArea == null || _selectedArea!.isEmpty)
+          const Text('請先選擇專案（區位），再勾選要授權的區。')
+        else if (_loadingProjects)
+          const Center(child: Padding(
+            padding: EdgeInsets.all(16),
+            child: CircularProgressIndicator(),
+          ))
+        else if (_filteredProjects.isEmpty)
+          Text('「$_selectedArea」下尚無可授權的區。')
+        else ...[
+          TextField(
+            controller: _projectSearchController,
+            decoration: const InputDecoration(
+              labelText: '搜尋區名稱或代碼',
+              prefixIcon: Icon(Icons.search),
+              border: OutlineInputBorder(),
+              isDense: true,
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+          const SizedBox(height: 8),
+          ..._visibleProjects.map((project) {
+            final projectCode = project['code']?.toString() ?? '';
+            if (projectCode.isEmpty) return const SizedBox.shrink();
+            return CheckboxListTile(
+              contentPadding: EdgeInsets.zero,
+              title: Text('${project['name']} ($projectCode)'),
+              subtitle: Text(_selectedArea ?? ''),
+              value: _selectedProjects.contains(projectCode),
+              onChanged: (bool? value) {
+                setState(() {
+                  if (value == true) {
+                    if (!_selectedProjects.contains(projectCode)) {
+                      _selectedProjects.add(projectCode);
+                    }
+                  } else {
+                    _selectedProjects.remove(projectCode);
+                  }
+                });
+              },
+            );
+          }),
+        ],
+      ],
+    );
   }
 
   @override
@@ -251,42 +487,12 @@ class _UserFormScreenState extends State<UserFormScreen> {
                       ],
                       onChanged: (String? newValue) {
                         if (newValue != null) {
-                          setState(() {
-                            _selectedRole = newValue;
-                          });
+                          setState(() => _selectedRole = newValue);
                         }
                       },
                     ),
                     const SizedBox(height: 16),
-                    const Text('關聯專案：'),
-                    const SizedBox(height: 8),
-                    if (_availableProjects.isEmpty)
-                      const Text('無可用專案')
-                    else
-                      ListView.builder(
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _availableProjects.length,
-                        itemBuilder: (context, index) {
-                          final project = _availableProjects[index];
-                          final projectCode = project['code']?.toString() ?? '';
-                          return CheckboxListTile(
-                            title:
-                                Text('${project['name']} (${project['code']})'),
-                            subtitle: Text(project['area']?.toString() ?? ''),
-                            value: _selectedProjects.contains(projectCode),
-                            onChanged: (bool? value) {
-                              setState(() {
-                                if (value == true) {
-                                  _selectedProjects.add(projectCode);
-                                } else {
-                                  _selectedProjects.remove(projectCode);
-                                }
-                              });
-                            },
-                          );
-                        },
-                      ),
+                    _buildProjectAssignmentSection(),
                     const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
@@ -307,6 +513,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
     _usernameController.dispose();
     _passwordController.dispose();
     _displayNameController.dispose();
+    _projectSearchController.dispose();
     super.dispose();
   }
 }

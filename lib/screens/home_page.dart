@@ -380,7 +380,10 @@ class _DashboardPageState extends State<DashboardPage>
           MaterialPageRoute(builder: (_) => const MaintenanceSurveyPage()),
         );
         break;
-      case 'ble': Navigator.push(context, MaterialPageRoute(builder: (_) => const BleImportPage())); break;
+      case 'ble':
+        Navigator.push(context,
+            MaterialPageRoute(builder: (_) => const BleImportPage()));
+        break;
       case 'pending': Navigator.push(context, MaterialPageRoute(builder: (_) => const PendingMeasurementTaskPage())); break;
       case 'test_scan': Navigator.push(context, MaterialPageRoute(builder: (_) => const ScannerPage())); break;
       case 'species': Navigator.push(context, MaterialPageRoute(builder: (_) => const SpeciesIdentificationPage())); break;

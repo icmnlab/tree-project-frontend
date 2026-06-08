@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/ble_data_processor.dart';
 import '../services/project_area_service.dart';
 import '../utils/location_helper.dart';
 import '../services/project_service.dart';
@@ -112,11 +113,15 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
   }
 
   void _deduplicateAndInitData() {
+    var merged = BleDataProcessor.mergeMultiSeqRecords(
+      List<Map<String, dynamic>>.from(widget.importedData),
+    );
+
     // Group by ID to remove duplicates if any
     Map<String, Map<String, dynamic>> uniqueMap = {};
     List<Map<String, dynamic>> noIdList = [];
 
-    for (var item in widget.importedData) {
+    for (var item in merged) {
       if (item['id'] != null && item['id'].toString().isNotEmpty) {
         uniqueMap[item['id'].toString()] = item;
       } else {
