@@ -575,6 +575,11 @@ class _MapPageState extends State<MapPage> with RouteAware {
         final data = response['data'] as List;
         _cachedTreeData = data;
 
+        // 縣市載入（專案=全部）後，依快取在地端推導該縣市的專案下拉清單
+        if (_selectedProject == '全部') {
+          _deriveFilteredProjectsForCity();
+        }
+
         _updateMarkersFromCache();
         if (data.length > 5000 && mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -686,50 +691,45 @@ class _MapPageState extends State<MapPage> with RouteAware {
     }
   }
 
+  // 切換縣市時，先把專案重設為「全部」並重新載入該縣市的樹木；
+  // 專案下拉清單改由 [_loadMapData] 在載入後，依「已按縣市過濾的快取樹木」
+  // 在地端推導（_deriveFilteredProjectsForCity）。
+  //
+  // 之前是呼叫 `projects/by_area/<city>`，但該路由的 `:area` 是「區位名稱」
+  // 而非「縣市」，把縣市當區位送進去永遠查不到 → 專案選單塌成只剩「全部」，
+  // 也就是使用者回報的「專案選單不再配合縣市」。改用在地推導後不需後端配合。
   void _updateProjectsForCity(String city) {
-    if (city == '全部') {
-      final keepSelected = _projects.contains(_selectedProject);
-      _safeSetState(() {
+    _safeSetState(() {
+      if (city == '全部') {
         _filteredProjects = _projects;
-        if (!keepSelected) _selectedProject = '全部';
-      });
-      _onFilterChanged();
-      return;
-    }
-
-    _refreshProjectsForCity(city);
+      }
+      _selectedProject = '全部';
+    });
+    _onFilterChanged();
   }
 
-  Future<void> _refreshProjectsForCity(String city) async {
-    try {
-      final resp = await ProjectService().getProjectsByArea(city);
-      if (resp['success'] != true || !mounted) {
-        _onFilterChanged();
-        return;
-      }
-      final names = <String>{'全部'};
-      final nameToCode = <String, String>{};
-      for (final p in ProjectService.projectListFromResponse(resp)) {
-        if (p is Map) {
-          final name = p['name']?.toString();
-          final code = (p['code'] ?? p['project_code'])?.toString();
-          if (name != null && name.isNotEmpty) {
-            names.add(name);
-            if (code != null && code.isNotEmpty) nameToCode[name] = code;
-          }
-        }
-      }
-      final nameList = names.where((n) => n != '全部').toList()..sort();
-      final list = ['全部', ...nameList];
-      _safeSetState(() {
-        _filteredProjects = list;
-        _projectNameToCode = nameToCode;
-        _sanitizeSelectedProject();
-      });
-    } catch (e) {
-      debugPrint('依縣市載入專案列表失敗: $e');
+  /// 依目前 `_cachedTreeData`（已按所選縣市過濾）推導該縣市出現過的專案清單。
+  /// 僅在「專案 = 全部」的載入後呼叫，避免被單一專案的結果塌縮。
+  void _deriveFilteredProjectsForCity() {
+    if (_selectedCity == '全部') {
+      _safeSetState(() => _filteredProjects = _projects);
+      return;
     }
-    _onFilterChanged();
+    final names = <String>{};
+    final nameToCode = <String, String>{..._projectNameToCode};
+    for (final tree in _cachedTreeData) {
+      final name = tree['專案名稱']?.toString();
+      if (name == null || name.isEmpty) continue;
+      names.add(name);
+      final code = tree['專案代碼']?.toString().trim();
+      if (code != null && code.isNotEmpty) nameToCode[name] = code;
+    }
+    final list = names.toList()..sort();
+    _safeSetState(() {
+      _filteredProjects = ['全部', ...list];
+      _projectNameToCode = nameToCode;
+      _sanitizeSelectedProject();
+    });
   }
 
   // [Stage 1] 縣市下拉選單：列出資料中出現過的 _city + 完整台灣 22 縣市。
@@ -856,8 +856,10 @@ class _MapPageState extends State<MapPage> with RouteAware {
         final shortName = resp['suggestedArea']?.toString() ?? '';
         final matched = _findCityOption(shortName);
         if (matched != null) {
-          _safeSetState(() => _selectedCity = matched);
-          await _refreshProjectsForCity(matched);
+          _safeSetState(() {
+            _selectedCity = matched;
+            _selectedProject = '全部';
+          });
           _onFilterChanged(fitBounds: false);
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(

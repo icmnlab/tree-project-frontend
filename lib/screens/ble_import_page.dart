@@ -1304,8 +1304,7 @@ class _BleImportPageState extends State<BleImportPage> {
         return;
       }
 
-      // [v21.0] GPS 來源辨識（batch 級別三選項）
-      // 標記 metadata.gps_source = 'tree' | 'surveyor' | 'mixed_pending'
+      // GPS 來源：依 2026-05-28 會議決議「一律樹木位置」（不再提供三選一）
       final gpsSourceProceed = await _resolveGpsSourceForBatch(filteredData);
       if (!gpsSourceProceed) return;
 
@@ -2070,198 +2069,18 @@ class _BleImportPageState extends State<BleImportPage> {
     }
   }
 
-  /// [v21.0] GPS 來源辨識（batch 級別三選項）
-  /// 寫入每筆 record metadata.gps_source 欄位
-  /// - 'tree'：GPS 是樹位置（測員站樹下）
-  /// - 'surveyor'：GPS 是測員位置（用 HD/AZ 偏移計算樹位置，下游需處理）
-  /// - 'mixed_pending'：混合情況，下游需互動標記每筆
-  /// 回傳 false 代表使用者取消整個流程
+  /// GPS 來源：依 2026-05-28 會議決議「一律樹木位置、不提供樹位／測站選擇」。
+  ///
+  /// 現場逐棵 LIVE 已固定 `gps_source='tree'`（`field_session_setup`），
+  /// 整檔匯入在此對齊：全批有 GPS 的記錄一律標記為樹木位置，
+  /// 不再彈出三選一對話框（外接 GNSS 已取消，座標即站樹下手機定位）。
   Future<bool> _resolveGpsSourceForBatch(
     List<Map<String, dynamic>> filteredData,
   ) async {
-    final hasGpsCount = filteredData.where((r) => r['hasGps'] == true).length;
-    if (hasGpsCount == 0) {
-      // 全部無 GPS，跳過此 dialog（後續 _resolveMissingGps 會處理）
-      return true;
-    }
-
-    final result = await showDialog<String>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Text('GPS 定位來源'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('共 $hasGpsCount 筆有 GPS 座標。請確認測量時 GPS 紀錄的是：',
-                  style: const TextStyle(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              const Text(
-                '儀器原始設計：GPS = 操作員（按 SEND 當下儀器位置）。'
-                '若採取「站樹下測量」工作流，則 GPS = 樹位置。',
-                style: TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-              const SizedBox(height: 12),
-              ListTile(
-                leading: const Icon(Icons.park, color: Colors.green),
-                title: const Text('全部都是樹位置'),
-                subtitle: const Text('測員走到每棵樹下後再按 SEND 紀錄'),
-                onTap: () => Navigator.pop(ctx, 'tree'),
-              ),
-              ListTile(
-                leading:
-                    const Icon(Icons.person_pin_circle, color: Colors.blue),
-                title: const Text('全部都是測員站位'),
-                subtitle: const Text('使用 HD + 方位角計算樹的實際位置'),
-                onTap: () => Navigator.pop(ctx, 'surveyor'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.help_outline, color: Colors.orange),
-                title: const Text('混合 / 不確定'),
-                subtitle: const Text('進入後續流程逐筆檢視（標記為 pending）'),
-                onTap: () => Navigator.pop(ctx, 'mixed_pending'),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, null),
-            child: const Text('取消整個匯入'),
-          ),
-        ],
-      ),
-    );
-
-    if (result == null) return false;
-
-    if (result == 'mixed_pending') {
-      return _resolveMixedGpsSourcePerRecord(filteredData);
-    }
-
     for (final rec in filteredData) {
+      if (rec['hasGps'] != true) continue;
       final meta = rec['metadata'] as Map<String, dynamic>? ?? {};
-      meta['gps_source'] = result;
-      rec['metadata'] = meta;
-    }
-    return true;
-  }
-
-  Future<bool> _resolveMixedGpsSourcePerRecord(
-    List<Map<String, dynamic>> filteredData,
-  ) async {
-    final gpsRows =
-        filteredData.where((r) => r['hasGps'] == true).toList(growable: false);
-    if (gpsRows.isEmpty) return true;
-
-    final selections = <Map<String, dynamic>, String>{
-      for (final rec in gpsRows) rec: 'surveyor',
-    };
-
-    final ok = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setLocal) => AlertDialog(
-          title: const Text('逐筆確認 GPS 來源'),
-          content: SizedBox(
-            width: 520,
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    '請依每筆紀錄按 SEND 時人的位置選擇。預設為測站。',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 8),
-                  ...gpsRows.map((rec) {
-                    final meta = rec['metadata'] as Map<String, dynamic>? ?? {};
-                    final id = rec['id']?.toString() ?? '未知';
-                    final type = rec['type']?.toString() ?? '';
-                    final hd =
-                        (meta['horizontal_distance'] as num?)?.toDouble();
-                    final az = (meta['azimuth'] as num?)?.toDouble();
-                    final subtitle = [
-                      if (type.isNotEmpty) type,
-                      if (hd != null) 'HD ${hd.toStringAsFixed(1)}m',
-                      if (az != null) 'AZ ${az.toStringAsFixed(0)}°',
-                    ].join('  ');
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text('ID: $id',
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.bold)),
-                            if (subtitle.isNotEmpty)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 2),
-                                child: Text(subtitle,
-                                    style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey.shade600)),
-                              ),
-                            const SizedBox(height: 8),
-                            DropdownButtonFormField<String>(
-                              initialValue: selections[rec],
-                              decoration: const InputDecoration(
-                                isDense: true,
-                                labelText: 'GPS 來源',
-                                border: OutlineInputBorder(),
-                              ),
-                              items: const [
-                                DropdownMenuItem(
-                                  value: 'surveyor',
-                                  child: Text('測站位置：按 SEND 時人在測量站位'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'tree',
-                                  child: Text('樹木位置：按 SEND 時人在樹下'),
-                                ),
-                              ],
-                              onChanged: (value) {
-                                if (value == null) return;
-                                setLocal(() => selections[rec] = value);
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  }),
-                ],
-              ),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx, false),
-              child: const Text('取消'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('確認'),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (ok != true) return false;
-    for (final rec in gpsRows) {
-      final meta = rec['metadata'] as Map<String, dynamic>? ?? {};
-      meta['gps_source'] = selections[rec];
+      meta['gps_source'] = 'tree';
       rec['metadata'] = meta;
     }
     return true;
