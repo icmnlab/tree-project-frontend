@@ -172,7 +172,11 @@ class _TreeMeasurementHistoryPanelState
       );
     }
 
-    return ExpansionTile(
+    // 外層卡片帶底色/陰影，這裡補一層透明 Material，讓 ExpansionTile 標題列的
+    // 水波紋/底色有正確的 Material 祖先（否則會被外層 DecoratedBox 蓋住而觸發警告）。
+    return Material(
+      color: Colors.transparent,
+      child: ExpansionTile(
       tilePadding: const EdgeInsets.symmetric(horizontal: 4),
       leading: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -259,6 +263,7 @@ class _TreeMeasurementHistoryPanelState
           ),
         ),
       ],
+      ),
     );
   }
 

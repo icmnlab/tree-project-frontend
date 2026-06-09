@@ -1589,9 +1589,13 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     final ringColor = arrived ? Colors.green : Colors.orange;
     final dotColor = arrived ? Colors.green.shade700 : Colors.blue;
 
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
+    return LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
         Text(
           arrived ? '到達!' : '接近中...',
           style: TextStyle(
@@ -1633,7 +1637,10 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
         // 即:藍點在中心左邊 → 目標在你左邊,往左走
         Text('中心=你, 藍點=$targetLabel 方向',
             style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
-      ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 

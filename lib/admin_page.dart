@@ -1484,7 +1484,14 @@ class _AdminPageState extends State<AdminPage> {
           children: [
             // 只有當 _isSidebarVisible 為 true 時才顯示 NavigationRail
             if (_isSidebarVisible)
-              NavigationRail(
+              // 矮螢幕時讓側欄可捲動，避免 NavigationRail 直向 overflow
+              LayoutBuilder(
+                builder: (context, constraints) => SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints:
+                        BoxConstraints(minHeight: constraints.maxHeight),
+                    child: IntrinsicHeight(
+                      child: NavigationRail(
                 selectedIndex: _selectedIndex,
                 // extended: true, // 始終保持展開狀態，只控制整體顯示/隱藏
                 minWidth: 72, // 標準寬度
@@ -1567,6 +1574,10 @@ class _AdminPageState extends State<AdminPage> {
                       label: Text('系統'),
                     ),
                 ],
+                      ),
+                    ),
+                  ),
+                ),
               ),
             if (_isSidebarVisible)
               const VerticalDivider(thickness: 1, width: 1),
