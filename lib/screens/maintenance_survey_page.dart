@@ -56,6 +56,8 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
 
   @override
   void dispose() {
+    // [稽核#21] dispose 不能 await；釋鎖採 best-effort fire-and-forget，
+    // 若請求失敗（斷網/程序被殺），後端 45 分鐘 TTL + purgeExpired 會自動回收鎖。
     final held = _heldLockTreeId;
     if (held != null) {
       _lockService.releaseLock(held);
