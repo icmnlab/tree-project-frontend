@@ -13,6 +13,7 @@ import 'services/project_service.dart';
 import 'services/project_scope_store.dart';
 import 'services/v3/project_boundary_service.dart';
 import 'screens/v3/project_boundary_draw_page.dart';
+import 'tree_survey_detail_page.dart';
 import 'services/auth_service.dart'; // [T7] 角色權限
 import 'services/locale_service.dart';
 import 'services/location_service.dart';
@@ -666,7 +667,9 @@ class _MapPageState extends State<MapPage> with RouteAware {
           infoWindow: InfoWindow(
             title: tree['樹種名稱'] ?? '未知樹種',
             snippet: '專案：$projectName\n區位：$areaName',
+            onTap: () => _openTreeDetail(tree),
           ),
+          onTap: () => _showTreeMarkerSheet(tree),
         );
       } catch (e) {
         return null;
@@ -689,6 +692,90 @@ class _MapPageState extends State<MapPage> with RouteAware {
         if (mounted) _zoomToMarkers();
       });
     }
+  }
+
+  /// 點地圖標記後彈出摘要卡（下鑽閉環：地圖 → 摘要 → 詳情）。
+  void _showTreeMarkerSheet(Map<String, dynamic> tree) {
+    if (!mounted) return;
+    final species = tree['樹種名稱']?.toString() ?? '未知樹種';
+    final project = tree['專案名稱']?.toString() ?? '未知專案';
+    final area = tree['專案區位']?.toString() ?? '未知區位';
+    final systemId = tree['系統樹木']?.toString() ?? tree['id']?.toString() ?? '—';
+    final projectTreeId = tree['專案樹木']?.toString();
+
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.park, color: Colors.green),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      species,
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _markerSheetRow(Icons.folder_outlined, '專案', project),
+              _markerSheetRow(Icons.place_outlined, '區位', area),
+              _markerSheetRow(Icons.tag, '系統編號', systemId),
+              if (projectTreeId != null && projectTreeId.isNotEmpty)
+                _markerSheetRow(Icons.numbers, '專案編號', projectTreeId),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  icon: const Icon(Icons.arrow_forward),
+                  label: const Text('查看完整詳情'),
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    _openTreeDetail(tree);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _markerSheetRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 18, color: Colors.grey),
+          const SizedBox(width: 8),
+          Text('$label：', style: const TextStyle(color: Colors.grey)),
+          Expanded(
+            child: Text(value, style: const TextStyle(fontWeight: FontWeight.w500)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _openTreeDetail(Map<String, dynamic> tree) {
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TreeSurveyDetailPage(treeData: tree),
+      ),
+    );
   }
 
   // 切換縣市時，先把專案重設為「全部」並重新載入該縣市的樹木；

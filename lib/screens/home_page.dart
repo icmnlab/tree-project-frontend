@@ -295,7 +295,6 @@ class _DashboardPageState extends State<DashboardPage>
     switch (id) {
       case 'field_survey':
       case 'ble':
-      case 'ble_live':
         return AppColors.tipcRed;
       case 'maintenance': return Colors.teal.shade700;
       case 'pending': return Colors.deepOrange;
@@ -322,8 +321,6 @@ class _DashboardPageState extends State<DashboardPage>
         return 'card_maintenance';
       case 'ble':
         return 'card_ble';
-      case 'ble_live':
-        return 'card_ble_live';
       case 'pending':
         return 'card_pending';
       case 'survey':
@@ -371,7 +368,6 @@ class _DashboardPageState extends State<DashboardPage>
       case 'report': Navigator.pushNamed(context, '/ai-sustainability-report'); break;
       case 'cities': Navigator.pushNamed(context, '/cities'); break;
       case 'field_survey':
-      case 'ble_live':
         _openFieldLiveSession();
         break;
       case 'maintenance':

@@ -224,11 +224,7 @@ class MyApp extends StatelessWidget {
         '/statistics': (context) =>
             const AuthGuard(child: StatisticsPage()),
         '/map': (context) => const AuthGuard(child: MapPage()),
-        // 舊路由保留兼容，重定向到新版 AI Chat
-        '/ai-assistant': (context) => const AuthGuard(
-              child: _AIChatRoute(),
-            ),
-        // 新版 AI 聊天頁面 (ChatGPT 風格)
+        // AI 聊天頁面 (ChatGPT 風格)
         '/ai-chat': (context) => const AuthGuard(
               child: _AIChatRoute(),
             ),
