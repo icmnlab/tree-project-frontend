@@ -6,6 +6,7 @@ import '../config/app_config.dart';
 import '../config/survey_settings.dart';
 import 'api_service.dart';
 import '../utils/field_log.dart';
+import '../utils/session_id.dart';
 import 'v3/station_service.dart'; // Import StationService
 
 /// 待測量樹木服務
@@ -193,10 +194,8 @@ class PendingMeasurementService {
   }
 
   /// 生成測量批次 ID（現場連線多棵共用同一 session）
-  static String generateSessionId() {
-    final now = DateTime.now();
-    return 'MS-${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}-${now.millisecondsSinceEpoch % 100000}';
-  }
+  /// [稽核#4] 改用防碰撞亂數尾碼，避免兩台裝置同日撞號互相污染批次。
+  static String generateSessionId() => generateUniqueSessionId();
 
   static int? _toInt(dynamic value) {
     if (value == null) return null;
@@ -581,10 +580,7 @@ class PendingMeasurementService {
     }
 
     final project = projects.first;
-    final now = DateTime.now();
-    final suffix = now.millisecondsSinceEpoch % 1000000;
-    final sessionId =
-        'SMOKE-${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}-$suffix';
+    final sessionId = generateUniqueSessionId(prefix: 'SMOKE');
     final hasBaseLocation = baseLatitude != null &&
         baseLongitude != null &&
         (baseLatitude != 0 || baseLongitude != 0);

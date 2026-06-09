@@ -4,6 +4,20 @@
 
 ---
 
+## (2026-06-10) — 多人安全 P0（前端側）+ UI 修正
+
+### 多人安全（深度稽核 #2/#4/#8）
+- `lib/utils/session_id.dart`（新）：測量批次 ID 改「日期前綴+96-bit 安全亂數」防碰撞；`PendingMeasurementService.generateSessionId()` 與 SMOKE 批次同步改用。
+- `lib/screens/pending_measurement_task_page.dart`：新增 `_claimedTaskId`，dispose／放棄／取消只把**本機 claim** 的任務還原 pending，不再誤打回其他裝置的 in_progress。
+- `lib/screens/maintenance_survey_page.dart`：清單達 500 筆上限時顯示橙色警告列（取代靜默截斷）。
+
+### UI
+- `lib/admin_page.dart`：專案管理標題列改 `Expanded`，修窄螢幕 RenderFlex overflow（14px）。
+
+> 後端同步：pending 擁有權（created_by_user_id + 403 NOT_OWNER）+ by_project/by_area 查詢上限；契約測試 `pending_ownership.test.js`。
+
+---
+
 ## v18.5.1 (2026-04-28) — V3 species refactor + docs cleanup
 
 ### V3 樹種辨識

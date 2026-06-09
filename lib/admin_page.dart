@@ -1146,30 +1146,29 @@ class _AdminPageState extends State<AdminPage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              '專案管理',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+            // 窄螢幕時讓標題縮排避免 RenderFlex overflow
+            Expanded(
+              child: Text(
+                '專案管理',
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+              ),
             ),
-            Row(
-              children: [
-                if (_canManageInvites)
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.create_new_folder_outlined),
-                    label: const Text('建立專案'),
-                    onPressed: _showCreateProjectDialog,
-                  ),
-                const SizedBox(width: 4),
-                IconButton(
-                  icon: const Icon(Icons.refresh),
-                  onPressed: _fetchProjectsForExport,
-                  tooltip: '重新整理列表',
-                ),
-              ],
+            if (_canManageInvites)
+              ElevatedButton.icon(
+                icon: const Icon(Icons.create_new_folder_outlined),
+                label: const Text('建立專案'),
+                onPressed: _showCreateProjectDialog,
+              ),
+            const SizedBox(width: 4),
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _fetchProjectsForExport,
+              tooltip: '重新整理列表',
             ),
           ],
         ),

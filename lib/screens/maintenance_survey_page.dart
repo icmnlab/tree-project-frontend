@@ -34,6 +34,9 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
 
   bool _loadingTrees = false;
   String? _loadError;
+
+  /// [稽核#8] 樹木清單達查詢上限（500），可能不完整
+  bool _listTruncated = false;
   List<Map<String, dynamic>> _trees = [];
   String _search = '';
   int _step = 0; // 0=list 1=ble
@@ -143,6 +146,8 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
       _sortTreesByDistance(list);
       setState(() {
         _trees = list;
+        // [稽核#8] 達到查詢上限代表清單可能被截斷，需提示使用者用搜尋縮小範圍
+        _listTruncated = list.length >= 500;
         _loadingTrees = false;
       });
       await _loadLocks();
@@ -684,6 +689,27 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
             ),
           ),
         ),
+        // [稽核#8] 清單可能被截斷時的明確提示（取代靜默截斷）
+        if (_listTruncated && !_loadingTrees)
+          Container(
+            width: double.infinity,
+            color: Colors.orange.shade100,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            child: Row(
+              children: [
+                Icon(Icons.warning_amber_rounded,
+                    size: 16, color: Colors.orange.shade800),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    '清單僅顯示前 500 筆，可能不完整；請用搜尋縮小範圍',
+                    style: TextStyle(
+                        fontSize: 12, color: Colors.orange.shade900),
+                  ),
+                ),
+              ],
+            ),
+          ),
         Expanded(
           child: _loadingTrees
               ? const Center(child: CircularProgressIndicator())

@@ -44,6 +44,11 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   PendingTreeMeasurement? _currentTask;
   bool _isProcessing = false;
   bool _abandoned = false;
+
+  /// [稽核#2] 只記錄「本機成功設成 in_progress」的任務 id。
+  /// 離開頁面 / 放棄 / 取消時只把自己 claim 的任務打回 pending，
+  /// 避免誤把其他裝置正在進行的任務重設。
+  int? _claimedTaskId;
   bool _isCreatingSmokeTask = false;
 
   // Session 管理
@@ -109,8 +114,11 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
   @override
   void dispose() {
     // 確保離開頁面時不會遺留 in_progress 狀態的任務
+    // [稽核#2] 只重設本機 claim 的任務，避免打回其他裝置的 in_progress
     final taskId = _currentTask?.id;
-    if (taskId != null && _navState != NavigationState.selectingTask) {
+    if (taskId != null &&
+        taskId == _claimedTaskId &&
+        _navState != NavigationState.selectingTask) {
       _service
           .updateTaskStatus(taskId, MeasurementStatus.pending)
           .catchError((_) => null);
@@ -296,8 +304,9 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
       _currentTask = null;
       _isProcessing = false;
     });
-    // 背景恢復 pending 狀態
-    if (taskId != null) {
+    // 背景恢復 pending 狀態（[稽核#2] 僅限本機 claim 的任務）
+    if (taskId != null && taskId == _claimedTaskId) {
+      _claimedTaskId = null;
       try {
         await _service.updateTaskStatus(taskId, MeasurementStatus.pending);
       } catch (e) {
@@ -1912,6 +1921,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
           MeasurementStatus.inProgress,
         );
         if (ts != null) {
+          _claimedTaskId = workingTask.id; // [稽核#2] 標記本機 claim
           _currentTask = workingTask.copyWith(
             status: MeasurementStatus.inProgress,
             updatedAt: ts,
@@ -1959,7 +1969,11 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     _isProcessing = false;
     if (!mounted || _abandoned) {
       // 頁面已被銷毀或放棄 — 確保任務不會永遠卡在 in_progress
-      if (taskRef.id != null && success != true) {
+      // [稽核#2] 僅限本機 claim 的任務
+      if (taskRef.id != null &&
+          taskRef.id == _claimedTaskId &&
+          success != true) {
+        _claimedTaskId = null;
         _service
             .updateTaskStatus(taskRef.id!, MeasurementStatus.pending)
             .catchError((_) => null);
@@ -1968,6 +1982,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
     }
 
     if (success == true) {
+      _claimedTaskId = null; // [稽核#2] 任務已完成，解除本機 claim
       await _loadTasks();
       if (!mounted) return;
 
@@ -1993,8 +2008,9 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
         }
       }
     } else {
-      // 使用者取消或測量失敗 — 恢復 pending
-      if (taskRef.id != null) {
+      // 使用者取消或測量失敗 — 恢復 pending（[稽核#2] 僅限本機 claim 的任務）
+      if (taskRef.id != null && taskRef.id == _claimedTaskId) {
+        _claimedTaskId = null;
         try {
           await _service.updateTaskStatus(
             taskRef.id!,
