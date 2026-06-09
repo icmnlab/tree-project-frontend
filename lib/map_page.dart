@@ -53,6 +53,40 @@ class _MapPageState extends State<MapPage> with RouteAware {
   bool _mapLoadInFlight = false;
   DateTime? _lastBoundaryRefresh;
   bool _mapControllerReady = false;
+
+  // [效能] 視窗範圍剔除：候選 marker 量大時，只渲染目前可見範圍內的標記，
+  // 相機停止移動（onCameraIdle）時重算，避免一次塞 7000+ marker 造成卡頓/GC。
+  LatLngBounds? _visibleBounds;
+  int _lastCandidateCount = 0;
+  bool _markerCullActive = false;
+  static const int _viewportCullThreshold = 1500; // 候選超過此數才啟用視窗剔除
+  static const int _maxRenderedMarkers = 1500; // 單次渲染硬上限（低縮放保險）
+
+  bool _inVisibleBounds(double lat, double lng) {
+    final b = _visibleBounds;
+    if (b == null) return true;
+    final sw = b.southwest;
+    final ne = b.northeast;
+    final latOk = lat >= sw.latitude && lat <= ne.latitude;
+    final lngOk = sw.longitude <= ne.longitude
+        ? (lng >= sw.longitude && lng <= ne.longitude)
+        : (lng >= sw.longitude || lng <= ne.longitude); // 跨 ±180 保險
+    return latOk && lngOk;
+  }
+
+  Future<void> _onCameraIdle() async {
+    final controller = _controller;
+    if (controller == null || !_mapControllerReady) return;
+    try {
+      _visibleBounds = await controller.getVisibleRegion();
+    } catch (_) {
+      return;
+    }
+    // 僅在「候選量大、需靠視窗剔除」時重建，小資料集不必重繪。
+    if (_lastCandidateCount > _viewportCullThreshold) {
+      _updateMarkersFromCache();
+    }
+  }
   
   void _mapLog(String message) {
     debugPrint('[MapPage] $message');
@@ -650,18 +684,25 @@ class _MapPageState extends State<MapPage> with RouteAware {
       return true;
     }).toList();
 
-    final markers = trees.map((tree) {
+    _lastCandidateCount = trees.length;
+    // [效能] 候選量超過門檻才啟用視窗剔除；有可見範圍時只畫範圍內、外加硬上限。
+    final bool cull = trees.length > _viewportCullThreshold;
+    final markers = <Marker>{};
+    int rendered = 0;
+    for (final tree in trees) {
+      if (rendered >= _maxRenderedMarkers) break;
       try {
         final y = double.tryParse(tree['Y坐標']?.toString() ?? '0') ?? 0.0;
         final x = double.tryParse(tree['X坐標']?.toString() ?? '0') ?? 0.0;
-        if (y == 0.0 || x == 0.0) return null;
+        if (y == 0.0 || x == 0.0) continue;
+        if (cull && !_inVisibleBounds(y, x)) continue;
 
         final projectName = tree['專案名稱'] ?? '未知專案';
         final areaName = tree['專案區位'] ?? '未知區位';
         // 確保 MarkerId 唯一，避免覆蓋
         final markerId = '${tree['id']}_${x}_$y';
-        
-        return Marker(
+
+        markers.add(Marker(
           markerId: MarkerId(markerId),
           position: LatLng(y, x),
           infoWindow: InfoWindow(
@@ -670,15 +711,19 @@ class _MapPageState extends State<MapPage> with RouteAware {
             onTap: () => _openTreeDetail(tree),
           ),
           onTap: () => _showTreeMarkerSheet(tree),
-        );
+        ));
+        rendered++;
       } catch (e) {
-        return null;
+        continue;
       }
-    }).where((marker) => marker != null).cast<Marker>().toSet();
+    }
+    // 是否有「因效能而未全部畫出」的情況（供提示橫幅判斷）。
+    final bool culled = cull && rendered < trees.length;
 
     _safeSetState(() {
       _markers.clear();
       _markers.addAll(markers);
+      _markerCullActive = culled;
     });
 
     _updateBoundaryPolygons();
@@ -1086,6 +1131,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
         children: [
           GoogleMap(
             onMapCreated: _onMapCreated,
+            onCameraIdle: _onCameraIdle,
             initialCameraPosition: CameraPosition(
               target: _currentPosition != null
                   ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
@@ -1110,6 +1156,28 @@ class _MapPageState extends State<MapPage> with RouteAware {
             ),
             mapType: _currentMapType,
           ),
+          if (_markerCullActive)
+            Positioned(
+              left: 12,
+              right: 12,
+              bottom: 12,
+              child: IgnorePointer(
+                child: Center(
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.62),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: const Text(
+                      '資料量大，僅顯示目前範圍的標記；放大或用篩選查看更多',
+                      style: TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           if (_showMenu) ...[
             if (!_hasLocationPermission)
               Positioned(
