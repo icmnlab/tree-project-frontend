@@ -13,6 +13,7 @@ import '../utils/maintenance_gps_flow.dart';
 import '../utils/ble_transfer_signals.dart';
 import '../utils/ble_uart_discovery.dart';
 import '../utils/tree_id_display.dart';
+import '../utils/transfer_result.dart';
 import '../services/pending_measurement_service.dart';
 import '../widgets/ble/ble_device_scanner.dart';
 import '../widgets/ble/ble_instrument_checklist.dart';
@@ -722,6 +723,9 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
 
     _formOpen = true;
     final isMaintRemeasure = widget.maintenanceTarget != null;
+    // 表單內 auto-transfer 取得的正式 tree_survey_id；新增樹用它標記「本場新增」，
+    // 避免回來後再做一次冪等 transfer（回空 id_mapping）而遺失 id。
+    int? formTransferredTreeId;
     final success = await nav.push<bool>(
       MaterialPageRoute(
         builder: (_) => IntegratedTreeFormPage(
@@ -730,6 +734,7 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
           transferSessionId: _liveSessionId,
           initialUpdateTreeLocation:
               isMaintRemeasure ? _pendingUpdateTreeLocation : null,
+          onTreeSurveyTransferred: (id) => formTransferredTreeId = id,
         ),
       ),
     );
@@ -765,7 +770,9 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
       }
       if (!mounted) return;
       if (widget.maintenanceSessionContext && widget.maintenanceTarget == null) {
-        final newId = _treeSurveyIdFromTransfer(transferResult);
+        // 優先用表單轉移當下取得的 id；第二次冪等 transfer 僅作後備。
+        final newId =
+            formTransferredTreeId ?? _treeSurveyIdFromTransfer(transferResult);
         nav.pop(
           MaintenanceSessionResult(
             success: true,
@@ -992,25 +999,8 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
     }
   }
 
-  int? _treeSurveyIdFromTransfer(Map<String, dynamic>? tr) {
-    if (tr == null || tr['success'] != true) return null;
-    final mapping = tr['id_mapping'];
-    if (mapping is List && mapping.isNotEmpty) {
-      final last = mapping.last;
-      if (last is Map) {
-        final id = last['tree_survey_id'];
-        if (id is int) return id;
-        return int.tryParse(id?.toString() ?? '');
-      }
-    }
-    final ids = tr['transferred_tree_ids'];
-    if (ids is List && ids.isNotEmpty) {
-      final last = ids.last;
-      if (last is int) return last;
-      return int.tryParse(last.toString());
-    }
-    return null;
-  }
+  int? _treeSurveyIdFromTransfer(Map<String, dynamic>? tr) =>
+      treeSurveyIdFromTransfer(tr);
 
   /// 第一棵前：專案、區位、GPS 語意、場次名稱（整場共用）
   Future<bool> _ensureLiveSessionConfigured() async {

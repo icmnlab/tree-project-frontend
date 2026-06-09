@@ -24,6 +24,7 @@ import '../../widgets/tree_measurement_history_panel.dart';
 import '../../widgets/conflict_resolution_dialog.dart';
 import '../../config/survey_settings.dart';
 import '../../utils/field_log.dart';
+import '../../utils/transfer_result.dart';
 
 /// V3 整合式樹木測量表單
 ///
@@ -47,6 +48,11 @@ class IntegratedTreeFormPage extends StatefulWidget {
   /// 維護重測：由 BLE SEND 後 GPS 流程決定（表單不再顯示開關）
   final bool? initialUpdateTreeLocation;
 
+  /// auto-transfer 成功時，把轉移取得的正式 `tree_survey_id` 回拋給呼叫端。
+  /// 用於現場新增樹流程：表單內已轉移並拿到正式 id，避免呼叫端再做一次
+  /// 冪等 transfer（會回空 id_mapping）而遺失 id。
+  final void Function(int treeSurveyId)? onTreeSurveyTransferred;
+
   const IntegratedTreeFormPage({
     super.key,
     required this.task,
@@ -54,6 +60,7 @@ class IntegratedTreeFormPage extends StatefulWidget {
     this.transferSessionId,
     this.handbookCompliantMode,
     this.initialUpdateTreeLocation,
+    this.onTreeSurveyTransferred,
   });
 
   @override
@@ -1611,6 +1618,11 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
                       await _imageService.remapTreeId(pendingId, surveyId);
                     }
                   }
+                }
+                // 把表單內轉移取得的正式 id 回拋，供現場新增樹標記「本場新增」
+                final transferredId = treeSurveyIdFromTransfer(tr);
+                if (transferredId != null) {
+                  widget.onTreeSurveyTransferred?.call(transferredId);
                 }
               } catch (e) {
                 debugPrint('[IntegratedForm] photo remap failed: $e');
