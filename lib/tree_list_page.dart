@@ -631,20 +631,43 @@ class _TreeListPageState extends State<TreeListPage> {
         updateData.removeWhere(
             (key, value) => value == null || value.toString().isEmpty);
 
+        // [P1-1] 批次更新逐棵帶樂觀鎖：他人同時編輯的樹回 409，不靜默蓋寫。
+        int updated = 0;
+        final conflictTrees = <String>[];
         if (updateData.isNotEmpty) {
           // [T6 cleanup] 走 V2：中文表頭譯成英文欄位。
-          // 批次更新不帶 expected_updated_at → 其實是後寫贏（同 Phase 1 向後相容設計）。
           final v2Update = _zhToV2(updateData);
           if (v2Update.isNotEmpty) {
             for (final tree in treesToUpdate) {
-              await _treeService.updateTreeV2(tree['id'].toString(), v2Update);
+              final body = Map<String, dynamic>.from(v2Update);
+              final loadedUpdatedAt = tree['updated_at']?.toString();
+              if (loadedUpdatedAt != null && loadedUpdatedAt.isNotEmpty) {
+                body['expected_updated_at'] = loadedUpdatedAt;
+              }
+              final response = await _treeService.updateTreeV2(
+                  tree['id'].toString(), body);
+              if (response['code'] == 'CONFLICT' ||
+                  response['code'] == 'DELETED') {
+                conflictTrees.add(
+                    tree['系統樹木']?.toString() ?? tree['id'].toString());
+              } else {
+                updated++;
+              }
             }
           }
         }
 
         if (mounted) {
+          final msg = conflictTrees.isEmpty
+              ? '批次更新成功（$updated 棵）'
+              : '已更新 $updated 棵；${conflictTrees.length} 棵因他人同時編輯/已刪除而略過：'
+                  '${conflictTrees.take(5).join('、')}'
+                  '${conflictTrees.length > 5 ? '…' : ''}（已重新整理，請確認後再操作）';
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('批次更新成功')),
+            SnackBar(
+              content: Text(msg),
+              duration: Duration(seconds: conflictTrees.isEmpty ? 2 : 6),
+            ),
           );
           _toggleSelectionMode();
           _fetchTrees();
