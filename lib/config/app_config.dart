@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 // 後端固定為自架伺服器（Tailscale）。保留 enum 是為了讓舊 SharedPreferences
@@ -18,15 +19,14 @@ class AppConfig {
     defaultValue: '',
   );
 
-  /// 後端 API base URL。可於建置時覆寫：
+  /// 後端 API base URL。**必須**於建置時提供（零硬編碼個人值）：
   ///   flutter run --dart-define=API_BASE_URL=https://your-host/api
   ///
-  /// 交接須知：defaultValue 目前指向開發者自架的 Tailscale 後端。
-  /// 交接給下一棒時，請把 defaultValue 改為新主機（或清為空字串，強制以
-  /// --dart-define 提供），詳見 docs/HANDOFF_SECRETS_CHECKLIST。
+  /// 預設空字串＝強制以 --dart-define 提供；未提供時 [baseUrl] 為空、
+  /// 並於 [_setEnvironment] 印出明確警告。設定方式見 docs/HANDOFF_SECRETS_CHECKLIST。
   static const String defaultBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'https://richardhualienserver.tail124a1b.ts.net/api',
+    defaultValue: '',
   );
 
   /// 是否收集並上傳「使用者覆寫自動值」的修正紀錄（DBH／樹種等）。
@@ -93,8 +93,14 @@ class AppConfig {
   // Private method to set URLs
   void _setEnvironment(Environment env) {
     environment = env;
-    // 後端 base URL：優先採用建置期 --dart-define=API_BASE_URL，否則用內建預設。
+    // 後端 base URL 來自建置期 --dart-define=API_BASE_URL（零硬編碼）。
     baseUrl = defaultBaseUrl;
+    if (baseUrl.isEmpty) {
+      debugPrint(
+        '[AppConfig] ⚠️ API_BASE_URL 未設定！請以 '
+        '--dart-define=API_BASE_URL=https://<your-host>/api 建置，否則後端連線會失敗。',
+      );
+    }
     final configuredUrl =
         (_configuredMlServiceUrl != null && _configuredMlServiceUrl!.isNotEmpty)
             ? _configuredMlServiceUrl!

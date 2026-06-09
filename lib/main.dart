@@ -52,21 +52,39 @@ Future<void> _migrateLegacyAiUserId() async {
   }
 }
 
-/// 允許自架伺服器的自簽憑證 (僅限 Tailscale 內網 IP / MagicDNS)
+/// 允許自架伺服器的自簽憑證。信任清單於建置時提供（零硬編碼個人值）：
+///   --dart-define=SELF_SIGNED_TRUSTED_HOSTS=100.x.x.x,host.ts.net
+/// 也支援以 `.` 開頭的網域後綴（例如 `.ts.net` 信任整個 tailnet）。
+/// 預設空＝一律走正規 TLS 驗證、不信任任何自簽憑證，保持安全且利於交接。
 class SelfHostedHttpOverrides extends HttpOverrides {
+  static const String _trustedHostsRaw = String.fromEnvironment(
+    'SELF_SIGNED_TRUSTED_HOSTS',
+    defaultValue: '',
+  );
+
+  static final List<String> _trustedHosts = _trustedHostsRaw
+      .split(',')
+      .map((h) => h.trim())
+      .where((h) => h.isNotEmpty)
+      .toList();
+
+  static bool _isTrusted(String host) {
+    for (final entry in _trustedHosts) {
+      if (entry.startsWith('.')) {
+        if (host.endsWith(entry)) return true;
+      } else if (host == entry) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   @override
   HttpClient createHttpClient(SecurityContext? context) {
     return super.createHttpClient(context)
       ..badCertificateCallback = (X509Certificate cert, String host, int port) {
-        // 只信任 Tailscale 內網的自簽憑證：
-        //   - Ubuntu server IP (100.118.203.75)
-        //   - Windows server IP (100.81.214.9)
-        //   - Tailscale MagicDNS 名稱 (*.ts.net)
-        // 任何公網或非 Tailscale 的主機都仍會正常驗證 TLS，保持安全性。
-        if (host == '100.118.203.75') return true;
-        if (host == '100.81.214.9') return true;
-        if (host.endsWith('.ts.net')) return true;
-        return false;
+        // 僅信任建置時白名單內的自簽主機；其餘一律正常 TLS 驗證，保持安全性。
+        return _isTrusted(host);
       };
   }
 }
