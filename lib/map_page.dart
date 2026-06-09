@@ -14,6 +14,7 @@ import 'services/project_scope_store.dart';
 import 'services/v3/project_boundary_service.dart';
 import 'screens/v3/project_boundary_draw_page.dart';
 import 'tree_survey_detail_page.dart';
+import 'utils/marker_spread.dart';
 import 'services/auth_service.dart'; // [T7] 角色權限
 import 'services/locale_service.dart';
 import 'services/location_service.dart';
@@ -688,6 +689,8 @@ class _MapPageState extends State<MapPage> with RouteAware {
     // [效能] 候選量超過門檻才啟用視窗剔除；有可見範圍時只畫範圍內、外加硬上限。
     final bool cull = trees.length > _viewportCullThreshold;
     final markers = <Marker>{};
+    // [疊點展開] 同座標多棵樹時，自第 2 棵起以小圓環展開（否則只看得到最上層）。
+    final seenCoords = <String, int>{};
     int rendered = 0;
     for (final tree in trees) {
       if (rendered >= _maxRenderedMarkers) break;
@@ -701,10 +704,11 @@ class _MapPageState extends State<MapPage> with RouteAware {
         final areaName = tree['專案區位'] ?? '未知區位';
         // 確保 MarkerId 唯一，避免覆蓋
         final markerId = '${tree['id']}_${x}_$y';
+        final pos = nextSpreadPoint(seenCoords, y, x);
 
         markers.add(Marker(
           markerId: MarkerId(markerId),
-          position: LatLng(y, x),
+          position: LatLng(pos.lat, pos.lng),
           infoWindow: InfoWindow(
             title: tree['樹種名稱'] ?? '未知樹種',
             snippet: '專案：$projectName\n區位：$areaName',
