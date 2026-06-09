@@ -36,7 +36,8 @@ class _ApiKeyManagementScreenState extends State<ApiKeyManagementScreen> {
 
       if (response['success'] == true) {
         setState(() {
-          _apiKeys = response['keys'] ?? [];
+          // 後端回 { success, data: [...] }
+          _apiKeys = response['data'] ?? [];
           _isLoading = false;
         });
       } else {
@@ -75,7 +76,9 @@ class _ApiKeyManagementScreenState extends State<ApiKeyManagementScreen> {
       if (response['success'] == true) {
         _nameController.clear();
         setState(() {
-          _newApiKey = response['apiKey'];
+          // 後端回 { success, data: { name, key, permissions } }
+          final data = response['data'];
+          _newApiKey = data is Map ? data['key'] as String? : null;
           _isCreatingKey = false;
         });
         _fetchApiKeys();

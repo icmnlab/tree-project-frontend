@@ -738,12 +738,14 @@ void main() {
       final measurements = <TestBLEMeasurementData>[];
       service.measurementStream.listen(measurements.add);
       
-      // 10ms 間隔 = 每秒 100 次
+      // 10ms 間隔 = 理想每秒 100 次
       service.startReceivingMeasurements(interval: const Duration(milliseconds: 10));
       await Future.delayed(const Duration(seconds: 1));
       service.stopReceivingMeasurements();
       
-      expect(measurements.length, greaterThan(80));
+      // 用寬鬆下界避免在較慢／負載高的主機上因 Dart Timer 顆粒度而誤判（理想 100，
+      // 此處只驗證高頻串流確實持續產出大量量測）。
+      expect(measurements.length, greaterThan(50));
       expect(service.totalMeasurements, measurements.length);
       
       // 驗證所有數據有效

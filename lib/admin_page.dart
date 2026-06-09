@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'constants/colors.dart';
 // import 'package:provider/provider.dart'; // Unused
-import 'screens/api_key_management_screen.dart';
 import 'screens/user_form_screen.dart';
 import 'services/user_service.dart';
 import 'services/project_service.dart';
-import 'services/admin_service.dart';
+import 'services/project_area_service.dart';
+import 'services/admin_service.dart'; // ExportService 來自此檔
 import 'models/project.dart';
-import 'config/app_config.dart'; // Import AppConfig
 import 'screens/v3/project_boundary_draw_page.dart'; // V3 專案邊界繪製
+import 'screens/project_areas_admin_page.dart'; // 專案區位 CRUD 管理
+import 'screens/system_settings_page.dart'; // 系統狀態與維運
 import 'screens/csv_import_page.dart'; // [Phase C] CSV 匯入頁面
 import 'screens/ip_blacklist_page.dart'; // [T8.2] IP 黑名單管理
 import 'admin_research_dataset_page.dart'; // [Research] DBH 校準資料蒐集
@@ -38,7 +39,8 @@ class _AdminPageState extends State<AdminPage> {
   bool _canManageProjects = false; // 專案邊界 tab
   bool _canImportCsv = false;       // CSV 匯入 tab
   bool _canManageIpBlacklist = false; // [T8.2] IP 黑名單 tab
-  bool _canManageInvites = false; // 邀請碼（業務管理員以上）
+  bool _canManageInvites = false; // 邀請碼／使用者管理（業務管理員以上）
+  bool _isSystemAdmin = false; // 系統管理員：系統維運分頁、研究資料集
 
   List<Project> _projectsForExport = [];
   List<String> _selectedProjectCodesForMultiExport = []; // 用於儲存多選的專案代碼
@@ -50,7 +52,7 @@ class _AdminPageState extends State<AdminPage> {
   // Services
   final UserService _userService = UserService();
   final ProjectService _projectService = ProjectService();
-  final AdminService _adminService = AdminService();
+  final ProjectAreaService _projectAreaService = ProjectAreaService();
 
   @override
   void dispose() {
@@ -72,12 +74,14 @@ class _AdminPageState extends State<AdminPage> {
     final canCsv = await AuthService.canImportCsv();
     final canIp = await AuthService.canManageIpBlacklist();
     final canInvites = await AuthService.canManageUsers();
+    final isSysAdmin = await AuthService.hasMinimumRole('系統管理員');
     if (mounted) {
       setState(() {
         _canManageProjects = canManage;
         _canImportCsv = canCsv;
         _canManageIpBlacklist = canIp;
         _canManageInvites = canInvites;
+        _isSystemAdmin = isSysAdmin;
       });
     }
   }
@@ -91,8 +95,10 @@ class _AdminPageState extends State<AdminPage> {
       _buildAdminZone(),
       _buildProjectManagement(),
       if (_canManageProjects) const ProjectBoundaryDrawPage(),
+      if (_canManageProjects) const ProjectAreasAdminPage(),
       if (_canImportCsv) const CsvImportPage(),
       if (_canManageIpBlacklist) const IpBlacklistPage(),
+      if (_isSystemAdmin) const SystemSettingsPage(),
     ];
     final idx = _selectedIndex.clamp(0, pages.length - 1);
     return pages[idx];
@@ -386,23 +392,6 @@ class _AdminPageState extends State<AdminPage> {
     } finally {
       if (mounted) {
         setState(() => _isExportingPdf = false);
-      }
-    }
-  }
-
-  Future<void> _backupDatabase() async {
-    try {
-      final response = await _adminService.backupDatabase();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response['message'] ?? '資料庫備份成功')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('發生錯誤: $e')),
-        );
       }
     }
   }
@@ -1007,149 +996,6 @@ class _AdminPageState extends State<AdminPage> {
     );
   }
 
-  // ignore: unused_element
-  Widget _buildBackupOptions() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        const Text(
-          '資料備份與還原',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 20),
-        const Text(
-          '備份功能會將資料庫中的所有資料匯出為 SQL 檔案，\n'
-          '還原功能可以從備份檔案中恢復資料。\n'
-          '請定期備份您的資料以防資料遺失。',
-          textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 16),
-        ),
-        const SizedBox(height: 20),
-        ElevatedButton.icon(
-          icon: const Icon(Icons.backup),
-          label: const Text('備份資料庫'),
-          onPressed: _backupDatabase,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.blue,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-          ),
-        ),
-        const SizedBox(height: 16),
-        ElevatedButton.icon(
-          icon: const Icon(Icons.restore),
-          label: const Text('還原資料庫'),
-          onPressed: () {
-            showDialog(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                title: const Text('還原資料庫'),
-                content: const Text(
-                  '還原功能將會覆蓋現有資料庫內容，此操作無法復原。\n\n'
-                  '目前此功能需要在伺服器端手動操作（透過管理員 API），'
-                  '請聯繫系統管理員進行還原。',
-                ),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.of(ctx).pop(),
-                    child: const Text('了解'),
-                  ),
-                ],
-              ),
-            );
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orange,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // ignore: unused_element
-  Widget _buildApiKeyOptions() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Text(
-            'API 密鑰管理',
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'API 密鑰用於授權第三方應用程式訪問系統 API。\n'
-            '您可以創建、查看和刪除 API 密鑰。',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 16),
-          ),
-          const SizedBox(height: 20),
-          ElevatedButton.icon(
-            icon: const Icon(Icons.key),
-            label: const Text('管理 API 密鑰'),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ApiKeyManagementScreen(),
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ignore: unused_element
-  Widget _buildSystemSettings() {
-    final appConfig = AppConfig();
-    final envName = switch (appConfig.environment) {
-      Environment.selfHosted => '自架伺服器',
-    };
-    final envIcon = switch (appConfig.environment) {
-      Environment.selfHosted => Icons.dns,
-    };
-    final envColor = switch (appConfig.environment) {
-      Environment.selfHosted => Colors.blue,
-    };
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Card(
-          elevation: 4,
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Text(
-                  '系統開發設定',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
-                const SizedBox(height: 24),
-                ListTile(
-                  leading: Icon(envIcon, color: envColor),
-                  title: Text('API 環境: $envName'),
-                  subtitle: Text(appConfig.baseUrl),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildAdminZone() {
     return Center(
       child: SingleChildScrollView(
@@ -1212,24 +1058,27 @@ class _AdminPageState extends State<AdminPage> {
                 },
               ),
             ),
-            const SizedBox(height: 12),
             // [Research] DBH 校準資料蒐集（給研究/論文 §結果用的乾淨資料集）
-            Card(
-              elevation: 2,
-              child: ListTile(
-                leading: const Icon(Icons.science_outlined),
-                title: const Text('研究資料蒐集（DBH 校準）'),
-                subtitle: const Text('現場捲尺實測周長 + 拍攝距離 + 1~3 張手機照'),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => const AdminResearchDatasetPage(),
-                    ),
-                  );
-                },
+            // 後端 research dataset 端點需「系統管理員」，入口同步只給系統管理員。
+            if (_isSystemAdmin) ...[
+              const SizedBox(height: 12),
+              Card(
+                elevation: 2,
+                child: ListTile(
+                  leading: const Icon(Icons.science_outlined),
+                  title: const Text('研究資料蒐集（DBH 校準）'),
+                  subtitle: const Text('現場捲尺實測周長 + 拍攝距離 + 1~3 張手機照'),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const AdminResearchDatasetPage(),
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
+            ],
             if (_canManageInvites) ...[
               const SizedBox(height: 12),
               Card(
@@ -1306,10 +1155,21 @@ class _AdminPageState extends State<AdminPage> {
                     color: Theme.of(context).colorScheme.primary,
                   ),
             ),
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _fetchProjectsForExport,
-              tooltip: '重新整理列表',
+            Row(
+              children: [
+                if (_canManageInvites)
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.create_new_folder_outlined),
+                    label: const Text('建立專案'),
+                    onPressed: _showCreateProjectDialog,
+                  ),
+                const SizedBox(width: 4),
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: _fetchProjectsForExport,
+                  tooltip: '重新整理列表',
+                ),
+              ],
             ),
           ],
         ),
@@ -1339,11 +1199,14 @@ class _AdminPageState extends State<AdminPage> {
                             ),
                             title: Text(project.name),
                             subtitle: Text('區域: ${project.area ?? "無"}'),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete_outline,
-                                  color: Colors.red),
-                              onPressed: () => _confirmDeleteProject(project),
-                            ),
+                            trailing: _canManageInvites
+                                ? IconButton(
+                                    icon: const Icon(Icons.delete_outline,
+                                        color: Colors.red),
+                                    onPressed: () =>
+                                        _confirmDeleteProject(project),
+                                  )
+                                : null,
                           ),
                         );
                       },
@@ -1351,6 +1214,127 @@ class _AdminPageState extends State<AdminPage> {
         ),
       ],
     );
+  }
+
+  Future<void> _showCreateProjectDialog() async {
+    // 後端 POST /projects/add 需 area 對應到既有 project_areas.area_name。
+    List<Map<String, dynamic>> areas = [];
+    try {
+      areas = await _projectAreaService.getProjectAreas();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('載入區位清單失敗：$e'), backgroundColor: Colors.red),
+        );
+      }
+      return;
+    }
+    if (!mounted) return;
+    if (areas.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('尚無任何區位，請先到「專案區位」建立區位後再建立專案。')),
+      );
+      return;
+    }
+
+    final nameController = TextEditingController();
+    String? selectedArea = areas.first['area_name']?.toString();
+
+    final result = await showDialog<Map<String, String>>(
+      context: context,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final nameEmpty = nameController.text.trim().isEmpty;
+            return AlertDialog(
+              title: const Text('建立專案'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: nameController,
+                      autofocus: true,
+                      decoration: InputDecoration(
+                        labelText: '專案名稱 *',
+                        border: const OutlineInputBorder(),
+                        errorText: nameEmpty ? '專案名稱不能為空' : null,
+                      ),
+                      onChanged: (_) => setDialogState(() {}),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      initialValue: selectedArea,
+                      decoration: const InputDecoration(
+                        labelText: '所屬區位 *',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: areas
+                          .map((a) => a['area_name']?.toString() ?? '')
+                          .where((n) => n.isNotEmpty)
+                          .map((n) => DropdownMenuItem<String>(
+                                value: n,
+                                child: Text(n),
+                              ))
+                          .toList(),
+                      onChanged: (v) => setDialogState(() => selectedArea = v),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: const Text('取消'),
+                ),
+                ElevatedButton(
+                  onPressed: (nameEmpty || selectedArea == null)
+                      ? null
+                      : () => Navigator.pop(dialogContext, {
+                            'name': nameController.text.trim(),
+                            'area': selectedArea!,
+                          }),
+                  child: const Text('建立'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    nameController.dispose();
+
+    if (result == null) return;
+    setState(() => _isLoadingProjects = true);
+    try {
+      final resp =
+          await _projectService.addProject(result['name']!, result['area']!);
+      if (mounted) {
+        if (resp['success'] == true) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(resp['message']?.toString() ?? '專案已建立'),
+                backgroundColor: Colors.green),
+          );
+          _fetchProjectsForExport();
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: Text(resp['message']?.toString() ?? '建立失敗'),
+                backgroundColor: Colors.red),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('建立發生錯誤：$e'), backgroundColor: Colors.red),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isLoadingProjects = false);
+    }
   }
 
   Future<void> _confirmDeleteProject(Project project) async {
@@ -1558,6 +1542,12 @@ class _AdminPageState extends State<AdminPage> {
                       icon: Icon(Icons.map),
                       label: Text('專案邊界'),
                     ),
+                  // 專案區位管理 — 專案管理員以上
+                  if (_canManageProjects)
+                    const NavigationRailDestination(
+                      icon: Icon(Icons.location_city),
+                      label: Text('專案區位'),
+                    ),
                   // [T7] CSV 匯入 — 業務管理員以上
                   if (_canImportCsv)
                     const NavigationRailDestination(
@@ -1569,6 +1559,12 @@ class _AdminPageState extends State<AdminPage> {
                     const NavigationRailDestination(
                       icon: Icon(Icons.shield),
                       label: Text('IP 黑名單'),
+                    ),
+                  // 系統狀態與維運 — 系統管理員
+                  if (_isSystemAdmin)
+                    const NavigationRailDestination(
+                      icon: Icon(Icons.settings_suggest),
+                      label: Text('系統'),
                     ),
                 ],
               ),

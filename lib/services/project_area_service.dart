@@ -14,6 +14,12 @@ class ProjectAreaService {
     return ApiService.post('project_areas', areaData);
   }
 
+  /// 後端 PUT /project_areas/:id（專案管理員），需帶 area_name 與 area_code。
+  Future<Map<String, dynamic>> updateProjectArea(
+      int id, Map<String, dynamic> areaData) async {
+    return ApiService.put('project_areas/$id', areaData);
+  }
+
   Future<Map<String, dynamic>> deleteProjectArea(int id) async {
     return ApiService.delete('project_areas/$id');
   }

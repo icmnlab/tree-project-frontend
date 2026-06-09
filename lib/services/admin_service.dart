@@ -3,9 +3,8 @@ import './download_service.dart';
 
 class AdminService {
   Future<Map<String, dynamic>> backupDatabase() async {
-    // This action still triggers a direct request via ApiService
-    // to handle the backup process on the backend.
-    final response = await ApiService.post('backup', {});
+    // 後端路由為 POST /api/admin/backup（系統管理員）。
+    final response = await ApiService.post('admin/backup', {});
     return response;
   }
 }
