@@ -1361,6 +1361,12 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
         _showError('請輸入有效的數值');
         return;
       }
+      // [審計#11] DBH 合理範圍守門：0/負值與離譜大值會污染碳儲計算。
+      // 台灣最大樹王胸徑約 6m（600cm 內含緩衝），常見調查值 1–300cm。
+      if (dbh <= 0 || dbh > 600) {
+        _showError('胸徑需介於 0–600 公分之間（輸入值：$dbh）');
+        return;
+      }
 
       final submitSource = _handbook ? 'manual' : _activeDbhSource;
       _logDbh(

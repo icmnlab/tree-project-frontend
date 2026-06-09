@@ -233,6 +233,7 @@ class _TreeListPageState extends State<TreeListPage> {
         search: _searchController.text.trim(),
       );
 
+      if (!mounted) return; // [審計#22] await 期間頁面可能已被關閉
       if (response['success'] == true && response['data'] is List) {
         final batch = (response['data'] as List<dynamic>)
             .map((t) => t as Map<String, dynamic>)
@@ -256,6 +257,7 @@ class _TreeListPageState extends State<TreeListPage> {
         throw Exception('API 回應格式不正確或請求失敗');
       }
     } catch (e) {
+      if (!mounted) return; // [審計#22]
       setState(() {
         _errorMessage = '發生錯誤: $e';
         _isLoading = false;

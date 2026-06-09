@@ -763,9 +763,35 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
             _appendLog(
               '[樹 $displaySeq] 自動轉移未完成: ${tr['message'] ?? '未知'}',
             );
+            // [審計#19] 失敗不可只寫 log：明顯告警，避免調查員以為已入庫。
+            if (mounted) {
+              messenger.showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '⚠️ 樹 $displaySeq 尚未轉入正式資料庫：${tr['message'] ?? '未知原因'}\n'
+                    '資料仍保留在待測量清單，可稍後於「待測量任務」重試。',
+                  ),
+                  backgroundColor: Colors.orange.shade800,
+                  duration: const Duration(seconds: 6),
+                ),
+              );
+            }
           }
         } catch (e) {
           _appendLog('[樹 $displaySeq] 自動轉移失敗: $e');
+          // [審計#19] 同上：網路錯誤等也要浮出，資料在 pending 未遺失。
+          if (mounted) {
+            messenger.showSnackBar(
+              SnackBar(
+                content: Text(
+                  '⚠️ 樹 $displaySeq 轉移失敗（$e）\n'
+                  '量測資料已保留在待測量清單，恢復連線後可於「待測量任務」重試。',
+                ),
+                backgroundColor: Colors.orange.shade800,
+                duration: const Duration(seconds: 6),
+              ),
+            );
+          }
         }
       }
       if (!mounted) return;

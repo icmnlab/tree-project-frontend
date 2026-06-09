@@ -355,6 +355,7 @@ class _BleImportPageState extends State<BleImportPage> {
 
     // [UX] 增加短暫延遲，讓藍牙堆疊有時間釋放資源 (Android 常見問題)
     await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return; // [審計#18] 延遲期間頁面可能已被關閉
 
     setState(() {
       _isScanning = true;
