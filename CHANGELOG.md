@@ -4,6 +4,25 @@
 
 ---
 
+## (2026-06-10) — 地圖聚合改 Dart 端實作 + UX 修正
+
+### 地圖標記聚合（取代原生 ClusterManager）
+- 實機重現：plugin 原生 `ClusterManager` 在 7000+ 標記時觸發 Android `RejectedExecutionException`（每 addItem 觸發一次 re-cluster AsyncTask、塞爆 128 佇列）。
+- `lib/utils/tree_marker_cluster.dart`（新）：Dart 端網格聚合（螢幕約 80px 網格、質心座標、k 標籤、依數量分級圓點大小）；單元測試 `test/tree_marker_cluster_test.dart`（含 7000 點 <100ms 效能保險、不丟點守恆）。
+- `lib/map_page.dart`：
+  - zoom < 16 → 聚合圓點（畫布繪製數字圖示、依標籤快取）；點擊圓點 +2.5 zoom 漸進放大。
+  - zoom ≥ 16 → **一律個別標記**（保證「放大後看得到定位點」），同座標疊點沿用 spiderfy 展開；個別模式視窗外剔除 + 2000 保險絲。
+  - `onCameraIdle` 跨聚合門檻或 zoom 變化 ≥0.5 才重建（避免平移過度重繪）。
+
+### UX
+- 地圖右下「顯示所有標記」FAB：無標記/未就緒時原本靜默不動（使用者以為壞掉）→ 改 SnackBar 回饋 + log。
+- 地圖縣市/專案下拉選單：固定白底面板上釘住深色箭頭/文字（修暗色主題下白箭頭白字看不到）。
+- 邀請碼建立對話框：綁定專案改「可搜尋 + 限高捲動清單 + 已選計數」（原本 40+ 專案攤平整個對話框）。
+
+> 後端同步：`create_v2` 手動新增（智慧/快速模式）同步寫入 `tree_survey_measurements` 首筆歷次快照（survey_mode='new'），與 BLE/維護 transfer 行為一致。
+
+---
+
 ## (2026-06-10) — 多人安全 P0（前端側）+ UI 修正
 
 ### 多人安全（深度稽核 #2/#4/#8）

@@ -62,6 +62,7 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
     final selectedCodes = <String>{};
     final selectedAreas = <String>{};
     final locationsCtrl = TextEditingController();
+    String projectQuery = '';
 
     Set<String> areasForSelection() {
       final areas = <String>{};
@@ -119,7 +120,10 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
                   value: requiresApproval,
                   onChanged: (v) => setDialog(() => requiresApproval = v),
                 ),
-                const Text('綁定專案（可多選）', style: TextStyle(fontWeight: FontWeight.w600)),
+                Text(
+                  '綁定專案（可多選）${selectedCodes.isNotEmpty ? '：已選 ${selectedCodes.length} 個' : ''}',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton.icon(
@@ -139,29 +143,66 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
                     label: const Text('新增專案'),
                   ),
                 ),
-                ..._projects.map((p) {
-                  final code = p.code;
-                  return CheckboxListTile(
-                    dense: true,
-                    title: Text('${p.name} ($code)'),
-                    subtitle: p.area != null && p.area!.isNotEmpty
-                        ? Text('預設區位：${p.area}')
-                        : null,
-                    value: selectedCodes.contains(code),
-                    onChanged: (checked) {
-                      setDialog(() {
-                        if (checked == true) {
-                          selectedCodes.add(code);
-                          final a = p.area?.trim();
-                          if (a != null && a.isNotEmpty) selectedAreas.add(a);
-                        } else {
-                          selectedCodes.remove(code);
-                          final a = p.area?.trim();
-                          if (a != null) selectedAreas.remove(a);
-                        }
-                        syncLocationsToField();
-                      });
-                    },
+                // [UX] 專案多時可搜尋，清單限高可捲動（原本 40+ 專案攤平整個對話框）
+                TextField(
+                  decoration: const InputDecoration(
+                    isDense: true,
+                    prefixIcon: Icon(Icons.search, size: 18),
+                    hintText: '搜尋專案名稱或代碼',
+                  ),
+                  onChanged: (v) => setDialog(() => projectQuery = v.trim()),
+                ),
+                const SizedBox(height: 4),
+                Builder(builder: (_) {
+                  final q = projectQuery.toLowerCase();
+                  final filtered = q.isEmpty
+                      ? _projects
+                      : _projects
+                          .where((p) =>
+                              p.name.toLowerCase().contains(q) ||
+                              p.code.toLowerCase().contains(q))
+                          .toList();
+                  if (filtered.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.all(8),
+                      child: Text('沒有符合的專案',
+                          style: TextStyle(color: Colors.grey)),
+                    );
+                  }
+                  return ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 240),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      itemCount: filtered.length,
+                      itemBuilder: (_, i) {
+                        final p = filtered[i];
+                        final code = p.code;
+                        return CheckboxListTile(
+                          dense: true,
+                          title: Text('${p.name} ($code)'),
+                          subtitle: p.area != null && p.area!.isNotEmpty
+                              ? Text('預設區位：${p.area}')
+                              : null,
+                          value: selectedCodes.contains(code),
+                          onChanged: (checked) {
+                            setDialog(() {
+                              if (checked == true) {
+                                selectedCodes.add(code);
+                                final a = p.area?.trim();
+                                if (a != null && a.isNotEmpty) {
+                                  selectedAreas.add(a);
+                                }
+                              } else {
+                                selectedCodes.remove(code);
+                                final a = p.area?.trim();
+                                if (a != null) selectedAreas.remove(a);
+                              }
+                              syncLocationsToField();
+                            });
+                          },
+                        );
+                      },
+                    ),
                   );
                 }),
                 if (areasForSelection().isNotEmpty) ...[

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'dart:math';
 import 'dart:async';
+import 'dart:ui' as ui;
 import 'package:permission_handler/permission_handler.dart';
 import 'package:geolocator/geolocator.dart';
 import 'services/api_service.dart';
@@ -15,6 +16,7 @@ import 'services/v3/project_boundary_service.dart';
 import 'screens/v3/project_boundary_draw_page.dart';
 import 'tree_survey_detail_page.dart';
 import 'utils/marker_spread.dart';
+import 'utils/tree_marker_cluster.dart';
 import 'services/auth_service.dart'; // [T7] 角色權限
 import 'services/locale_service.dart';
 import 'services/location_service.dart';
@@ -55,17 +57,88 @@ class _MapPageState extends State<MapPage> with RouteAware {
   DateTime? _lastBoundaryRefresh;
   bool _mapControllerReady = false;
 
-  // [效能] 原生 marker clustering：低縮放時 SDK 將鄰近標記聚合成「N 棵」圓點，
-  // 放大才展開個別標記——業界標準做法（取代先前的視窗剔除 + 1500 硬上限）。
-  // _maxRenderedMarkers 僅為極端資料量的保險絲。
-  static const int _maxRenderedMarkers = 10000;
+  // [效能] Dart 端 marker 聚合：zoom < 門檻時聚合成「N 棵」圓點、點擊放大展開；
+  // zoom ≥ 門檻一律顯示個別標記（保證放大後看得到定位點）。
+  // 不用 plugin 原生 ClusterManager：7000+ 標記會觸發其 Android 端
+  // RejectedExecutionException（每 addItem 觸發一次 re-cluster AsyncTask）。
+  static const double _clusterZoomThreshold = 16.0;
+  static const int _clusterMinCount = 200; // 低於此數直接畫個別點，不聚合
+  static const int _maxIndividualMarkers = 2000; // 個別模式保險絲
+  double _currentZoom = 7;
+  LatLngBounds? _visibleBounds;
   bool _markerCapExceeded = false;
+  final Map<String, BitmapDescriptor> _clusterIconCache = {};
 
-  late final ClusterManager _treeClusterManager = ClusterManager(
-    clusterManagerId: const ClusterManagerId('tree_clusters'),
-    onClusterTap: (cluster) =>
-        _safeAnimateCamera(CameraUpdate.newLatLngBounds(cluster.bounds, 60)),
-  );
+  bool _inVisibleBounds(double lat, double lng) {
+    final b = _visibleBounds;
+    if (b == null) return true;
+    final sw = b.southwest;
+    final ne = b.northeast;
+    final latOk = lat >= sw.latitude && lat <= ne.latitude;
+    final lngOk = sw.longitude <= ne.longitude
+        ? (lng >= sw.longitude && lng <= ne.longitude)
+        : (lng >= sw.longitude || lng <= ne.longitude); // 跨 ±180 保險
+    return latOk && lngOk;
+  }
+
+  Future<void> _onCameraIdle() async {
+    final controller = _controller;
+    if (controller == null || !_mapControllerReady) return;
+    double zoom;
+    try {
+      zoom = await controller.getZoomLevel();
+      _visibleBounds = await controller.getVisibleRegion();
+    } catch (_) {
+      return;
+    }
+    // zoom 跨越聚合門檻或顯著改變時重建（避免每次輕微平移都重繪）
+    final crossedThreshold =
+        (zoom < _clusterZoomThreshold) != (_currentZoom < _clusterZoomThreshold);
+    final zoomChanged = (zoom - _currentZoom).abs() >= 0.5;
+    _currentZoom = zoom;
+    if (crossedThreshold || zoomChanged || zoom >= _clusterZoomThreshold) {
+      _updateMarkersFromCache();
+    }
+  }
+
+  /// 產生「N 棵」聚合圓點圖示（畫布繪製 + 依標籤快取）
+  Future<BitmapDescriptor> _clusterIcon(int count) async {
+    final label = clusterLabel(count);
+    final cached = _clusterIconCache[label];
+    if (cached != null) return cached;
+
+    final dpr = MediaQuery.maybeOf(context)?.devicePixelRatio ?? 2.0;
+    final logicalDiameter = clusterDiameter(count);
+    final d = logicalDiameter * dpr;
+    final r = d / 2;
+
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    canvas.drawCircle(Offset(r, r), r, Paint()..color = Colors.white);
+    canvas.drawCircle(
+        Offset(r, r), r - 2 * dpr, Paint()..color = const Color(0xFF2E7D32));
+    final tp = TextPainter(
+      text: TextSpan(
+        text: label,
+        style: TextStyle(
+          fontSize: d * 0.30,
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+    tp.paint(canvas, Offset(r - tp.width / 2, r - tp.height / 2));
+
+    final image = await recorder.endRecording().toImage(d.toInt(), d.toInt());
+    final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+    final icon = BitmapDescriptor.bytes(
+      bytes!.buffer.asUint8List(),
+      imagePixelRatio: dpr,
+    );
+    _clusterIconCache[label] = icon;
+    return icon;
+  }
   
   void _mapLog(String message) {
     debugPrint('[MapPage] $message');
@@ -646,7 +719,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
   }
 
   // 後端已依 city 參數篩選；前端再對專案／縣市做一次防禦性過濾（避免快取混用）
-  void _updateMarkersFromCache() {
+  Future<void> _updateMarkersFromCache() async {
     if (_cachedTreeData.isEmpty) {
       _safeSetState(() => _markers.clear());
       _updateBoundaryPolygons();
@@ -663,58 +736,104 @@ class _MapPageState extends State<MapPage> with RouteAware {
       return true;
     }).toList();
 
-    final markers = <Marker>{};
-    // [疊點展開] 同座標多棵樹時，自第 2 棵起以小圓環展開（否則只看得到最上層）。
-    final seenCoords = <String, int>{};
-    int rendered = 0;
+    // 解析座標一次，後續聚合／個別模式共用
+    final points = <({double lat, double lng, Map<String, dynamic> tree})>[];
     for (final tree in trees) {
-      if (rendered >= _maxRenderedMarkers) break;
-      try {
-        final y = double.tryParse(tree['Y坐標']?.toString() ?? '0') ?? 0.0;
-        final x = double.tryParse(tree['X坐標']?.toString() ?? '0') ?? 0.0;
-        if (y == 0.0 || x == 0.0) continue;
+      final y = double.tryParse(tree['Y坐標']?.toString() ?? '0') ?? 0.0;
+      final x = double.tryParse(tree['X坐標']?.toString() ?? '0') ?? 0.0;
+      if (y == 0.0 || x == 0.0) continue;
+      points.add((lat: y, lng: x, tree: tree));
+    }
 
-        final projectName = tree['專案名稱'] ?? '未知專案';
-        final areaName = tree['專案區位'] ?? '未知區位';
-        // 確保 MarkerId 唯一，避免覆蓋
-        final markerId = '${tree['id']}_${x}_$y';
-        final pos = nextSpreadPoint(seenCoords, y, x);
+    final useClusters =
+        points.length > _clusterMinCount && _currentZoom < _clusterZoomThreshold;
+    final markers = <Marker>{};
+    bool capExceeded = false;
 
-        markers.add(Marker(
-          markerId: MarkerId(markerId),
-          // [效能] 交給原生 ClusterManager 聚合，低縮放只畫聚合圓點
-          clusterManagerId: _treeClusterManager.clusterManagerId,
-          position: LatLng(pos.lat, pos.lng),
-          infoWindow: InfoWindow(
-            title: tree['樹種名稱'] ?? '未知樹種',
-            snippet: '專案：$projectName\n區位：$areaName',
-            onTap: () => _openTreeDetail(tree),
-          ),
-          onTap: () => _showTreeMarkerSheet(tree),
-        ));
-        rendered++;
-      } catch (e) {
-        continue;
+    if (useClusters) {
+      final clusters = gridCluster<({double lat, double lng, Map<String, dynamic> tree})>(
+        points,
+        _currentZoom,
+        latOf: (p) => p.lat,
+        lngOf: (p) => p.lng,
+      );
+      for (final c in clusters) {
+        if (c.isSingle) {
+          markers.add(_buildTreeMarker(c.members.first.tree, c.lat, c.lng));
+        } else {
+          final icon = await _clusterIcon(c.count);
+          if (!mounted) return;
+          final target = LatLng(c.lat, c.lng);
+          markers.add(Marker(
+            markerId: MarkerId('cluster_${c.lat}_${c.lng}_${c.count}'),
+            position: target,
+            icon: icon,
+            anchor: const Offset(0.5, 0.5),
+            consumeTapEvents: true,
+            onTap: () {
+              final nextZoom =
+                  min(_currentZoom + 2.5, _clusterZoomThreshold + 0.5);
+              _safeAnimateCamera(CameraUpdate.newLatLngZoom(target, nextZoom));
+            },
+          ));
+        }
       }
+      _mapLog(
+          'markers: cluster mode zoom=${_currentZoom.toStringAsFixed(1)} pts=${points.length} clusters=${clusters.length}');
+    } else {
+      // 個別模式：高縮放或少量點。視窗外的點不畫（高縮放時視窗必然小）。
+      // [疊點展開] 同座標多棵樹時，自第 2 棵起以小圓環展開（否則只看得到最上層）。
+      final seenCoords = <String, int>{};
+      int rendered = 0;
+      final cullByBounds =
+          points.length > _maxIndividualMarkers && _visibleBounds != null;
+      for (final p in points) {
+        if (rendered >= _maxIndividualMarkers) {
+          capExceeded = true;
+          break;
+        }
+        if (cullByBounds && !_inVisibleBounds(p.lat, p.lng)) continue;
+        final pos = nextSpreadPoint(seenCoords, p.lat, p.lng);
+        markers.add(_buildTreeMarker(p.tree, pos.lat, pos.lng));
+        rendered++;
+      }
+      _mapLog(
+          'markers: individual mode zoom=${_currentZoom.toStringAsFixed(1)} pts=${points.length} rendered=$rendered');
     }
 
     _safeSetState(() {
       _markers.clear();
       _markers.addAll(markers);
-      _markerCapExceeded = rendered >= _maxRenderedMarkers;
+      _markerCapExceeded = capExceeded;
     });
 
     _updateBoundaryPolygons();
 
     if (_fitBoundsOnNextMarkerUpdate &&
-        _markers.isNotEmpty &&
+        points.isNotEmpty &&
         _controller != null &&
         mounted) {
       _fitBoundsOnNextMarkerUpdate = false;
       Future.delayed(const Duration(milliseconds: 200), () {
-        if (mounted) _zoomToMarkers();
+        if (mounted) _zoomToPoints(points);
       });
     }
+  }
+
+  Marker _buildTreeMarker(Map<String, dynamic> tree, double lat, double lng) {
+    final projectName = tree['專案名稱'] ?? '未知專案';
+    final areaName = tree['專案區位'] ?? '未知區位';
+    return Marker(
+      // 確保 MarkerId 唯一，避免覆蓋
+      markerId: MarkerId('${tree['id']}_${lng}_$lat'),
+      position: LatLng(lat, lng),
+      infoWindow: InfoWindow(
+        title: tree['樹種名稱'] ?? '未知樹種',
+        snippet: '專案：$projectName\n區位：$areaName',
+        onTap: () => _openTreeDetail(tree),
+      ),
+      onTap: () => _showTreeMarkerSheet(tree),
+    );
   }
 
   /// 點地圖標記後彈出摘要卡（下鑽閉環：地圖 → 摘要 → 詳情）。
@@ -868,8 +987,45 @@ class _MapPageState extends State<MapPage> with RouteAware {
   // 縣市判斷統一在後端 utils/county.resolveAreaCity (座標優先 + areaName fallback)，
   // 透過 /tree_survey/map 回應的 _city 欄位帶到前端，不再有兩套不一致的邏輯。
 
+  /// 以「全部資料點」為準調整視野（cluster 模式下 _markers 只是聚合圓點）
+  void _zoomToPoints(
+      List<({double lat, double lng, Map<String, dynamic> tree})> points) {
+    if (points.isEmpty || _controller == null) return;
+    double minLat = points.first.lat, maxLat = points.first.lat;
+    double minLng = points.first.lng, maxLng = points.first.lng;
+    for (final p in points) {
+      minLat = min(minLat, p.lat);
+      maxLat = max(maxLat, p.lat);
+      minLng = min(minLng, p.lng);
+      maxLng = max(maxLng, p.lng);
+    }
+    _safeAnimateCamera(CameraUpdate.newLatLngBounds(
+      LatLngBounds(
+        southwest: LatLng(minLat, minLng),
+        northeast: LatLng(maxLat, maxLng),
+      ),
+      50,
+    ));
+  }
+
   void _zoomToMarkers() {
-    if (_markers.isEmpty || _controller == null) return;
+    // [UX] 原本空集合/未就緒時靜默 return，使用者會覺得「按了沒反應」——改給明確回饋
+    if (_markers.isEmpty) {
+      _mapLog('zoomToMarkers: no markers');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('目前沒有可顯示的樹木標記（請確認篩選條件）'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+    if (_controller == null || !_mapControllerReady) {
+      _mapLog('zoomToMarkers: controller not ready');
+      return;
+    }
 
     double minLat = _markers.first.position.latitude;
     double maxLat = _markers.first.position.latitude;
@@ -888,6 +1044,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
       northeast: LatLng(maxLat, maxLng),
     );
 
+    _mapLog('zoomToMarkers: fit ${_markers.length} markers');
     _safeAnimateCamera(CameraUpdate.newLatLngBounds(bounds, 50));
   }
 
@@ -1109,7 +1266,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
         children: [
           GoogleMap(
             onMapCreated: _onMapCreated,
-            clusterManagers: <ClusterManager>{_treeClusterManager},
+            onCameraIdle: _onCameraIdle,
             initialCameraPosition: CameraPosition(
               target: _currentPosition != null
                   ? LatLng(_currentPosition!.latitude, _currentPosition!.longitude)
@@ -1149,7 +1306,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Text(
-                      '資料量超過 10000 筆，僅顯示部分標記；請用篩選縮小範圍',
+                      '此視野標記過多，僅顯示部分；請放大地圖或用篩選縮小範圍',
                       style: TextStyle(color: Colors.white, fontSize: 12),
                     ),
                   ),
@@ -1259,6 +1416,10 @@ class _MapPageState extends State<MapPage> with RouteAware {
                           child: DropdownButton<String>(
                             isExpanded: true,
                             value: _selectedCity,
+                            // 面板為固定白底；釘住前景色避免暗色主題下白箭頭/白字看不到
+                            iconEnabledColor: Colors.grey.shade700,
+                            style: const TextStyle(color: Colors.black87, fontSize: 16),
+                            dropdownColor: Colors.white,
                             underline: Container(height: 1, color: Colors.grey.shade300),
                             items: _cities.map((city) {
                               return DropdownMenuItem<String>(
@@ -1318,6 +1479,10 @@ class _MapPageState extends State<MapPage> with RouteAware {
                             value: _filteredProjects.contains(_selectedProject)
                                 ? _selectedProject
                                 : '全部',
+                            // 面板為固定白底；釘住前景色避免暗色主題下白箭頭/白字看不到
+                            iconEnabledColor: Colors.grey.shade700,
+                            style: const TextStyle(color: Colors.black87, fontSize: 16),
+                            dropdownColor: Colors.white,
                             underline: Container(height: 1, color: Colors.grey.shade300),
                             items: _filteredProjects.map((project) {
                               return DropdownMenuItem<String>(
