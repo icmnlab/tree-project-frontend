@@ -18,6 +18,7 @@ import '../config/app_config.dart';
 import '../constants/colors.dart';
 import '../themes/app_theme.dart';
 import '../widgets/network_aware_widgets.dart';
+import '../widgets/tree_search_delegate.dart';
 
 /// 首頁 - 極簡現代化設計 v2.0
 /// 
@@ -648,7 +649,41 @@ class _DashboardPageState extends State<DashboardPage>
               color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
             ),
           ),
+          const SizedBox(height: 16),
+          _buildSearchBar(isDark),
         ],
+      ),
+    );
+  }
+
+  /// 全域搜尋入口：點擊開啟 SearchDelegate，可用編號/樹種/專案查詢並直達詳情。
+  Widget _buildSearchBar(bool isDark) {
+    return GestureDetector(
+      onTap: () => showSearch(context: context, delegate: TreeSearchDelegate()),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkSurfaceLighter : AppColors.neutral100,
+          borderRadius: BorderRadius.circular(AppTheme.radiusMD),
+        ),
+        child: Row(
+          children: [
+            Icon(Icons.search,
+                size: 20,
+                color:
+                    Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5)),
+            const SizedBox(width: 10),
+            Text(
+              _l10n('search_tree_hint'),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: Theme.of(context)
+                        .colorScheme
+                        .onSurface
+                        .withValues(alpha: 0.5),
+                  ),
+            ),
+          ],
+        ),
       ),
     );
   }
