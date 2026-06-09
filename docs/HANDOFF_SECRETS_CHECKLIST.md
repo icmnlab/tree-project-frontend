@@ -28,6 +28,8 @@
 
 ## B. 必須「改成自己主機」的個人化網址 / IP
 
+> ✅ **2026-06-10 更新**：程式碼層已去個人化——`app_config.defaultBaseUrl` 預設空字串、`main.dart` 自簽信任清單移除硬編碼 IP，兩者改由建置時 `--dart-define` 提供（`API_BASE_URL`、`SELF_SIGNED_TRUSTED_HOSTS`）。下表「目前值」已非硬編碼，接手者只需於建置/部署時提供自己的值。
+
 | 位置 | 目前值（原作者） | 交接時改成 |
 |------|------------------|------------|
 | `frontend/lib/config/app_config.dart` → `defaultBaseUrl` | `https://<TAILSCALE_HOST>/api` | 接手者後端網址；或清空，改用 `--dart-define=API_BASE_URL=...` |
@@ -46,7 +48,7 @@
 | GitHub repo | `<GITHUB_OWNER>/tree-project-backend`、`tree-project-frontend` | 轉移所有權或 fork 到接手者帳號，更新 remote 與 webhook |
 | Tailscale tailnet | `<GITHUB_OWNER>@` | 接手者建立自己的 tailnet 或建立專用帳號 |
 | 伺服器 Linux 帳號 | `<SERVER_USER>@`（Ubuntu） | 建立接手者帳號與 SSH 公鑰 |
-| 種子使用者 | `backend/database/initial_data/users.pg.sql` 內含真實姓名 + bcrypt | 全新部署請改用新的管理員種子帳密 |
+| 種子使用者 | `backend/database/initial_data/users.pg.sql`（✅ 2026-06-10 已移除真人姓名帳號，僅留 `admin`/`test`/`tt2` 通用帳號） | 全新部署請**改掉預設 `admin` 密碼**或改用部署腳本建立新管理員帳密 |
 
 ---
 
