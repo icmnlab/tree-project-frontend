@@ -1566,7 +1566,9 @@ class _BleImportPageState extends State<BleImportPage> {
     if (lat == null || lon == null || lat == 0 || lon == 0) return null;
 
     final metadata = rec['metadata'] as Map<String, dynamic>? ?? {};
-    final gpsSource = metadata['gps_source']?.toString() ?? 'surveyor';
+    // 預設與 pending_measurement_service 對齊（2026-05-28 會議：座標一律樹位）。
+    // 缺 gps_source 時視為樹位、不再用 HD/AZ 偏移，避免兩處預設相反造成樹位被誤偏移。
+    final gpsSource = metadata['gps_source']?.toString() ?? 'tree';
     if (gpsSource == 'tree') {
       return (lat: lat, lon: lon);
     }

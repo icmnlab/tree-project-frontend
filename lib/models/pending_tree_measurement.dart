@@ -118,7 +118,10 @@ class PendingTreeMeasurement {
     if (source == 'tree' || source == 'surveyor' || source == 'mixed_pending') {
       return source!;
     }
-    return 'surveyor';
+    // 缺值預設 'tree'：對齊 2026-05-28 會議決議「一律樹木位置」與
+    // pending_measurement_service 的處理預設，避免三處預設不一致導致同一筆
+    // 資料在「計算位置」與「導航顯示」走不同分支而被多偏移一次。
+    return 'tree';
   }
 
   bool get isTreeGpsSource => gpsSource == 'tree';
