@@ -3,7 +3,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
 import '../services/theme_service.dart';
-import '../tree_survey_page.dart';
 import '../tree_list_page.dart';
 import 'ble_import_page.dart';
 import 'ble_live_session_page.dart';
@@ -56,9 +55,11 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  // 底部導覽 2 頁：首頁 / 樹木列表。
+  // 「樹木調查」與列表功能重疊（0d-A 盤點結論），分頁已移除；
+  // TreeSurveyPage 保留供「專案/區位下鑽」與首頁卡片使用。
   final List<Widget> _pages = [
     const DashboardPage(),
-    const TreeSurveyPage(),
     const TreeListPage(),
   ];
 
@@ -135,11 +136,6 @@ class _HomePageState extends State<HomePage> {
               icon: const Icon(Icons.dashboard_outlined),
               selectedIcon: Icon(Icons.dashboard_rounded, color: primary),
               label: LocaleService.instance.t('nav_home'),
-            ),
-            NavigationDestination(
-              icon: const Icon(Icons.folder_outlined),
-              selectedIcon: Icon(Icons.folder_rounded, color: primary),
-              label: LocaleService.instance.t('nav_projects'),
             ),
             NavigationDestination(
               icon: const Icon(Icons.park_outlined),
