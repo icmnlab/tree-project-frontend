@@ -587,7 +587,10 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
                 ),
                 border: const OutlineInputBorder(),
                 filled: true,
-                fillColor: Colors.teal.shade50,
+                // 暗色模式用深青色底，否則白色箭頭/文字落在淺青底上會看不到
+                fillColor: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.teal.shade900
+                    : Colors.teal.shade50,
               ),
             ),
             const SizedBox(height: 12),
@@ -603,7 +606,10 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
                 ),
                 border: const OutlineInputBorder(),
                 filled: true,
-                fillColor: Colors.teal.shade50,
+                // 暗色模式用深青色底，否則白色箭頭/文字落在淺青底上會看不到
+                fillColor: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.teal.shade900
+                    : Colors.teal.shade50,
               ),
             ),
             const SizedBox(height: 8),

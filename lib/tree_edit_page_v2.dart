@@ -705,7 +705,10 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
                   borderSide: BorderSide(color: Colors.teal.shade600, width: 2),
                 ),
                 filled: true,
-                fillColor: Colors.teal.shade50,
+                // 暗色模式用深青色底，否則白色箭頭/文字落在淺青底上會看不到
+                fillColor: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.teal.shade900
+                    : Colors.teal.shade50,
               ),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
             ),
@@ -864,7 +867,10 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
               borderSide: const BorderSide(color: Colors.teal),
             ),
             filled: true,
-            fillColor: Colors.teal.shade50,
+            // 暗色模式用深青色底，否則白色箭頭/文字落在淺青底上會看不到
+            fillColor: Theme.of(context).brightness == Brightness.dark
+                ? Colors.teal.shade900
+                : Colors.teal.shade50,
           ),
           onChanged: (value) {
             setState(() {});
@@ -1056,7 +1062,10 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
             ),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
-            fillColor: Colors.teal.shade50,
+            // 暗色模式用深青色底，否則白色箭頭/文字落在淺青底上會看不到
+            fillColor: Theme.of(context).brightness == Brightness.dark
+                ? Colors.teal.shade900
+                : Colors.teal.shade50,
           ),
           validator: (value) => value?.isEmpty ?? true ? '請選擇專案區位' : null,
         ),
@@ -1190,7 +1199,10 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
             ),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
-            fillColor: Colors.teal.shade50,
+            // 暗色模式用深青色底，否則白色箭頭/文字落在淺青底上會看不到
+            fillColor: Theme.of(context).brightness == Brightness.dark
+                ? Colors.teal.shade900
+                : Colors.teal.shade50,
           ),
           validator: (value) => value?.isEmpty ?? true ? '請選擇專案名稱' : null,
         ),

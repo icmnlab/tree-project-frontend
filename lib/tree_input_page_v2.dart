@@ -713,7 +713,10 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
               borderSide: const BorderSide(color: Colors.teal),
             ),
             filled: true,
-            fillColor: Colors.teal.shade50,
+            // 暗色模式用深青色底，否則白色箭頭/文字落在淺青底上會看不到
+            fillColor: Theme.of(context).brightness == Brightness.dark
+                ? Colors.teal.shade900
+                : Colors.teal.shade50,
             suffixIcon: statusController.text.isNotEmpty
                 ? IconButton(
                     icon: const Icon(Icons.clear),
@@ -1437,7 +1440,10 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
             ),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
-            fillColor: Colors.teal.shade50,
+            // 暗色模式用深青色底，否則白色箭頭/文字落在淺青底上會看不到
+            fillColor: Theme.of(context).brightness == Brightness.dark
+                ? Colors.teal.shade900
+                : Colors.teal.shade50,
           ),
           validator: (value) => value?.isEmpty ?? true ? '請選擇專案區位' : null,
         ),
@@ -1463,7 +1469,10 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
             ),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
             filled: true,
-            fillColor: Colors.teal.shade50,
+            // 暗色模式用深青色底，否則白色箭頭/文字落在淺青底上會看不到
+            fillColor: Theme.of(context).brightness == Brightness.dark
+                ? Colors.teal.shade900
+                : Colors.teal.shade50,
           ),
           validator: (value) => value?.isEmpty ?? true ? '請選擇專案名稱' : null,
         ),

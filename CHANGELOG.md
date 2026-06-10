@@ -21,6 +21,9 @@
 
 > 後端同步：`create_v2` 手動新增（智慧/快速模式）同步寫入 `tree_survey_measurements` 首筆歷次快照（survey_mode='new'），與 BLE/維護 transfer 行為一致。
 
+### 暗色模式：專案/區選擇欄位配色
+- `field_session_setup.dart`、`tree_edit_page_v2.dart`、`tree_input_page_v2.dart` 共 8 處欄位：`fillColor` 原寫死淺青 `teal.shade50`，暗色主題下白色箭頭/輸入文字落在淺底上看不到 → 改依主題切換（暗色用 `teal.shade900`）。
+
 ### 導覽簡化（0d-A 拍板執行）
 - 底部導覽 3→2 頁：移除「調查」分頁（與「列表」職責重疊、列表能力為超集）。
 - `tree_survey_page.dart` 程式碼保留：仍服務專案/區位下鑽與首頁「樹木調查」卡片（手動新增入口）。
