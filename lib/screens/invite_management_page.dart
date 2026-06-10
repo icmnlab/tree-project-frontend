@@ -61,7 +61,6 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
     bool requiresApproval = true;
     final selectedCodes = <String>{};
     final selectedAreas = <String>{};
-    final locationsCtrl = TextEditingController();
     String projectQuery = '';
 
     Set<String> areasForSelection() {
@@ -72,10 +71,6 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
         if (a != null && a.isNotEmpty) areas.add(a);
       }
       return areas;
-    }
-
-    void syncLocationsToField() {
-      locationsCtrl.text = selectedAreas.join(', ');
     }
 
     final created = await showDialog<bool>(
@@ -135,7 +130,6 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
                           selectedCodes.add(createdProj.code);
                           final a = createdProj.area?.trim();
                           if (a != null && a.isNotEmpty) selectedAreas.add(a);
-                          syncLocationsToField();
                         });
                       }
                     },
@@ -197,7 +191,6 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
                                 final a = p.area?.trim();
                                 if (a != null) selectedAreas.remove(a);
                               }
-                              syncLocationsToField();
                             });
                           },
                         );
@@ -205,13 +198,15 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
                     ),
                   );
                 }),
+                // [UX] 區位由勾選的專案自動帶出，僅作管理紀錄用標籤；
+                // 原本另有一個「逗號分隔」文字欄與 chips 雙向同步，混淆且易誤觸，已移除。
                 if (areasForSelection().isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  const Text('綁定專案區位（可多選，僅供管理紀錄）',
+                  const Text('專案區位（自動帶出，僅供管理紀錄）',
                       style: TextStyle(fontWeight: FontWeight.w600)),
                   const Text(
-                    '註：目前註冊僅套用「綁定專案」；區位欄位尚未寫入新帳號，請勿依賴此設定做權限控管。',
-                    style: TextStyle(fontSize: 12, color: Colors.orange),
+                    '註冊權限以上方「綁定專案」為準；區位僅記錄供管理員對照。',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                   Wrap(
                     spacing: 6,
@@ -228,31 +223,12 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
                             } else {
                               selectedAreas.remove(area);
                             }
-                            syncLocationsToField();
                           });
                         },
                       );
                     }).toList(),
                   ),
                 ],
-                TextField(
-                  controller: locationsCtrl,
-                  decoration: const InputDecoration(
-                    labelText: '區位備註（逗號分隔，僅存檔）',
-                    hintText: '例如：A區, B區',
-                    helperText: '尚未套用至註冊帳號，僅供管理員對照',
-                  ),
-                  onChanged: (_) {
-                    selectedAreas
-                      ..clear()
-                      ..addAll(
-                        locationsCtrl.text
-                            .split(RegExp(r'[,，]'))
-                            .map((s) => s.trim())
-                            .where((s) => s.isNotEmpty),
-                      );
-                  },
-                ),
               ],
             ),
           ),
@@ -267,18 +243,10 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
       ),
     );
 
-    final locationText = locationsCtrl.text;
-    locationsCtrl.dispose();
     if (created != true || !mounted) return;
 
     try {
-      final locations = selectedAreas.isNotEmpty
-          ? selectedAreas.toList()
-          : locationText
-              .split(RegExp(r'[,，]'))
-              .map((s) => s.trim())
-              .where((s) => s.isNotEmpty)
-              .toList();
+      final locations = selectedAreas.toList();
       final invite = await _inviteService.createInvite(
         role: role,
         maxUses: maxUses.clamp(1, 100),

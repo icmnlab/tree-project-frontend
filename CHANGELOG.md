@@ -21,6 +21,9 @@
 
 > 後端同步：`create_v2` 手動新增（智慧/快速模式）同步寫入 `tree_survey_measurements` 首筆歷次快照（survey_mode='new'），與 BLE/維護 transfer 行為一致。
 
+### 邀請碼：區位選擇簡化
+- `invite_management_page.dart`：移除「區位備註（逗號分隔）」文字欄——與區位 chips 雙向同步、易誤觸且僅供紀錄；現在區位由勾選的專案自動帶出 chips，警示文案改中性說明（權限以「綁定專案」為準）。
+
 ### 暗色模式：專案/區選擇欄位配色
 - `field_session_setup.dart`、`tree_edit_page_v2.dart`、`tree_input_page_v2.dart` 共 8 處欄位：`fillColor` 原寫死淺青 `teal.shade50`，暗色主題下白色箭頭/輸入文字落在淺底上看不到 → 改依主題切換（暗色用 `teal.shade900`）。
 
