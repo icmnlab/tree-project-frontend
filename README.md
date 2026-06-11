@@ -307,7 +307,8 @@ flutter test
 ```
 
 Unit tests live under `test/`. There is no integration_test harness in this
-repo today; manual QA is performed against the Tailscale-hosted backend.
+repo today; manual QA is performed against the self-hosted backend
+(see `docs/VERIFICATION_CHECKLIST.md`).
 
 ---
 
