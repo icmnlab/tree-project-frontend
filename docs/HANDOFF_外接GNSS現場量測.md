@@ -120,7 +120,7 @@
 
 | 路径 | 内容 |
 |------|------|
-| `docs/HANDOFF_换电脑开发.md` | **换机 clone、环境、待办** |
+| `docs/HANDOFF.md` | **交接總覽（跑起來、測試、部署）** |
 | `docs/HANDOFF_EXTERNAL_GNSS_AND_BLE.md` | 采购、接线、UUID、验收、台湾 RTK |
 | `test/vlgeo2_ble_analysis/docs/VLGEO2_GPS_SOLUTION.md` | 实测结论 |
 | `test/vlgeo2_ble_analysis/docs/EXTERNAL_GNSS_ENGINEERING.md` | Geo2 §10 对照 |

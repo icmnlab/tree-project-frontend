@@ -35,7 +35,7 @@
 | `frontend/lib/config/app_config.dart` → `defaultBaseUrl` | `https://<TAILSCALE_HOST>/api` | 接手者後端網址；或清空，改用 `--dart-define=API_BASE_URL=...` |
 | `frontend/lib/main.dart` → `SelfHostedHttpOverrides` | 信任 `<TAILSCALE_SERVER_IP>`、`<TAILSCALE_DEV_IP>`、`*.ts.net` | 移除個人 Tailscale IP；`.ts.net` 規則視新部署是否續用 Tailscale 決定保留與否 |
 | `backend/.env` → `ML_SERVICE_PUBLIC_URL` | 原作者 Tailscale / ngrok | 新 ML 主機位址 |
-| 文件中的 Tailscale 主機名 / SSH IP | `<TAILSCALE_HOST_SHORT>`、`<SERVER_USER>@<TAILSCALE_SERVER_IP>` | 新主機；見 `UBUNTU_SSH_ACCESS.md` |
+| 文件中的 Tailscale 主機名 / SSH IP | `<TAILSCALE_HOST_SHORT>`、`<SERVER_USER>@<TAILSCALE_SERVER_IP>` | 新主機；見 `LAB_DEPLOYMENT_GUIDE.md` |
 
 > 前端連線方式：`flutter run --dart-define=API_BASE_URL=https://新主機/api`（不帶則用程式內 `defaultBaseUrl`）。
 

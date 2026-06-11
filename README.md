@@ -89,7 +89,7 @@ flutter build apk --release --dart-define=ENABLE_FIELD_LOGS=true
 adb logcat -s BleLive FieldGPS Pending Maintain
 ```
 
-文件與交接索引見 [`docs/README.md`](docs/README.md)。
+文件與交接索引見 [`docs/HANDOFF.md`](docs/HANDOFF.md)。
 
 The first run takes you to `LoginPage`. After login, JWT is written to
 `flutter_secure_storage` under `auth_jwt_token`, and the user profile under
@@ -315,10 +315,10 @@ repo today; manual QA is performed against the Tailscale-hosted backend.
 
 | 對象 | 文件 |
 |------|------|
-| 接手開發 | [`docs/SYSTEM_HANDOFF_MANUAL.md`](docs/SYSTEM_HANDOFF_MANUAL.md) |
+| 接手開發 | [`docs/HANDOFF.md`](docs/HANDOFF.md) |
 | 機密備份 | [`docs/HANDOFF_SECRETS_CHECKLIST.md`](docs/HANDOFF_SECRETS_CHECKLIST.md) |
 | 現場調查員 | [`docs/FIELD_SURVEY_SOP.md`](docs/FIELD_SURVEY_SOP.md) |
-| 文件總索引 | [`docs/README.md`](docs/README.md) |
+| 文件總索引 | [`docs/HANDOFF.md`](docs/HANDOFF.md) §10 文件地圖 |
 
 本機備份至 `G:\`：`powershell -ExecutionPolicy Bypass -File scripts\handoff_backup.ps1`
 

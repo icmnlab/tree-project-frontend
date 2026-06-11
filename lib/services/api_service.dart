@@ -290,7 +290,7 @@ class ApiService {
     }
   }
 
-  /// 弱網重試時後端可依 [X-Request-Id] 去重（見 APP_PRODUCT_ROADMAP.md）
+  /// 弱網重試時後端可依 [X-Request-Id] 去重
   static String newRequestId() =>
       '${DateTime.now().millisecondsSinceEpoch}-${Random().nextInt(0x7FFFFFFF)}';
 

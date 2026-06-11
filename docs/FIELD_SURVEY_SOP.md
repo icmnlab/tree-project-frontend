@@ -2,7 +2,7 @@
 
 > **適用對象**：港區樹木現場調查員（初勘與維護量測）  
 > **版本**：2026-06-05（依 2026-05-28 會議決議）  
-> **搭配閱讀**：`MEETING_MINUTES_20260528.md`（會議背景）、`SYSTEM_HANDOFF_MANUAL.md`（技術細節，接手開發用）
+> **搭配閱讀**：`MEETING_MINUTES_20260528.md`（會議背景）、`HANDOFF.md`（技術細節，接手開發用）
 
 ---
 
@@ -217,4 +217,4 @@
 
 ---
 
-*本 SOP 以書面流程取代冗長 Live Demo；功能更新請以 APP 實際畫面為準，技術細節見 `SYSTEM_HANDOFF_MANUAL.md`。*
+*本 SOP 以書面流程取代冗長 Live Demo；功能更新請以 APP 實際畫面為準，技術細節見 `HANDOFF.md`。*

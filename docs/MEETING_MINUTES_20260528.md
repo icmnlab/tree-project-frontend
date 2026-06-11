@@ -107,7 +107,7 @@
 |------|------|
 | 本會議紀錄 | `docs/MEETING_MINUTES_20260528.md` |
 | 現場調查員操作 SOP | `docs/FIELD_SURVEY_SOP.md` |
-| 技術接手手冊 | `docs/SYSTEM_HANDOFF_MANUAL.md` |
+| 技術接手手冊 | `docs/HANDOFF.md` |
 
 ---
 

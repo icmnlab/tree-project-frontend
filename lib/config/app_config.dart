@@ -51,7 +51,7 @@ class AppConfig {
     defaultValue: false,
   );
 
-  /// 首頁隱藏但程式保留的卡片 id（見 docs/EXPERIMENTAL_FEATURES.md）
+  /// 首頁隱藏但程式保留的卡片 id（見 docs/HANDOFF.md §12 實驗性功能）
   /// 樹種辨識 (species) 為現場常用，預設保留。
   static const Set<String> experimentalDashboardCardIds = {
     'test_scan',

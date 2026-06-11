@@ -123,7 +123,7 @@ class StationService {
 
   /// 手動實現的公式計算 (用於雙重驗證或無套件時)
   ///
-  /// 參考 V3_DEVELOPMENT_PLAN.md 中的公式
+  /// 公式：球面三角學的目的地點計算（given 起點、方位角、距離）
   LatLng calculateStationPositionManual({
     required double treeLat,
     required double treeLng,

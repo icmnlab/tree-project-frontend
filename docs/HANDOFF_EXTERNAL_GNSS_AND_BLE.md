@@ -1,7 +1,7 @@
 # 交接：外接 GNSS + 現場 BLE 量測（2026-05）
 
-> 給換電腦後接手的開發者。  
-> **换机必读**：[`HANDOFF_换电脑开发.md`](HANDOFF_换电脑开发.md)  
+> 給接手的開發者。  
+> **交接總覽**：[`HANDOFF.md`](HANDOFF.md)  
 > **精简交接文案**：[`HANDOFF_外接GNSS現場量測.md`](HANDOFF_外接GNSS現場量測.md)  
 > 儀器實測結論見 `test/vlgeo2_ble_analysis/docs/`。
 
