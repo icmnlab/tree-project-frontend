@@ -13,7 +13,7 @@ VLGEO2 電腦端 GPS 驗證（依 Haglöf 硬體手冊 Rev.1 2024-04-30）
   1. 儀器：BLUETOOTH=ON, USE GPS=ON, ENABLE MEM=OFF（現場逐棵模式）
   2. Mac 藍牙開啟，VLGEO2 在範圍內
   3. 執行：
-       /Users/kyle/project_code/.venv/bin/python verify_vlgeo2_gps_ble.py
+       python verify_vlgeo2_gps_ble.py
   4. 連線成功後，在儀器上量測並按 SEND（可連續多棵）
   5. Ctrl+C 結束，查看摘要與 log 檔
 

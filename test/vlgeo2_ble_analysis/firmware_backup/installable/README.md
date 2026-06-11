@@ -55,7 +55,7 @@ Classic COM 在 Mac 上無資料；USB 與量測互斥。**可用流程：**
 ### 驗證腳本（Mac，收工後 USB）
 
 ```bash
-/Users/kyle/project_code/.venv/bin/python \
+python \
   tree-project-frontend/test/vlgeo2_ble_analysis/verify_vlgeo2_gps_usb_watch.py
 ```
 

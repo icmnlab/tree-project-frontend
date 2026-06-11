@@ -160,7 +160,7 @@ cp -R "/Volumes/VL_GEO2/DATA" "/Volumes/VL_GEO2/PRG" "/Volumes/VL_GEO2/SETTINGS"
 
 ```bash
 # 離線分析
-/Users/kyle/project_code/.venv/bin/python \
+python \
   tree-project-frontend/test/vlgeo2_ble_analysis/analyze_vlgeo_firmware.py
 
 # 可選：binwalk（若已安裝）

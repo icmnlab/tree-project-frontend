@@ -31,11 +31,11 @@
 cd tree-project-frontend/test/vlgeo2_ble_analysis
 
 # 完整排查（DTR/RTS、probe、baud、cu/tty）
-/Users/kyle/project_code/.venv/bin/python verify_vlgeo2_classic_gps.py \
+python verify_vlgeo2_classic_gps.py \
   --port /dev/cu.VLGEO2_3190_COM --diag -v --duration 30
 
 # 僅長時間監聽
-/Users/kyle/project_code/.venv/bin/python verify_vlgeo2_classic_gps.py \
+python verify_vlgeo2_classic_gps.py \
   --port /dev/cu.VLGEO2_3190_COM --duration 120 -v
 ```
 

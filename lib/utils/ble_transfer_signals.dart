@@ -5,7 +5,7 @@ class BleTransferSignals {
   /// 實機 DATA.CSV 常見 EOT（serial capture DATA_2）
   static const batchEotPrimary = [0x5A, 0xBF, 0xFB];
 
-  /// 手冊／部分韌體變體（VLGEO2_BLE_PROTOCOL.md §6）
+  /// 手冊／部分韌體變體（test/fixtures/vlgeo2/VLGEO2_BLE_PROTOCOL.md §6）
   static bool isBatchFileEot(List<int> data) {
     if (data.length != 3) return false;
     if (data[0] == batchEotPrimary[0] &&

@@ -28,7 +28,7 @@ try:
     import serial
     from serial.tools import list_ports
 except ImportError:
-    print("請安裝 pyserial: /Users/kyle/project_code/.venv/bin/pip install pyserial")
+    print("請安裝 pyserial: pip install pyserial")
     sys.exit(1)
 
 GPS_LINE = re.compile(

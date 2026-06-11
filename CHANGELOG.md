@@ -4,6 +4,16 @@
 
 ---
 
+## v18.4.0 (2026-06-11) — 交接整備：repo 清理 + 版本同步
+
+- repo 清理（研究遺留移至外部備份 `handover_backup_20260611/`）：
+  - `test/Tree_app_equipment_info/`（BLE 逆向研究約 98 檔）移出；測試所需 `DATA_2.CSV`、`VLGEO2_BLE_PROTOCOL.md` 保留於 `test/fixtures/vlgeo2/`。
+  - `test/vlgeo2_ble_analysis/` 精簡：保留 `docs/`、verify 腳本、可安裝韌體（交接文件依賴）；分析產物、raw captures、多版韌體移出。
+  - 未引用 assets 移出（ChatGPT 中間產物圖 ×3、重複 app icon ×5、mobilenet 三檔、`coa_table_6_4.json`）；`pubspec.yaml` 移除空 `assets/data/` 宣告。
+  - 死碼移出：`custom_dropdown.dart`、`species_card.dart`、`tree_species.dart`、`tipc_kp_lookup.g.dart`。
+  - 根目錄一次性腳本移出：`convert_shp.py`、`flutter_launcher_icons_android.yaml`、`devtools_options.yaml`。
+- 版本號自 18.3.2 起累積的變更（06-10 地圖聚合、06-11 詞彙互換）一併納入本版。
+
 ## (2026-06-11) — 全面詞彙互換：畫面顯示改「專案/區」
 
 依會議決定，階層詞彙全面對齊：舊「區位／專案區位」→ 畫面顯示「**專案**」（上層）；舊「專案」→ 畫面顯示「**區**」（下層）。

@@ -1,6 +1,6 @@
 /// 兩階段測量工作流程模擬測試
 /// 
-/// 此測試使用 Tree_app_equipment_info 中的實際 VLGEO2 數據來驗證：
+/// 此測試使用 test/fixtures/vlgeo2 中的實際 VLGEO2 數據來驗證：
 /// 1. 測站位置計算公式的正確性
 /// 2. 完整的兩階段工作流程
 /// 3. AR 測量模擬
@@ -316,7 +316,7 @@ Future<void> testWithRealData() async {
   print('--- 測試 3: 實際 VLGEO2 數據驗證 ---\n');
   
   // 讀取 CSV 檔案
-  final String csvPath = '../Tree_app_equipment_info/DATA_2.CSV';
+  final String csvPath = '../fixtures/vlgeo2/DATA_2.CSV';
   final File file = File(csvPath);
   
   if (!await file.exists()) {
