@@ -162,7 +162,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
         return StatefulBuilder(
           builder: (ctx2, setDialog) {
             return AlertDialog(
-              title: const Text('選擇專案（區位）'),
+              title: const Text('選擇專案'),
               content: SizedBox(
                 width: double.maxFinite,
                 child: Column(
@@ -279,7 +279,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
             {'projects': _selectedProjects});
 
         if (!projectResponse['success']) {
-          throw Exception('更新專案關聯失敗：${projectResponse['message']}');
+          throw Exception('更新區關聯失敗：${projectResponse['message']}');
         }
       } else if (response['userId'] != null) {
         final userId = response['userId'];
@@ -287,7 +287,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
             'users/$userId/projects', {'projects': _selectedProjects});
 
         if (!projectResponse['success']) {
-          throw Exception('設定專案關聯失敗：${projectResponse['message']}');
+          throw Exception('設定區關聯失敗：${projectResponse['message']}');
         }
       }
 
@@ -322,7 +322,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
           children: [
             const Expanded(
               child: Text(
-                '關聯專案',
+                '關聯區',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
             ),
@@ -334,7 +334,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
         ),
         const SizedBox(height: 4),
         Text(
-          '先選「專案（區位）」，再勾選底下的「區」。與現場設定語意一致。',
+          '先選「專案」，再勾選底下的「區」。與現場設定語意一致。',
           style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
         ),
         const SizedBox(height: 8),
@@ -343,7 +343,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
           icon: const Icon(Icons.folder_outlined),
           label: Text(
             _selectedArea == null || _selectedArea!.isEmpty
-                ? '選擇專案（區位）'
+                ? '選擇專案'
                 : '專案：$_selectedArea',
           ),
         ),
@@ -368,7 +368,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
         ],
         const SizedBox(height: 12),
         if (_selectedArea == null || _selectedArea!.isEmpty)
-          const Text('請先選擇專案（區位），再勾選要授權的區。')
+          const Text('請先選擇專案，再勾選要授權的區。')
         else if (_loadingProjects)
           const Center(child: Padding(
             padding: EdgeInsets.all(16),

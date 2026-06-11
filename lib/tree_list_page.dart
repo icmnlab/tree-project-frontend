@@ -73,6 +73,12 @@ class _TreeListPageState extends State<TreeListPage> {
   }
   String _sortBy = '樹種名稱';
   bool _isAscending = true;
+  // _sortBy 的值同時是後端資料鍵；顯示時透過 _sortLabel 轉成會議詞彙（專案/區）
+  static const Map<String, String> _sortDisplayLabels = {
+    '專案名稱': '區名稱',
+    '專案區位': '專案',
+  };
+  String _sortLabel(String key) => _sortDisplayLabels[key] ?? key;
   final List<String> _sortOptions = [
     '樹種名稱',
     '專案名稱',
@@ -311,7 +317,7 @@ class _TreeListPageState extends State<TreeListPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ..._sortOptions.map((option) => RadioListTile<String>(
-                  title: Text(option),
+                  title: Text(_sortLabel(option)),
                   value: option,
                   groupValue: _sortBy,
                   onChanged: (value) {
@@ -588,21 +594,21 @@ class _TreeListPageState extends State<TreeListPage> {
             children: [
               TextField(
                 decoration: const InputDecoration(
-                  labelText: '專案區位',
+                  labelText: '專案',
                   hintText: '留空表示不更新',
                 ),
                 onChanged: (value) => _batchUpdateData['專案區位'] = value,
               ),
               TextField(
                 decoration: const InputDecoration(
-                  labelText: '專案代碼',
+                  labelText: '區代碼',
                   hintText: '留空表示不更新',
                 ),
                 onChanged: (value) => _batchUpdateData['專案代碼'] = value,
               ),
               TextField(
                 decoration: const InputDecoration(
-                  labelText: '專案名稱',
+                  labelText: '區名稱',
                   hintText: '留空表示不更新',
                 ),
                 onChanged: (value) => _batchUpdateData['專案名稱'] = value,
@@ -937,7 +943,7 @@ class _TreeListPageState extends State<TreeListPage> {
                             Icon(Icons.sort_rounded, size: 16, color: AppColors.portBlue),
                             const SizedBox(width: 8),
                             Text(
-                              '$_sortBy (${_isAscending ? '↑' : '↓'})',
+                              '${_sortLabel(_sortBy)} (${_isAscending ? '↑' : '↓'})',
                               style: TextStyle(
                                 color: AppColors.portBlue,
                                 fontWeight: FontWeight.w600,
@@ -1205,7 +1211,7 @@ class _TreeListPageState extends State<TreeListPage> {
                                                             const SizedBox(width: 4),
                                                             Expanded(
                                                               child: Text(
-                                                                tree['專案名稱'] ?? '未知專案',
+                                                                tree['專案名稱'] ?? '未知區',
                                                                 style: TextStyle(color: textSecondary, fontSize: 13),
                                                                 overflow: TextOverflow.ellipsis,
                                                               ),
@@ -1219,7 +1225,7 @@ class _TreeListPageState extends State<TreeListPage> {
                                                             const SizedBox(width: 4),
                                                             Expanded(
                                                               child: Text(
-                                                                tree['專案區位'] ?? '未知區位',
+                                                                tree['專案區位'] ?? '未知專案',
                                                                 style: TextStyle(color: textSecondary, fontSize: 13),
                                                                 overflow: TextOverflow.ellipsis,
                                                               ),

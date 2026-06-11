@@ -380,7 +380,7 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
     if (!_canAddProject) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('新增專案需要「業務管理員」以上權限，請聯絡管理員'),
+          content: Text('新增區需要「業務管理員」以上權限，請聯絡管理員'),
         ),
       );
       return;
@@ -441,10 +441,10 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
         if (mounted) {
           final code = response['code']?.toString();
           final msg = code == 'PROJECT_REASSIGNED'
-              ? '專案「$projectName」已存在，已指派到此港區'
+              ? '區「$projectName」已存在，已指派到此港區'
               : code == 'PROJECT_ALREADY_IN_AREA'
-                  ? '專案「$projectName」已在此港區'
-                  : '專案 "$projectName" 新增成功';
+                  ? '區「$projectName」已在此港區'
+                  : '區 "$projectName" 新增成功';
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text(msg)),
           );
@@ -459,7 +459,7 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
       } else if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(response['message']?.toString() ?? '新增專案失敗'),
+            content: Text(response['message']?.toString() ?? '新增區失敗'),
           ),
         );
         if (response['code'] == 'DUPLICATE_PROJECT_NAME') {
@@ -470,7 +470,7 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('新增專案錯誤: $e')),
+          SnackBar(content: Text('新增區錯誤: $e')),
         );
       }
     }
@@ -485,11 +485,11 @@ class _FieldSessionSetupDialogState extends State<_FieldSessionSetupDialog> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        title: const Text('要繪製專案邊界嗎？'),
+        title: const Text('要繪製區邊界嗎？'),
         content: const Text(
-          '建議現在就在地圖上畫出專案範圍，'
-          '之後使用智慧模式新增樹木時可以自動匹配到此專案。\n\n'
-          '可以稍後在地圖頁手動補畫，不影響專案已建立的事實。',
+          '建議現在就在地圖上畫出區範圍，'
+          '之後使用智慧模式新增樹木時可以自動匹配到此區。\n\n'
+          '可以稍後在地圖頁手動補畫，不影響區已建立的事實。',
         ),
         actions: [
           TextButton(

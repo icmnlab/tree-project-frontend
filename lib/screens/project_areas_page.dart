@@ -123,7 +123,7 @@ class _ProjectAreasPageState extends State<ProjectAreasPage> {
 
   @override
   Widget build(BuildContext context) {
-    String title = widget.cityName != null ? '${widget.cityName}區位' : '全台專案區位';
+    String title = widget.cityName != null ? '${widget.cityName}專案' : '全台專案';
 
     // [B5]
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -168,8 +168,8 @@ class _ProjectAreasPageState extends State<ProjectAreasPage> {
                           const SizedBox(height: 16),
                           Text(
                             widget.cityName != null
-                                ? '${widget.cityName}沒有專案區位'
-                                : '目前沒有專案區位',
+                                ? '${widget.cityName}沒有專案'
+                                : '目前沒有專案',
                             style: const TextStyle(fontSize: 18),
                           ),
                         ],
@@ -274,7 +274,7 @@ class _ProjectsByAreaPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('$areaName專案'),
+        title: Text('$areaName區'),
       ),
       body: projects.isEmpty
           ? Center(
@@ -285,7 +285,7 @@ class _ProjectsByAreaPage extends StatelessWidget {
                   children: [
                     Icon(Icons.folder_off, size: 64, color: Colors.grey.shade400),
                     const SizedBox(height: 16),
-                    Text('此區位目前沒有可顯示的專案',
+                    Text('此專案目前沒有可顯示的區',
                         style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 8),
                     Text(

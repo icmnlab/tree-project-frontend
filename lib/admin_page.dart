@@ -209,13 +209,13 @@ class _AdminPageState extends State<AdminPage> {
         });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(projectsResponse['message'] ?? '無法載入專案列表')),
+          SnackBar(content: Text(projectsResponse['message'] ?? '無法載入區列表')),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('載入專案列表發生錯誤: $e')),
+          SnackBar(content: Text('載入區列表發生錯誤: $e')),
         );
       }
     } finally {
@@ -239,7 +239,7 @@ class _AdminPageState extends State<AdminPage> {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setStateDialog) {
             return AlertDialog(
-              title: const Text('選擇要匯出的專案'),
+              title: const Text('選擇要匯出的區'),
               contentPadding: const EdgeInsets.only(
                   top: 12.0, left: 0.0, right: 0.0, bottom: 0.0),
               content: SizedBox(
@@ -253,7 +253,7 @@ class _AdminPageState extends State<AdminPage> {
                         ? const Center(
                             child: Padding(
                                 padding: EdgeInsets.all(16.0),
-                                child: Text('沒有可供選擇的專案。')))
+                                child: Text('沒有可供選擇的區。')))
                         : ListView.builder(
                             shrinkWrap: true,
                             itemCount: _projectsForExport.length,
@@ -920,8 +920,8 @@ class _AdminPageState extends State<AdminPage> {
                 ElevatedButton.icon(
                   icon: const Icon(Icons.list_alt),
                   label: Text(_selectedProjectCodesForMultiExport.isEmpty
-                      ? '選擇專案 (預設全部)'
-                      : '已選擇 ${_selectedProjectCodesForMultiExport.length} 個專案'),
+                      ? '選擇區 (預設全部)'
+                      : '已選擇 ${_selectedProjectCodesForMultiExport.length} 個區'),
                   onPressed:
                       _isLoadingProjects ? null : _showProjectMultiSelectDialog,
                   style: ElevatedButton.styleFrom(
@@ -1150,7 +1150,7 @@ class _AdminPageState extends State<AdminPage> {
             // 窄螢幕時讓標題縮排避免 RenderFlex overflow
             Expanded(
               child: Text(
-                '專案管理',
+                '區管理',
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       fontWeight: FontWeight.bold,
@@ -1161,7 +1161,7 @@ class _AdminPageState extends State<AdminPage> {
             if (_canManageInvites)
               ElevatedButton.icon(
                 icon: const Icon(Icons.create_new_folder_outlined),
-                label: const Text('建立專案'),
+                label: const Text('建立區'),
                 onPressed: _showCreateProjectDialog,
               ),
             const SizedBox(width: 4),
@@ -1174,7 +1174,7 @@ class _AdminPageState extends State<AdminPage> {
         ),
         const SizedBox(height: 8),
         const Text(
-          '警告：刪除專案將會永久刪除該專案下的所有樹木調查資料，此操作無法復原。',
+          '警告：刪除區將會永久刪除該區下的所有樹木調查資料，此操作無法復原。',
           style: TextStyle(color: Colors.red, fontSize: 14),
         ),
         const SizedBox(height: 16),
@@ -1182,7 +1182,7 @@ class _AdminPageState extends State<AdminPage> {
           child: _isLoadingProjects
               ? const Center(child: CircularProgressIndicator())
               : _projectsForExport.isEmpty
-                  ? const Center(child: Text('目前沒有專案'))
+                  ? const Center(child: Text('目前沒有區'))
                   : ListView.builder(
                       itemCount: _projectsForExport.length,
                       itemBuilder: (context, index) {
@@ -1223,7 +1223,7 @@ class _AdminPageState extends State<AdminPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('載入區位清單失敗：$e'), backgroundColor: Colors.red),
+          SnackBar(content: Text('載入專案清單失敗：$e'), backgroundColor: Colors.red),
         );
       }
       return;
@@ -1231,7 +1231,7 @@ class _AdminPageState extends State<AdminPage> {
     if (!mounted) return;
     if (areas.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('尚無任何區位，請先到「專案區位」建立區位後再建立專案。')),
+        const SnackBar(content: Text('尚無任何專案，請先到「專案」建立專案後再建立區。')),
       );
       return;
     }
@@ -1246,7 +1246,7 @@ class _AdminPageState extends State<AdminPage> {
           builder: (context, setDialogState) {
             final nameEmpty = nameController.text.trim().isEmpty;
             return AlertDialog(
-              title: const Text('建立專案'),
+              title: const Text('建立區'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -1256,9 +1256,9 @@ class _AdminPageState extends State<AdminPage> {
                       controller: nameController,
                       autofocus: true,
                       decoration: InputDecoration(
-                        labelText: '專案名稱 *',
+                        labelText: '區名稱 *',
                         border: const OutlineInputBorder(),
-                        errorText: nameEmpty ? '專案名稱不能為空' : null,
+                        errorText: nameEmpty ? '區名稱不能為空' : null,
                       ),
                       onChanged: (_) => setDialogState(() {}),
                     ),
@@ -1266,7 +1266,7 @@ class _AdminPageState extends State<AdminPage> {
                     DropdownButtonFormField<String>(
                       initialValue: selectedArea,
                       decoration: const InputDecoration(
-                        labelText: '所屬區位 *',
+                        labelText: '所屬專案 *',
                         border: OutlineInputBorder(),
                       ),
                       items: areas
@@ -1313,7 +1313,7 @@ class _AdminPageState extends State<AdminPage> {
         if (resp['success'] == true) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text(resp['message']?.toString() ?? '專案已建立'),
+                content: Text(resp['message']?.toString() ?? '區已建立'),
                 backgroundColor: Colors.green),
           );
           _fetchProjectsForExport();
@@ -1346,25 +1346,25 @@ class _AdminPageState extends State<AdminPage> {
             final codeMatches =
                 codeController.text.trim() == project.code.trim();
             return AlertDialog(
-              title: const Text('確認刪除專案'),
+              title: const Text('確認刪除區'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '您確定要刪除專案 "${project.name}" (代碼: ${project.code}) 嗎？',
+                      '您確定要刪除區 "${project.name}" (代碼: ${project.code}) 嗎？',
                     ),
                     const SizedBox(height: 12),
                     const Text(
-                      '此操作將會刪除該專案下所有的樹木資料，且無法復原。',
+                      '此操作將會刪除該區下所有的樹木資料，且無法復原。',
                       style: TextStyle(
                         color: Colors.red,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 16),
-                    Text('請輸入專案代碼「${project.code}」以確認刪除：'),
+                    Text('請輸入區代碼「${project.code}」以確認刪除：'),
                     const SizedBox(height: 8),
                     TextField(
                       controller: codeController,
@@ -1416,7 +1416,7 @@ class _AdminPageState extends State<AdminPage> {
         if (response['success'] == true) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-                content: Text(response['message'] ?? '專案已刪除'),
+                content: Text(response['message'] ?? '區已刪除'),
                 backgroundColor: Colors.green),
           );
           _fetchProjectsForExport(); // Refresh list
@@ -1540,19 +1540,19 @@ class _AdminPageState extends State<AdminPage> {
                   ),
                   const NavigationRailDestination(
                     icon: Icon(Icons.folder_delete),
-                    label: Text('專案管理'),
+                    label: Text('區管理'),
                   ),
                   // [T7] 專案邊界 — 專案管理員以上
                   if (_canManageProjects)
                     const NavigationRailDestination(
                       icon: Icon(Icons.map),
-                      label: Text('專案邊界'),
+                      label: Text('區邊界'),
                     ),
                   // 專案區位管理 — 專案管理員以上
                   if (_canManageProjects)
                     const NavigationRailDestination(
                       icon: Icon(Icons.location_city),
-                      label: Text('專案區位'),
+                      label: Text('專案'),
                     ),
                   // [T7] CSV 匯入 — 業務管理員以上
                   if (_canImportCsv)

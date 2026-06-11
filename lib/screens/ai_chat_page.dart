@@ -1488,7 +1488,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
             '高雄港有多少棵樹？',
             '哪種樹碳儲存量最高？',
             '胸徑超過50公分的大樹',
-            '統計各區位的樹木數量',
+            '統計各專案的樹木數量',
           ];
 
     return Column(
@@ -1905,7 +1905,7 @@ class _AIChatPageState extends State<AIChatPage> with TickerProviderStateMixin {
       'query_tree_data': '查詢樹木資料',
       'calculate_carbon': '碳匯計算',
       'species_carbon_info': '樹種碳匯查詢',
-      'project_summary': '專案統計',
+      'project_summary': '區統計',
       'carbon_credit_estimate': '碳儲存估算',
       'fetch_allowed_url': '讀取政策網頁',
       'fetch_allowed_urls': '批次讀取網頁',

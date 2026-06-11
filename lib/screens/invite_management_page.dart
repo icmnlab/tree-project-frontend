@@ -116,7 +116,7 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
                   onChanged: (v) => setDialog(() => requiresApproval = v),
                 ),
                 Text(
-                  '綁定專案（可多選）${selectedCodes.isNotEmpty ? '：已選 ${selectedCodes.length} 個' : ''}',
+                  '綁定區（可多選）${selectedCodes.isNotEmpty ? '：已選 ${selectedCodes.length} 個' : ''}',
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
                 Align(
@@ -134,7 +134,7 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
                       }
                     },
                     icon: const Icon(Icons.add, size: 18),
-                    label: const Text('新增專案'),
+                    label: const Text('新增區'),
                   ),
                 ),
                 // [UX] 專案多時可搜尋，清單限高可捲動（原本 40+ 專案攤平整個對話框）
@@ -142,7 +142,7 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
                   decoration: const InputDecoration(
                     isDense: true,
                     prefixIcon: Icon(Icons.search, size: 18),
-                    hintText: '搜尋專案名稱或代碼',
+                    hintText: '搜尋區名稱或代碼',
                   ),
                   onChanged: (v) => setDialog(() => projectQuery = v.trim()),
                 ),
@@ -159,7 +159,7 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
                   if (filtered.isEmpty) {
                     return const Padding(
                       padding: EdgeInsets.all(8),
-                      child: Text('沒有符合的專案',
+                      child: Text('沒有符合的區',
                           style: TextStyle(color: Colors.grey)),
                     );
                   }
@@ -175,7 +175,7 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
                           dense: true,
                           title: Text('${p.name} ($code)'),
                           subtitle: p.area != null && p.area!.isNotEmpty
-                              ? Text('預設區位：${p.area}')
+                              ? Text('預設專案：${p.area}')
                               : null,
                           value: selectedCodes.contains(code),
                           onChanged: (checked) {
@@ -202,10 +202,10 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
                 // 原本另有一個「逗號分隔」文字欄與 chips 雙向同步，混淆且易誤觸，已移除。
                 if (areasForSelection().isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  const Text('專案區位（自動帶出，僅供管理紀錄）',
+                  const Text('專案（自動帶出，僅供管理紀錄）',
                       style: TextStyle(fontWeight: FontWeight.w600)),
                   const Text(
-                    '註冊權限以上方「綁定專案」為準；區位僅記錄供管理員對照。',
+                    '註冊權限以上方「綁定區」為準；專案僅記錄供管理員對照。',
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                   Wrap(
@@ -308,11 +308,11 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
       final ok = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('新增專案區位'),
+          title: const Text('新增專案'),
           content: TextField(
             controller: areaCtrl,
             decoration: const InputDecoration(
-              labelText: '區位名稱',
+              labelText: '專案名稱',
               border: OutlineInputBorder(),
             ),
           ),
@@ -333,7 +333,7 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
       try {
         final res = await _projectAreaService.addProjectArea({
           'area_name': areaName,
-          'description': '$areaName專案區位',
+          'description': '$areaName專案',
         });
         if (res['success'] == true) {
           await loadAreas(setDialog);
@@ -350,7 +350,7 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
             loadAreas(setDialog);
           }
           return AlertDialog(
-            title: const Text('新增專案'),
+            title: const Text('新增區'),
             content: SingleChildScrollView(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -359,7 +359,7 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
                   TextField(
                     controller: nameCtrl,
                     decoration: const InputDecoration(
-                      labelText: '專案名稱',
+                      labelText: '區名稱',
                       border: OutlineInputBorder(),
                     ),
                   ),
@@ -368,14 +368,14 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
                     children: [
                       const Expanded(
                         child: Text(
-                          '專案區位',
+                          '專案',
                           style: TextStyle(fontWeight: FontWeight.w600),
                         ),
                       ),
                       TextButton.icon(
                         onPressed: () => addNewArea(setDialog),
                         icon: const Icon(Icons.add, size: 18),
-                        label: const Text('新增區位'),
+                        label: const Text('新增專案'),
                       ),
                     ],
                   ),
@@ -385,13 +385,13 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
                       child: Center(child: CircularProgressIndicator()),
                     )
                   else if (areas.isEmpty)
-                    const Text('尚無區位，請先新增區位')
+                    const Text('尚無專案，請先新增專案')
                   else
                     DropdownButtonFormField<String>(
                       value: selectedArea,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
-                        hintText: '選擇既有區位',
+                        hintText: '選擇既有專案',
                       ),
                       items: areas
                           .map((a) => a['area_name']?.toString() ?? '')
@@ -486,7 +486,7 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
                         subtitle: Text(
                           '角色：${inv['role']}\n'
                           '使用：$uses · 過期：${inv['expires_at'] ?? '—'}\n'
-                          '${proj.isNotEmpty ? '專案：$proj\n' : ''}'
+                          '${proj.isNotEmpty ? '區：$proj\n' : ''}'
                           '${inv['requires_approval'] == true ? '需審核啟用 · ' : ''}'
                           '${active ? '有效' : '已停用'}',
                         ),

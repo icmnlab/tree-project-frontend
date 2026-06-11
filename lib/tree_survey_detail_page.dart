@@ -251,14 +251,14 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
               const SizedBox(height: 16),
             
             _buildInfoCard('基本資訊', [
-              _buildInfoRow('專案區位', _f('project_area', '專案區位')),
-              _buildInfoRow('專案代碼', _f('project_code', '專案代碼')),
-              _buildInfoRow('專案名稱', _f('project_name', '專案名稱')),
+              _buildInfoRow('專案', _f('project_area', '專案區位')),
+              _buildInfoRow('區代碼', _f('project_code', '專案代碼')),
+              _buildInfoRow('區名稱', _f('project_name', '專案名稱')),
             ]),
             const SizedBox(height: 16),
             _buildInfoCard('樹木編號', [
               _buildInfoRow('系統樹木', _f('system_tree_id', '系統樹木')),
-              _buildInfoRow('專案樹木（現場）', displayProjectTreeId,
+              _buildInfoRow('區樹木（現場）', displayProjectTreeId,
                   isHighlighted: true),
               if (rawProjectTreeId != displayProjectTreeId &&
                   rawProjectTreeId != '無')

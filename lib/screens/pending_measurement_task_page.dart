@@ -919,13 +919,13 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
                     const Center(child: CircularProgressIndicator())
                   else if (projects.isEmpty)
                     const Text(
-                      '無法載入專案清單，請確認網路或帳號權限。',
+                      '無法載入區清單，請確認網路或帳號權限。',
                       style: TextStyle(color: Colors.grey),
                     )
                   else
                     DropdownButtonFormField<String>(
                       decoration: const InputDecoration(
-                        labelText: '專案',
+                        labelText: '區',
                         border: OutlineInputBorder(),
                       ),
                       value: selectedCode,

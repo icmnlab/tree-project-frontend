@@ -461,7 +461,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                                 leading: Icon(Icons.info_outline,
                                     color: Colors.amber.shade900),
                                 title: const Text(
-                                  '請從「專案管理」選定專案後查看',
+                                  '請從「區管理」選定區後查看',
                                   style: TextStyle(fontWeight: FontWeight.w600),
                                 ),
                                 subtitle: Text(
@@ -712,7 +712,7 @@ class _TreeSurveyPageState extends State<TreeSurveyPage> {
                                                                   .circular(8),
                                                         ),
                                                         child: Text(
-                                                          '專案: ${_getLastPartOfId(projectTreeId)}',
+                                                          '區: ${_getLastPartOfId(projectTreeId)}',
                                                           maxLines: 1,
                                                           overflow: TextOverflow
                                                               .ellipsis,

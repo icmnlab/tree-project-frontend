@@ -104,7 +104,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
       setState(() {});
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('V3: 已根據座標自動匹配 $matchedCount 筆專案名稱'),
+          content: Text('V3: 已根據座標自動匹配 $matchedCount 筆區名稱'),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 3),
         ),
@@ -206,7 +206,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
           context: context,
           builder: (context) => AlertDialog(
             title: const Text('確定要離開嗎？'),
-            content: const Text('尚未儲存的資料將會遺失，且本次新增的臨時專案/區位將被刪除。確定要放棄匯入嗎？'),
+            content: const Text('尚未儲存的資料將會遺失，且本次新增的臨時區/專案將被刪除。確定要放棄匯入嗎？'),
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(context, false),
@@ -270,7 +270,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
   String _getTitleForStep() {
     switch (_currentStep) {
       case 0:
-        return '步驟 1/3: 預設專案設定 (V2)';
+        return '步驟 1/3: 預設區設定 (V2)';
       case 1:
         return '步驟 2/3: 數據預覽與清洗';
       case 2:
@@ -302,7 +302,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const Text(
-            '請選擇「預設」的專案歸屬',
+            '請選擇「預設」的區歸屬',
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
           ),
           const Text(
@@ -313,7 +313,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
           DropdownButtonFormField<String>(
             value: _defaultArea,
             decoration: const InputDecoration(
-              labelText: '預設專案區位',
+              labelText: '預設專案',
               border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.map),
             ),
@@ -327,7 +327,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
               const DropdownMenuItem(
                 value: '__NEW__',
                 child:
-                    Text('+ 新增專案區位...', style: TextStyle(color: Colors.blue)),
+                    Text('+ 新增專案...', style: TextStyle(color: Colors.blue)),
               ),
             ],
             onChanged: (value) {
@@ -348,7 +348,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
           DropdownButtonFormField<String>(
             value: _defaultProject,
             decoration: const InputDecoration(
-              labelText: '預設專案名稱',
+              labelText: '預設區名稱',
               border: OutlineInputBorder(),
               prefixIcon: Icon(Icons.folder),
             ),
@@ -363,7 +363,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
                 const DropdownMenuItem(
                   value: '__NEW__',
                   child:
-                      Text('+ 新增專案...', style: TextStyle(color: Colors.blue)),
+                      Text('+ 新增區...', style: TextStyle(color: Colors.blue)),
                 ),
             ],
             onChanged: (value) {
@@ -505,7 +505,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
                         Text(
                             '${item['species_name'] ?? '未選樹種'} | 狀: ${item['status']}'),
                         Text(
-                          '專案: ${item['project_name']} (${item['project_area']})',
+                          '區: ${item['project_name']} (${item['project_area']})',
                           style: TextStyle(
                               fontSize: 12, color: Colors.blueGrey[700]),
                         ),
@@ -548,13 +548,13 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
                   children: [
                     OutlinedButton.icon(
                       icon: const Icon(Icons.map, size: 16),
-                      label: const Text('區位'),
+                      label: const Text('專案'),
                       onPressed: () => _showProjectAreaSelector(),
                     ),
                     const SizedBox(width: 8),
                     OutlinedButton.icon(
                       icon: const Icon(Icons.folder, size: 16),
-                      label: const Text('專案'),
+                      label: const Text('區'),
                       onPressed: () => _showProjectSelector(),
                     ),
                     const SizedBox(width: 8),
@@ -628,7 +628,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
       if (item['project_name'] == null || item['project_name'].isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('錯誤：尚有樹木未歸屬「專案」。'), backgroundColor: Colors.red),
+              content: Text('錯誤：尚有樹木未歸屬「區」。'), backgroundColor: Colors.red),
         );
         return false;
       }
@@ -753,7 +753,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('選擇專案區位 (批量)'),
+        title: const Text('選擇專案 (批量)'),
         content: SizedBox(
           width: double.maxFinite,
           height: 300,
@@ -763,7 +763,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
               if (index == _projectAreas.length) {
                 return ListTile(
                   leading: const Icon(Icons.add, color: Colors.blue),
-                  title: const Text('新增專案區位...',
+                  title: const Text('新增專案...',
                       style: TextStyle(color: Colors.blue)),
                   onTap: () {
                     Navigator.pop(context);
@@ -803,7 +803,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
       builder: (context) {
         return StatefulBuilder(builder: (context, setStateDialog) {
           return AlertDialog(
-            title: const Text('設定歸屬專案'),
+            title: const Text('設定歸屬區'),
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -818,7 +818,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
                         .toList(),
                     const DropdownMenuItem(
                       value: '__NEW__',
-                      child: Text('+ 新增專案區位...',
+                      child: Text('+ 新增專案...',
                           style: TextStyle(color: Colors.blue)),
                     ),
                   ],
@@ -832,7 +832,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
                       });
                     }
                   },
-                  decoration: const InputDecoration(labelText: '區位'),
+                  decoration: const InputDecoration(labelText: '專案'),
                 ),
                 const SizedBox(height: 16),
                 if (tempArea != null)
@@ -862,7 +862,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
                             return ListTile(
                               leading:
                                   const Icon(Icons.add, color: Colors.blue),
-                              title: const Text('此區位尚無專案，點此新增...',
+                              title: const Text('此專案尚無區，點此新增...',
                                   style: TextStyle(color: Colors.blue)),
                               onTap: () {
                                 Navigator.pop(context);
@@ -878,7 +878,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
                                 return ListTile(
                                   leading:
                                       const Icon(Icons.add, color: Colors.blue),
-                                  title: const Text('新增專案...',
+                                  title: const Text('新增區...',
                                       style: TextStyle(color: Colors.blue)),
                                   onTap: () {
                                     Navigator.pop(context);
@@ -1205,7 +1205,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
         if (result['success'] == true) {
           totalSuccess += (result['data']['count'] as int);
         } else {
-          throw Exception('專案 $pCode 匯入失敗: ${result['message']}');
+          throw Exception('區 $pCode 匯入失敗: ${result['message']}');
         }
       }
 
@@ -1245,10 +1245,10 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('新增專案區位'),
+        title: const Text('新增專案'),
         content: TextField(
             controller: areaNameController,
-            decoration: const InputDecoration(labelText: '專案區位名稱')),
+            decoration: const InputDecoration(labelText: '專案名稱')),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context), child: const Text('取消')),
@@ -1292,7 +1292,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
           }
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('區位新增成功。請繼續新增專案。')),
+              SnackBar(content: Text('專案新增成功。請繼續新增區。')),
             );
             Future.delayed(const Duration(milliseconds: 500), () {
               if (mounted) _showAddProjectDialog(overrideArea: areaName);
@@ -1328,10 +1328,10 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('在 $targetArea 新增專案'),
+        title: Text('在 $targetArea 新增區'),
         content: TextField(
             controller: projectNameController,
-            decoration: const InputDecoration(labelText: '新專案名稱')),
+            decoration: const InputDecoration(labelText: '新區名稱')),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context), child: const Text('取消')),
@@ -1368,14 +1368,14 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
             _batchUpdateField('project_area', area);
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('已新增並套用專案: ${newProject['name']}')),
+                SnackBar(content: Text('已新增並套用區: ${newProject['name']}')),
               );
             }
           } else {
             if (mounted) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                    content: Text('專案 ${newProject['name']} 新增成功。請選取資料以套用。')),
+                    content: Text('區 ${newProject['name']} 新增成功。請選取資料以套用。')),
               );
             }
           }

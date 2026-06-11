@@ -178,7 +178,7 @@ class _DashboardPageState extends State<DashboardPage>
     // 數據管理
     {'id': 'survey', 'title': '樹木調查', 'subtitle': '新增與編輯', 'icon': 'nature', 'category': 'data', 'needsNetwork': true},
     {'id': 'map', 'title': '樹木地圖', 'subtitle': '位置分佈', 'icon': 'map', 'category': 'data', 'needsNetwork': true},
-    {'id': 'cities', 'title': '專案管理', 'subtitle': '區域管理', 'icon': 'location_city', 'category': 'data', 'needsNetwork': true},
+    {'id': 'cities', 'title': '區管理', 'subtitle': '專案管理', 'icon': 'location_city', 'category': 'data', 'needsNetwork': true},
     // 分析報告
     {'id': 'stats', 'title': '統計圖表', 'subtitle': '數據視覺化', 'icon': 'bar_chart', 'category': 'analysis', 'needsNetwork': true},
     {'id': 'report', 'title': '碳匯報告', 'subtitle': '永續分析', 'icon': 'eco', 'category': 'analysis', 'needsNetwork': true},

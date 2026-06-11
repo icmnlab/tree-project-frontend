@@ -57,13 +57,13 @@ class _AISustainabilityReportScreenState
         });
       } else {
         setState(() {
-          _error = '無法加載專案區位';
+          _error = '無法加載專案';
           _isLoadingAreas = false;
         });
       }
     } catch (e) {
       setState(() {
-        _error = '加載專案區位時發生錯誤: $e';
+        _error = '加載專案時發生錯誤: $e';
         _isLoadingAreas = false;
       });
     }
@@ -262,7 +262,7 @@ class _AISustainabilityReportScreenState
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('專案區位選擇'),
+                const Text('專案選擇'),
                 const SizedBox(height: 8),
                 Container(
                   decoration: BoxDecoration(
@@ -277,7 +277,7 @@ class _AISustainabilityReportScreenState
                       : _projectAreas.isEmpty
                           ? const Padding(
                               padding: EdgeInsets.all(16.0),
-                              child: Center(child: Text('無可用專案區位')),
+                              child: Center(child: Text('無可用專案')),
                             )
                           : Wrap(
                               children: _projectAreas.map((area) {
@@ -326,7 +326,7 @@ class _AISustainabilityReportScreenState
                       : _species.isEmpty
                           ? const Padding(
                               padding: EdgeInsets.all(16.0),
-                              child: Center(child: Text('請先選擇專案區位')),
+                              child: Center(child: Text('請先選擇專案')),
                             )
                           : Wrap(
                               children: _species.map((species) {
@@ -398,7 +398,7 @@ class _AISustainabilityReportScreenState
                       runSpacing: 8,
                       children: [
                         ..._selectedProjectAreas.map((area) => Chip(
-                              label: Text('區位: $area'),
+                              label: Text('專案: $area'),
                               onDeleted: () {
                                 setState(() {
                                   _selectedProjectAreas.remove(area);

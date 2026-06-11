@@ -7,7 +7,7 @@ import '../tree_survey_detail_page.dart';
 /// 重用後端既有搜尋（`GET /tree_survey?q=`，見 `TreeService.getAllTrees`），
 /// 不另開 API、不動既有頁面結構，純加值的瀏覽入口。
 class TreeSearchDelegate extends SearchDelegate<void> {
-  TreeSearchDelegate() : super(searchFieldLabel: '搜尋樹木（編號 / 樹種 / 專案）');
+  TreeSearchDelegate() : super(searchFieldLabel: '搜尋樹木（編號 / 樹種 / 區）');
 
   final TreeService _treeService = TreeService();
 
@@ -108,7 +108,7 @@ class _SearchHint extends StatelessWidget {
             Icon(Icons.search, size: 48, color: Colors.grey),
             SizedBox(height: 12),
             Text(
-              '輸入系統/專案編號、樹種或專案名稱開始搜尋',
+              '輸入系統/區編號、樹種或區名稱開始搜尋',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey),
             ),

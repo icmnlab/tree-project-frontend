@@ -318,7 +318,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (boundary.projectCode != null)
-              Text('專案代碼：${boundary.projectCode}'),
+              Text('區代碼：${boundary.projectCode}'),
             Text('頂點數量：${boundary.coordinates.length}'),
             Text('面積：${area.toStringAsFixed(2)} 公頃'),
           ],
@@ -363,7 +363,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
           children: [
             Icon(Icons.crop_square, color: AppColors.primary),
             SizedBox(width: 8),
-            Text('專案邊界列表'),
+            Text('區邊界列表'),
           ],
         ),
         content: SizedBox(
@@ -672,7 +672,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '標記數量過多（${data.length} 筆），可能造成地圖當機；請選縣市或專案縮小範圍',
+                '標記數量過多（${data.length} 筆），可能造成地圖當機；請選縣市或區縮小範圍',
               ),
               duration: const Duration(seconds: 5),
             ),
@@ -821,15 +821,15 @@ class _MapPageState extends State<MapPage> with RouteAware {
   }
 
   Marker _buildTreeMarker(Map<String, dynamic> tree, double lat, double lng) {
-    final projectName = tree['專案名稱'] ?? '未知專案';
-    final areaName = tree['專案區位'] ?? '未知區位';
+    final projectName = tree['專案名稱'] ?? '未知區';
+    final areaName = tree['專案區位'] ?? '未知專案';
     return Marker(
       // 確保 MarkerId 唯一，避免覆蓋
       markerId: MarkerId('${tree['id']}_${lng}_$lat'),
       position: LatLng(lat, lng),
       infoWindow: InfoWindow(
         title: tree['樹種名稱'] ?? '未知樹種',
-        snippet: '專案：$projectName\n區位：$areaName',
+        snippet: '區：$projectName\n專案：$areaName',
         onTap: () => _openTreeDetail(tree),
       ),
       onTap: () => _showTreeMarkerSheet(tree),
@@ -840,8 +840,8 @@ class _MapPageState extends State<MapPage> with RouteAware {
   void _showTreeMarkerSheet(Map<String, dynamic> tree) {
     if (!mounted) return;
     final species = tree['樹種名稱']?.toString() ?? '未知樹種';
-    final project = tree['專案名稱']?.toString() ?? '未知專案';
-    final area = tree['專案區位']?.toString() ?? '未知區位';
+    final project = tree['專案名稱']?.toString() ?? '未知區';
+    final area = tree['專案區位']?.toString() ?? '未知專案';
     final systemId = tree['系統樹木']?.toString() ?? tree['id']?.toString() ?? '—';
     final projectTreeId = tree['專案樹木']?.toString();
 
@@ -869,11 +869,11 @@ class _MapPageState extends State<MapPage> with RouteAware {
                 ],
               ),
               const SizedBox(height: 12),
-              _markerSheetRow(Icons.folder_outlined, '專案', project),
-              _markerSheetRow(Icons.place_outlined, '區位', area),
+              _markerSheetRow(Icons.folder_outlined, '區', project),
+              _markerSheetRow(Icons.place_outlined, '專案', area),
               _markerSheetRow(Icons.tag, '系統編號', systemId),
               if (projectTreeId != null && projectTreeId.isNotEmpty)
-                _markerSheetRow(Icons.numbers, '專案編號', projectTreeId),
+                _markerSheetRow(Icons.numbers, '區編號', projectTreeId),
               const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
@@ -1175,7 +1175,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
           // V3: 專案邊界控制
           PopupMenuButton<String>(
             icon: const Icon(Icons.crop_square),
-            tooltip: '專案邊界',
+            tooltip: '區邊界',
             itemBuilder: (context) => [
               PopupMenuItem(
                 value: 'toggle',
@@ -1467,7 +1467,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
                             children: [
                               Icon(Icons.folder_outlined, size: 16, color: Color(0xFF00838F)),
                               SizedBox(width: 4),
-                              Text('專案',
+                              Text('區',
                                   style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF00838F), fontSize: 13)),
                             ],
                           ),

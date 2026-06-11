@@ -71,7 +71,7 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
           // [B7 fix] 使用 project_name 查樹木（后端以 project_name 为查詢條件）
           await _fetchTrees(widget.projectName);
         } else {
-          throw Exception('專案代碼遺失');
+          throw Exception('區代碼遺失');
         }
       } else {
         final projectResultByCode =
@@ -85,13 +85,13 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
           }
           await _fetchTrees(widget.projectName);
         } else {
-          throw Exception(projectResult['message'] ?? '找不到專案');
+          throw Exception(projectResult['message'] ?? '找不到區');
         }
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = '載入專案資料失敗: $e';
+          _errorMessage = '載入區資料失敗: $e';
         });
       }
     } finally {
@@ -225,7 +225,7 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
                   ),
                 )
               : _projectInfo == null
-                  ? const Center(child: Text('找不到專案資料'))
+                  ? const Center(child: Text('找不到區資料'))
                   : SingleChildScrollView(
                       padding: const EdgeInsets.all(16.0),
                       child: Column(
@@ -355,7 +355,7 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
                                         children: [
                                           const SizedBox(height: 4),
                                           Text(
-                                              '編號: ${tree['系統樹木'] ?? '未知'} (專案: ${tree['專案樹木'] ?? '未知'})'),
+                                              '編號: ${tree['系統樹木'] ?? '未知'} (區: ${tree['專案樹木'] ?? '未知'})'),
                                           Text(
                                               '樹高: ${(tree['樹高（公尺）'] ?? 0).toString()} 公尺, 胸徑: ${(tree['胸徑（公分）'] ?? 0).toString()} 公分'),
                                         ],
@@ -450,7 +450,7 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
         children: [
           Icon(Icons.park_outlined, size: 64, color: textSecondary.withValues(alpha: 0.5)),
           const SizedBox(height: 16),
-          Text('這個專案還沒有樹木資料',
+          Text('這個區還沒有樹木資料',
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: textPrimary)),
           const SizedBox(height: 8),
           Text('點上方「新增樹木」開始第一筆調查',

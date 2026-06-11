@@ -34,7 +34,7 @@ class _ProjectAreasAdminPageState extends State<ProjectAreasAdminPage> {
       if (!mounted) return;
       setState(() => _areas = areas);
     } catch (e) {
-      if (mounted) setState(() => _error = '載入區位失敗：$e');
+      if (mounted) setState(() => _error = '載入專案失敗：$e');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -59,7 +59,7 @@ class _ProjectAreasAdminPageState extends State<ProjectAreasAdminPage> {
         'description': result['description'],
       });
       if (resp['success'] == true) {
-        _showSnack('區位「${result['area_name']}」已新增');
+        _showSnack('專案「${result['area_name']}」已新增');
         _fetchAreas();
       } else {
         _showSnack(resp['message']?.toString() ?? '新增失敗', error: true);
@@ -74,7 +74,7 @@ class _ProjectAreasAdminPageState extends State<ProjectAreasAdminPage> {
     if (result == null) return;
     final id = area['id'];
     if (id == null) {
-      _showSnack('此區位缺少 id，無法更新', error: true);
+      _showSnack('此專案缺少 id，無法更新', error: true);
       return;
     }
     try {
@@ -88,7 +88,7 @@ class _ProjectAreasAdminPageState extends State<ProjectAreasAdminPage> {
         },
       );
       if (resp['success'] == true) {
-        _showSnack('區位已更新');
+        _showSnack('專案已更新');
         _fetchAreas();
       } else {
         _showSnack(resp['message']?.toString() ?? '更新失敗', error: true);
@@ -113,7 +113,7 @@ class _ProjectAreasAdminPageState extends State<ProjectAreasAdminPage> {
           builder: (context, setDialogState) {
             final nameEmpty = nameController.text.trim().isEmpty;
             return AlertDialog(
-              title: Text(isEdit ? '編輯區位' : '新增區位'),
+              title: Text(isEdit ? '編輯專案' : '新增專案'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -122,7 +122,7 @@ class _ProjectAreasAdminPageState extends State<ProjectAreasAdminPage> {
                     if (isEdit && existing['area_code'] != null)
                       Padding(
                         padding: const EdgeInsets.only(bottom: 12),
-                        child: Text('區位代碼：${existing['area_code']}',
+                        child: Text('專案代碼：${existing['area_code']}',
                             style: const TextStyle(color: Colors.grey)),
                       ),
                     TextField(
@@ -133,10 +133,10 @@ class _ProjectAreasAdminPageState extends State<ProjectAreasAdminPage> {
                       // 指向舊名稱不一致。改名請改用「新增區位 + 搬移專案」流程。
                       readOnly: isEdit,
                       decoration: InputDecoration(
-                        labelText: isEdit ? '區位名稱（不可修改）' : '區位名稱 *',
+                        labelText: isEdit ? '專案名稱（不可修改）' : '專案名稱 *',
                         border: const OutlineInputBorder(),
                         helperText: isEdit ? '名稱建立後不可變更，僅能編輯描述' : null,
-                        errorText: (!isEdit && nameEmpty) ? '區位名稱不能為空' : null,
+                        errorText: (!isEdit && nameEmpty) ? '專案名稱不能為空' : null,
                       ),
                       onChanged: (_) => setDialogState(() {}),
                     ),
@@ -181,9 +181,9 @@ class _ProjectAreasAdminPageState extends State<ProjectAreasAdminPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('確認刪除區位'),
+        title: const Text('確認刪除專案'),
         content: Text(
-            '確定要刪除區位「${area['area_name']}」嗎？\n若仍有專案使用此區位，刪除會被拒絕。'),
+            '確定要刪除專案「${area['area_name']}」嗎？\n若仍有區使用此專案，刪除會被拒絕。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -201,14 +201,14 @@ class _ProjectAreasAdminPageState extends State<ProjectAreasAdminPage> {
 
     final id = area['id'];
     if (id == null) {
-      _showSnack('此區位缺少 id，無法刪除', error: true);
+      _showSnack('此專案缺少 id，無法刪除', error: true);
       return;
     }
     try {
       final resp = await _service
           .deleteProjectArea(id is int ? id : int.parse(id.toString()));
       if (resp['success'] == true) {
-        _showSnack('區位已刪除');
+        _showSnack('專案已刪除');
         _fetchAreas();
       } else {
         // 後端 409：仍被專案引用
@@ -234,7 +234,7 @@ class _ProjectAreasAdminPageState extends State<ProjectAreasAdminPage> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '專案區位管理',
+              '專案管理',
               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: Theme.of(context).colorScheme.primary,
@@ -250,7 +250,7 @@ class _ProjectAreasAdminPageState extends State<ProjectAreasAdminPage> {
                 const SizedBox(width: 4),
                 ElevatedButton.icon(
                   icon: const Icon(Icons.add_location_alt_outlined),
-                  label: const Text('新增區位'),
+                  label: const Text('新增專案'),
                   onPressed: _openCreateDialog,
                 ),
               ],
@@ -259,7 +259,7 @@ class _ProjectAreasAdminPageState extends State<ProjectAreasAdminPage> {
         ),
         const SizedBox(height: 8),
         const Text(
-          '區位（縣市/地區）是專案的上層分類。刪除前須先移除其下所有專案。',
+          '專案（縣市/地區）是區的上層分類。刪除前須先移除其下所有區。',
           style: TextStyle(color: Colors.grey, fontSize: 14),
         ),
         const SizedBox(height: 16),
@@ -282,7 +282,7 @@ class _ProjectAreasAdminPageState extends State<ProjectAreasAdminPage> {
                       ),
                     )
                   : _areas.isEmpty
-                      ? const Center(child: Text('目前沒有區位，請按「新增區位」建立。'))
+                      ? const Center(child: Text('目前沒有專案，請按「新增專案」建立。'))
                       : ListView.builder(
                           itemCount: _areas.length,
                           itemBuilder: (context, index) {

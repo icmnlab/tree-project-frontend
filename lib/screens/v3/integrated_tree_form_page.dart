@@ -1334,7 +1334,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
         final proceed = await showDialog<bool>(
           context: context,
           builder: (ctx) => AlertDialog(
-            title: const Text('座標在專案邊界外'),
+            title: const Text('座標在區邊界外'),
             content: Text(
               '${boundaryCheck.message}\n\n仍要提交這棵樹的測量結果嗎？',
             ),

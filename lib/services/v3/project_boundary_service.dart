@@ -348,7 +348,7 @@ class ProjectBoundaryService {
       return BoundaryValidationResult(
         isValid: true,
         hasBoundary: false,
-        message: '該專案尚未設定邊界，不受座標限制',
+        message: '該區尚未設定邊界，不受座標限制',
       );
     }
 
@@ -359,8 +359,8 @@ class ProjectBoundaryService {
       isValid: isInside,
       hasBoundary: true,
       message: isInside 
-          ? '座標在專案邊界內' 
-          : '座標不在「$projectName」的邊界內，無法加入此專案',
+          ? '座標在區邊界內' 
+          : '座標不在「$projectName」的邊界內，無法加入此區',
     );
   }
 
@@ -440,7 +440,7 @@ class ProjectBoundaryService {
     if (_cachedBoundaries.isEmpty) {
       return CoordinateMatchResult(
         matched: false,
-        reason: '尚未載入專案邊界資料',
+        reason: '尚未載入區邊界資料',
       );
     }
 
@@ -455,7 +455,7 @@ class ProjectBoundaryService {
     if (matchingBoundaries.isEmpty) {
       return CoordinateMatchResult(
         matched: false,
-        reason: '座標不在任何專案邊界內',
+        reason: '座標不在任何區邊界內',
       );
     }
 

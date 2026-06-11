@@ -1491,9 +1491,9 @@ class _BleImportPageState extends State<BleImportPage> {
       final pName = projectCounts.keys.first;
       final pInfo = projectInfo[pName]!;
       final ok = await _showSimpleAssignDialog(
-        title: '自動指派專案',
+        title: '自動指派區',
         message:
-            '全部 $total 棵樹皆位於專案【$pName】邊界內。\n區位：${pInfo['area'] ?? '（未設定）'}\n\n是否確認指派？',
+            '全部 $total 棵樹皆位於區【$pName】邊界內。\n專案：${pInfo['area'] ?? '（未設定）'}\n\n是否確認指派？',
       );
       return ok;
     }
@@ -1502,7 +1502,7 @@ class _BleImportPageState extends State<BleImportPage> {
     if (matchedCount == 0) {
       final picked = await _showManualProjectPicker(
         title: '所有樹木皆在已知邊界外',
-        message: '共 $total 棵樹未落在任何已知專案邊界內，請手動指派一個專案：',
+        message: '共 $total 棵樹未落在任何已知區邊界內，請手動指派一個區：',
       );
       if (picked == null) return false; // 使用者取消
       // picked == "__none__" 代表使用者選擇「不指派任何專案」
@@ -1899,7 +1899,7 @@ class _BleImportPageState extends State<BleImportPage> {
     return showDialog<Map<String, dynamic>>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('專案指派確認'),
+        title: const Text('區指派確認'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1913,7 +1913,7 @@ class _BleImportPageState extends State<BleImportPage> {
                 return Padding(
                   padding: const EdgeInsets.symmetric(vertical: 2),
                   child: Text(
-                    '• ${e.key}（區位：${info['area'] ?? '—'}）：${e.value} 棵',
+                    '• ${e.key}（專案：${info['area'] ?? '—'}）：${e.value} 棵',
                   ),
                 );
               }),
@@ -1940,8 +1940,8 @@ class _BleImportPageState extends State<BleImportPage> {
             onPressed: () async {
               // 全部指派至選定專案 → 二段式 dropdown
               final picked = await _showManualProjectPicker(
-                title: '選擇要指派的專案',
-                message: '所有 $total 棵樹將指派至此專案：',
+                title: '選擇要指派的區',
+                message: '所有 $total 棵樹將指派至此區：',
                 presetCandidates:
                     sortedEntries.map((e) => projectInfo[e.key]!).toList(),
               );
@@ -1954,7 +1954,7 @@ class _BleImportPageState extends State<BleImportPage> {
                 });
               }
             },
-            child: const Text('全部指派同一專案'),
+            child: const Text('全部指派同一區'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, {'kind': 'per_tree'}),
@@ -1980,7 +1980,7 @@ class _BleImportPageState extends State<BleImportPage> {
       builder: (ctx) => AlertDialog(
         title: const Text('邊界外樹木處理'),
         content: Text(
-          '有 $outsideCount 棵樹位於已知專案邊界外，要如何處理？',
+          '有 $outsideCount 棵樹位於已知區邊界外，要如何處理？',
         ),
         actions: [
           TextButton(
@@ -1998,12 +1998,12 @@ class _BleImportPageState extends State<BleImportPage> {
               'area': dominantInfo['area'],
               'name': dominantInfo['name'],
             }),
-            child: Text('併入主要專案\n($dominantName)', textAlign: TextAlign.center),
+            child: Text('併入主要區\n($dominantName)', textAlign: TextAlign.center),
           ),
           ElevatedButton(
             onPressed: () async {
               final picked = await _showManualProjectPicker(
-                title: '選擇邊界外樹木的專案',
+                title: '選擇邊界外樹木的區',
                 message: '$outsideCount 棵邊界外樹木將指派至：',
               );
               if (picked != null && ctx.mounted) {
@@ -2015,7 +2015,7 @@ class _BleImportPageState extends State<BleImportPage> {
                 });
               }
             },
-            child: const Text('挑選其他專案'),
+            child: const Text('挑選其他區'),
           ),
         ],
       ),
@@ -2034,8 +2034,8 @@ class _BleImportPageState extends State<BleImportPage> {
     if (!mounted) return false;
 
     final picked = await _showManualProjectPicker(
-      title: '尚有 ${unassigned.length} 棵未指派專案',
-      message: '批次上傳前每棵樹都必須綁定專案，請選擇要指派至：',
+      title: '尚有 ${unassigned.length} 棵未指派區',
+      message: '批次上傳前每棵樹都必須綁定區，請選擇要指派至：',
     );
     if (picked == null) return false;
     if (picked['code'] == '__none__') return false;
@@ -2356,20 +2356,20 @@ class _BleImportPageState extends State<BleImportPage> {
                   const SizedBox(height: 12),
                   if (candidates.isEmpty)
                     const Text(
-                      '（無可選擇的專案）\n'
-                      '可能原因：帳號尚未被指派專案權限，或專案清單載入失敗。\n'
-                      '可下方「新增專案」，或請業務管理員將帳號加入 user_projects。',
+                      '（無可選擇的區）\n'
+                      '可能原因：帳號尚未被指派區權限，或區清單載入失敗。\n'
+                      '可下方「新增區」，或請業務管理員將帳號加入 user_projects。',
                       style: TextStyle(color: Colors.grey, fontSize: 12),
                     ),
                   if (candidates.isNotEmpty) ...[
                     DropdownButton<String>(
                       isExpanded: true,
-                      hint: const Text('選擇專案…'),
+                      hint: const Text('選擇區…'),
                       value: selectedKey,
                       items: [
                         const DropdownMenuItem<String>(
                           value: '__none__',
-                          child: Text('— 不指派任何專案 —'),
+                          child: Text('— 不指派任何區 —'),
                         ),
                         ...candidates.map((c) {
                           final key = c['code'] ?? c['name'] ?? '';
@@ -2389,7 +2389,7 @@ class _BleImportPageState extends State<BleImportPage> {
                   const SizedBox(height: 8),
                   TextButton.icon(
                     icon: const Icon(Icons.add),
-                    label: const Text('新增專案'),
+                    label: const Text('新增區'),
                     onPressed: () async {
                       final created = await _showBleCreateProjectDialog(ctx2);
                       if (created != null) {
@@ -2444,14 +2444,14 @@ class _BleImportPageState extends State<BleImportPage> {
     final ok = await showDialog<bool>(
       context: dialogContext,
       builder: (ctx) => AlertDialog(
-        title: const Text('新增專案'),
+        title: const Text('新增區'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
               controller: nameCtrl,
               decoration: const InputDecoration(
-                labelText: '專案名稱',
+                labelText: '區名稱',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -2459,7 +2459,7 @@ class _BleImportPageState extends State<BleImportPage> {
             TextField(
               controller: areaCtrl,
               decoration: const InputDecoration(
-                labelText: '專案區位（選填）',
+                labelText: '專案（選填）',
                 border: OutlineInputBorder(),
               ),
             ),
@@ -2491,7 +2491,7 @@ class _BleImportPageState extends State<BleImportPage> {
         );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('專案「${p['name']}」已建立')),
+            SnackBar(content: Text('區「${p['name']}」已建立')),
           );
         }
         return {
@@ -2503,7 +2503,7 @@ class _BleImportPageState extends State<BleImportPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('新增專案失敗: $e')),
+          SnackBar(content: Text('新增區失敗: $e')),
         );
       }
     }

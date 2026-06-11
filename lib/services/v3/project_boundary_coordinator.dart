@@ -79,7 +79,7 @@ class ProjectBoundaryCoordinator {
         canProceed: false,
         hasBoundary: false,
         isInside: false,
-        message: '請先選擇專案',
+        message: '請先選擇區',
       );
     }
 
@@ -104,7 +104,7 @@ class ProjectBoundaryCoordinator {
             canProceed: true,
             hasBoundary: false,
             isInside: true,
-            message: '該專案尚未設定邊界（手動模式）',
+            message: '該區尚未設定邊界（手動模式）',
           );
         case BoundaryEnforcement.warnOnly:
           return BoundaryDecision(

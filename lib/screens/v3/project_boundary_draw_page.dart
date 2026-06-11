@@ -308,7 +308,7 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('專案代碼：${boundary.projectCode ?? "未設定"}'),
+            Text('區代碼：${boundary.projectCode ?? "未設定"}'),
             Text('頂點數量：${boundary.coordinates.length}'),
             Text('面積：${area.toStringAsFixed(2)} 公頃'),
             if (boundary.updatedAt != null)
@@ -358,7 +358,7 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('確認刪除'),
-        content: Text('確定要刪除「${boundary.projectName}」的邊界嗎？\n刪除後，新增樹木到此專案將不再有座標限制。'),
+        content: Text('確定要刪除「${boundary.projectName}」的邊界嗎？\n刪除後，新增樹木到此區將不再有座標限制。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -422,7 +422,7 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
   void _startDrawing() {
     if (_selectedProject == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('請先選擇專案')),
+        const SnackBar(content: Text('請先選擇區')),
       );
       return;
     }
@@ -440,7 +440,7 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
     if (_selectedProject == null) return;
     if (_currentProjectBoundary != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('此專案已有邊界，請使用「重新繪製」')),
+        const SnackBar(content: Text('此區已有邊界，請使用「重新繪製」')),
       );
       return;
     }
@@ -553,7 +553,7 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
   Future<void> _saveBoundary() async {
     if (_selectedProject == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('請先選擇專案')),
+        const SnackBar(content: Text('請先選擇區')),
       );
       return;
     }
@@ -581,7 +581,7 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
             title: const Text('⚠️ 驗證警告'),
             content: Text(
               '有 ${treesOutside.length} 棵現有樹木不在新邊界內。\n'
-              '儲存後這些樹木可能會被標記為不符合專案區域。\n\n'
+              '儲存後這些樹木可能會被標記為不符合區範圍。\n\n'
               '確定要繼續嗎？',
             ),
             actions: [
@@ -848,7 +848,7 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
   Widget _buildScaffold(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('專案邊界繪製'),
+        title: const Text('區邊界繪製'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         actions: [
@@ -909,14 +909,14 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
                           // 專案選擇
                           Row(
                             children: [
-                              const Text('專案：', style: TextStyle(fontWeight: FontWeight.bold)),
+                              const Text('區：', style: TextStyle(fontWeight: FontWeight.bold)),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: DropdownButton<String>(
                                   value: _availableProjects.contains(_selectedProject)
                                       ? _selectedProject
                                       : null,
-                                  hint: const Text('選擇專案'),
+                                  hint: const Text('選擇區'),
                                   isExpanded: true,
                                   items: _availableProjects.map((p) => DropdownMenuItem(
                                     value: p,
@@ -980,8 +980,8 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
                         children: [
                           const Text('圖例', style: TextStyle(fontWeight: FontWeight.bold)),
                           _buildLegendItem('🔴', '現有樹木'),
-                          _buildLegendItem('🟢', '其他專案邊界'),
-                          _buildLegendItem('🟠', '當前專案邊界'),
+                          _buildLegendItem('🟢', '其他區邊界'),
+                          _buildLegendItem('🟠', '當前區邊界'),
                           _buildLegendItem('🟣', '建議邊界預覽'),
                           _buildLegendItem('🔵', '繪製中'),
                         ],

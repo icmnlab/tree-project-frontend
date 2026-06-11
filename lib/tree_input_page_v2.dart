@@ -555,7 +555,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
                     if (suggestedArea.isNotEmpty) ...[
                       const SizedBox(height: 8),
                       Text(
-                        '建議的專案區位：$suggestedArea',
+                        '建議的專案：$suggestedArea',
                         style: const TextStyle(
                           color: Colors.green,
                           fontWeight: FontWeight.bold,
@@ -572,7 +572,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
                       Navigator.pop(context);
                       setState(() {
                         _isLoading = false;
-                        _locationError = '請選擇正確的專案區位或重新定位';
+                        _locationError = '請選擇正確的專案或重新定位';
                       });
                     },
                     child: const Text('取消'),
@@ -587,7 +587,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
                           _isLoading = false;
                         });
                       },
-                      child: const Text('使用建議區位'),
+                      child: const Text('使用建議專案'),
                     ),
                   TextButton(
                     onPressed: () {
@@ -752,7 +752,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
         if (_loadingCommonSpecies)
           const Center(child: CircularProgressIndicator())
         else if (_commonSpecies.isNotEmpty) ...[
-          const Text('專案常見樹種',
+          const Text('區常見樹種',
               style: TextStyle(fontSize: 14, color: Colors.grey)),
           const SizedBox(height: 8),
           Wrap(
@@ -974,7 +974,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
         return StatefulBuilder(
           builder: (context, setState) {
             return AlertDialog(
-              title: const Text('選擇專案區位'),
+              title: const Text('選擇專案'),
               content: SizedBox(
                 width: double.maxFinite,
                 child: Column(
@@ -983,7 +983,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
                     TextField(
                       controller: areaController,
                       decoration: const InputDecoration(
-                        hintText: '搜尋或新增專案區位',
+                        hintText: '搜尋或新增專案',
                         prefixIcon: Icon(Icons.search),
                       ),
                       onChanged: (value) {
@@ -1038,7 +1038,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
                     _addProjectArea(areaController.text);
                     Navigator.pop(context);
                   },
-                  child: const Text('新增區位'),
+                  child: const Text('新增專案'),
                 ),
               ],
             );
@@ -1089,7 +1089,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('專案區位新增成功')),
+            const SnackBar(content: Text('專案新增成功')),
           );
         }
       } else {
@@ -1119,7 +1119,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
   void _showProjectDialog() {
     if (projectAreaController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('請先選擇或添加專案區位')),
+        const SnackBar(content: Text('請先選擇或添加專案')),
       );
       return;
     }
@@ -1133,7 +1133,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
               title: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('選擇專案', style: TextStyle(fontSize: 20)),
+                  const Text('選擇區', style: TextStyle(fontSize: 20)),
                   IconButton(
                     icon: const Icon(Icons.add_circle_outline,
                         color: Colors.teal),
@@ -1154,14 +1154,14 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
                       child: _loadingFilteredProjects
                           ? const Center(child: CircularProgressIndicator())
                           : _filteredProjects.isEmpty
-                              ? const Center(child: Text('此區位下沒有專案，請新增專案'))
+                              ? const Center(child: Text('此專案下沒有區，請新增區'))
                               : ListView.builder(
                                   itemCount: _filteredProjects.length,
                                   itemBuilder: (context, index) {
                                     final project = _filteredProjects[index];
                                     return Card(
                                       child: ListTile(
-                                        title: Text(project['name'] ?? '未知專案'),
+                                        title: Text(project['name'] ?? '未知區'),
                                         subtitle: Text(
                                             '代碼: ${project['code'] ?? '未知'}'),
                                         onTap: () async {
@@ -1200,13 +1200,13 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('新增專案'),
+          title: const Text('新增區'),
           content: Form(
             key: addFormKey,
             child: TextFormField(
               controller: newProjectNameController,
-              decoration: const InputDecoration(labelText: '新專案名稱'),
-              validator: (value) => value!.isEmpty ? '請輸入專案名稱' : null,
+              decoration: const InputDecoration(labelText: '新區名稱'),
+              validator: (value) => value!.isEmpty ? '請輸入區名稱' : null,
             ),
           ),
           actions: [
@@ -1248,7 +1248,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
         await _updateFilteredProjects(projectAreaController.text);
         await _loadCommonSpecies();
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('專案 "$projectName" 新增成功')),
+          SnackBar(content: Text('區 "$projectName" 新增成功')),
         );
 
         // [新功能] 引導使用者立刻畫邊界
@@ -1259,7 +1259,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('新增專案時連線錯誤: $e')),
+        SnackBar(content: Text('新增區時連線錯誤: $e')),
       );
     } finally {
       setState(() => _isLoading = false);
@@ -1277,11 +1277,11 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
       context: context,
       barrierDismissible: false,
       builder: (ctx) => AlertDialog(
-        title: const Text('要繪製專案邊界嗎？'),
+        title: const Text('要繪製區邊界嗎？'),
         content: const Text(
-          '建議現在就在地圖上畫出專案範圍，'
-          '這樣之後使用智慧模式新增樹木時可以自動匹配到此專案。\n\n'
-          '可以稍後在地圖頁手動補畫，不影響專案已建立的事實。',
+          '建議現在就在地圖上畫出區範圍，'
+          '這樣之後使用智慧模式新增樹木時可以自動匹配到此區。\n\n'
+          '可以稍後在地圖頁手動補畫，不影響區已建立的事實。',
         ),
         actions: [
           TextButton(
@@ -1426,14 +1426,14 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('專案區位',
+        const Text('專案',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         TextFormField(
           controller: projectAreaController,
           readOnly: true,
           decoration: InputDecoration(
-            hintText: '請選擇專案區位',
+            hintText: '請選擇專案',
             suffixIcon: IconButton(
               icon: const Icon(Icons.arrow_drop_down),
               onPressed: _showProjectAreaDialog,
@@ -1445,7 +1445,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
                 ? Colors.teal.shade900
                 : Colors.teal.shade50,
           ),
-          validator: (value) => value?.isEmpty ?? true ? '請選擇專案區位' : null,
+          validator: (value) => value?.isEmpty ?? true ? '請選擇專案' : null,
         ),
       ],
     );
@@ -1455,14 +1455,14 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('專案名稱',
+        const Text('區名稱',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         const SizedBox(height: 8),
         TextFormField(
           controller: projectNameController,
           readOnly: true,
           decoration: InputDecoration(
-            hintText: '請選擇專案名稱',
+            hintText: '請選擇區名稱',
             suffixIcon: IconButton(
               icon: const Icon(Icons.arrow_drop_down),
               onPressed: _showProjectDialog,
@@ -1474,7 +1474,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
                 ? Colors.teal.shade900
                 : Colors.teal.shade50,
           ),
-          validator: (value) => value?.isEmpty ?? true ? '請選擇專案名稱' : null,
+          validator: (value) => value?.isEmpty ?? true ? '請選擇區名稱' : null,
         ),
       ],
     );
@@ -1540,7 +1540,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
             const SizedBox(height: 16),
             _buildProjectNameField(),
             const SizedBox(height: 16),
-            _buildTextField(projectCodeController, '專案代碼', null,
+            _buildTextField(projectCodeController, '區代碼', null,
                 readOnly: true),
             const SizedBox(height: 16),
             const Text(
@@ -1626,7 +1626,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
             context: context,
             builder: (context) => AlertDialog(
               title: const Text('確定要離開嗎？'),
-              content: const Text('尚未儲存的資料將會遺失，且本次新增的臨時專案/區位將被刪除。確定要放棄嗎？'),
+              content: const Text('尚未儲存的資料將會遺失，且本次新增的臨時區/專案將被刪除。確定要放棄嗎？'),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
