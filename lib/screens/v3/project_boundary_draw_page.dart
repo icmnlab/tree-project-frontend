@@ -695,9 +695,11 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
 
     FilePickerResult? picked;
     try {
+      // 用 FileType.any 而非 custom：部分 Android 檔案選擇器在 custom + 少見副檔名
+      //（.kml/.kmz/.geojson）下會把這些檔過濾掉，只剩圖片/音訊可選；改用 any 後
+      // 由下方在 Dart 端驗證副檔名，確保使用者一定看得到並選得到這些檔。
       picked = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['kml', 'kmz', 'geojson', 'json'],
+        type: FileType.any,
         withData: true,
       );
     } catch (e) {
@@ -707,6 +709,15 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
     if (picked == null || picked.files.isEmpty || !mounted) return;
 
     final file = picked.files.first;
+    const allowedExt = ['kml', 'kmz', 'geojson', 'json'];
+    final ext = file.name.contains('.') ? file.name.split('.').last.toLowerCase() : '';
+    if (!allowedExt.contains(ext)) {
+      _showImportErrorDialog(
+        '檔案格式不支援',
+        '請選擇 .kml / .kmz / .geojson 檔案（目前選到 ${ext.isEmpty ? '未知格式' : '.$ext'}）',
+      );
+      return;
+    }
     final bytes = file.bytes;
     if (bytes == null) {
       _showImportErrorDialog('讀取失敗', '無法讀取檔案內容');
@@ -1316,7 +1327,7 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
                         ),
                       ),
                       const SizedBox(width: 8),
-                      // 其他輸入方式：貼座標 / 匯入檔案 / (方式2 預留)
+                      // 其他輸入方式：貼座標 / 匯入 KML·GeoJSON
                       PopupMenuButton<String>(
                         icon: const Icon(Icons.more_vert),
                         tooltip: '其他輸入方式',
@@ -1344,15 +1355,6 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
                             child: ListTile(
                               leading: Icon(Icons.upload_file),
                               title: Text('匯入 KML/GeoJSON'),
-                              contentPadding: EdgeInsets.zero,
-                            ),
-                          ),
-                          PopupMenuItem(
-                            value: 'image',
-                            enabled: false,
-                            child: ListTile(
-                              leading: Icon(Icons.image),
-                              title: Text('匯入含座標圖檔（即將推出）'),
                               contentPadding: EdgeInsets.zero,
                             ),
                           ),
