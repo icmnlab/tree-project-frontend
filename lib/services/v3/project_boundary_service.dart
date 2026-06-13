@@ -11,8 +11,10 @@
 /// - BLE 批次匯入時自動匹配專案名稱
 /// - 地圖上顯示專案邊界多邊形
 
+import 'dart:convert';
 import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 import '../api_service.dart';
 
 /// 專案邊界資料模型
@@ -22,6 +24,7 @@ class ProjectBoundary {
   final String? projectCode;
   final String? projectArea;
   final List<List<double>> coordinates; // [[lat, lng], ...]
+  final String? source; // draw|coords|kml|geojson|suggest
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
@@ -31,6 +34,7 @@ class ProjectBoundary {
     this.projectCode,
     this.projectArea,
     required this.coordinates,
+    this.source,
     this.createdAt,
     this.updatedAt,
   });
@@ -58,6 +62,7 @@ class ProjectBoundary {
       projectCode: json['project_code'] as String?,
       projectArea: json['project_area'] as String?,
       coordinates: coords,
+      source: json['source'] as String?,
       createdAt: json['created_at'] != null 
           ? DateTime.tryParse(json['created_at']) 
           : null,
@@ -73,7 +78,56 @@ class ProjectBoundary {
       'projectCode': projectCode,
       'projectArea': projectArea,
       'coordinates': coordinates,
+      if (source != null) 'source': source,
     };
+  }
+}
+
+/// 邊界檔案匯入預覽結果（KML/KMZ/GeoJSON）
+class BoundaryImportResult {
+  final bool success;
+  final String? code;
+  final String message;
+  final List<List<double>> coordinates; // [[lat, lng], ...]
+  final String? format; // kml | geojson
+  final String? detectedCrs;
+  final Map<String, dynamic>? stats;
+  final List<String> warnings;
+
+  BoundaryImportResult({
+    required this.success,
+    this.code,
+    required this.message,
+    this.coordinates = const [],
+    this.format,
+    this.detectedCrs,
+    this.stats,
+    this.warnings = const [],
+  });
+
+  factory BoundaryImportResult.fromJson(Map<String, dynamic> json) {
+    final coords = <List<double>>[];
+    final raw = json['coordinates'];
+    if (raw is List) {
+      for (final c in raw) {
+        if (c is List && c.length >= 2) {
+          coords.add([(c[0] as num).toDouble(), (c[1] as num).toDouble()]);
+        }
+      }
+    }
+    final warn = json['warnings'];
+    return BoundaryImportResult(
+      success: json['success'] == true,
+      code: json['code'] as String?,
+      message: json['message'] as String? ?? '',
+      coordinates: coords,
+      format: json['format'] as String?,
+      detectedCrs: json['detectedCrs'] as String?,
+      stats: json['stats'] is Map<String, dynamic>
+          ? Map<String, dynamic>.from(json['stats'] as Map)
+          : null,
+      warnings: warn is List ? warn.map((e) => e.toString()).toList() : const [],
+    );
   }
 }
 
@@ -286,6 +340,39 @@ class ProjectBoundaryService {
         success: false,
         message: '產生建議邊界失敗: $e',
       );
+    }
+  }
+
+  /// 匯入邊界檔案（KML/KMZ/GeoJSON）→ 後端解析並回傳正規化預覽（不寫入 DB）
+  Future<BoundaryImportResult> importBoundaryFile({
+    required List<int> bytes,
+    required String filename,
+  }) async {
+    try {
+      final uri = Uri.parse('${ApiService.baseUrl}/project-boundaries/import');
+      final request = http.MultipartRequest('POST', uri);
+      request.headers.addAll(ApiService.getAuthHeaders());
+      request.files.add(http.MultipartFile.fromBytes(
+        'file',
+        bytes,
+        filename: filename,
+      ));
+
+      final streamed = await request.send();
+      final body = await streamed.stream.bytesToString();
+      Map<String, dynamic> json;
+      try {
+        json = jsonDecode(body) as Map<String, dynamic>;
+      } catch (_) {
+        return BoundaryImportResult(
+          success: false,
+          message: '伺服器回應無法解析 (${streamed.statusCode})',
+        );
+      }
+      return BoundaryImportResult.fromJson(json);
+    } catch (e) {
+      debugPrint('[ProjectBoundaryService] 匯入邊界檔案錯誤: $e');
+      return BoundaryImportResult(success: false, message: '匯入失敗: $e');
     }
   }
 

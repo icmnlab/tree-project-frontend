@@ -4,6 +4,16 @@
 
 ---
 
+## v18.5.0 (2026-06-13) — 邊界輸入方式擴充（貼座標 + GIS 匯入）
+
+依環境學院需求，區邊界繪製頁 `project_boundary_draw_page` 新增多種輸入方式（沿用「預覽→確認→儲存」流程）：
+
+- **貼上座標（方式 1）**：新增 `lib/utils/boundary_input.dart` 解析座標清單，支援括號/逗號/空白分隔；以數值範圍自動判斷 `lng,lat` 或 `lat,lng`，無法判斷時可選假設順序；偵測自相交並提供「依角度重排」；明確回報無法解析的行。
+- **匯入 KML/KMZ/GeoJSON（方式 3）**：以 `file_picker` 選檔上傳後端解析，預覽顯示偵測到的座標系統（WGS84 / TWD97 轉換）、頂點數、面積與警告。
+- **含座標圖檔（方式 2）**：UI 預留選項，顯示「即將推出」（待學院提供範例檔後實作）。
+- `ProjectBoundary` 模型加 `source`；`project_boundary_service` 加 `importBoundaryFile`；儲存時回報 `source`，界外樹木明確確認後帶 `allowTreesOutside`。
+- 測試：`test/boundary_input_test.dart`（9 案例：順序判斷、收尾去重、錯誤行回報、自相交與重排）。
+
 ## v18.4.0 (2026-06-11) — 交接整備：repo 清理 + 版本同步
 
 - repo 清理（研究遺留移至外部備份 `handover_backup_20260611/`）：

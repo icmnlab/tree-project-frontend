@@ -10,10 +10,12 @@ import 'package:flutter/foundation.dart' show Factory;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:file_picker/file_picker.dart';
 import '../../services/v3/project_boundary_service.dart';
 import '../../services/v3/project_boundary_coordinator.dart';
 import '../../services/api_service.dart';
 import '../../widgets/conflict_resolution_dialog.dart';
+import '../../utils/boundary_input.dart';
 import '../../constants/colors.dart';
 
 class ProjectBoundaryDrawPage extends StatefulWidget {
@@ -37,6 +39,11 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
   // 繪製模式
   bool _isDrawing = false;
   final List<LatLng> _drawingPoints = [];
+
+  // 目前頂點來源（draw|coords|kml|geojson|suggest），隨輸入方式更新，儲存時回報後端
+  String _currentSource = 'draw';
+  // 匯入解析中遮罩
+  bool _isImporting = false;
   
   // 現有邊界
   List<ProjectBoundary> _existingBoundaries = [];
@@ -431,6 +438,7 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
       _isDrawing = true;
       _drawingPoints.clear();
       _suggestedPreviewPoints = null;
+      _currentSource = 'draw';
     });
     _updateMapElements();
   }
@@ -523,6 +531,7 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
           ..clear()
           ..addAll(points);
         _isDrawing = true;
+        _currentSource = 'suggest';
       });
       _updateMapElements();
 
@@ -550,6 +559,256 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
     }
   }
 
+  /// 將預覽頂點載入繪製狀態（供貼座標 / 匯入檔案 / 建議共用）
+  void _loadPreviewPoints(List<LatLng> points, String source) {
+    setState(() {
+      _drawingPoints
+        ..clear()
+        ..addAll(points);
+      _isDrawing = true;
+      _currentSource = source;
+      _suggestedPreviewPoints = null;
+    });
+    _updateMapElements();
+    if (_controller != null && points.isNotEmpty) {
+      final center = _boundaryService.calculatePolygonCenter(
+        points.map((p) => [p.latitude, p.longitude]).toList(),
+      );
+      _controller!.animateCamera(
+        CameraUpdate.newLatLngZoom(LatLng(center['lat']!, center['lng']!), 15),
+      );
+    }
+  }
+
+  bool _ensureProjectSelected() {
+    if (_selectedProject == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('請先選擇區')),
+      );
+      return false;
+    }
+    return true;
+  }
+
+  /// 方式 1：直接鍵入座標清單
+  Future<void> _pasteCoordinates() async {
+    if (!_ensureProjectSelected()) return;
+
+    final controller = TextEditingController();
+    CoordOrder assumedOrder = CoordOrder.lngLat;
+
+    final parsed = await showDialog<BoundaryParseResult>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: const Text('貼上邊界座標'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  '每行一組座標，支援括號與逗號/空白分隔，例如：\n'
+                  '(120.1222905, 23.2637175)\n'
+                  '120.1233066, 23.2638557',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Text('無法判斷時順序：', style: TextStyle(fontSize: 13)),
+                    const SizedBox(width: 8),
+                    DropdownButton<CoordOrder>(
+                      value: assumedOrder,
+                      items: const [
+                        DropdownMenuItem(
+                          value: CoordOrder.lngLat,
+                          child: Text('經度, 緯度'),
+                        ),
+                        DropdownMenuItem(
+                          value: CoordOrder.latLng,
+                          child: Text('緯度, 經度'),
+                        ),
+                      ],
+                      onChanged: (v) =>
+                          setLocal(() => assumedOrder = v ?? CoordOrder.lngLat),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: controller,
+                  maxLines: 8,
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    hintText: '在此貼上座標…',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('取消'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final r = BoundaryInputParser.parse(
+                  controller.text,
+                  assumedOrder: assumedOrder,
+                );
+                Navigator.pop(ctx, r);
+              },
+              child: const Text('解析'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    controller.dispose();
+    if (parsed == null || !mounted) return;
+
+    if (!parsed.ok) {
+      final msg = parsed.errors.isNotEmpty
+          ? parsed.errors.join('\n')
+          : '座標解析失敗';
+      _showImportErrorDialog('座標解析失敗', msg);
+      return;
+    }
+
+    await _confirmAndLoadParsed(
+      coordinates: parsed.coordinates,
+      source: 'coords',
+      selfIntersecting: parsed.selfIntersecting,
+      warnings: [...parsed.warnings, ...parsed.errors],
+      detailLine:
+          '共 ${parsed.coordinates.length} 個頂點'
+          '${parsed.detectedOrder != null ? '，偵測順序：${parsed.detectedOrder == CoordOrder.lngLat ? '經,緯' : '緯,經'}' : ''}',
+    );
+  }
+
+  /// 方式 3：匯入 KML / KMZ / GeoJSON
+  Future<void> _importBoundaryFile() async {
+    if (!_ensureProjectSelected()) return;
+
+    FilePickerResult? picked;
+    try {
+      picked = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['kml', 'kmz', 'geojson', 'json'],
+        withData: true,
+      );
+    } catch (e) {
+      if (mounted) _showImportErrorDialog('選擇檔案失敗', '$e');
+      return;
+    }
+    if (picked == null || picked.files.isEmpty || !mounted) return;
+
+    final file = picked.files.first;
+    final bytes = file.bytes;
+    if (bytes == null) {
+      _showImportErrorDialog('讀取失敗', '無法讀取檔案內容');
+      return;
+    }
+
+    setState(() => _isImporting = true);
+    final result = await _boundaryService.importBoundaryFile(
+      bytes: bytes,
+      filename: file.name,
+    );
+    if (!mounted) return;
+    setState(() => _isImporting = false);
+
+    if (!result.success) {
+      _showImportErrorDialog('匯入失敗', result.message);
+      return;
+    }
+
+    final stats = result.stats;
+    final areaHa = stats?['areaHa'];
+    final vertexCount = stats?['vertexCount'] ?? result.coordinates.length;
+    final selfIntersecting = stats?['selfIntersecting'] == true;
+
+    await _confirmAndLoadParsed(
+      coordinates: result.coordinates,
+      source: result.format == 'geojson' ? 'geojson' : 'kml',
+      selfIntersecting: selfIntersecting,
+      warnings: result.warnings,
+      detailLine: '格式：${result.format ?? '?'}\n'
+          '座標系統：${result.detectedCrs ?? '?'}\n'
+          '頂點數：$vertexCount'
+          '${areaHa is num ? '，面積約 ${(areaHa).toStringAsFixed(2)} 公頃' : ''}',
+    );
+  }
+
+  /// 共用：顯示解析摘要 → 確認後載入頂點（可選依角度重排）
+  Future<void> _confirmAndLoadParsed({
+    required List<List<double>> coordinates,
+    required String source,
+    required bool selfIntersecting,
+    required List<String> warnings,
+    required String detailLine,
+  }) async {
+    final warnText = warnings.isNotEmpty ? '\n\n⚠️ ${warnings.join('\n⚠️ ')}' : '';
+    final action = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('邊界預覽'),
+        content: SingleChildScrollView(
+          child: Text(
+            '$detailLine$warnText\n\n載入後可在地圖上微調，再按「儲存邊界」。',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, 'cancel'),
+            child: const Text('取消'),
+          ),
+          if (selfIntersecting)
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'reorder'),
+              child: const Text('依角度重排後載入'),
+            ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, 'load'),
+            child: const Text('載入頂點'),
+          ),
+        ],
+      ),
+    );
+
+    if (action == null || action == 'cancel' || !mounted) return;
+
+    var coords = coordinates;
+    if (action == 'reorder') {
+      coords = BoundaryInputParser.reorderByAngle(coordinates);
+    }
+    final points = coords.map((c) => LatLng(c[0], c[1])).toList();
+    _loadPreviewPoints(points, source);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('已載入頂點，可微調後按「儲存邊界」')),
+    );
+  }
+
+  void _showImportErrorDialog(String title, String message) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title),
+        content: SingleChildScrollView(child: Text(message)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('確定'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _saveBoundary() async {
     if (_selectedProject == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -566,6 +825,7 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
     }
 
     // 驗證邊界是否涵蓋所有現有樹木
+    bool allowTreesOutside = false;
     if (_existingTreeLocations.isNotEmpty) {
       final treesOutside = <LatLng>[];
       for (final tree in _existingTreeLocations) {
@@ -599,6 +859,7 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
         );
         
         if (confirmed != true) return;
+        allowTreesOutside = true;
       }
     }
 
@@ -613,10 +874,14 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
         projectName: _selectedProject!,
         projectCode: resolvedCode,
         coordinates: _drawingPoints.map((p) => [p.latitude, p.longitude]).toList(),
+        source: _currentSource,
       );
 
       // [Phase 2c] 樂觀鎖：若是更新既有邊界，帶上 expectedUpdatedAt
       final payload = boundary.toJson();
+      if (allowTreesOutside) {
+        payload['allowTreesOutside'] = true;
+      }
       if (_currentProjectBoundary?.updatedAt != null) {
         payload['expectedUpdatedAt'] =
             _currentProjectBoundary!.updatedAt!.toIso8601String();
@@ -991,7 +1256,7 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
                 ),
                 
                 // 載入中遮罩
-                if (_isSaving || _isSuggesting)
+                if (_isSaving || _isSuggesting || _isImporting)
                   Container(
                     color: Colors.black26,
                     child: Center(
@@ -1003,7 +1268,11 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
                             children: [
                               const CircularProgressIndicator(),
                               const SizedBox(height: 16),
-                              Text(_isSuggesting ? '產生建議邊界中...' : '儲存中...'),
+                              Text(_isImporting
+                                  ? '解析邊界檔案中...'
+                                  : _isSuggesting
+                                      ? '產生建議邊界中...'
+                                      : '儲存中...'),
                             ],
                           ),
                         ),
@@ -1045,6 +1314,49 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                         ),
+                      ),
+                      const SizedBox(width: 8),
+                      // 其他輸入方式：貼座標 / 匯入檔案 / (方式2 預留)
+                      PopupMenuButton<String>(
+                        icon: const Icon(Icons.more_vert),
+                        tooltip: '其他輸入方式',
+                        onSelected: (value) {
+                          switch (value) {
+                            case 'coords':
+                              _pasteCoordinates();
+                              break;
+                            case 'file':
+                              _importBoundaryFile();
+                              break;
+                          }
+                        },
+                        itemBuilder: (ctx) => const [
+                          PopupMenuItem(
+                            value: 'coords',
+                            child: ListTile(
+                              leading: Icon(Icons.edit_location_alt),
+                              title: Text('貼上座標'),
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'file',
+                            child: ListTile(
+                              leading: Icon(Icons.upload_file),
+                              title: Text('匯入 KML/GeoJSON'),
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                          PopupMenuItem(
+                            value: 'image',
+                            enabled: false,
+                            child: ListTile(
+                              leading: Icon(Icons.image),
+                              title: Text('匯入含座標圖檔（即將推出）'),
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ],
                       ),
                     ] else ...[
                       Expanded(
