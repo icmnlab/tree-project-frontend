@@ -4,6 +4,20 @@
 
 ---
 
+## v18.5.3 (2026-06-13) — 後台對話框生命週期 + Row 溢出修復
+
+實機 `flutter run` log 在「專案/區管理」頁仍出現 `RenderFlex overflowed 14px`、`TextEditingController used after disposed`、`_dependents.isEmpty`、`Tried to build dirty widget in the wrong build scope`。根因為這些頁面仍沿用「`showDialog` 後立即 `dispose`（或 `whenComplete` dispose）」的舊寫法：
+
+- **`project_areas_admin_page.dart`**：
+  - 標題列 `Row`（「專案管理」+ 重新整理/新增按鈕）在窄螢幕溢出 → 標題改用 `Expanded + TextOverflow.ellipsis`，按鈕 `Row` 設 `mainAxisSize.min`。
+  - 新增/編輯表單抽成 `_AreaFormDialog`（StatefulWidget），controller 於其 `dispose()` 釋放。
+- **`admin_page.dart`**：
+  - 「建立區」抽成 `_CreateProjectDialog`（StatefulWidget，下拉加 `isExpanded`）。
+  - 「確認刪除區」抽成 `_DeleteProjectConfirmDialog`（StatefulWidget）。
+- 至此所有含 `TextEditingController` 的對話框都改為自有生命週期的 StatefulWidget，杜絕「dispose 後重建」連鎖錯誤。
+
+---
+
 ## v18.5.2 (2026-06-13) — 貼座標對話框生命週期修復
 
 實機 `flutter run` log 觀察到一串執行期例外，根因為「貼上座標」對話框：

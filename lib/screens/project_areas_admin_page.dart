@@ -100,81 +100,10 @@ class _ProjectAreasAdminPageState extends State<ProjectAreasAdminPage> {
 
   /// 顯示新增/編輯表單，回傳 {area_name, description} 或 null（取消）。
   Future<Map<String, String>?> _showAreaForm({Map<String, dynamic>? existing}) {
-    final nameController =
-        TextEditingController(text: existing?['area_name']?.toString() ?? '');
-    final descController = TextEditingController(
-        text: existing?['description']?.toString() ?? '');
-    final isEdit = existing != null;
-
     return showDialog<Map<String, String>>(
       context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            final nameEmpty = nameController.text.trim().isEmpty;
-            return AlertDialog(
-              title: Text(isEdit ? '編輯專案' : '新增專案'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    if (isEdit && existing['area_code'] != null)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Text('專案代碼：${existing['area_code']}',
-                            style: const TextStyle(color: Colors.grey)),
-                      ),
-                    TextField(
-                      controller: nameController,
-                      autofocus: !isEdit,
-                      // 編輯時不允許改名：area_name 被 tree_survey / project_boundaries
-                      // 等以名稱反規格化儲存，後端 PUT 不會連動更名，改名會造成既有資料
-                      // 指向舊名稱不一致。改名請改用「新增區位 + 搬移專案」流程。
-                      readOnly: isEdit,
-                      decoration: InputDecoration(
-                        labelText: isEdit ? '專案名稱（不可修改）' : '專案名稱 *',
-                        border: const OutlineInputBorder(),
-                        helperText: isEdit ? '名稱建立後不可變更，僅能編輯描述' : null,
-                        errorText: (!isEdit && nameEmpty) ? '專案名稱不能為空' : null,
-                      ),
-                      onChanged: (_) => setDialogState(() {}),
-                    ),
-                    const SizedBox(height: 12),
-                    TextField(
-                      controller: descController,
-                      decoration: const InputDecoration(
-                        labelText: '描述（選填）',
-                        border: OutlineInputBorder(),
-                      ),
-                      maxLines: 2,
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('取消'),
-                ),
-                ElevatedButton(
-                  onPressed: nameEmpty
-                      ? null
-                      : () => Navigator.pop(dialogContext, {
-                            'area_name': nameController.text.trim(),
-                            'description': descController.text.trim(),
-                          }),
-                  child: Text(isEdit ? '儲存' : '新增'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    ).whenComplete(() {
-      nameController.dispose();
-      descController.dispose();
-    });
+      builder: (dialogContext) => _AreaFormDialog(existing: existing),
+    );
   }
 
   Future<void> _confirmDelete(Map<String, dynamic> area) async {
@@ -233,14 +162,19 @@ class _ProjectAreasAdminPageState extends State<ProjectAreasAdminPage> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              '專案管理',
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
+            // Expanded + ellipsis：避免標題與右側按鈕在窄螢幕擠壓造成 RenderFlex overflow
+            Expanded(
+              child: Text(
+                '專案管理',
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+              ),
             ),
             Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 IconButton(
                   icon: const Icon(Icons.refresh),
@@ -335,6 +269,107 @@ class _ProjectAreasAdminPageState extends State<ProjectAreasAdminPage> {
                             );
                           },
                         ),
+        ),
+      ],
+    );
+  }
+}
+
+/// 新增/編輯專案（區位）表單對話框。
+///
+/// 獨立 StatefulWidget：TextEditingController 由本 State 在 dispose() 釋放
+/// （路由完全移除後才執行），避免原本 `showDialog().whenComplete(dispose)`
+/// 在對話框退場動畫重建子樹時觸發
+/// `TextEditingController was used after being disposed` 及連鎖錯誤
+/// （_dependents.isEmpty / dirty widget wrong scope）。
+class _AreaFormDialog extends StatefulWidget {
+  final Map<String, dynamic>? existing;
+  const _AreaFormDialog({this.existing});
+
+  @override
+  State<_AreaFormDialog> createState() => _AreaFormDialogState();
+}
+
+class _AreaFormDialogState extends State<_AreaFormDialog> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _descController;
+
+  bool get _isEdit => widget.existing != null;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(
+        text: widget.existing?['area_name']?.toString() ?? '');
+    _descController = TextEditingController(
+        text: widget.existing?['description']?.toString() ?? '');
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _descController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final existing = widget.existing;
+    final isEdit = _isEdit;
+    final nameEmpty = _nameController.text.trim().isEmpty;
+    return AlertDialog(
+      title: Text(isEdit ? '編輯專案' : '新增專案'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (isEdit && existing!['area_code'] != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text('專案代碼：${existing['area_code']}',
+                    style: const TextStyle(color: Colors.grey)),
+              ),
+            TextField(
+              controller: _nameController,
+              autofocus: !isEdit,
+              // 編輯時不允許改名：area_name 被 tree_survey / project_boundaries
+              // 等以名稱反規格化儲存，後端 PUT 不會連動更名，改名會造成既有資料
+              // 指向舊名稱不一致。改名請改用「新增區位 + 搬移專案」流程。
+              readOnly: isEdit,
+              decoration: InputDecoration(
+                labelText: isEdit ? '專案名稱（不可修改）' : '專案名稱 *',
+                border: const OutlineInputBorder(),
+                helperText: isEdit ? '名稱建立後不可變更，僅能編輯描述' : null,
+                errorText: (!isEdit && nameEmpty) ? '專案名稱不能為空' : null,
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: _descController,
+              decoration: const InputDecoration(
+                labelText: '描述（選填）',
+                border: OutlineInputBorder(),
+              ),
+              maxLines: 2,
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('取消'),
+        ),
+        ElevatedButton(
+          onPressed: nameEmpty
+              ? null
+              : () => Navigator.pop(context, {
+                    'area_name': _nameController.text.trim(),
+                    'description': _descController.text.trim(),
+                  }),
+          child: Text(isEdit ? '儲存' : '新增'),
         ),
       ],
     );

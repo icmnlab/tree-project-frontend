@@ -1236,73 +1236,10 @@ class _AdminPageState extends State<AdminPage> {
       return;
     }
 
-    final nameController = TextEditingController();
-    String? selectedArea = areas.first['area_name']?.toString();
-
     final result = await showDialog<Map<String, String>>(
       context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            final nameEmpty = nameController.text.trim().isEmpty;
-            return AlertDialog(
-              title: const Text('建立區'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TextField(
-                      controller: nameController,
-                      autofocus: true,
-                      decoration: InputDecoration(
-                        labelText: '區名稱 *',
-                        border: const OutlineInputBorder(),
-                        errorText: nameEmpty ? '區名稱不能為空' : null,
-                      ),
-                      onChanged: (_) => setDialogState(() {}),
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      initialValue: selectedArea,
-                      decoration: const InputDecoration(
-                        labelText: '所屬專案 *',
-                        border: OutlineInputBorder(),
-                      ),
-                      items: areas
-                          .map((a) => a['area_name']?.toString() ?? '')
-                          .where((n) => n.isNotEmpty)
-                          .map((n) => DropdownMenuItem<String>(
-                                value: n,
-                                child: Text(n),
-                              ))
-                          .toList(),
-                      onChanged: (v) => setDialogState(() => selectedArea = v),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext),
-                  child: const Text('取消'),
-                ),
-                ElevatedButton(
-                  onPressed: (nameEmpty || selectedArea == null)
-                      ? null
-                      : () => Navigator.pop(dialogContext, {
-                            'name': nameController.text.trim(),
-                            'area': selectedArea!,
-                          }),
-                  child: const Text('建立'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+      builder: (dialogContext) => _CreateProjectDialog(areas: areas),
     );
-    nameController.dispose();
 
     if (result == null) return;
     setState(() => _isLoadingProjects = true);
@@ -1337,71 +1274,10 @@ class _AdminPageState extends State<AdminPage> {
   }
 
   Future<void> _confirmDeleteProject(Project project) async {
-    final codeController = TextEditingController();
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            final codeMatches =
-                codeController.text.trim() == project.code.trim();
-            return AlertDialog(
-              title: const Text('確認刪除區'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '您確定要刪除區 "${project.name}" (代碼: ${project.code}) 嗎？',
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      '此操作將會刪除該區下所有的樹木資料，且無法復原。',
-                      style: TextStyle(
-                        color: Colors.red,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text('請輸入區代碼「${project.code}」以確認刪除：'),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: codeController,
-                      autofocus: true,
-                      decoration: InputDecoration(
-                        hintText: project.code,
-                        border: const OutlineInputBorder(),
-                        errorText: codeController.text.isEmpty
-                            ? null
-                            : codeMatches
-                                ? null
-                                : '代碼不符',
-                      ),
-                      onChanged: (_) => setDialogState(() {}),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(dialogContext, false),
-                  child: const Text('取消'),
-                ),
-                ElevatedButton(
-                  onPressed: codeMatches
-                      ? () => Navigator.pop(dialogContext, true)
-                      : null,
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                  child: const Text('確認刪除'),
-                ),
-              ],
-            );
-          },
-        );
-      },
+      builder: (dialogContext) => _DeleteProjectConfirmDialog(project: project),
     );
-    codeController.dispose();
 
     if (confirmed == true) {
       await _deleteProject(project.code);
@@ -1600,6 +1476,171 @@ class _AdminPageState extends State<AdminPage> {
                   foregroundColor: Theme.of(context).colorScheme.onPrimary,
                 )
               : null,
+    );
+  }
+}
+
+/// 「建立區」對話框。獨立 StatefulWidget：controller 由本 State dispose()
+/// 釋放（路由移除後），避免 await 後立即 dispose 在退場動畫重建時觸發
+/// `TextEditingController was used after being disposed` 等連鎖錯誤。
+class _CreateProjectDialog extends StatefulWidget {
+  final List<Map<String, dynamic>> areas;
+  const _CreateProjectDialog({required this.areas});
+
+  @override
+  State<_CreateProjectDialog> createState() => _CreateProjectDialogState();
+}
+
+class _CreateProjectDialogState extends State<_CreateProjectDialog> {
+  final TextEditingController _nameController = TextEditingController();
+  String? _selectedArea;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedArea = widget.areas.first['area_name']?.toString();
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final nameEmpty = _nameController.text.trim().isEmpty;
+    return AlertDialog(
+      title: const Text('建立區'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextField(
+              controller: _nameController,
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: '區名稱 *',
+                border: const OutlineInputBorder(),
+                errorText: nameEmpty ? '區名稱不能為空' : null,
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              initialValue: _selectedArea,
+              isExpanded: true,
+              decoration: const InputDecoration(
+                labelText: '所屬專案 *',
+                border: OutlineInputBorder(),
+              ),
+              items: widget.areas
+                  .map((a) => a['area_name']?.toString() ?? '')
+                  .where((n) => n.isNotEmpty)
+                  .map((n) => DropdownMenuItem<String>(
+                        value: n,
+                        child: Text(n),
+                      ))
+                  .toList(),
+              onChanged: (v) => setState(() => _selectedArea = v),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('取消'),
+        ),
+        ElevatedButton(
+          onPressed: (nameEmpty || _selectedArea == null)
+              ? null
+              : () => Navigator.pop(context, {
+                    'name': _nameController.text.trim(),
+                    'area': _selectedArea!,
+                  }),
+          child: const Text('建立'),
+        ),
+      ],
+    );
+  }
+}
+
+/// 「確認刪除區」對話框（需輸入區代碼）。獨立 StatefulWidget 理由同上。
+class _DeleteProjectConfirmDialog extends StatefulWidget {
+  final Project project;
+  const _DeleteProjectConfirmDialog({required this.project});
+
+  @override
+  State<_DeleteProjectConfirmDialog> createState() =>
+      _DeleteProjectConfirmDialogState();
+}
+
+class _DeleteProjectConfirmDialogState
+    extends State<_DeleteProjectConfirmDialog> {
+  final TextEditingController _codeController = TextEditingController();
+
+  @override
+  void dispose() {
+    _codeController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final project = widget.project;
+    final codeMatches = _codeController.text.trim() == project.code.trim();
+    return AlertDialog(
+      title: const Text('確認刪除區'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '您確定要刪除區 "${project.name}" (代碼: ${project.code}) 嗎？',
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              '此操作將會刪除該區下所有的樹木資料，且無法復原。',
+              style: TextStyle(
+                color: Colors.red,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text('請輸入區代碼「${project.code}」以確認刪除：'),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _codeController,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: project.code,
+                border: const OutlineInputBorder(),
+                errorText: _codeController.text.isEmpty
+                    ? null
+                    : codeMatches
+                        ? null
+                        : '代碼不符',
+              ),
+              onChanged: (_) => setState(() {}),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context, false),
+          child: const Text('取消'),
+        ),
+        ElevatedButton(
+          onPressed:
+              codeMatches ? () => Navigator.pop(context, true) : null,
+          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+          child: const Text('確認刪除'),
+        ),
+      ],
     );
   }
 }
