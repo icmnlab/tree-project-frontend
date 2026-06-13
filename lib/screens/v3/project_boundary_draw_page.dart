@@ -594,80 +594,13 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
   Future<void> _pasteCoordinates() async {
     if (!_ensureProjectSelected()) return;
 
-    final controller = TextEditingController();
-    CoordOrder assumedOrder = CoordOrder.lngLat;
-
+    // 對話框抽成自有生命週期的 StatefulWidget（controller 於其 dispose 釋放），
+    // 避免在 await 後立即 dispose 造成退場動畫重建時「used after disposed」連鎖錯誤。
     final parsed = await showDialog<BoundaryParseResult>(
       context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setLocal) => AlertDialog(
-          title: const Text('貼上邊界座標'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  '每行一組座標，支援括號與逗號/空白分隔，例如：\n'
-                  '(120.1222905, 23.2637175)\n'
-                  '120.1233066, 23.2638557',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    const Text('無法判斷時順序：', style: TextStyle(fontSize: 13)),
-                    const SizedBox(width: 8),
-                    DropdownButton<CoordOrder>(
-                      value: assumedOrder,
-                      items: const [
-                        DropdownMenuItem(
-                          value: CoordOrder.lngLat,
-                          child: Text('經度, 緯度'),
-                        ),
-                        DropdownMenuItem(
-                          value: CoordOrder.latLng,
-                          child: Text('緯度, 經度'),
-                        ),
-                      ],
-                      onChanged: (v) =>
-                          setLocal(() => assumedOrder = v ?? CoordOrder.lngLat),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: controller,
-                  maxLines: 8,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    hintText: '在此貼上座標…',
-                  ),
-                ),
-              ],
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('取消'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                final r = BoundaryInputParser.parse(
-                  controller.text,
-                  assumedOrder: assumedOrder,
-                );
-                Navigator.pop(ctx, r);
-              },
-              child: const Text('解析'),
-            ),
-          ],
-        ),
-      ),
+      builder: (ctx) => const _PasteCoordinatesDialog(),
     );
 
-    controller.dispose();
     if (parsed == null || !mounted) return;
 
     if (!parsed.ok) {
@@ -1397,6 +1330,105 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
           Text(label, style: const TextStyle(fontSize: 12)),
         ],
       ),
+    );
+  }
+}
+
+/// 「貼上邊界座標」對話框。
+///
+/// 獨立 StatefulWidget 的原因：TextEditingController 由本 State 持有並在
+/// dispose() 釋放（路由完全移除後才執行），避免「await showDialog 後立即
+/// controller.dispose()」在退場動畫重建子樹時觸發
+/// `TextEditingController was used after being disposed` 及其連鎖錯誤
+/// （_dependents.isEmpty / dirty widget wrong scope / Duplicate GlobalKeys）。
+class _PasteCoordinatesDialog extends StatefulWidget {
+  const _PasteCoordinatesDialog();
+
+  @override
+  State<_PasteCoordinatesDialog> createState() =>
+      _PasteCoordinatesDialogState();
+}
+
+class _PasteCoordinatesDialogState extends State<_PasteCoordinatesDialog> {
+  final TextEditingController _controller = TextEditingController();
+  CoordOrder _assumedOrder = CoordOrder.lngLat;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('貼上邊界座標'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              '每行一組座標，支援括號與逗號/空白分隔，例如：\n'
+              '(120.1222905, 23.2637175)\n'
+              '120.1233066, 23.2638557',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Text('無法判斷時順序：', style: TextStyle(fontSize: 13)),
+                const SizedBox(width: 8),
+                // Expanded + isExpanded：避免在窄螢幕上 Row 溢出（RenderFlex overflow）
+                Expanded(
+                  child: DropdownButton<CoordOrder>(
+                    value: _assumedOrder,
+                    isExpanded: true,
+                    items: const [
+                      DropdownMenuItem(
+                        value: CoordOrder.lngLat,
+                        child: Text('經度, 緯度'),
+                      ),
+                      DropdownMenuItem(
+                        value: CoordOrder.latLng,
+                        child: Text('緯度, 經度'),
+                      ),
+                    ],
+                    onChanged: (v) => setState(
+                      () => _assumedOrder = v ?? CoordOrder.lngLat,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            TextField(
+              controller: _controller,
+              maxLines: 8,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+                hintText: '在此貼上座標…',
+              ),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('取消'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            final r = BoundaryInputParser.parse(
+              _controller.text,
+              assumedOrder: _assumedOrder,
+            );
+            Navigator.pop(context, r);
+          },
+          child: const Text('解析'),
+        ),
+      ],
     );
   }
 }

@@ -4,6 +4,16 @@
 
 ---
 
+## v18.5.2 (2026-06-13) — 貼座標對話框生命週期修復
+
+實機 `flutter run` log 觀察到一串執行期例外，根因為「貼上座標」對話框：
+
+- **修復 `TextEditingController was used after being disposed`（及連鎖 `_dependents.isEmpty` / `Tried to build dirty widget in the wrong build scope` / `Duplicate GlobalKeys`）**：原本在 `await showDialog` 後立即 `controller.dispose()`，對話框退場動畫仍會重建子樹而存取已釋放的 controller。改將對話框抽成獨立 `_PasteCoordinatesDialog`（StatefulWidget），controller 由其 `dispose()` 在路由完全移除後才釋放。
+- **修復 `RenderFlex overflowed by 26 pixels on the right`**：對話框內「無法判斷時順序」的 `Row`（標籤 + `DropdownButton`）在窄螢幕溢出；`DropdownButton` 改以 `Expanded` 包裹並設 `isExpanded: true`。
+- **測試樣本**：新增複雜（凹）多邊形樣本 `docs/boundary_samples/coords_complex_pond.txt` 與 `sample_boundary_complex.geojson`（環境學院魚塭 9 點），驗證系統可畫非四方形/凹形且不自相交。
+
+---
+
 ## v18.5.1 (2026-06-13) — 邊界匯入 UX 修正
 
 - **檔案選擇器相容性**：`project_boundary_draw_page` 匯入改用 `FileType.any` + Dart 端副檔名驗證（原 `FileType.custom` 在部分 Android 檔案選擇器下會把 `.kml/.kmz/.geojson` 過濾掉，只剩圖片/音訊可選）；選到非支援格式時明確提示。
