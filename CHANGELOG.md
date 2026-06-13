@@ -4,6 +4,16 @@
 
 ---
 
+## v18.5.4 (2026-06-13) — 邀請碼管理強化 + 邊界亂序測試
+
+- **邀請碼管理（`invite_management_page`）**：
+  - **依建立日期分組顯示**：清單以 `created_at` 分日期標題，卡片顯示建立時間。
+  - **刪除紀錄**：新增「刪除紀錄」（呼叫後端 `DELETE /invites/:id`，破壞性操作有二次確認）；原「停用」與「複製」整併進右側選單（`PopupMenuButton`）。
+  - **綁定區改 V2 式「選單樣式」**：用 `ExpansionTile` 收合成可展開的選單，內含搜尋 + 勾選清單，維持多選；未選時預設展開。
+- **邊界座標亂序**：新增 `docs/boundary_samples/coords_scrambled_convex.txt`（亂序凸四邊形）示範「自相交偵測 + 依角度重排」；新增單元測試（魚塭 9 點凹多邊形不自相交、亂序凸形可重排修復）。文件補充座標順序說明（凹形亂序需正確順序或匯入 KML/GeoJSON）。
+
+---
+
 ## v18.5.3 (2026-06-13) — 後台對話框生命週期 + Row 溢出修復
 
 實機 `flutter run` log 在「專案/區管理」頁仍出現 `RenderFlex overflowed 14px`、`TextEditingController used after disposed`、`_dependents.isEmpty`、`Tried to build dirty widget in the wrong build scope`。根因為這些頁面仍沿用「`showDialog` 後立即 `dispose`（或 `whenComplete` dispose）」的舊寫法：

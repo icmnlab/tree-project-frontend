@@ -41,4 +41,12 @@ class InviteService {
       throw Exception(response['message'] ?? '停用失敗');
     }
   }
+
+  /// 刪除邀請碼紀錄（僅移除這筆紀錄，不影響已用此碼註冊的帳號）。
+  Future<void> deleteInvite(int inviteId) async {
+    final response = await ApiService.delete('invites/$inviteId');
+    if (response['success'] != true) {
+      throw Exception(response['message'] ?? '刪除失敗');
+    }
+  }
 }

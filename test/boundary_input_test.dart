@@ -94,6 +94,25 @@ void main() {
       expect(r.errors.any((e) => e.contains('超出合理範圍')), true);
       expect(r.coordinates.length, 3);
     });
+
+    test('學院魚塭 9 點（正確順序）為合法凹多邊形、不自相交', () {
+      // 對應 docs/boundary_samples/coords_complex_pond.txt：證明系統可畫複雜（凹）形狀
+      const text = '''
+(120.1222905, 23.2637175)
+(120.1233066, 23.2638557)
+(120.1240910, 23.2619545)
+(120.1242669, 23.2584254)
+(120.1219538, 23.2583754)
+(120.1218188, 23.2615941)
+(120.1224000, 23.2619421)
+(120.1224003, 23.2630480)
+(120.1219813, 23.2632104)
+''';
+      final r = BoundaryInputParser.parse(text);
+      expect(r.ok, true);
+      expect(r.coordinates.length, 9);
+      expect(r.selfIntersecting, false);
+    });
   });
 
   group('自相交與重排', () {

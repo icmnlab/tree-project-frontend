@@ -115,89 +115,108 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
                   value: requiresApproval,
                   onChanged: (v) => setDialog(() => requiresApproval = v),
                 ),
-                Text(
-                  '綁定區（可多選）${selectedCodes.isNotEmpty ? '：已選 ${selectedCodes.length} 個' : ''}',
-                  style: const TextStyle(fontWeight: FontWeight.w600),
-                ),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    onPressed: () async {
-                      final createdProj = await _quickCreateProject(ctx);
-                      if (createdProj != null) {
-                        setDialog(() {
-                          _projects.add(createdProj);
-                          selectedCodes.add(createdProj.code);
-                          final a = createdProj.area?.trim();
-                          if (a != null && a.isNotEmpty) selectedAreas.add(a);
-                        });
-                      }
-                    },
-                    icon: const Icon(Icons.add, size: 18),
-                    label: const Text('新增區'),
-                  ),
-                ),
-                // [UX] 專案多時可搜尋，清單限高可捲動（原本 40+ 專案攤平整個對話框）
-                TextField(
-                  decoration: const InputDecoration(
-                    isDense: true,
-                    prefixIcon: Icon(Icons.search, size: 18),
-                    hintText: '搜尋區名稱或代碼',
-                  ),
-                  onChanged: (v) => setDialog(() => projectQuery = v.trim()),
-                ),
-                const SizedBox(height: 4),
-                Builder(builder: (_) {
-                  final q = projectQuery.toLowerCase();
-                  final filtered = q.isEmpty
-                      ? _projects
-                      : _projects
-                          .where((p) =>
-                              p.name.toLowerCase().contains(q) ||
-                              p.code.toLowerCase().contains(q))
-                          .toList();
-                  if (filtered.isEmpty) {
-                    return const Padding(
-                      padding: EdgeInsets.all(8),
-                      child: Text('沒有符合的區',
-                          style: TextStyle(color: Colors.grey)),
-                    );
-                  }
-                  return ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 240),
-                    child: ListView.builder(
-                      shrinkWrap: true,
-                      itemCount: filtered.length,
-                      itemBuilder: (_, i) {
-                        final p = filtered[i];
-                        final code = p.code;
-                        return CheckboxListTile(
-                          dense: true,
-                          title: Text('${p.name} ($code)'),
-                          subtitle: p.area != null && p.area!.isNotEmpty
-                              ? Text('預設專案：${p.area}')
-                              : null,
-                          value: selectedCodes.contains(code),
-                          onChanged: (checked) {
-                            setDialog(() {
-                              if (checked == true) {
-                                selectedCodes.add(code);
-                                final a = p.area?.trim();
+                // [UX] V2 式「選單樣式」：用 ExpansionTile 收合成一個下拉選單，
+                // 點開後內含搜尋 + 勾選複選清單（維持多選）。預設展開（未選任何區時）。
+                Theme(
+                  data: Theme.of(ctx)
+                      .copyWith(dividerColor: Colors.transparent),
+                  child: ExpansionTile(
+                    tilePadding: EdgeInsets.zero,
+                    initiallyExpanded: selectedCodes.isEmpty,
+                    leading: const Icon(Icons.checklist),
+                    title: Text(
+                      selectedCodes.isNotEmpty
+                          ? '綁定區（可多選）：已選 ${selectedCodes.length} 個'
+                          : '綁定區（可多選）：點此展開勾選',
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    ),
+                    childrenPadding: const EdgeInsets.only(bottom: 8),
+                    children: [
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: () async {
+                            final createdProj = await _quickCreateProject(ctx);
+                            if (createdProj != null) {
+                              setDialog(() {
+                                _projects.add(createdProj);
+                                selectedCodes.add(createdProj.code);
+                                final a = createdProj.area?.trim();
                                 if (a != null && a.isNotEmpty) {
                                   selectedAreas.add(a);
                                 }
-                              } else {
-                                selectedCodes.remove(code);
-                                final a = p.area?.trim();
-                                if (a != null) selectedAreas.remove(a);
-                              }
-                            });
+                              });
+                            }
                           },
+                          icon: const Icon(Icons.add, size: 18),
+                          label: const Text('新增區'),
+                        ),
+                      ),
+                      // [UX] 專案多時可搜尋，清單限高可捲動（原本 40+ 專案攤平整個對話框）
+                      TextField(
+                        decoration: const InputDecoration(
+                          isDense: true,
+                          prefixIcon: Icon(Icons.search, size: 18),
+                          hintText: '搜尋區名稱或代碼',
+                        ),
+                        onChanged: (v) =>
+                            setDialog(() => projectQuery = v.trim()),
+                      ),
+                      const SizedBox(height: 4),
+                      Builder(builder: (_) {
+                        final q = projectQuery.toLowerCase();
+                        final filtered = q.isEmpty
+                            ? _projects
+                            : _projects
+                                .where((p) =>
+                                    p.name.toLowerCase().contains(q) ||
+                                    p.code.toLowerCase().contains(q))
+                                .toList();
+                        if (filtered.isEmpty) {
+                          return const Padding(
+                            padding: EdgeInsets.all(8),
+                            child: Text('沒有符合的區',
+                                style: TextStyle(color: Colors.grey)),
+                          );
+                        }
+                        return ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 240),
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: filtered.length,
+                            itemBuilder: (_, i) {
+                              final p = filtered[i];
+                              final code = p.code;
+                              return CheckboxListTile(
+                                dense: true,
+                                title: Text('${p.name} ($code)'),
+                                subtitle: p.area != null && p.area!.isNotEmpty
+                                    ? Text('預設專案：${p.area}')
+                                    : null,
+                                value: selectedCodes.contains(code),
+                                onChanged: (checked) {
+                                  setDialog(() {
+                                    if (checked == true) {
+                                      selectedCodes.add(code);
+                                      final a = p.area?.trim();
+                                      if (a != null && a.isNotEmpty) {
+                                        selectedAreas.add(a);
+                                      }
+                                    } else {
+                                      selectedCodes.remove(code);
+                                      final a = p.area?.trim();
+                                      if (a != null) selectedAreas.remove(a);
+                                    }
+                                  });
+                                },
+                              );
+                            },
+                          ),
                         );
-                      },
-                    ),
-                  );
-                }),
+                      }),
+                    ],
+                  ),
+                ),
                 // [UX] 區位由勾選的專案自動帶出，僅作管理紀錄用標籤；
                 // 原本另有一個「逗號分隔」文字欄與 chips 雙向同步，混淆且易誤觸，已移除。
                 if (areasForSelection().isNotEmpty) ...[
@@ -388,7 +407,7 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
                     const Text('尚無專案，請先新增專案')
                   else
                     DropdownButtonFormField<String>(
-                      value: selectedArea,
+                      initialValue: selectedArea,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
                         hintText: '選擇既有專案',
@@ -452,6 +471,170 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
     return null;
   }
 
+  static String _two(int n) => n.toString().padLeft(2, '0');
+
+  /// 取建立日期（本地時區），供分組標題用，例如 2026-06-13。
+  String _fmtDate(dynamic v) {
+    final dt = DateTime.tryParse(v?.toString() ?? '')?.toLocal();
+    if (dt == null) return '日期未知';
+    return '${dt.year}-${_two(dt.month)}-${_two(dt.day)}';
+  }
+
+  /// 取建立時間 HH:mm，供卡片顯示。
+  String _fmtTime(dynamic v) {
+    final dt = DateTime.tryParse(v?.toString() ?? '')?.toLocal();
+    if (dt == null) return '';
+    return '${_two(dt.hour)}:${_two(dt.minute)}';
+  }
+
+  Future<void> _deactivateInvite(Map<String, dynamic> inv) async {
+    final code = inv['code']?.toString() ?? '';
+    final id = inv['invite_id'];
+    if (id == null) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('停用邀請碼'),
+        content: Text('確定停用 $code？已發出的碼將無法再註冊。'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('取消')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('停用')),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      await _inviteService.deactivateInvite(id is int ? id : (id as num).toInt());
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('停用失敗: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  Future<void> _deleteInvite(Map<String, dynamic> inv) async {
+    final code = inv['code']?.toString() ?? '';
+    final id = inv['invite_id'];
+    if (id == null) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('刪除邀請碼紀錄'),
+        content: Text('確定刪除 $code 的紀錄？此操作無法復原。\n'
+            '（不影響已用此碼完成註冊的帳號）'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('取消')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('刪除'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true || !mounted) return;
+    try {
+      await _inviteService.deleteInvite(id is int ? id : (id as num).toInt());
+      await _load();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('刪除失敗: $e'), backgroundColor: Colors.red),
+      );
+    }
+  }
+
+  /// 依建立日期分組，回傳「日期標題 + 卡片」交錯的 widget 清單。
+  /// 後端已以 created_at DESC 排序，故直接依序插入標題即可。
+  List<Widget> _buildGroupedInvites() {
+    final widgets = <Widget>[];
+    String? lastDate;
+    for (final inv in _invites) {
+      final date = _fmtDate(inv['created_at']);
+      if (date != lastDate) {
+        lastDate = date;
+        widgets.add(Padding(
+          padding: const EdgeInsets.fromLTRB(4, 16, 4, 4),
+          child: Row(
+            children: [
+              const Icon(Icons.event, size: 16),
+              const SizedBox(width: 6),
+              Text(
+                date,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
+            ],
+          ),
+        ));
+      }
+      widgets.add(_buildInviteCard(inv));
+    }
+    return widgets;
+  }
+
+  Widget _buildInviteCard(Map<String, dynamic> inv) {
+    final code = inv['code']?.toString() ?? '';
+    final active = inv['is_active'] == true;
+    final uses = '${inv['use_count'] ?? 0}/${inv['max_uses'] ?? 1}';
+    final codes = inv['project_codes'];
+    final proj = codes is List ? codes.join(', ') : '';
+    final createdTime = _fmtTime(inv['created_at']);
+    return Card(
+      child: ListTile(
+        title: Text(code, style: const TextStyle(fontFamily: 'monospace')),
+        subtitle: Text(
+          '角色：${inv['role']}\n'
+          '${createdTime.isNotEmpty ? '建立：$createdTime · ' : ''}使用：$uses · 過期：${inv['expires_at'] ?? '—'}\n'
+          '${proj.isNotEmpty ? '區：$proj\n' : ''}'
+          '${inv['requires_approval'] == true ? '需審核啟用 · ' : ''}'
+          '${active ? '有效' : '已停用'}',
+        ),
+        isThreeLine: true,
+        trailing: PopupMenuButton<String>(
+          tooltip: '更多',
+          onSelected: (v) {
+            if (v == 'deactivate') {
+              _deactivateInvite(inv);
+            } else if (v == 'delete') {
+              _deleteInvite(inv);
+            } else if (v == 'copy') {
+              Clipboard.setData(ClipboardData(text: code));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('已複製邀請碼')),
+              );
+            }
+          },
+          itemBuilder: (_) => [
+            const PopupMenuItem(value: 'copy', child: Text('複製邀請碼')),
+            if (active)
+              const PopupMenuItem(value: 'deactivate', child: Text('停用')),
+            const PopupMenuItem(
+              value: 'delete',
+              child: Text('刪除紀錄', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        ),
+        onTap: () {
+          Clipboard.setData(ClipboardData(text: code));
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('已複製邀請碼')),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -470,82 +653,9 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
           ? const Center(child: CircularProgressIndicator())
           : _invites.isEmpty
               ? const Center(child: Text('尚無邀請碼'))
-              : ListView.builder(
+              : ListView(
                   padding: const EdgeInsets.all(16),
-                  itemCount: _invites.length,
-                  itemBuilder: (context, index) {
-                    final inv = _invites[index];
-                    final code = inv['code']?.toString() ?? '';
-                    final active = inv['is_active'] == true;
-                    final uses = '${inv['use_count'] ?? 0}/${inv['max_uses'] ?? 1}';
-                    final codes = inv['project_codes'];
-                    final proj = codes is List ? codes.join(', ') : '';
-                    return Card(
-                      child: ListTile(
-                        title: Text(code, style: const TextStyle(fontFamily: 'monospace')),
-                        subtitle: Text(
-                          '角色：${inv['role']}\n'
-                          '使用：$uses · 過期：${inv['expires_at'] ?? '—'}\n'
-                          '${proj.isNotEmpty ? '區：$proj\n' : ''}'
-                          '${inv['requires_approval'] == true ? '需審核啟用 · ' : ''}'
-                          '${active ? '有效' : '已停用'}',
-                        ),
-                        isThreeLine: true,
-                        trailing: active
-                            ? IconButton(
-                                icon: const Icon(Icons.block),
-                                tooltip: '停用',
-                                onPressed: () async {
-                                  final id = inv['invite_id'];
-                                  if (id == null) return;
-                                  final ok = await showDialog<bool>(
-                                    context: context,
-                                    builder: (ctx) => AlertDialog(
-                                      title: const Text('停用邀請碼'),
-                                      content: Text('確定停用 $code？已發出的碼將無法再註冊。'),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () =>
-                                              Navigator.pop(ctx, false),
-                                          child: const Text('取消'),
-                                        ),
-                                        FilledButton(
-                                          onPressed: () =>
-                                              Navigator.pop(ctx, true),
-                                          child: const Text('停用'),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                  if (ok != true || !mounted) return;
-                                  try {
-                                    final inviteId = id is int
-                                        ? id
-                                        : (id as num).toInt();
-                                    await _inviteService
-                                        .deactivateInvite(inviteId);
-                                    await _load();
-                                  } catch (e) {
-                                    if (!mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('停用失敗: $e'),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  }
-                                },
-                              )
-                            : null,
-                        onTap: () {
-                          Clipboard.setData(ClipboardData(text: code));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('已複製邀請碼')),
-                          );
-                        },
-                      ),
-                    );
-                  },
+                  children: _buildGroupedInvites(),
                 ),
     );
   }
