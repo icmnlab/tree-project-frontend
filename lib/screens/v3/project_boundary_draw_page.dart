@@ -14,6 +14,7 @@ import 'package:file_picker/file_picker.dart';
 import '../../services/v3/project_boundary_service.dart';
 import '../../services/v3/project_boundary_coordinator.dart';
 import '../../services/api_service.dart';
+import '../../services/download_service.dart';
 import '../../widgets/conflict_resolution_dialog.dart';
 import '../../utils/boundary_input.dart';
 import '../../constants/colors.dart';
@@ -44,6 +45,8 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
   String _currentSource = 'draw';
   // 匯入解析中遮罩
   bool _isImporting = false;
+  // 匯出 KML 中
+  bool _isExporting = false;
   
   // 現有邊界
   List<ProjectBoundary> _existingBoundaries = [];
@@ -713,7 +716,7 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
           if (selfIntersecting)
             TextButton(
               onPressed: () => Navigator.pop(ctx, 'reorder'),
-              child: const Text('依角度重排後載入'),
+              child: const Text('自動重排後載入'),
             ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, 'load'),
@@ -727,7 +730,17 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
 
     var coords = coordinates;
     if (action == 'reorder') {
-      coords = BoundaryInputParser.reorderByAngle(coordinates);
+      // 先角度重排（凸形）、仍自相交再試最近鄰（細長/凹形）
+      final fixed = BoundaryInputParser.tryAutoReorder(coordinates);
+      coords = fixed.coordinates;
+      if (!fixed.resolved && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('自動重排仍無法完全消除自相交（可能為複雜凹形），請載入後手動調整頂點順序'),
+            duration: Duration(seconds: 4),
+          ),
+        );
+      }
     }
     final points = coords.map((c) => LatLng(c[0], c[1])).toList();
     _loadPreviewPoints(points, source);
@@ -753,6 +766,44 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
     );
   }
 
+  /// 匯出目前選定區的已儲存邊界為 KML（沿用 DownloadService：含 JWT、TLS、開檔）。
+  /// Android 會以 Google Earth（若已安裝）開啟，與「匯入 KML」形成雙向。
+  Future<void> _exportKml() async {
+    if (_selectedProject == null || _currentProjectBoundary == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('此區尚無已儲存的邊界可匯出')),
+      );
+      return;
+    }
+    final name = _selectedProject!;
+    final base = ApiService.baseUrl.replaceAll(RegExp(r'/+$'), '');
+    final url =
+        '$base/project-boundaries/export.kml?project=${Uri.encodeComponent(name)}';
+
+    setState(() => _isExporting = true);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('匯出 KML 中…')),
+    );
+    final result = await DownloadService.downloadAndOpen(
+      url,
+      suggestedFilename: '$name.kml',
+    );
+    if (!mounted) return;
+    setState(() => _isExporting = false);
+    if (result.success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(result.warning ?? '已匯出 KML，可在 Google Earth 開啟')),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(result.error ?? 'KML 匯出失敗'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   Future<void> _saveBoundary() async {
     if (_selectedProject == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -766,6 +817,57 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
         const SnackBar(content: Text('邊界至少需要 3 個頂點')),
       );
       return;
+    }
+
+    // 自相交防呆：手動點選/拖曳頂點也可能畫出交叉邊界（後端會以 turf.kinks 擋下）。
+    // 在送出前先偵測，並提供「自動重排」（角度→最近鄰）以與貼座標/匯入流程一致。
+    final drawCoords =
+        _drawingPoints.map((p) => [p.latitude, p.longitude]).toList();
+    if (BoundaryInputParser.isSelfIntersecting(drawCoords)) {
+      final choice = await showDialog<String>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('⚠️ 邊界自相交'),
+          content: const Text(
+            '目前的頂點連線有交叉，地圖上會出現非預期範圍，後端也會拒絕儲存。\n\n'
+            '可嘗試「自動重排」（凸形以角度、細長/凹形以最近鄰）；'
+            '若是複雜凹形，請點「返回調整」手動修正頂點順序。',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, 'cancel'),
+              child: const Text('返回調整'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(ctx, 'reorder'),
+              child: const Text('自動重排'),
+            ),
+          ],
+        ),
+      );
+      if (choice != 'reorder' || !mounted) return;
+
+      final fixed = BoundaryInputParser.tryAutoReorder(drawCoords);
+      setState(() {
+        _drawingPoints
+          ..clear()
+          ..addAll(fixed.coordinates.map((c) => LatLng(c[0], c[1])));
+      });
+      if (!fixed.resolved) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('自動重排仍無法完全消除自相交，請手動調整頂點順序後再儲存'),
+            duration: Duration(seconds: 4),
+          ),
+        );
+        return; // 仍自相交，後端會拒絕，直接讓使用者調整
+      }
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('已自動重排頂點，請確認後再次按儲存')),
+      );
+      return; // 重排後讓使用者確認形狀，再按一次儲存
     }
 
     // 驗證邊界是否涵蓋所有現有樹木
@@ -1072,7 +1174,19 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
               tooltip: '清除',
               onPressed: _clearDrawing,
             ),
-          ],
+          ] else if (_currentProjectBoundary != null)
+            IconButton(
+              icon: _isExporting
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white),
+                    )
+                  : const Icon(Icons.ios_share),
+              tooltip: '匯出 KML（可在 Google Earth 開啟）',
+              onPressed: _isExporting ? null : _exportKml,
+            ),
         ],
       ),
       body: _isLoading

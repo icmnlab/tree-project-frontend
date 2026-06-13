@@ -185,6 +185,61 @@ class BoundaryInputParser {
     return sorted;
   }
 
+  /// 最近鄰連線重排：從最低點（lat 最小，其次 lng 最小）出發，每次走到最近的
+  /// 未拜訪點。對「細長 / 凹形」常比極角重排更能還原合理繞行順序。
+  /// 注意：仍是啟發式，**不保證**對所有點集都能還原成非自相交邊界。
+  static List<List<double>> reorderByNearestNeighbor(List<List<double>> coords) {
+    if (coords.length < 3) return coords;
+    final pts = [...coords];
+    int startIdx = 0;
+    for (int i = 1; i < pts.length; i++) {
+      if (pts[i][0] < pts[startIdx][0] ||
+          (pts[i][0] == pts[startIdx][0] && pts[i][1] < pts[startIdx][1])) {
+        startIdx = i;
+      }
+    }
+    final visited = List<bool>.filled(pts.length, false);
+    final order = <List<double>>[];
+    var cur = startIdx;
+    visited[cur] = true;
+    order.add(pts[cur]);
+    for (var step = 1; step < pts.length; step++) {
+      var best = -1;
+      var bestD = double.infinity;
+      for (var j = 0; j < pts.length; j++) {
+        if (visited[j]) continue;
+        final dy = pts[j][0] - pts[cur][0];
+        final dx = pts[j][1] - pts[cur][1];
+        final d = dy * dy + dx * dx;
+        if (d < bestD) {
+          bestD = d;
+          best = j;
+        }
+      }
+      if (best < 0) break;
+      visited[best] = true;
+      order.add(pts[best]);
+      cur = best;
+    }
+    return order;
+  }
+
+  /// 自動嘗試修復自相交：先「依角度重排」（凸形），仍自相交再試「最近鄰連線」（細長/凹形）。
+  /// 回傳 [coordinates] 為修復後座標、[resolved] 表示是否已成功消除自相交。
+  /// 兩法皆無法解決（複雜凹形）時 resolved=false，coordinates 回角度版供使用者參考。
+  static ({List<List<double>> coordinates, bool resolved}) tryAutoReorder(
+      List<List<double>> coords) {
+    final byAngle = reorderByAngle(coords);
+    if (!isSelfIntersecting(byAngle)) {
+      return (coordinates: byAngle, resolved: true);
+    }
+    final byNn = reorderByNearestNeighbor(coords);
+    if (!isSelfIntersecting(byNn)) {
+      return (coordinates: byNn, resolved: true);
+    }
+    return (coordinates: byAngle, resolved: false);
+  }
+
   /// 自相交偵測：檢查多邊形（閉合）是否有不相鄰邊相交。
   static bool isSelfIntersecting(List<List<double>> coords) {
     final n = coords.length;

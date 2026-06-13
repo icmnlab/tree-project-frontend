@@ -4,6 +4,15 @@
 
 ---
 
+## v18.6.0 (2026-06-13) — 邊界匯出 KML + 自動重排升級 + 手動繪製防呆
+
+- **邊界匯出 KML（`project_boundary_draw_page`）**：已有邊界的區，右上角新增「匯出（分享）」圖示 → 下載 `<區名>.kml`，Android 以 Google Earth 開啟；沿用 `DownloadService`（JWT/TLS/`OpenFilex`）。與「匯入 KML」形成雙向流。
+- **自動重排升級（`lib/utils/boundary_input.dart`）**：新增 `reorderByNearestNeighbor`（最近鄰連線，對細長/部分凹形較佳）與 `tryAutoReorder`（先角度、仍自相交再最近鄰）。貼座標/匯入預覽的「依角度重排」改為「自動重排」，無法消除時明確提示需手動調整。
+- **手動繪製自相交防呆**：手動點選/拖曳頂點若畫出交叉，按「儲存」時跳出對話框可「自動重排」（與貼座標/匯入一致），不再只回後端 400「儲存失敗」。
+- **測試/樣本/文件**：新增 `sample_boundary_complex.kml`（凹形 KML）；新增重排單元測試（蝴蝶結修復、最近鄰起點、合法多邊形）；後端新增匯出契約測試（KML 內容、lng,lat 序、404）；更新驗證清單 B9/B16/B17/B18/B19、`BOUNDARY_SYSTEM_DESIGN.md`、`boundary_samples/README.md`。
+
+---
+
 ## v18.5.4 (2026-06-13) — 邀請碼管理強化 + 邊界亂序測試
 
 - **邀請碼管理（`invite_management_page`）**：

@@ -149,4 +149,43 @@ void main() {
       expect(BoundaryInputParser.isSelfIntersecting(fixed), false);
     });
   });
+
+  group('自動重排（角度 + 最近鄰）', () {
+    test('tryAutoReorder 修復凸形蝴蝶結並回 resolved=true', () {
+      final bowtie = [
+        [0.0, 0.0],
+        [2.0, 2.0],
+        [0.0, 2.0],
+        [2.0, 0.0],
+      ];
+      final r = BoundaryInputParser.tryAutoReorder(bowtie);
+      expect(r.resolved, true);
+      expect(BoundaryInputParser.isSelfIntersecting(r.coordinates), false);
+      expect(r.coordinates.length, 4);
+    });
+
+    test('reorderByNearestNeighbor 保留所有點且自最低點起', () {
+      final pts = [
+        [2.0, 2.0],
+        [0.0, 0.0],
+        [2.0, 0.0],
+        [0.0, 2.0],
+      ];
+      final out = BoundaryInputParser.reorderByNearestNeighbor(pts);
+      expect(out.length, 4);
+      expect(out.first[0], 0.0); // lat 最小
+      expect(out.first[1], 0.0); // 其次 lng 最小
+    });
+
+    test('tryAutoReorder 對已合法多邊形回 resolved=true', () {
+      final square = [
+        [0.0, 0.0],
+        [0.0, 2.0],
+        [2.0, 2.0],
+        [2.0, 0.0],
+      ];
+      final r = BoundaryInputParser.tryAutoReorder(square);
+      expect(r.resolved, true);
+    });
+  });
 }

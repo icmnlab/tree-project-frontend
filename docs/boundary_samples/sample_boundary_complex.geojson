@@ -4,7 +4,7 @@
     {
       "type": "Feature",
       "properties": {
-        "name": "環境學院魚塭（凹多邊形測試）",
+        "name": "魚塭（凹多邊形測試）",
         "note": "9 點，依地圖順時針排序，WGS84 (EPSG:4326)，[lng, lat]"
       },
       "geometry": {
