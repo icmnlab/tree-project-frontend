@@ -4,6 +4,13 @@
 
 ---
 
+## v18.10.1 (2026-06-15) — 交接收尾：移除未使用的 UI 設計稿與主題
+
+- **移除** `UI_sustainable_treeai/` 設計稿（HTML/PNG mockup）與未掛載、未被引用的 `lib/themes/forest_intelligence_theme.dart`。決定不在此次交接導入新 UI；現行 `AppTheme` 介面維持穩定。日後若要改版可重新設計，避免交接前一次更動所有畫面的風險與成本。
+- 文件同步：`HANDOFF_SECRETS_CHECKLIST` 等改為中性設定指南（與後端對齊）。
+
+---
+
 ## v18.10.0 (2026-06-15) — 程式碼品質批次清理 + Forest Intelligence 主題（可選用）
 
 - **`dart fix --apply`（38 檔、149 項）**：批次套用安全自動修正（`prefer_const_*`、`unnecessary_import`、`unnecessary_string_interpolations`、`deprecated_member_use` 等），降低 `flutter analyze` 噪音；無錯誤產生。
