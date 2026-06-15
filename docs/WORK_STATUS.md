@@ -5,6 +5,19 @@
 
 ---
 
+## (2026-06-15d) 樹種名繁體化 + 批次匯入生命週期補漏 + Ubuntu 重新部署驗證 — 已完成
+
+- **樹種名一律台灣繁體（簡轉繁）**：後端新增 `utils/chineseConvert.js`（`opencc-js` cn→tw），在 Pl@ntNet 回應與**所有寫入路徑**（create_v2／update_v2／批次匯入／CSV／現場量測 transfer）入庫前統一轉繁。
+  - **簡繁共用字守門**：原 cn→tw 會把已是繁體的「朴樹」(Celtis) 誤轉成「樸樹」（部署前以 `normalize:species` dry-run 發現）。修法為先以 tw→cn 偵測——字串已含繁體限定字即跳過、不再轉換；完全簡體仍正確（朴树→朴樹）、且冪等。
+  - **既有資料一次性回填**：`scripts/normalize_species_traditional.js`（`npm run normalize:species`，預設 dry-run）；已在部署主機套用：簡體樹名 0 筆殘留、無樹種編號 0 筆。
+- **批次匯入生命週期補漏**：`treeSurveyBatchController` 先前未由樹況推導 `lifecycle_status`，造成批次帶枯死/倒伏的樹仍計為活立木。已比照其他路徑修正；migration `35_backfill_lifecycle_alignment.pg.sql` 回填既有資料。部署後驗證：7069 筆中**生命週期 0 筆不符**（111 筆「枯萎」屬可回復逆境壓力，正確維持 active）。
+- **前端**：修 `ble_import_page` 匯入預覽工具列 `RenderFlex` 右側溢位（Flexible + ellipsis）。
+- **Ubuntu 重新部署驗證**：依交接文件 `deploy.sh` 流程部署（webhook 自動 + 手動確認）；migration 35 已套用、兩 PM2 worker 換新、`/health` OK、錯誤日誌無新例外。`tree_survey_data.csv` 確認僅 dev-fixtures，正式 `run_pending_migrations.js` 不匯入。
+- **版本**：前端 `18.10.3+25`；後端測試 `tests/runner.js` 共 **89 cases**（58 invariants + 1 journey + 30 contracts）。
+- **交接最後一步**：撤換個人金鑰/帳號依 `HANDOFF_SECRETS_CHECKLIST`，由專案擁有者於各平台 console 自行執行。
+
+---
+
 ## (2026-06-15c) 交接收尾：程式碼品質、淘汰流程、文件/建置指南更新 — 已完成
 
 - **程式碼品質**：`dart fix --apply`（38 檔 149 項）；殘留 `print()`→`debugPrint()`；移除個人化 `TODO(Xiang)`；刪除 dead code（`map_page._extractCitiesFromData`、`ble_live_session._gpsDialogOpen`）。前端 429 測試全綠。
