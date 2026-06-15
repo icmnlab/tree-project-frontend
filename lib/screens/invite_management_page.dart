@@ -86,6 +86,7 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
                 DropdownButtonFormField<String>(
                   key: ValueKey(role),
                   initialValue: role,
+                  isExpanded: true,
                   decoration: const InputDecoration(labelText: '內建角色'),
                   items: const [
                     '一般使用者',
@@ -408,6 +409,7 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
                   else
                     DropdownButtonFormField<String>(
                       initialValue: selectedArea,
+                      isExpanded: true,
                       decoration: const InputDecoration(
                         border: OutlineInputBorder(),
                         hintText: '選擇既有專案',
@@ -416,7 +418,10 @@ class _InviteManagementPageState extends State<InviteManagementPage> {
                           .map((a) => a['area_name']?.toString() ?? '')
                           .where((n) => n.isNotEmpty)
                           .map(
-                            (n) => DropdownMenuItem(value: n, child: Text(n)),
+                            (n) => DropdownMenuItem(
+                              value: n,
+                              child: Text(n, overflow: TextOverflow.ellipsis),
+                            ),
                           )
                           .toList(),
                       onChanged: (v) => setDialog(() => selectedArea = v),

@@ -9,6 +9,7 @@ import '../../utils/location_helper.dart';
 import '../../services/tree_service.dart';
 import '../../services/project_service.dart';
 import '../../services/species_service.dart';
+import '../../services/tree_status_service.dart';
 import '../../services/species_identification_service.dart';
 import '../../services/v3/project_boundary_service.dart';
 import '../../services/v3/project_boundary_coordinator.dart';
@@ -79,17 +80,15 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
   double? _measurementConfidence;
   String? _measurementMethod;
 
-  // Step 4: Status
+  // Step 4: Status（樹況選單由後端 tree_status_options 動態載入：內建 + 自訂可共享）
   String _selectedStatus = '正常';
-  final List<String> _statusOptions = [
-    '正常',
-    '枯死',
-    '病蟲害',
-    '傾斜',
-    '斷梢',
-    '空洞',
-    '其他'
-  ];
+  List<TreeStatusOption> _statusCatalog = TreeStatusService.fallback;
+  static const String _customStatusLabel = '其他（自訂）';
+  bool _isCustomStatus = false;
+  final TextEditingController _customStatusController = TextEditingController();
+
+  String get _effectiveStatus =>
+      _isCustomStatus ? _customStatusController.text.trim() : _selectedStatus;
 
   // Step 5: Photos & Notes
   final TextEditingController _notesController = TextEditingController();
@@ -107,8 +106,20 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
     super.initState();
     _loadProjectAreas(); // V3: 載入專案區位列表
     _loadSpecies();
+    _loadStatuses();
     _getCurrentLocation();
     _loadBoundariesForMap(); // [N12 fix] 載入並渲染專案邊界
+  }
+
+  Future<void> _loadStatuses() async {
+    try {
+      final opts = await TreeStatusService.fetch();
+      if (mounted && opts.isNotEmpty) {
+        setState(() => _statusCatalog = opts);
+      }
+    } catch (e) {
+      debugPrint('載入樹況選單失敗: $e');
+    }
   }
 
   // [N12 fix] 載入專案邊界並轉成 Polygon Set 供地圖顯示
@@ -727,6 +738,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
     _dbhController.dispose();
     _heightController.dispose();
     _notesController.dispose();
+    _customStatusController.dispose();
     super.dispose();
   }
 
@@ -1534,16 +1546,44 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
         const SizedBox(height: 8),
         Wrap(
           spacing: 8,
-          children: _statusOptions.map((status) {
-            return ChoiceChip(
-              label: Text(status),
-              selected: _selectedStatus == status,
-              onSelected: (selected) {
-                if (selected) setState(() => _selectedStatus = status);
-              },
-            );
-          }).toList(),
+          children: [
+            ..._statusCatalog.map((opt) {
+              final selected = !_isCustomStatus && _selectedStatus == opt.name;
+              return ChoiceChip(
+                label: Text(opt.isRetire ? '${opt.name}（淘汰）' : opt.name),
+                selected: selected,
+                onSelected: (s) {
+                  if (s) {
+                    setState(() {
+                      _isCustomStatus = false;
+                      _selectedStatus = opt.name;
+                    });
+                  }
+                },
+              );
+            }),
+            ChoiceChip(
+              label: const Text(_customStatusLabel),
+              selected: _isCustomStatus,
+              onSelected: (s) => setState(() => _isCustomStatus = s),
+            ),
+          ],
         ),
+        if (_isCustomStatus) ...[
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _customStatusController,
+            maxLength: 50,
+            decoration: const InputDecoration(
+              labelText: '自訂樹況',
+              hintText: '例如：枯立木、雷擊、移除',
+              helperText: '儲存後此狀況會加入共用選單，其他人日後也能選用',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.edit_note),
+            ),
+            onChanged: (_) => setState(() {}),
+          ),
+        ],
         const SizedBox(height: 16),
         TextFormField(
           controller: _notesController,
@@ -1640,6 +1680,15 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
         return;
       }
 
+      // [自訂樹況] 若為自訂且不在目錄內，寫回共用選單供他人日後選用（後端 ON CONFLICT 收斂）。
+      final effectiveStatus =
+          _effectiveStatus.isEmpty ? '正常' : _effectiveStatus;
+      if (_isCustomStatus &&
+          effectiveStatus != '正常' &&
+          !_statusCatalog.any((o) => o.name == effectiveStatus)) {
+        await TreeStatusService.create(effectiveStatus);
+      }
+
       // 1. 準備提交數據 (相容 V2 API)
       final treeData = {
         "project_name": _projectController.text.isNotEmpty
@@ -1657,7 +1706,7 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
         "dbh_cm": dbhValue,
         "tree_height_m": heightValue ?? 0,
 
-        "status": _selectedStatus,
+        "status": effectiveStatus,
         "note": _notesController.text,
 
         "survey_time": DateTime.now().toIso8601String(),

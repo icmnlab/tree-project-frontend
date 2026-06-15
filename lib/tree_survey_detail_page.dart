@@ -28,6 +28,28 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
   List<TreeImage> _treeImages = [];
   final TreeImageService _imageService = TreeImageService();
 
+  /// 雲端最新照片（跨裝置可見；本地索引被清理後仍可顯示）
+  String? _latestRemotePhotoUrl;
+
+  String get _lifecycleStatus =>
+      (_treeData['lifecycle_status'] ?? _treeData['生命週期'] ?? 'active')
+          .toString()
+          .trim();
+  bool get _isRetired =>
+      _lifecycleStatus.isNotEmpty && _lifecycleStatus != 'active';
+  String get _lifecycleLabel {
+    switch (_lifecycleStatus) {
+      case 'dead':
+        return '枯死';
+      case 'fallen':
+        return '倒塌';
+      case 'removed':
+        return '已移除';
+      default:
+        return '存活';
+    }
+  }
+
   int? _numericTreeId() {
     final v = _treeData['id'];
     if (v is int) return v;
@@ -55,6 +77,24 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
     try {
       final images = await _imageService.getTreeImages(treeId);
       if (mounted) setState(() => _treeImages = images);
+    } catch (_) {}
+    await _loadLatestRemotePhoto();
+  }
+
+  /// 取雲端最新一張照片（依 captured_at）。本地索引被清理或換裝置時，仍能顯示最新照片。
+  Future<void> _loadLatestRemotePhoto() async {
+    final id = _numericTreeId();
+    if (id == null) return;
+    try {
+      final res =
+          await ApiService.get('tree-images/tree/$id?source=survey&latest=1');
+      if (res['success'] == true && res['data'] is List && (res['data'] as List).isNotEmpty) {
+        final row = (res['data'] as List).first as Map<String, dynamic>;
+        final url = (row['url'] ?? row['cloud_url'] ?? row['thumbnail_url'])?.toString();
+        if (mounted && url != null && url.startsWith('http')) {
+          setState(() => _latestRemotePhotoUrl = url);
+        }
+      }
     } catch (_) {}
   }
 
@@ -156,6 +196,142 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
     }
   }
 
+  Future<void> _retireTree() async {
+    final id = _numericTreeId();
+    if (id == null) return;
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (ctx) => SimpleDialog(
+        title: const Text('標記為已淘汰'),
+        children: [
+          const Padding(
+            padding: EdgeInsets.fromLTRB(20, 0, 20, 12),
+            child: Text(
+              '此樹將不再列入維護待辦、不計入活立木碳匯，地圖以灰階顯示。歷史與照片仍保留，可隨時復原。',
+              style: TextStyle(fontSize: 13, color: Colors.grey),
+            ),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, 'dead'),
+            child: const Text('枯死'),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, 'fallen'),
+            child: const Text('倒塌'),
+          ),
+          SimpleDialogOption(
+            onPressed: () => Navigator.pop(ctx, 'removed'),
+            child: const Text('移除 / 砍除'),
+          ),
+        ],
+      ),
+    );
+    if (reason == null) return;
+    final res = await ApiService.post('tree_survey/$id/retire', {
+      'lifecycle_status': reason,
+    });
+    if (!mounted) return;
+    if (res['success'] == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(res['message']?.toString() ?? '已標記為淘汰')),
+      );
+      await _refreshTreeData();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('操作失敗：${res['message'] ?? '未知錯誤'}')),
+      );
+    }
+  }
+
+  Future<void> _restoreTree() async {
+    final id = _numericTreeId();
+    if (id == null) return;
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('復原樹木'),
+        content: const Text('確定要將此樹復原為「存活」狀態嗎？\n復原後將重新計入活立木碳匯與維護待辦。'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('取消')),
+          FilledButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('復原')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    final res = await ApiService.post('tree_survey/$id/restore', {});
+    if (!mounted) return;
+    if (res['success'] == true) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(res['message']?.toString() ?? '已復原')),
+      );
+      await _refreshTreeData();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('操作失敗：${res['message'] ?? '未知錯誤'}')),
+      );
+    }
+  }
+
+  Widget _buildLifecycleCard() {
+    final retired = _isRetired;
+    final color = retired ? Colors.orange : Colors.green;
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        children: [
+          Icon(retired ? Icons.warning_amber_rounded : Icons.eco,
+              color: color),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  retired ? '已淘汰：$_lifecycleLabel' : '存活中',
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: color.withValues(alpha: 0.95)),
+                ),
+                if (retired)
+                  Text(
+                    _f('retired_reason', '淘汰原因') == '無'
+                        ? '不計入活立木碳匯、不列維護待辦'
+                        : '原因：${_f('retired_reason', '淘汰原因')}',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+              ],
+            ),
+          ),
+          if (_canEdit)
+            retired
+                ? OutlinedButton.icon(
+                    onPressed: _restoreTree,
+                    icon: const Icon(Icons.restore, size: 18),
+                    label: const Text('復原'),
+                  )
+                : OutlinedButton.icon(
+                    onPressed: _retireTree,
+                    icon: const Icon(Icons.do_not_disturb_on_outlined, size: 18),
+                    label: const Text('淘汰'),
+                    style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.orange.shade800),
+                  ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final rawProjectTreeId = _f('project_tree_id', '專案樹木');
@@ -244,7 +420,16 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-            // 照片區塊
+            // 生命週期狀態卡（淘汰/復原）
+            _buildLifecycleCard(),
+
+            // 最新照片（優先雲端，跨裝置可見）
+            if (_latestRemotePhotoUrl != null) ...[
+              _buildLatestPhotoHero(),
+              const SizedBox(height: 16),
+            ],
+
+            // 照片區塊（本地相簿）
             if (_treeImages.isNotEmpty)
               _buildPhotoGallery(),
             if (_treeImages.isNotEmpty)
@@ -293,6 +478,7 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
               _buildInfoRow('樹高', '${_f('tree_height_m', '樹高（公尺）')} 公尺'),
               _buildInfoRow('胸徑', '${_f('dbh_cm', '胸徑（公分）')} 公分'),
               _buildInfoRow('狀況', _f('status', '狀況')),
+              _buildInfoRow('生命週期', _isRetired ? '已淘汰（$_lifecycleLabel）' : '存活'),
             ]),
             const SizedBox(height: 16),
             _buildInfoCard(CarbonDisplay.sectionTitle, [
@@ -472,6 +658,65 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
             ),
             const SizedBox(height: 12),
             ...children,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLatestPhotoHero() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? AppColors.darkCard : Colors.white;
+    final textPrimary =
+        isDark ? AppColors.darkTextPrimary : AppColors.neutral900;
+    return Container(
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.forestGreen.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.photo_camera, color: AppColors.forestGreen),
+                const SizedBox(width: 8),
+                Text('最新照片',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: textPrimary)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                _latestRemotePhotoUrl!,
+                width: double.infinity,
+                height: 220,
+                fit: BoxFit.cover,
+                loadingBuilder: (ctx, child, progress) => progress == null
+                    ? child
+                    : const SizedBox(
+                        height: 220,
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+                errorBuilder: (ctx, e, st) => const SizedBox(
+                  height: 220,
+                  child: Center(child: Icon(Icons.broken_image, size: 48)),
+                ),
+              ),
+            ),
           ],
         ),
       ),

@@ -734,6 +734,10 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
           transferSessionId: _liveSessionId,
           initialUpdateTreeLocation:
               isMaintRemeasure ? _pendingUpdateTreeLocation : null,
+          initialSpeciesName:
+              isMaintRemeasure ? widget.maintenanceTarget!.speciesName : null,
+          initialSpeciesId:
+              isMaintRemeasure ? widget.maintenanceTarget!.speciesId : null,
           onTreeSurveyTransferred: (id) => formTransferredTreeId = id,
         ),
       ),

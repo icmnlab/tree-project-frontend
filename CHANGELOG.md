@@ -4,6 +4,36 @@
 
 ---
 
+## v18.9.0 (2026-06-15) — 樹況選單動態化（內建+自訂可共享）
+
+- **動態樹況選單（`services/tree_status_service.dart` 新增）**：新增/維護量測表單的「樹木狀況」改由後端 `GET /tree-statuses` 動態載入（內建：正常/傾斜/病蟲害/枯萎/枯立木/枯死/倒塌/已移除），API 不可用時落回內建後備清單，離線仍可作業。
+- **自訂狀況可共享（`screens/v3/integrated_tree_form_page`、`screens/v3/manual_input_page_v3`）**：選「其他（自訂）」可自行輸入樹況；存檔時若不在目錄內，會寫回共用選單（`POST /tree-statuses`），其他使用者日後也能選用。多人同時新增同名由後端 `ON CONFLICT` 收斂。
+- **是否淘汰依目錄 lifecycle 判定**：淘汰提示與是否計入活立木碳匯，改依該狀況的 `lifecycle`（查無則本地關鍵字推導，與後端一致）；淘汰狀況的 chip 會標示「（淘汰）」。**「枯立木」現正確歸為非活立木**。
+- 沿用既有「淘汰」軟性流程（不列維護待辦、不計活立木碳匯、地圖灰階、可於詳情頁復原）。
+
+---
+
+## v18.8.0 (2026-06-15) — 交接整備：座標 .txt/.csv 匯入、移除除錯遙測
+
+- **邊界匯入純文字座標檔（`screens/v3/project_boundary_draw_page`）**：邊界頁「匯入檔案」現可選 `.txt` / `.csv` 逐行座標檔（環境學院常見格式）；前端直接以 `utils/boundary_input.dart` 解析，沿用「貼上座標」的驗證（自動判斷 lng,lat / lat,lng、自相交偵測、缺小數點提醒、自動重排），不經後端。
+- **移除除錯遙測旁路（`debug/debug_session_log.dart`）**：刪除歷史除錯期間殘留、會 POST 到本機 ingest 端點（含硬編碼位址/UUID）的網路旁路；`DebugSessionLog.emit` 保留為輕量 `FieldLog` 包裝，呼叫端不受影響，正式版不再產生多餘連線。
+- **配合後端補齊**：詳情頁「淘汰／復原」按鈕對應的 `POST /tree_survey/:id/retire`、`/restore` 後端端點本次補上（先前僅前端呼叫），按鈕功能恢復正常。
+- **修正 UI 溢位（`invite_management_page`）**：邀請碼／新增專案對話框的下拉選單（角色、既有專案）加 `isExpanded: true` + 文字 ellipsis，解決 `flutter run` 實測到的 `RenderFlex overflowed`（長專案名時右側溢出 26/78px）。
+
+---
+
+## v18.7.0 (2026-06-13) — 維護量測：樹種繼承、最新照片、樹木生命週期（淘汰/復原）
+
+- **重測繼承樹種（`integrated_tree_form_page` / `maintenance_survey_page` / `ble_live_session_page` / `models/maintenance_target`）**：維護重測時表單預填既有樹木的樹種（含 `species_id`），使用者可自行修改。
+- **拍照＋樹種變更詢問**：維護模式拍照辨識若得到與目前樹種「不同」的結果，跳出對話框詢問「變更／維持原樹種」；相同則不打擾（此分支在 photoWithSpecies AutoPilot 下也會執行）。
+- **樹木生命週期（淘汰/復原）**
+  - 樹況選單新增「倒塌」；選擇枯死/倒塌/已移除時顯示「將列為已淘汰」說明（不列維護待辦、不計活立木碳匯、地圖灰階、可復原）。
+  - 樹木詳情頁新增「生命週期卡」：可一鍵「淘汰」（枯死/倒塌/移除）或「復原」（`調查管理員`+）。
+  - 地圖：已淘汰樹以半透明紫標記區隔，AppBar 新增「隱藏已淘汰」切換；清單：已淘汰樹以灰字 + 「已淘汰」標籤；維護待辦自動排除已淘汰樹。
+- **照片跟隨歷史 + 顯示最新（`tree_survey_detail_page` / `tree_measurement_history_panel`）**：詳情頁頂部顯示雲端「最新照片」（跨裝置可見，不受本地快取清理影響）；歷次量測面板各次展開顯示該次拍攝的縮圖（依 `measurement_id`）。
+
+---
+
 ## v18.6.0 (2026-06-13) — 邊界匯出 KML + 自動重排升級 + 手動繪製防呆
 
 - **邊界匯出 KML（`project_boundary_draw_page`）**：已有邊界的區，右上角新增「匯出（分享）」圖示 → 下載 `<區名>.kml`，Android 以 Google Earth 開啟；沿用 `DownloadService`（JWT/TLS/`OpenFilex`）。與「匯入 KML」形成雙向流。

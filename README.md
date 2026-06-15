@@ -4,7 +4,7 @@ Flutter app — field-survey, two-stage measurement, AR/CV-based DBH estimation,
 project & area management, AI chat / agent, and on-device tree-trunk
 preview. The single companion to the Node backend.
 
-`pubspec.yaml`: `name: sustainable_treeai`, `version: 18.3.2+10`,
+`pubspec.yaml`: `name: sustainable_treeai`, `version: 18.8.0+19`,
 `environment.sdk: '>=3.0.0 <4.0.0'` (Flutter 3.x).
 
 ---
@@ -117,13 +117,13 @@ added later without renaming files.
 
 ### Self-signed TLS (`lib/main.dart`)
 
-`SelfHostedHttpOverrides` whitelists self-signed certificates **only** for a
-short, hard-coded list of hosts (your backend host, your ML host, and an
-optional MagicDNS / tailnet suffix). Anything else uses normal TLS
-validation. There is no global override.
-
-The whitelist lives in `lib/main.dart`; update it for your own deployment
-rather than relying on what is checked in.
+`SelfHostedHttpOverrides` whitelists self-signed certificates **only** for the
+hosts supplied at build time via
+`--dart-define=SELF_SIGNED_TRUSTED_HOSTS=<host1>,<host2>,...` (a `.`-prefixed
+entry such as `.ts.net` trusts a whole tailnet suffix). Anything else uses
+normal TLS validation. There is **no hard-coded host list and no global
+override** — nothing personal is checked in. See `lib/main.dart` (header
+comment) and `HANDOFF_SECRETS_CHECKLIST.md`.
 
 ### ML service (`lib/config/app_config.dart`)
 
@@ -188,7 +188,7 @@ Top-level convenience pages (still imported by `main.dart` route map):
 | `home_page.dart`                  | Top tab shell (`HomePage`) and dashboard (`DashboardPage`) |
 | `cities_page.dart`                | City / port browser |
 | `project_areas_page.dart`         | Project-area CRUD; embedded `_ProjectsByAreaPage` |
-| `manual_input_page.dart` / `v3/manual_input_page_v3.dart` | Manual tree entry. V3 is the current default |
+| `manual_input_page_v2.dart` / `v3/manual_input_page_v3.dart` | Manual tree entry. V3 is the current default |
 | `v3/integrated_tree_form_page.dart` | Composite tree form (geo + species + measurements) used after V3 photo capture |
 | `v3/project_boundary_draw_page.dart` | Draw a project polygon on a map; POSTs to `/project-boundaries` |
 | `scanner_page.dart`               | Live ML scan via WebSocket `/ws/scan` (DBH preview) |

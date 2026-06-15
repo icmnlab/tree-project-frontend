@@ -52,6 +52,14 @@ class TreeListPage extends StatefulWidget {
 }
 
 class _TreeListPageState extends State<TreeListPage> {
+  /// 樹木是否已淘汰（lifecycle_status 非 active）— 清單以灰字 + 「已淘汰」標記區隔。
+  static bool _isRetiredTreeRow(Map<String, dynamic> tree) {
+    final lc = (tree['lifecycle_status'] ?? tree['生命週期'] ?? 'active')
+        .toString()
+        .trim();
+    return lc.isNotEmpty && lc != 'active';
+  }
+
   List<Map<String, dynamic>> _trees = [];
   List<Map<String, dynamic>> _filteredTrees = [];
   bool _isLoading = true;
@@ -1196,13 +1204,39 @@ class _TreeListPageState extends State<TreeListPage> {
                                                     child: Column(
                                                       crossAxisAlignment: CrossAxisAlignment.start,
                                                       children: [
-                                                        Text(
-                                                          tree['樹種名稱'] ?? '未知樹種',
-                                                          style: TextStyle(
-                                                            fontWeight: FontWeight.w600,
-                                                            fontSize: 16,
-                                                            color: textPrimary,
-                                                          ),
+                                                        Row(
+                                                          children: [
+                                                            Flexible(
+                                                              child: Text(
+                                                                tree['樹種名稱'] ?? '未知樹種',
+                                                                style: TextStyle(
+                                                                  fontWeight: FontWeight.w600,
+                                                                  fontSize: 16,
+                                                                  color: _isRetiredTreeRow(tree)
+                                                                      ? textTertiary
+                                                                      : textPrimary,
+                                                                ),
+                                                                overflow: TextOverflow.ellipsis,
+                                                              ),
+                                                            ),
+                                                            if (_isRetiredTreeRow(tree)) ...[
+                                                              const SizedBox(width: 6),
+                                                              Container(
+                                                                padding: const EdgeInsets.symmetric(
+                                                                    horizontal: 6, vertical: 2),
+                                                                decoration: BoxDecoration(
+                                                                  color: Colors.orange.shade100,
+                                                                  borderRadius: BorderRadius.circular(6),
+                                                                ),
+                                                                child: Text(
+                                                                  '已淘汰',
+                                                                  style: TextStyle(
+                                                                      fontSize: 11,
+                                                                      color: Colors.orange.shade900),
+                                                                ),
+                                                              ),
+                                                            ],
+                                                          ],
                                                         ),
                                                         const SizedBox(height: 6),
                                                         Row(

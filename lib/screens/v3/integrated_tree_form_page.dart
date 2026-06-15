@@ -8,6 +8,7 @@ import '../../models/pending_tree_measurement.dart';
 import '../../services/pending_measurement_service.dart';
 import '../../services/species_identification_service.dart';
 import '../../services/species_service.dart';
+import '../../services/tree_status_service.dart';
 import '../../services/pure_vision_dbh_service.dart';
 import '../../services/tflite_tracking_service.dart';
 import '../../services/v3/tree_image_service.dart';
@@ -48,6 +49,10 @@ class IntegratedTreeFormPage extends StatefulWidget {
   /// 維護重測：由 BLE SEND 後 GPS 流程決定（表單不再顯示開關）
   final bool? initialUpdateTreeLocation;
 
+  /// 維護重測：既有樹木的樹種（預填，使用者可修改）。
+  final String? initialSpeciesName;
+  final String? initialSpeciesId;
+
   /// auto-transfer 成功時，把轉移取得的正式 `tree_survey_id` 回拋給呼叫端。
   /// 用於現場新增樹流程：表單內已轉移並拿到正式 id，避免呼叫端再做一次
   /// 冪等 transfer（會回空 id_mapping）而遺失 id。
@@ -60,6 +65,8 @@ class IntegratedTreeFormPage extends StatefulWidget {
     this.transferSessionId,
     this.handbookCompliantMode,
     this.initialUpdateTreeLocation,
+    this.initialSpeciesName,
+    this.initialSpeciesId,
     this.onTreeSurveyTransferred,
   });
 
@@ -82,18 +89,24 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
   final TextEditingController _speciesController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
 
-  // 狀態
+  // 狀態（樹況選單由後端 tree_status_options 動態載入：內建 + 使用者自訂可共享）
   String _selectedStatus = '正常';
-  final List<String> _statusOptions = [
-    '正常',
-    '枯死',
-    '已移除',
-    '病蟲害',
-    '傾斜',
-    '斷梢',
-    '空洞',
-    '其他'
-  ];
+  // 樹況目錄（含 lifecycle，用於判定是否「淘汰」/活立木）；先以內建後備，載入後覆蓋。
+  List<TreeStatusOption> _statusCatalog = TreeStatusService.fallback;
+  // '其他（自訂）'：選此項時改用 _customStatusController 文字，存檔時寫回目錄供他人共用。
+  static const String _customStatusLabel = '其他（自訂）';
+  bool _isCustomStatus = false;
+  final TextEditingController _customStatusController = TextEditingController();
+
+  /// 目前生效的樹況：自訂模式取輸入框文字，否則取所選 chip。
+  String get _effectiveStatus =>
+      _isCustomStatus ? _customStatusController.text.trim() : _selectedStatus;
+
+  /// 選此狀況即「淘汰」此樹（軟性）：不列維護待辦、不計活立木碳匯、地圖灰階；可復原。
+  /// 依目錄 lifecycle 判定（查無則本地關鍵字推導，與後端一致）。
+  bool get _isRetireStatusSelected =>
+      _effectiveStatus.isNotEmpty &&
+      TreeStatusService.isRetireName(_effectiveStatus, _statusCatalog);
 
   bool _isLoading = false;
   bool _isAutoPilotRunning = false;
@@ -171,7 +184,21 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
     _speciesController.addListener(_updateCarbonPreview);
     _updateCarbonPreview();
     _loadSpecies();
+    _loadStatuses();
     _acquirePhoneGps();
+  }
+
+  Future<void> _loadStatuses() async {
+    try {
+      final opts = await TreeStatusService.fetch();
+      if (!mounted || opts.isEmpty) return;
+      setState(() {
+        _statusCatalog = opts;
+        // 若目前所選狀況不在新目錄內（且非自訂），保留原值以免遺失現場輸入。
+      });
+    } catch (e) {
+      debugPrint('載入樹況選單失敗: $e');
+    }
   }
 
   Future<void> _refreshLockBaseline() async {
@@ -393,6 +420,16 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
     }
     if (widget.task.speciesName != null) {
       _speciesController.text = widget.task.speciesName!;
+    }
+    // [樹種繼承] 維護重測：預填既有樹木的樹種（使用者可自行修改）。
+    // 之後拍照辨識若得到「不同」樹種，會詢問是否變更（見 _identifySpecies）。
+    if (_isMaintenance &&
+        _speciesController.text.trim().isEmpty &&
+        (widget.initialSpeciesName ?? '').trim().isNotEmpty) {
+      _speciesController.text = widget.initialSpeciesName!.trim();
+      if ((widget.initialSpeciesId ?? '').trim().isNotEmpty) {
+        _speciesId = widget.initialSpeciesId!.trim();
+      }
     }
   }
 
@@ -624,6 +661,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
     _heightController.dispose();
     _speciesController.dispose();
     _notesController.dispose();
+    _customStatusController.dispose();
     super.dispose();
   }
 
@@ -1158,6 +1196,49 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
             }
           });
 
+          // [維護] 拍照+樹種：辨識結果與既有（繼承）樹種不同 → 詢問是否變更；
+          // 相同則不打擾。此分支在 AutoPilot（photoWithSpecies）下也會執行。
+          if (_isMaintenance && !willAutoFill && mounted) {
+            final current = _speciesController.text.trim();
+            final identified = displayName.trim();
+            final bool sameName =
+                current.toLowerCase() == identified.toLowerCase();
+            final bool sameId = matchedId != null &&
+                _speciesId != null &&
+                matchedId == _speciesId;
+            if (current.isNotEmpty && !sameName && !sameId) {
+              final change = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  title: const Text('樹種辨識結果不同'),
+                  content: Text(
+                    '目前樹種：$current\n'
+                    '辨識結果：$identified（信心度 $score%）\n\n'
+                    '是否要變更為辨識結果？',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text('維持原樹種'),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text('變更'),
+                    ),
+                  ],
+                ),
+              );
+              if (change == true && mounted) {
+                setState(() {
+                  _speciesController.text = identified;
+                  _speciesId = matchedId; // 可能為 null（提交時會自動建檔）
+                  _speciesReady = true;
+                });
+              }
+            }
+            return; // 維護模式已單獨處理，略過下方一般提示
+          }
+
           if (mounted && !_isAutoPilotRunning) {
             final hint = commonHint != null ? ' / $commonHint' : '';
             final double scorePct = scoreNum * 100;
@@ -1463,8 +1544,16 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       }
 
       // 2. 更新測量結果（含樹木狀態）
+      // [自訂樹況] 若為自訂且不在目錄內，寫回共用選單供他人日後選用（多人並發以後端 ON CONFLICT 收斂）。
+      final effectiveStatus =
+          _effectiveStatus.isEmpty ? '正常' : _effectiveStatus;
+      if (_isCustomStatus &&
+          effectiveStatus != '正常' &&
+          !_statusCatalog.any((o) => o.name == effectiveStatus)) {
+        await TreeStatusService.create(effectiveStatus);
+      }
       final combinedNotes = [
-        if (_selectedStatus != '正常') '樹況: $_selectedStatus',
+        if (effectiveStatus != '正常') '樹況: $effectiveStatus',
         if (_notesController.text.isNotEmpty) _notesController.text,
       ].join(' | ');
 
@@ -1478,7 +1567,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
         dbhCm: dbh,
         confidence: _resolveSubmitConfidence(),
         method: _resolveSubmitMethod(),
-        notes: combinedNotes.isEmpty ? _selectedStatus : combinedNotes,
+        notes: combinedNotes.isEmpty ? effectiveStatus : combinedNotes,
         speciesName: _speciesController.text,
         expectedUpdatedAt: expectedUpdatedAt,
         dbhSource: _handbook ? 'manual' : _activeDbhSource,
@@ -1510,7 +1599,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
               dbhCm: dbh,
               confidence: _resolveSubmitConfidence(),
               method: _resolveSubmitMethod(),
-              notes: combinedNotes.isEmpty ? _selectedStatus : combinedNotes,
+              notes: combinedNotes.isEmpty ? effectiveStatus : combinedNotes,
               speciesName: _speciesController.text,
               expectedUpdatedAt: serverLock,
               dbhSource: _handbook ? 'manual' : _activeDbhSource,
@@ -1545,7 +1634,7 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
             dbhCm: dbh,
             confidence: _resolveSubmitConfidence(),
             method: _resolveSubmitMethod(),
-            notes: combinedNotes.isEmpty ? _selectedStatus : combinedNotes,
+            notes: combinedNotes.isEmpty ? effectiveStatus : combinedNotes,
             speciesName: _speciesController.text,
           );
         } else if (action == ConflictAction.useServer) {
@@ -2459,27 +2548,87 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
             const SizedBox(height: 8),
             Wrap(
               spacing: 8,
-              children: _statusOptions.map((status) {
-                return ChoiceChip(
-                  label: Text(status),
-                  selected: _selectedStatus == status,
-                  onSelected: (selected) {
-                    if (selected) {
-                      setState(() => _selectedStatus = status);
-                    }
+              children: [
+                ..._statusCatalog.map((opt) {
+                  final status = opt.name;
+                  final selected = !_isCustomStatus && _selectedStatus == status;
+                  return ChoiceChip(
+                    label: Text(opt.isRetire ? '$status（淘汰）' : status),
+                    selected: selected,
+                    onSelected: (s) {
+                      if (s) {
+                        setState(() {
+                          _isCustomStatus = false;
+                          _selectedStatus = status;
+                        });
+                      }
+                    },
+                    selectedColor: Colors.teal.shade100,
+                    labelStyle: TextStyle(
+                      color: selected ? Colors.teal.shade900 : Colors.black,
+                      fontWeight:
+                          selected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  );
+                }),
+                ChoiceChip(
+                  label: const Text(_customStatusLabel),
+                  selected: _isCustomStatus,
+                  onSelected: (s) {
+                    setState(() => _isCustomStatus = s);
                   },
                   selectedColor: Colors.teal.shade100,
                   labelStyle: TextStyle(
-                    color: _selectedStatus == status
-                        ? Colors.teal.shade900
-                        : Colors.black,
-                    fontWeight: _selectedStatus == status
-                        ? FontWeight.bold
-                        : FontWeight.normal,
+                    color: _isCustomStatus ? Colors.teal.shade900 : Colors.black,
+                    fontWeight:
+                        _isCustomStatus ? FontWeight.bold : FontWeight.normal,
                   ),
-                );
-              }).toList(),
+                ),
+              ],
             ),
+            if (_isCustomStatus) ...[
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _customStatusController,
+                maxLength: 50,
+                decoration: const InputDecoration(
+                  labelText: '自訂樹況',
+                  hintText: '例如：枯立木、雷擊、移除',
+                  helperText: '儲存後此狀況會加入共用選單，其他人日後也能選用',
+                  border: OutlineInputBorder(),
+                  prefixIcon: Icon(Icons.edit_note),
+                ),
+                onChanged: (_) => setState(() {}),
+              ),
+            ],
+            if (_isRetireStatusSelected) ...[
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.orange.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.orange.shade200),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(Icons.info_outline,
+                        size: 18, color: Colors.orange.shade800),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '標記為「$_effectiveStatus」將把此樹列為「已淘汰」：'
+                        '不再列入維護待辦、不計入活立木碳匯統計、地圖以灰階顯示；'
+                        '歷史與照片仍保留，日後可在樹木詳情頁「復原」。',
+                        style: TextStyle(
+                            fontSize: 12, color: Colors.orange.shade900),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ],

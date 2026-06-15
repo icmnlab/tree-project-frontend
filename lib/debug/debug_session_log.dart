@@ -1,16 +1,10 @@
-import 'dart:convert';
-
-import 'package:http/http.dart' as http;
-
 import '../utils/field_log.dart';
 
-/// Debug session 2223ac — 寫入 ingest + logcat（需 adb reverse tcp:7340 tcp:7340）
+/// 現場除錯輔助：將關鍵 BLE／GPS 事件轉送到 [FieldLog]（adb logcat 可見）。
+///
+/// 歷史上曾額外 POST 到本機 ingest 端點供 AI 除錯工具收集；交接前已移除該網路
+/// 旁路與其硬編碼位址，僅保留輕量本機日誌，避免在正式版產生多餘連線。
 class DebugSessionLog {
-  static const _endpoint =
-      'http://127.0.0.1:7340/ingest/39037c80-9d09-4712-af5d-6c6c6384cbc8';
-  static const _sessionId = '2223ac';
-
-  // #region agent log
   static void emit(
     String location,
     String message, {
@@ -18,26 +12,7 @@ class DebugSessionLog {
     Map<String, dynamic>? data,
     String runId = 'pre-fix',
   }) {
-    final payload = <String, dynamic>{
-      'sessionId': _sessionId,
-      'timestamp': DateTime.now().millisecondsSinceEpoch,
-      'location': location,
-      'message': message,
-      if (hypothesisId != null) 'hypothesisId': hypothesisId,
-      if (data != null) 'data': data,
-      'runId': runId,
-    };
-    FieldLog.ble('[DBG-2223ac][$hypothesisId] $message ${data ?? ''}');
-    http
-        .post(
-          Uri.parse(_endpoint),
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Debug-Session-Id': _sessionId,
-          },
-          body: jsonEncode(payload),
-        )
-        .ignore();
+    FieldLog.ble('[$location]${hypothesisId != null ? '[$hypothesisId]' : ''} '
+        '$message ${data ?? ''}');
   }
-  // #endregion
 }

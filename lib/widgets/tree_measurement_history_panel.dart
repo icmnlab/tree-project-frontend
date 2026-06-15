@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/api_service.dart';
 import '../services/locale_service.dart';
 import '../services/tree_measurement_history_service.dart';
 
@@ -31,11 +32,71 @@ class _TreeMeasurementHistoryPanelState
   int _total = 0;
   int _limit = 15;
 
+  /// 依 measurement_id 分組的雲端縮圖 URL（讓照片跟隨各次量測歷史顯示）
+  final Map<int, List<String>> _imagesByMeasurement = {};
+
   @override
   void initState() {
     super.initState();
     _limit = widget.initialLimit;
     _load(reset: true);
+    if (!widget.compact) _loadMeasurementImages();
+  }
+
+  Future<void> _loadMeasurementImages() async {
+    try {
+      final res =
+          await ApiService.get('tree-images/tree/${widget.treeId}?source=survey');
+      if (res['success'] != true || res['data'] is! List) return;
+      final map = <int, List<String>>{};
+      for (final raw in (res['data'] as List)) {
+        if (raw is! Map) continue;
+        final mid = raw['measurement_id'];
+        final id = mid is int ? mid : int.tryParse(mid?.toString() ?? '');
+        if (id == null) continue;
+        final url =
+            (raw['thumbnail_url'] ?? raw['url'] ?? raw['cloud_url'])?.toString();
+        if (url == null || !url.startsWith('http')) continue;
+        (map[id] ??= []).add(url);
+      }
+      if (mounted) setState(() => _imagesByMeasurement
+        ..clear()
+        ..addAll(map));
+    } catch (_) {}
+  }
+
+  Widget _buildMeasurementThumbs(dynamic measurementId) {
+    final id = measurementId is int
+        ? measurementId
+        : int.tryParse(measurementId?.toString() ?? '');
+    final urls = id == null ? null : _imagesByMeasurement[id];
+    if (urls == null || urls.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: SizedBox(
+        height: 64,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          itemCount: urls.length,
+          separatorBuilder: (_, __) => const SizedBox(width: 6),
+          itemBuilder: (ctx, i) => ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: Image.network(
+              urls[i],
+              width: 64,
+              height: 64,
+              fit: BoxFit.cover,
+              errorBuilder: (c, e, s) => Container(
+                width: 64,
+                height: 64,
+                color: Colors.grey.shade200,
+                child: const Icon(Icons.broken_image, size: 20),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _load({required bool reset}) async {
@@ -259,6 +320,7 @@ class _TreeMeasurementHistoryPanelState
                     ),
                   ),
                 ),
+              _buildMeasurementThumbs(r['id']),
             ],
           ),
         ),

@@ -136,6 +136,13 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
           return loc == area || loc.contains(area) || area.contains(loc);
         }).toList();
       }
+      // [生命週期] 已淘汰（枯死/倒塌/移除）的樹不列入維護重測待辦（軟性淘汰，可於詳情頁復原）
+      list = list.where((t) {
+        final lc = (t['lifecycle_status'] ?? t['生命週期'] ?? 'active')
+            .toString()
+            .trim();
+        return lc.isEmpty || lc == 'active';
+      }).toList();
       final pos = await Geolocator.getLastKnownPosition() ??
           await getHighAccuracyPosition(timeout: const Duration(seconds: 5));
       if (pos != null) {
@@ -404,6 +411,7 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
     final st = (t['system_tree_id'] ?? t['系統樹木'])?.toString();
     final species =
         (t['species_name'] ?? t['樹種名稱'] ?? '—').toString();
+    final speciesId = (t['species_id'] ?? t['樹種編號'])?.toString();
     final lat = _treeCoord(t, 'y_coord', 'Y坐標');
     final lon = _treeCoord(t, 'x_coord', 'X坐標');
     return MaintenanceTarget(
@@ -411,6 +419,7 @@ class _MaintenanceSurveyPageState extends State<MaintenanceSurveyPage> {
       projectTreeId: pt,
       systemTreeId: st,
       speciesName: species != '—' ? species : null,
+      speciesId: (speciesId != null && speciesId.isNotEmpty) ? speciesId : null,
       treeLatitude: lat,
       treeLongitude: lon,
     );

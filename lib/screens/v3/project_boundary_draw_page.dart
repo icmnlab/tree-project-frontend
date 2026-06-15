@@ -6,6 +6,7 @@
 /// 3. 編輯/刪除專案邊界
 /// 4. 驗證新邊界是否涵蓋所有現有樹木
 
+import 'dart:convert';
 import 'package:flutter/foundation.dart' show Factory;
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -645,18 +646,45 @@ class _ProjectBoundaryDrawPageState extends State<ProjectBoundaryDrawPage> {
     if (picked == null || picked.files.isEmpty || !mounted) return;
 
     final file = picked.files.first;
-    const allowedExt = ['kml', 'kmz', 'geojson', 'json'];
+    const allowedExt = ['kml', 'kmz', 'geojson', 'json', 'txt', 'csv'];
     final ext = file.name.contains('.') ? file.name.split('.').last.toLowerCase() : '';
     if (!allowedExt.contains(ext)) {
       _showImportErrorDialog(
         '檔案格式不支援',
-        '請選擇 .kml / .kmz / .geojson 檔案（目前選到 ${ext.isEmpty ? '未知格式' : '.$ext'}）',
+        '請選擇 .kml / .kmz / .geojson / .txt / .csv 檔案'
+            '（目前選到 ${ext.isEmpty ? '未知格式' : '.$ext'}）',
       );
       return;
     }
     final bytes = file.bytes;
     if (bytes == null) {
       _showImportErrorDialog('讀取失敗', '無法讀取檔案內容');
+      return;
+    }
+
+    // 純文字座標檔（.txt/.csv）：用本機座標解析器，沿用「貼上座標」的驗證流程，
+    // 自動偵測 lng,lat / lat,lng、自相交與缺小數點等問題。
+    if (ext == 'txt' || ext == 'csv') {
+      final text = utf8.decode(bytes, allowMalformed: true);
+      final parsed = BoundaryInputParser.parse(text);
+      if (!parsed.ok || parsed.coordinates.length < 3) {
+        _showImportErrorDialog(
+          '座標檔解析失敗',
+          parsed.errors.isNotEmpty
+              ? parsed.errors.join('\n')
+              : '檔案需至少 3 組有效座標（每行一組，支援 lng,lat 或 lat,lng；第三欄高度會自動忽略）。',
+        );
+        return;
+      }
+      await _confirmAndLoadParsed(
+        coordinates: parsed.coordinates,
+        source: 'manual',
+        selfIntersecting: parsed.selfIntersecting,
+        warnings: parsed.warnings,
+        detailLine: '格式：純文字座標（.$ext）\n'
+            '座標順序：${parsed.detectedOrder == CoordOrder.latLng ? 'lat,lng' : 'lng,lat'}\n'
+            '頂點數：${parsed.coordinates.length}',
+      );
       return;
     }
 

@@ -46,6 +46,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
   MapType _currentMapType = MapType.normal;
   bool _showMenu = true;
   bool _showBoundaries = true; // V3: 是否顯示邊界
+  bool _hideRetired = false; // [生命週期] 是否隱藏已淘汰（枯死/倒塌/移除）的樹
   bool _canManageProjects = false; // [T7] 是否可繪製邊界
 
   // [優化] 快取樹木資料，避免重複呼叫 API
@@ -730,6 +731,10 @@ class _MapPageState extends State<MapPage> with RouteAware {
       if (_selectedProject != '全部' && tree['專案名稱'] != _selectedProject) {
         return false;
       }
+      // [生命週期] 隱藏已淘汰（枯死/倒塌/移除）的樹（預設顯示，灰階區隔）
+      if (_hideRetired && _isRetiredTree(tree)) {
+        return false;
+      }
       if (_selectedCity != '全部') {
         return _cityMatches(tree['_city']?.toString(), _selectedCity);
       }
@@ -823,17 +828,33 @@ class _MapPageState extends State<MapPage> with RouteAware {
   Marker _buildTreeMarker(Map<String, dynamic> tree, double lat, double lng) {
     final projectName = tree['專案名稱'] ?? '未知區';
     final areaName = tree['專案區位'] ?? '未知專案';
+    // [生命週期] 已淘汰（枯死/倒塌/移除）的樹以半透明灰紫標記區隔。
+    final retired = _isRetiredTree(tree);
+    final title = (tree['樹種名稱'] ?? '未知樹種').toString() +
+        (retired ? '（已淘汰）' : '');
     return Marker(
       // 確保 MarkerId 唯一，避免覆蓋
       markerId: MarkerId('${tree['id']}_${lng}_$lat'),
       position: LatLng(lat, lng),
+      alpha: retired ? 0.5 : 1.0,
+      icon: retired
+          ? BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueViolet)
+          : BitmapDescriptor.defaultMarker,
       infoWindow: InfoWindow(
-        title: tree['樹種名稱'] ?? '未知樹種',
+        title: title,
         snippet: '區：$projectName\n專案：$areaName',
         onTap: () => _openTreeDetail(tree),
       ),
       onTap: () => _showTreeMarkerSheet(tree),
     );
+  }
+
+  /// 樹木是否已淘汰（lifecycle_status 非 active）。
+  static bool _isRetiredTree(Map<String, dynamic> tree) {
+    final lc = (tree['lifecycle_status'] ?? tree['生命週期'] ?? 'active')
+        .toString()
+        .trim();
+    return lc.isNotEmpty && lc != 'active';
   }
 
   /// 點地圖標記後彈出摘要卡（下鑽閉環：地圖 → 摘要 → 詳情）。
@@ -1239,6 +1260,16 @@ class _MapPageState extends State<MapPage> with RouteAware {
               });
             },
             tooltip: _showMenu ? '隱藏篩選選單' : '顯示篩選選單',
+          ),
+          IconButton(
+            icon: Icon(_hideRetired
+                ? Icons.do_not_disturb_on
+                : Icons.do_not_disturb_off_outlined),
+            onPressed: () {
+              setState(() => _hideRetired = !_hideRetired);
+              _updateMarkersFromCache();
+            },
+            tooltip: _hideRetired ? '顯示已淘汰樹木' : '隱藏已淘汰樹木',
           ),
           IconButton(
             icon: const Icon(Icons.layers),

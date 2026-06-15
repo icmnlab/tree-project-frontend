@@ -4,6 +4,7 @@ class MaintenanceTarget {
   final String? projectTreeId;
   final String? systemTreeId;
   final String? speciesName;
+  final String? speciesId;
   final double? treeLatitude;
   final double? treeLongitude;
 
@@ -12,6 +13,7 @@ class MaintenanceTarget {
     this.projectTreeId,
     this.systemTreeId,
     this.speciesName,
+    this.speciesId,
     this.treeLatitude,
     this.treeLongitude,
   });
