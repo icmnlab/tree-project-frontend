@@ -393,7 +393,7 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
             const SizedBox(height: 12),
             const Text(
               '僅在啟用 ENABLE_ML_CORRECTION_UPLOAD 時收集；'
-              '論文級標註請用管理後台「研究資料蒐集」。',
+              '研究級標註請用管理後台「研究資料蒐集」。',
               style: TextStyle(fontSize: 13, color: Colors.grey),
             ),
           ],

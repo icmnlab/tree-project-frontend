@@ -1058,7 +1058,7 @@ class _AdminPageState extends State<AdminPage> {
                 },
               ),
             ),
-            // [Research] DBH 校準資料蒐集（給研究/論文 §結果用的乾淨資料集）
+            // [Research] DBH 校準資料蒐集（給研究用的乾淨資料集）
             // 後端 research dataset 端點需「系統管理員」，入口同步只給系統管理員。
             if (_isSystemAdmin) ...[
               const SizedBox(height: 12),
