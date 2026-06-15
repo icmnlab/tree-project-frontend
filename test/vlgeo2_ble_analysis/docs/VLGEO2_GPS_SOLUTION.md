@@ -58,7 +58,7 @@ python verify_vlgeo2_gps_usb_watch.py
 # 儀器 ENABLE MEM=ON，量測 + SEND，看終端是否 [新增] ✅ GPS
 ```
 
-### 方案 C — 向 Haglof / Amit 確認韌體
+### 方案 C — 向儀器原廠（Haglof 等）確認韌體
 
 問題範本：
 
