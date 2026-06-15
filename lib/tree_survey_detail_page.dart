@@ -196,53 +196,6 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
     }
   }
 
-  Future<void> _retireTree() async {
-    final id = _numericTreeId();
-    if (id == null) return;
-    final reason = await showDialog<String>(
-      context: context,
-      builder: (ctx) => SimpleDialog(
-        title: const Text('標記為已淘汰'),
-        children: [
-          const Padding(
-            padding: EdgeInsets.fromLTRB(20, 0, 20, 12),
-            child: Text(
-              '此樹將不再列入維護待辦、不計入活立木碳匯，地圖以灰階顯示。歷史與照片仍保留，可隨時復原。',
-              style: TextStyle(fontSize: 13, color: Colors.grey),
-            ),
-          ),
-          SimpleDialogOption(
-            onPressed: () => Navigator.pop(ctx, 'dead'),
-            child: const Text('枯死'),
-          ),
-          SimpleDialogOption(
-            onPressed: () => Navigator.pop(ctx, 'fallen'),
-            child: const Text('倒塌'),
-          ),
-          SimpleDialogOption(
-            onPressed: () => Navigator.pop(ctx, 'removed'),
-            child: const Text('移除 / 砍除'),
-          ),
-        ],
-      ),
-    );
-    if (reason == null) return;
-    final res = await ApiService.post('tree_survey/$id/retire', {
-      'lifecycle_status': reason,
-    });
-    if (!mounted) return;
-    if (res['success'] == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res['message']?.toString() ?? '已標記為淘汰')),
-      );
-      await _refreshTreeData();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('操作失敗：${res['message'] ?? '未知錯誤'}')),
-      );
-    }
-  }
-
   Future<void> _restoreTree() async {
     final id = _numericTreeId();
     if (id == null) return;
@@ -303,30 +256,24 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
                       fontWeight: FontWeight.bold,
                       color: color.withValues(alpha: 0.95)),
                 ),
-                if (retired)
-                  Text(
-                    _f('retired_reason', '淘汰原因') == '無'
-                        ? '不計入活立木碳匯、不列維護待辦'
-                        : '原因：${_f('retired_reason', '淘汰原因')}',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
+                Text(
+                  retired
+                      ? (_f('retired_reason', '淘汰原因') == '無'
+                          ? '不計入活立木碳匯、不列維護待辦'
+                          : '原因：${_f('retired_reason', '淘汰原因')}')
+                      : '如需標記枯死／倒塌／移除，請於「維護量測」填報樹況',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
               ],
             ),
           ),
-          if (_canEdit)
-            retired
-                ? OutlinedButton.icon(
-                    onPressed: _restoreTree,
-                    icon: const Icon(Icons.restore, size: 18),
-                    label: const Text('復原'),
-                  )
-                : OutlinedButton.icon(
-                    onPressed: _retireTree,
-                    icon: const Icon(Icons.do_not_disturb_on_outlined, size: 18),
-                    label: const Text('淘汰'),
-                    style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.orange.shade800),
-                  ),
+          // 淘汰改由維護量測流程填報（現場回報枯死/倒塌/移除）；此處僅保留「復原」更正用。
+          if (_canEdit && retired)
+            OutlinedButton.icon(
+              onPressed: _restoreTree,
+              icon: const Icon(Icons.restore, size: 18),
+              label: const Text('復原'),
+            ),
         ],
       ),
     );
