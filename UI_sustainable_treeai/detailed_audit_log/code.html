@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Audit Log - Forest Intelligence</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Plus Jakarta Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Config from Guidance -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "inverse-surface": "#2e3035",
+                        "secondary-container": "#a0f499",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed": "#002204",
+                        "on-primary": "#ffffff",
+                        "surface-variant": "#e1e2e8",
+                        "surface-bright": "#f8f9ff",
+                        "primary-fixed": "#d3e4ff",
+                        "secondary-fixed": "#a3f69c",
+                        "inverse-on-surface": "#f0f0f6",
+                        "on-tertiary-fixed": "#320047",
+                        "surface-container-highest": "#e1e2e8",
+                        "outline-variant": "#c2c7d1",
+                        "secondary": "#1b6d24",
+                        "on-surface": "#191c20",
+                        "primary-container": "#004e8b",
+                        "on-surface-variant": "#424750",
+                        "background": "#f8f9ff",
+                        "secondary-fixed-dim": "#87d982",
+                        "on-background": "#191c20",
+                        "on-error-container": "#93000a",
+                        "on-primary-fixed-variant": "#004881",
+                        "on-error": "#ffffff",
+                        "surface-container-low": "#f3f3f9",
+                        "outline": "#727781",
+                        "surface-container-high": "#e7e8ee",
+                        "tertiary-fixed-dim": "#ebb2ff",
+                        "on-tertiary-fixed-variant": "#721199",
+                        "surface-container": "#ededf3",
+                        "tertiary-fixed": "#f8d8ff",
+                        "on-secondary-fixed-variant": "#005312",
+                        "on-primary-fixed": "#001c38",
+                        "on-primary-container": "#91c0ff",
+                        "error": "#ba1a1a",
+                        "tertiary-container": "#781b9f",
+                        "surface-tint": "#24609e",
+                        "primary": "#003765",
+                        "on-secondary": "#ffffff",
+                        "inverse-primary": "#a2c9ff",
+                        "on-secondary-container": "#207128",
+                        "surface-dim": "#d9dadf",
+                        "primary-fixed-dim": "#a2c9ff",
+                        "error-container": "#ffdad6",
+                        "tertiary": "#5a007c",
+                        "on-tertiary-container": "#e7a5ff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface": "#f8f9ff"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "stack-sm": "8px",
+                        "stack-md": "16px",
+                        "stack-lg": "24px",
+                        "screen-margin": "20px",
+                        "gutter": "16px",
+                        "touch-target-min": "48px"
+                    },
+                    fontFamily: {
+                        "body-md": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"]
+                    },
+                    fontSize: {
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar for industrial feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f8f9ff;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c2c7d1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #727781;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-[90px] md:pb-0 font-body-md text-body-md antialiased selection:bg-primary-container selection:text-on-primary-container">
+<!-- Status Chip (Persistent) -->
+<div class="fixed top-0 left-0 w-full z-[60] flex justify-center pointer-events-none mt-2">
+<div class="bg-secondary text-on-secondary font-label-sm text-label-sm px-4 py-1 rounded-full shadow-sm flex items-center gap-2 pointer-events-auto">
+<span class="w-2 h-2 rounded-full bg-secondary-fixed animate-pulse"></span>
+            已連線
+        </div>
+</div>
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky bg-surface-bright dark:bg-surface-dim shadow-sm flex justify-between items-center px-screen-margin h-touch-target-min z-50 pt-6">
+<button aria-label="Back" class="text-on-surface-variant dark:text-surface-variant active:scale-95 transition-transform duration-150 h-touch-target-min w-touch-target-min flex items-center justify-center -ml-2 rounded-full hover:bg-surface-container-high dark:hover:bg-surface-container-highest">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">arrow_back</span>
+</button>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary dark:text-primary-fixed tracking-tight">Audit Log</h1>
+<button aria-label="Offline Mode" class="text-on-surface-variant dark:text-surface-variant active:scale-95 transition-transform duration-150 h-touch-target-min w-touch-target-min flex items-center justify-center -mr-2 rounded-full hover:bg-surface-container-high dark:hover:bg-surface-container-highest">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">cloud_off</span>
+</button>
+</header>
+<main class="max-w-4xl mx-auto px-screen-margin pt-stack-lg pb-stack-lg">
+<!-- Filter Bar -->
+<section class="mb-stack-lg sticky top-[72px] z-40 bg-background/95 backdrop-blur-sm py-2">
+<div class="flex flex-wrap gap-stack-sm items-center">
+<!-- Search Input -->
+<div class="relative flex-grow min-w-[200px]">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline" style="font-variation-settings: 'FILL' 0;">search</span>
+<input class="w-full h-touch-target-min pl-10 pr-4 bg-surface-container-lowest border border-outline rounded-lg font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-colors" placeholder="Search events..." type="text"/>
+</div>
+<!-- Filter Chips -->
+<div class="flex gap-2 overflow-x-auto pb-1 no-scrollbar items-center">
+<button class="h-touch-target-min px-4 rounded-full bg-primary-container text-on-primary-container font-label-lg text-label-lg whitespace-nowrap active:scale-95 transition-transform">
+                        All Events
+                    </button>
+<button class="h-touch-target-min px-4 rounded-full bg-surface-container border border-outline-variant text-on-surface font-label-lg text-label-lg whitespace-nowrap hover:bg-surface-container-high transition-colors active:scale-95">
+                        Data Modified
+                    </button>
+<button class="h-touch-target-min px-4 rounded-full bg-surface-container border border-outline-variant text-on-surface font-label-lg text-label-lg whitespace-nowrap hover:bg-surface-container-high transition-colors active:scale-95">
+                        System Sync
+                    </button>
+<button aria-label="More filters" class="h-touch-target-min w-touch-target-min flex items-center justify-center rounded-full bg-surface-container border border-outline-variant text-on-surface hover:bg-surface-container-high transition-colors active:scale-95">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">tune</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Audit Timeline (Bento/Card Style instead of simple list) -->
+<div class="relative border-l-2 border-surface-container-high ml-4 md:ml-6 space-y-stack-md">
+<!-- Date Header -->
+<div class="absolute -left-[31px] bg-background text-outline font-label-sm text-label-sm py-1 mt-2">
+                Today
+            </div>
+<!-- Log Item 1: Success/Data Mod -->
+<div class="relative pl-6 md:pl-8 group">
+<div class="absolute -left-[9px] top-4 w-4 h-4 rounded-full bg-secondary ring-4 ring-background z-10"></div>
+<div class="bg-surface-container-lowest rounded-xl p-stack-md shadow-[0_4px_12px_rgba(0,0,0,0.06)] border border-surface-container-high transition-shadow hover:shadow-[0_4px_16px_rgba(0,0,0,0.1)]">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-2">
+<span class="bg-secondary-container text-on-secondary-container font-label-sm text-label-sm px-2 py-1 rounded-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">forest</span> Data Modified
+                            </span>
+</div>
+<span class="text-outline font-label-sm text-label-sm">14:32</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-1">Tree Data Updated</h3>
+<p class="text-on-surface-variant font-body-md text-body-md mb-3">Plot Alpha-7 DBH measurements revised and verified.</p>
+<div class="bg-surface-container rounded-lg p-3 grid grid-cols-2 gap-2 text-sm font-mono text-on-surface-variant">
+<div><span class="text-outline">ID:</span> TR-8892</div>
+<div><span class="text-outline">Old:</span> 42.5cm</div>
+<div><span class="text-outline">By:</span> J. Forester</div>
+<div><span class="text-outline text-secondary font-bold">New:</span> 43.1cm</div>
+</div>
+</div>
+</div>
+<!-- Log Item 2: Warning/System -->
+<div class="relative pl-6 md:pl-8 group mt-stack-md">
+<div class="absolute -left-[9px] top-4 w-4 h-4 rounded-full bg-[#f59e0b] ring-4 ring-background z-10"></div>
+<div class="bg-surface-container-lowest rounded-xl p-stack-md shadow-[0_4px_12px_rgba(0,0,0,0.06)] border border-surface-container-high transition-shadow hover:shadow-[0_4px_16px_rgba(0,0,0,0.1)]">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-2">
+<span class="bg-[#fef3c7] text-[#92400e] font-label-sm text-label-sm px-2 py-1 rounded-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">warning</span> Sync Issue
+                            </span>
+</div>
+<span class="text-outline font-label-sm text-label-sm">11:15</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-1">Partial Sync Completed</h3>
+<p class="text-on-surface-variant font-body-md text-body-md">Connection interrupted during photo upload. Text data saved locally.</p>
+<div class="mt-3 flex items-center gap-2 text-primary font-label-lg text-label-lg cursor-pointer hover:underline">
+<span class="material-symbols-outlined text-[18px]">refresh</span> Retry Upload
+                    </div>
+</div>
+</div>
+<!-- Date Header -->
+<div class="absolute -left-[31px] bg-background text-outline font-label-sm text-label-sm py-1 mt-stack-md">
+                Yesterday
+            </div>
+<!-- Log Item 3: Info/Export -->
+<div class="relative pl-6 md:pl-8 group mt-[40px]">
+<div class="absolute -left-[9px] top-4 w-4 h-4 rounded-full bg-primary ring-4 ring-background z-10"></div>
+<div class="bg-surface-container-lowest rounded-xl p-stack-md shadow-[0_4px_12px_rgba(0,0,0,0.06)] border border-surface-container-high transition-shadow hover:shadow-[0_4px_16px_rgba(0,0,0,0.1)]">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-2">
+<span class="bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm px-2 py-1 rounded-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">download</span> CSV Exported
+                            </span>
+</div>
+<span class="text-outline font-label-sm text-label-sm">16:45</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-1">Carbon Audit Report Generated</h3>
+<p class="text-on-surface-variant font-body-md text-body-md mb-3">Sector B monthly summary exported.</p>
+<div class="flex items-center gap-3 bg-surface-container-low p-2 rounded-lg border border-outline-variant">
+<div class="w-10 h-10 bg-surface-variant rounded flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">description</span>
+</div>
+<div class="flex-grow">
+<div class="font-label-lg text-label-lg text-on-surface">Sector_B_Oct_Audit.csv</div>
+<div class="font-label-sm text-label-sm text-outline">1.2 MB</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Log Item 4: Action/Boundary -->
+<div class="relative pl-6 md:pl-8 group mt-stack-md">
+<div class="absolute -left-[9px] top-4 w-4 h-4 rounded-full bg-secondary ring-4 ring-background z-10"></div>
+<div class="bg-surface-container-lowest rounded-xl p-stack-md shadow-[0_4px_12px_rgba(0,0,0,0.06)] border border-surface-container-high transition-shadow hover:shadow-[0_4px_16px_rgba(0,0,0,0.1)]">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-2">
+<span class="bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm px-2 py-1 rounded-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">share_location</span> Boundary Updated
+                            </span>
+</div>
+<span class="text-outline font-label-sm text-label-sm">09:00</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-1">Polygon Edited: Sector B North</h3>
+<p class="text-on-surface-variant font-body-md text-body-md mb-3">Vertices adjusted based on new GPS field readings.</p>
+<!-- Decorative Map Snippet (Simulated) -->
+<div class="w-full h-24 bg-surface-variant rounded-lg overflow-hidden relative border border-outline-variant">
+<div class="absolute inset-0 opacity-20" style="background-image: repeating-linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000), repeating-linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000); background-position: 0 0, 10px 10px; background-size: 20px 20px;"></div>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-3xl" style="font-variation-settings: 'FILL' 1;">map</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Load More Button -->
+<div class="mt-stack-lg flex justify-center pb-stack-lg">
+<button class="h-touch-target-min px-6 rounded-full border-2 border-secondary text-secondary font-label-lg text-label-lg hover:bg-secondary hover:text-on-secondary transition-colors active:scale-95 flex items-center gap-2">
+                Load More Events
+            </button>
+</div>
+</main>
+<!-- BottomNavBar (Hidden on md and up, visible on mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-4 pt-3 bg-surface-container-lowest dark:bg-inverse-surface shadow-[0_-4px_16px_rgba(0,0,0,0.18)] rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant active:scale-90 transition-all duration-200 w-[64px] rounded-lg py-1" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">map</span>
+<span class="font-label-sm text-label-sm">地圖</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant active:scale-90 transition-all duration-200 w-[64px] rounded-lg py-1" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">forest</span>
+<span class="font-label-sm text-label-sm">採樣</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant active:scale-90 transition-all duration-200 w-[64px] rounded-lg py-1" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 0;">sync</span>
+<span class="font-label-sm text-label-sm">同步</span>
+</a>
+<!-- Active Tab Intent: Settings / System Logs generally fall under settings in this context -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-5 py-1 active:scale-90 transition-all duration-200 w-[64px]" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-label-sm text-label-sm">設定</span>
+</a>
+</nav>
+</body></html>

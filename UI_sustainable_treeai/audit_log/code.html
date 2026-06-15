@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+
+<html lang="zh-TW"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>稽核紀錄 - Forest Intelligence Admin</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-fixed": "#320047",
+                    "outline": "#727781",
+                    "surface-dim": "#d9dadf",
+                    "on-surface": "#191c20",
+                    "error": "#ba1a1a",
+                    "secondary-fixed": "#a3f69c",
+                    "primary": "#003765",
+                    "tertiary-fixed-dim": "#ebb2ff",
+                    "surface-container-lowest": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "inverse-primary": "#a2c9ff",
+                    "background": "#f8f9ff",
+                    "outline-variant": "#c2c7d1",
+                    "surface-tint": "#24609e",
+                    "surface": "#f8f9ff",
+                    "secondary": "#1b6d24",
+                    "on-primary-fixed": "#001c38",
+                    "on-primary-fixed-variant": "#004881",
+                    "on-error": "#ffffff",
+                    "surface-container-low": "#f3f3f9",
+                    "primary-container": "#004e8b",
+                    "tertiary-container": "#781b9f",
+                    "on-surface-variant": "#424750",
+                    "on-secondary-container": "#207128",
+                    "on-secondary": "#ffffff",
+                    "tertiary": "#5a007c",
+                    "primary-fixed-dim": "#a2c9ff",
+                    "surface-container-highest": "#e1e2e8",
+                    "tertiary-fixed": "#f8d8ff",
+                    "on-tertiary-fixed-variant": "#721199",
+                    "surface-container": "#ededf3",
+                    "on-secondary-fixed": "#002204",
+                    "on-background": "#191c20",
+                    "inverse-on-surface": "#f0f0f6",
+                    "primary-fixed": "#d3e4ff",
+                    "secondary-container": "#a0f499",
+                    "on-primary": "#ffffff",
+                    "surface-container-high": "#e7e8ee",
+                    "on-primary-container": "#91c0ff",
+                    "surface-variant": "#e1e2e8",
+                    "secondary-fixed-dim": "#87d982",
+                    "inverse-surface": "#2e3035",
+                    "on-error-container": "#93000a",
+                    "surface-bright": "#f8f9ff",
+                    "on-tertiary-container": "#e7a5ff",
+                    "on-secondary-fixed-variant": "#005312"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "16px",
+                    "stack-md": "16px",
+                    "screen-margin": "20px",
+                    "touch-target-min": "48px",
+                    "stack-sm": "8px",
+                    "stack-lg": "24px"
+            },
+            "fontFamily": {
+                    "label-lg": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "headline-md": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "headline-sm": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "body-lg": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "label-sm": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "body-md": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "headline-lg-mobile": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "headline-lg": [
+                            "Plus Jakarta Sans"
+                    ]
+            },
+            "fontSize": {
+                    "label-lg": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-sm": [
+                            "20px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "body-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "label-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "body-md": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-lg-mobile": [
+                            "28px",
+                            {
+                                    "lineHeight": "36px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+          font-variation-settings:
+          'FILL' 0,
+          'wght' 400,
+          'GRAD' 0,
+          'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md antialiased overflow-x-hidden min-h-screen flex">
+<!-- NavigationDrawer (Left Sidebar) -->
+<aside class="bg-surface shadow-lg h-full w-80 rounded-r-xl flex flex-col py-stack-lg fixed md:relative z-40 transition-transform duration-300 transform -translate-x-full md:translate-x-0" id="sidebar">
+<!-- Header Profile -->
+<div class="px-6 mb-8 flex items-center gap-4">
+<div class="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-surface-container-high border-2 border-primary">
+<img alt="Forester Profile" class="w-full h-full object-cover" data-alt="A close-up portrait of a professional forester in field gear. The person is outdoors with soft, natural lighting indicating a sunny day. They are wearing a rugged, industrial-style jacket. The overall tone is authoritative, reliable, and functional, matching the industrial minimalist aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCaEUhnlS5vFn01hOpWkC1PzPaRRhwmXe4L9VmFc_roQGznJsPa8qthVHfsE8zoIYwTRs0xUv-wVNZRTs58mPpznbFNC6d1K0fkhE8M2MXAb0fC5YVbGndCvX4B0tv7meAaZZMP7rsuPg70LGuVt6kPLyPLAMF7vk9oeK5NFoZfmiz90-xoQxezT06QhMztWCjJrKxRIqkaJe5ePChWvAuGL3BmKwmmDwZ9Ey5-HOzY-V6n603MbiBgAWJYUcKHL_xxPNIBX56xdA"/>
+</div>
+<div>
+<h2 class="text-headline-sm font-headline-sm font-bold text-primary">林務員使用者</h2>
+<p class="text-body-md font-body-md text-on-surface-variant">專業森林技師</p>
+<div class="flex items-center gap-1 mt-1">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+<span class="text-label-sm font-label-sm text-secondary">已連線</span>
+</div>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="flex-1 overflow-y-auto">
+<ul class="space-y-2">
+<li>
+<a class="flex items-center gap-4 bg-secondary-container text-on-secondary-container rounded-full mx-2 px-4 py-3 group" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">history_edu</span>
+<span class="text-body-md font-body-md font-medium">稽核紀錄</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 text-on-surface-variant hover:bg-surface-container-high rounded-full mx-2 px-4 py-3 group transition-colors" href="#">
+<span class="material-symbols-outlined">admin_panel_settings</span>
+<span class="text-body-md font-body-md">權限管理</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 text-on-surface-variant hover:bg-surface-container-high rounded-full mx-2 px-4 py-3 group transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-body-md font-body-md">設定</span>
+</a>
+</li>
+<li>
+<a class="flex items-center gap-4 text-on-surface-variant hover:bg-surface-container-high rounded-full mx-2 px-4 py-3 group transition-colors" href="#">
+<span class="material-symbols-outlined">upload_file</span>
+<span class="text-body-md font-body-md">匯入 CSV</span>
+</a>
+</li>
+</ul>
+</nav>
+<!-- Mobile Sidebar Close Button -->
+<button class="absolute top-4 right-4 md:hidden text-on-surface-variant p-2 hover:bg-surface-container-high rounded-full" id="closeSidebar">
+<span class="material-symbols-outlined">close</span>
+</button>
+</aside>
+<!-- Overlay for mobile sidebar -->
+<div class="fixed inset-0 bg-on-surface/50 z-30 hidden md:hidden transition-opacity opacity-0" id="sidebarOverlay"></div>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-h-screen relative w-full md:w-auto">
+<!-- Mobile Header (TopAppBar alternative for narrow screens) -->
+<header class="md:hidden bg-background text-primary flex justify-between items-center w-full px-screen-margin py-stack-sm sticky top-0 z-20 shadow-sm">
+<button class="p-2 -ml-2 text-primary hover:bg-surface-container-high rounded-full transition-colors" id="openSidebar">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="text-headline-sm font-headline-sm font-bold">Forest Intelligence</h1>
+<button class="p-2 -mr-2 text-primary hover:bg-surface-container-high rounded-full transition-colors">
+<span class="material-symbols-outlined">sensors</span>
+</button>
+</header>
+<!-- Page Header & Filters -->
+<div class="px-screen-margin py-stack-lg md:py-8 flex flex-col gap-6">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+<div>
+<h1 class="text-headline-lg-mobile md:text-headline-lg font-headline-lg-mobile md:font-headline-lg font-bold text-primary">系統稽核紀錄</h1>
+<p class="text-body-md font-body-md text-on-surface-variant mt-1">檢視與追蹤系統內的所有操作日誌。</p>
+</div>
+<button class="flex items-center gap-2 bg-primary text-on-primary px-6 py-3 rounded-full hover:bg-primary-container transition-colors shadow-md min-h-[48px] self-start sm:self-auto font-label-lg text-label-lg">
+<span class="material-symbols-outlined">download</span>
+                    匯出報表
+                </button>
+</div>
+<!-- Filters Section (Glassmorphism-inspired card) -->
+<div class="bg-surface-container-lowest/80 backdrop-blur-md border border-outline-variant/30 rounded-xl p-4 shadow-sm flex flex-col lg:flex-row gap-4 items-end">
+<div class="w-full lg:w-auto flex-1">
+<label class="block text-label-sm font-label-sm text-on-surface-variant mb-1">日期範圍</label>
+<div class="relative">
+<span class="absolute inset-y-0 left-3 flex items-center text-outline">
+<span class="material-symbols-outlined">calendar_today</span>
+</span>
+<input class="w-full pl-10 pr-4 py-3 bg-surface border border-outline rounded-lg focus:border-primary focus:ring-1 focus:ring-primary text-body-md font-body-md text-on-surface min-h-[48px]" placeholder="2023-10-01 至 2023-10-31" type="text"/>
+</div>
+</div>
+<div class="w-full lg:w-auto flex-1">
+<label class="block text-label-sm font-label-sm text-on-surface-variant mb-1">使用者類型</label>
+<div class="relative">
+<select class="w-full pl-4 pr-10 py-3 bg-surface border border-outline rounded-lg focus:border-primary focus:ring-1 focus:ring-primary text-body-md font-body-md text-on-surface appearance-none min-h-[48px]">
+<option value="">所有使用者</option>
+<option value="admin">系統管理員</option>
+<option value="forester">林務員</option>
+<option value="auditor">碳匯稽核員</option>
+</select>
+<span class="absolute inset-y-0 right-3 flex items-center text-outline pointer-events-none">
+<span class="material-symbols-outlined">arrow_drop_down</span>
+</span>
+</div>
+</div>
+<div class="w-full lg:w-auto flex-1">
+<label class="block text-label-sm font-label-sm text-on-surface-variant mb-1">搜尋</label>
+<div class="relative">
+<span class="absolute inset-y-0 left-3 flex items-center text-outline">
+<span class="material-symbols-outlined">search</span>
+</span>
+<input class="w-full pl-10 pr-4 py-3 bg-surface border border-outline rounded-lg focus:border-primary focus:ring-1 focus:ring-primary text-body-md font-body-md text-on-surface min-h-[48px]" placeholder="搜尋動作或目標..." type="text"/>
+</div>
+</div>
+</div>
+</div>
+<!-- DataTable Content Area -->
+<div class="px-screen-margin pb-8 flex-1">
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.08)] overflow-hidden border border-outline-variant/50">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse min-w-[800px]">
+<thead>
+<tr class="bg-surface-container-low border-b border-outline-variant">
+<th class="py-4 px-6 text-label-lg font-label-lg text-on-surface-variant font-semibold">時間</th>
+<th class="py-4 px-6 text-label-lg font-label-lg text-on-surface-variant font-semibold">使用者</th>
+<th class="py-4 px-6 text-label-lg font-label-lg text-on-surface-variant font-semibold">動作</th>
+<th class="py-4 px-6 text-label-lg font-label-lg text-on-surface-variant font-semibold">目標</th>
+<th class="py-4 px-6 text-label-lg font-label-lg text-on-surface-variant font-semibold">詳情</th>
+<th class="py-4 px-6 text-label-lg font-label-lg text-on-surface-variant font-semibold text-right">操作</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/50 text-body-md font-body-md text-on-surface">
+<!-- Row 1 -->
+<tr class="hover:bg-surface-container-lowest/50 transition-colors">
+<td class="py-4 px-6 whitespace-nowrap text-on-surface-variant">
+                                    2023-10-24 14:32:01
+                                </td>
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-label-sm font-bold">
+                                            CW
+                                        </div>
+<span>Chen Wei (林務員)</span>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-secondary-container text-on-secondary-container">
+                                        更新紀錄
+                                    </span>
+</td>
+<td class="py-4 px-6 font-medium">樹木普查 #A-102</td>
+<td class="py-4 px-6 text-on-surface-variant truncate max-w-[200px]" title="修改了胸高直徑 (DBH) 從 45cm 至 47cm">
+                                    修改了胸高直徑 (DBH) 從 45cm 至 47cm
+                                </td>
+<td class="py-4 px-6 text-right">
+<button aria-label="View Details" class="text-primary hover:text-primary-container p-2 rounded-full hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-surface-container-lowest/50 transition-colors">
+<td class="py-4 px-6 whitespace-nowrap text-on-surface-variant">
+                                    2023-10-24 11:15:44
+                                </td>
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center text-label-sm font-bold">
+                                            LL
+                                        </div>
+<span>Li Lin (系統管理員)</span>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-error-container text-on-error-container border border-error/20">
+                                        刪除資料
+                                    </span>
+</td>
+<td class="py-4 px-6 font-medium text-error">無效測量點 #X-99</td>
+<td class="py-4 px-6 text-on-surface-variant truncate max-w-[200px]" title="手動移除因 GPS 定位錯誤的無效數據點">
+                                    手動移除因 GPS 定位錯誤的無效數據點
+                                </td>
+<td class="py-4 px-6 text-right">
+<button aria-label="View Details" class="text-primary hover:text-primary-container p-2 rounded-full hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-surface-container-lowest/50 transition-colors">
+<td class="py-4 px-6 whitespace-nowrap text-on-surface-variant">
+                                    2023-10-24 09:05:12
+                                </td>
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-surface-variant text-on-surface-variant flex items-center justify-center text-label-sm font-bold border border-outline">
+                                            SYS
+                                        </div>
+<span>System Auto-Sync</span>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-surface-container-high text-on-surface">
+                                        系統同步
+                                    </span>
+</td>
+<td class="py-4 px-6 font-medium">離線數據庫</td>
+<td class="py-4 px-6 text-on-surface-variant truncate max-w-[200px]" title="成功同步 124 筆離線紀錄至主伺服器">
+                                    成功同步 124 筆離線紀錄至主伺服器
+                                </td>
+<td class="py-4 px-6 text-right">
+<button aria-label="View Details" class="text-primary hover:text-primary-container p-2 rounded-full hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-surface-container-lowest/50 transition-colors">
+<td class="py-4 px-6 whitespace-nowrap text-on-surface-variant">
+                                    2023-10-23 16:45:30
+                                </td>
+<td class="py-4 px-6">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center text-label-sm font-bold">
+                                            CW
+                                        </div>
+<span>Chen Wei (林務員)</span>
+</div>
+</td>
+<td class="py-4 px-6">
+<span class="inline-flex items-center px-2.5 py-1 rounded-full text-label-sm font-label-sm bg-inverse-primary text-on-primary-fixed border border-primary/20">
+                                        新增紀錄
+                                    </span>
+</td>
+<td class="py-4 px-6 font-medium">新樣區 #B-001</td>
+<td class="py-4 px-6 text-on-surface-variant truncate max-w-[200px]" title="建立新的 20x20m 觀測樣區邊界">
+                                    建立新的 20x20m 觀測樣區邊界
+                                </td>
+<td class="py-4 px-6 text-right">
+<button aria-label="View Details" class="text-primary hover:text-primary-container p-2 rounded-full hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined">visibility</span>
+</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="bg-surface-container-low px-6 py-4 border-t border-outline-variant flex items-center justify-between">
+<span class="text-label-sm font-label-sm text-on-surface-variant">顯示 1 至 4 筆，共 1,284 筆</span>
+<div class="flex items-center gap-2">
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-highest transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled="">
+<span class="material-symbols-outlined">chevron_left</span>
+</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center bg-primary text-on-primary font-label-lg">1</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-container-highest transition-colors font-label-lg">2</button>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface hover:bg-surface-container-highest transition-colors font-label-lg">3</button>
+<span class="text-on-surface-variant px-2">...</span>
+<button class="w-10 h-10 rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-highest transition-colors">
+<span class="material-symbols-outlined">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<script>
+        // Mobile Sidebar Toggle Logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            const openBtn = document.getElementById('openSidebar');
+            const closeBtn = document.getElementById('closeSidebar');
+
+            function toggleSidebar() {
+                const isClosed = sidebar.classList.contains('-translate-x-full');
+                if (isClosed) {
+                    sidebar.classList.remove('-translate-x-full');
+                    overlay.classList.remove('hidden');
+                    // Small delay to allow display block to apply before animating opacity
+                    setTimeout(() => overlay.classList.remove('opacity-0'), 10);
+                } else {
+                    sidebar.classList.add('-translate-x-full');
+                    overlay.classList.add('opacity-0');
+                    setTimeout(() => overlay.classList.add('hidden'), 300);
+                }
+            }
+
+            if(openBtn) openBtn.addEventListener('click', toggleSidebar);
+            if(closeBtn) closeBtn.addEventListener('click', toggleSidebar);
+            if(overlay) overlay.addEventListener('click', toggleSidebar);
+        });
+    </script>
+</body></html>

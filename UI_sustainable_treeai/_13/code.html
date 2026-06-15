@@ -1,13 +1,18 @@
 <!DOCTYPE html>
 
-<html class="light" lang="zh-TW"><head>
+<html lang="zh-TW"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>ArborSync Pro - Sync Status</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<title>註冊新帳號 - Forest Intelligence</title>
+<!-- Google Fonts & Material Symbols -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
 <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
@@ -103,15 +108,23 @@
         }
     </script>
 <style>
-        body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
-        .icon-fill {
-            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        /* Custom scrollbar for modern feel */
+        ::-webkit-scrollbar {
+            width: 8px;
         }
-        /* Hide scrollbar for clean look */
-        ::-webkit-scrollbar { width: 0px; background: transparent; }
+        ::-webkit-scrollbar-track {
+            background: #fcf8ff;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c1c7d3;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #717782;
+        }
     </style>
 <style>
     body {
@@ -119,201 +132,95 @@
     }
   </style>
   </head>
-<body class="bg-background text-on-background min-h-screen flex flex-col antialiased">
-<!-- TopAppBar -->
-<header class="w-full top-0 sticky bg-surface dark:bg-surface-dim shadow-sm z-40 bg-surface-container-low dark:bg-surface-container-high">
-<div class="flex items-center justify-between px-margin-screen h-16">
-<button aria-label="Menu" class="h-touch-target-min w-touch-target-min flex items-center justify-center text-on-surface-variant hover:bg-surface-variant/50 transition-colors rounded-full active:scale-95 duration-100">
-<span class="material-symbols-outlined text-[24px]">menu</span>
-</button>
-<h1 class="font-display-md text-display-md-mobile text-primary dark:text-inverse-primary tracking-tight">ArborSync Pro</h1>
-<button aria-label="Sync" class="h-touch-target-min w-touch-target-min flex items-center justify-center text-primary dark:text-primary-fixed-dim hover:bg-surface-variant/50 transition-colors rounded-full active:scale-95 duration-100">
-<span class="material-symbols-outlined text-[24px] icon-fill">cloud_sync</span>
-</button>
+<body class="bg-surface text-on-surface antialiased min-h-screen flex items-center justify-center p-4 md:p-8 relative overflow-hidden">
+<!-- Decorative background elements -->
+<div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+<div class="absolute top-[-10%] right-[-5%] w-[40vw] h-[40vw] rounded-full bg-primary/5 blur-[100px]"></div>
+<div class="absolute bottom-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-secondary-container/20 blur-[120px]"></div>
 </div>
-</header>
-<!-- Main Content Canvas -->
-<main class="flex-grow px-margin-screen py-stack-lg pb-[100px] md:pb-stack-lg max-w-3xl mx-auto w-full space-y-stack-lg">
-<!-- Global Sync Status Indicator -->
-<section class="flex flex-col items-center justify-center py-stack-lg bg-surface-container-lowest rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.08)] border border-surface-container">
-<div class="relative w-32 h-32 mb-stack-sm flex items-center justify-center">
-<!-- Outer glowing ring -->
-<div class="absolute inset-0 rounded-full border-4 border-primary/20 animate-pulse"></div>
-<!-- Inner spinner -->
-<svg class="absolute inset-0 w-full h-full text-primary animate-spin" fill="none" viewbox="0 0 24 24">
-<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"></circle>
-<path class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor"></path>
-</svg>
-<!-- Center Icon -->
-<div class="bg-primary-container text-on-primary-container rounded-full w-20 h-20 flex items-center justify-center shadow-inner z-10">
-<span class="material-symbols-outlined text-[40px] icon-fill">sync</span>
+<!-- Main Registration Card -->
+<main class="w-full max-w-5xl bg-surface-container-lowest rounded-[24px] shadow-[0_16px_40px_rgba(0,0,0,0.06)] flex flex-col md:flex-row overflow-hidden relative z-10 border border-surface-container-highest">
+<!-- Form Section -->
+<div class="w-full md:w-1/2 p-6 sm:p-10 lg:p-14 flex flex-col justify-center">
+<div class="mb-stack-lg flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">eco</span>
 </div>
+<span class="font-headline-sm text-headline-sm text-primary tracking-tight">Forest Intelligence</span>
 </div>
-<h2 class="font-display-md text-display-md-mobile text-on-surface mb-2">資料同步中</h2>
-<p class="font-body-md text-body-md text-on-surface-variant text-center px-4">正在將 12 筆本地紀錄上傳至雲端伺服器...</p>
-<button class="mt-stack-md h-touch-target-min px-6 bg-primary-container text-on-primary-container rounded-full font-label-lg text-label-lg hover:bg-primary transition-colors flex items-center gap-2 active:scale-95 duration-200">
-<span class="material-symbols-outlined text-[20px]">sync</span>
-                手動同步
-            </button>
-</section>
-<!-- Pending Uploads List -->
-<section class="space-y-stack-sm">
-<h3 class="font-headline-sm text-headline-sm-mobile text-on-surface flex items-center gap-2">
-<span class="material-symbols-outlined text-primary">cloud_upload</span>
-                待上傳紀錄
-            </h3>
-<div class="bg-surface-container-lowest rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
-<!-- List Item 1: Syncing -->
-<div class="flex items-center p-4 border-b border-surface-container">
-<div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center mr-4 shrink-0">
-<span class="material-symbols-outlined animate-spin text-[20px]">sync</span>
-</div>
-<div class="flex-grow">
-<h4 class="font-body-md text-body-md font-medium text-on-surface">樣區 A - 植被調查</h4>
-<p class="font-label-md text-label-md text-outline">今天 14:30 • 4.2 MB</p>
-</div>
-<span class="font-label-md text-label-md text-primary bg-primary-fixed px-2 py-1 rounded-md">同步中</span>
-</div>
-<!-- List Item 2: Error -->
-<div class="flex items-center p-4 border-b border-surface-container">
-<div class="w-10 h-10 rounded-full bg-error-container text-on-error-container flex items-center justify-center mr-4 shrink-0">
-<span class="material-symbols-outlined text-[20px]">error</span>
-</div>
-<div class="flex-grow">
-<h4 class="font-body-md text-body-md font-medium text-on-surface">樣區 B - 碳排估算</h4>
-<p class="font-label-md text-label-md text-error">網路連線超時</p>
-</div>
-<button class="h-8 px-3 border border-outline rounded-md font-label-md text-label-md text-on-surface hover:bg-surface-variant transition-colors">重試</button>
-</div>
-<!-- List Item 3: Success -->
-<div class="flex items-center p-4">
-<div class="w-10 h-10 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center mr-4 shrink-0">
-<span class="material-symbols-outlined text-[20px] icon-fill">check_circle</span>
-</div>
-<div class="flex-grow">
-<h4 class="font-body-md text-body-md font-medium text-on-surface">樣區 C - 樹木清冊</h4>
-<p class="font-label-md text-label-md text-outline">今天 10:15 • 1.5 MB</p>
-</div>
-<span class="font-label-md text-label-md text-secondary bg-secondary-fixed-dim/30 px-2 py-1 rounded-md">已完成</span>
+<h1 class="font-display-md-mobile text-display-md-mobile md:font-display-md md:text-display-md text-on-surface mb-2">
+                註冊新帳號
+            </h1>
+<p class="font-body-md text-body-md text-on-surface-variant mb-8">
+                加入我們的碳審計調查員網絡，開始精準的環境數據採集。
+            </p>
+<form action="#" class="flex flex-col gap-5" method="POST">
+<!-- Name Field -->
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface ml-1" for="name">姓名</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant pointer-events-none">person</span>
+<input class="w-full h-touch-target-min pl-12 pr-4 bg-transparent border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface placeholder:text-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none" id="name" name="name" placeholder="輸入您的真實姓名" required="" type="text"/>
 </div>
 </div>
-</section>
-<!-- Offline Maps Download Section -->
-<section class="space-y-stack-sm">
-<h3 class="font-headline-sm text-headline-sm-mobile text-on-surface flex items-center gap-2">
-<span class="material-symbols-outlined text-primary">map</span>
-                離線地圖下載
-            </h3>
-<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter-grid">
-<!-- Map Region 1 -->
-<div class="bg-surface-container-lowest p-4 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-surface-container">
-<div class="flex justify-between items-start mb-2">
-<div>
-<h4 class="font-body-md text-body-md font-medium text-on-surface">北部林區</h4>
-<p class="font-label-md text-label-md text-outline">540 MB • 更新於昨天</p>
-</div>
-<span class="material-symbols-outlined text-secondary icon-fill">cloud_done</span>
-</div>
-<div class="w-full bg-surface-variant rounded-full h-2 mt-4">
-<div class="bg-secondary h-2 rounded-full" style="width: 100%"></div>
+<!-- Account ID Field -->
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface ml-1" for="account_id">帳號 ID</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant pointer-events-none">badge</span>
+<input class="w-full h-touch-target-min pl-12 pr-4 bg-transparent border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface placeholder:text-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none" id="account_id" name="account_id" placeholder="設定登入帳號" required="" type="text"/>
 </div>
 </div>
-<!-- Map Region 2 -->
-<div class="bg-surface-container-lowest p-4 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-surface-container">
-<div class="flex justify-between items-start mb-2">
-<div>
-<h4 class="font-body-md text-body-md font-medium text-on-surface">中部林區</h4>
-<p class="font-label-md text-label-md text-outline">820 MB • 下載中...</p>
-</div>
-<button class="text-on-surface-variant hover:text-error transition-colors p-1"><span class="material-symbols-outlined">cancel</span></button>
-</div>
-<div class="w-full bg-surface-variant rounded-full h-2 mt-4">
-<div class="bg-primary h-2 rounded-full transition-all duration-1000" style="width: 45%"></div>
-</div>
-<p class="font-label-md text-label-md text-primary mt-1 text-right">45%</p>
-</div>
-<!-- Map Region 3 -->
-<div class="bg-surface-container-lowest p-4 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-surface-container">
-<div class="flex justify-between items-start mb-2">
-<div>
-<h4 class="font-body-md text-body-md font-medium text-on-surface">南部林區</h4>
-<p class="font-label-md text-label-md text-outline">610 MB • 需更新</p>
-</div>
-<button class="h-8 w-8 rounded-full flex items-center justify-center bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-<span class="material-symbols-outlined text-[18px]">download</span>
+<!-- Password Field -->
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface ml-1" for="password">密碼</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant pointer-events-none">lock</span>
+<input class="w-full h-touch-target-min pl-12 pr-12 bg-transparent border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface placeholder:text-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none" id="password" name="password" placeholder="請輸入至少 8 位字元" required="" type="password"/>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 text-outline-variant hover:text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined">visibility_off</span>
 </button>
 </div>
-<div class="w-full bg-surface-variant rounded-full h-2 mt-4">
-<div class="bg-outline-variant h-2 rounded-full" style="width: 0%"></div>
+</div>
+<!-- Invite Code Field (Required) -->
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface ml-1 flex items-center gap-1" for="invite_code">
+                        邀請碼 <span class="text-error">*</span>
+</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant pointer-events-none">key</span>
+<input class="w-full h-touch-target-min pl-12 pr-4 bg-transparent border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface placeholder:text-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none bg-surface-container-low" id="invite_code" name="invite_code" placeholder="輸入組織發放的邀請碼" required="" type="text"/>
+</div>
+<p class="font-label-md text-label-md text-outline ml-1 mt-1">此為必填欄位，請向區域負責人索取。</p>
+</div>
+<!-- Submit Action -->
+<div class="mt-4 flex flex-col gap-4">
+<button class="w-full h-touch-target-min bg-primary-container text-on-primary-container font-label-lg text-label-lg rounded-full hover:bg-primary hover:text-on-primary transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2 shadow-sm" type="submit">
+                        提交申請
+                        <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+<div class="text-center">
+<a class="font-label-md text-label-md text-primary hover:text-surface-tint transition-colors underline-offset-4 hover:underline" href="#">
+                            已有帳號？立即登入
+                        </a>
 </div>
 </div>
+</form>
 </div>
-</section>
+<!-- Image Presentation Section (Desktop) -->
+<div class="hidden md:block w-1/2 relative bg-surface-container-low overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent z-10"></div>
+<img alt="Forest canopy background" class="absolute inset-0 w-full h-full object-cover" data-alt="A breathtaking, high-resolution aerial photograph looking straight down into a dense, vibrant green coniferous forest canopy. The scene is illuminated by soft, diffused morning sunlight that highlights the rich textures of the treetops. The color palette emphasizes deep emerald greens and subtle earth tones, projecting a sense of environmental scale, scientific observation, and serene nature. The composition is strictly structural, fitting a modern corporate light-mode design aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCO0pUXspuN9p31uo8y1ibJjSNGsxoYiP4IbS_mc9b8SVQ6W5NCKkwwj4x2dSPhkcJBnXlWwNfhjyTJ2gR8m_YVD3jiVz4PuH6u_bD0bsLdNkfR3em-bYorDVOaUXtBxdUBYHOiL-ei1cMVJukVXHjc9x1A37cw6kYg61gzLm0k0AZ2KGPXExt0mVkdwqwTHKfHCn7x7s66QicQM08fXpRwlrZHm2bABE44912NR_7Ve2o90zVDZt4IoVpyv9ShAY1G1K2z9-BXsQ"/>
+<div class="absolute bottom-10 left-10 right-10 z-20 text-white">
+<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 mb-4">
+<span class="material-symbols-outlined text-[16px]">satellite_alt</span>
+<span class="font-label-md text-label-md">v2.4.0-Stable</span>
+</div>
+<h2 class="font-display-md text-display-md mb-2 text-white">精確追蹤每一棵樹的碳匯價值。</h2>
+<p class="font-body-md text-body-md text-white/80 max-w-md">
+                    Forest Intelligence 專為專業林業人員打造，在極端戶外環境下提供穩定、高對比的數據輸入體驗。
+                </p>
+</div>
+</div>
 </main>
-<!-- BottomNavBar (Mobile Only) -->
-<nav class="md:hidden fixed bottom-0 w-full z-50 flex justify-around items-center p-2 pb-4 bg-white dark:bg-inverse-surface fixed bottom-0 left-0 right-0 mx-3 mb-3 rounded-full bg-white dark:bg-inverse-surface shadow-lg shadow-[0_16px_32px_rgba(0,0,0,0.18)]">
-<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200">
-<span class="material-symbols-outlined text-[24px]">dashboard</span>
-<span class="font-label-md text-label-md mt-1">Dash</span>
-</button>
-<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200">
-<span class="material-symbols-outlined text-[24px]">forest</span>
-<span class="font-label-md text-label-md mt-1">Trees</span>
-</button>
-<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200">
-<span class="material-symbols-outlined text-[24px] icon-fill">sync_alt</span>
-<span class="font-label-md text-label-md mt-1 font-medium">Sync</span>
-</button>
-<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200">
-<span class="material-symbols-outlined text-[24px]">account_tree</span>
-<span class="font-label-md text-label-md mt-1">Projects</span>
-</button>
-<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200">
-<span class="material-symbols-outlined text-[24px]">analytics</span>
-<span class="font-label-md text-label-md mt-1">Analysis</span>
-</button>
-</nav>
-<!-- Side Navigation (Web/Tablet Only - Hidden on Mobile) -->
-<aside class="hidden md:flex flex-col fixed left-0 top-16 bottom-0 w-80 bg-surface-container-low dark:bg-surface-container-lowest bg-surface-container-low border-r border-outline-variant dark:border-outline shadow-xl z-30 overflow-y-auto rounded-r-xl">
-<div class="p-stack-lg border-b border-surface-container">
-<div class="flex items-center gap-4 mb-4">
-<div class="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-display-md text-xl">
-                    LA
-                </div>
-<div>
-<h2 class="font-body-md text-body-md font-medium text-on-surface">Lead Auditor</h2>
-<p class="font-label-md text-label-md text-on-surface-variant">North Sector Range</p>
-</div>
-</div>
-<p class="font-label-md text-label-md text-outline">v2.4.0-Stable</p>
-</div>
-<nav class="flex-grow py-stack-md flex flex-col gap-2">
-<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant/20 active:opacity-80 transition-opacity mx-2 rounded-full font-body-md text-body-md" href="#">
-<span class="material-symbols-outlined">database</span>
-                Species DB
-            </a>
-<a class="flex items-center gap-4 px-4 py-3 bg-secondary-container text-on-secondary-container rounded-full mx-2 font-body-md text-body-md active:opacity-80 transition-opacity" href="#">
-<span class="material-symbols-outlined icon-fill">sync_alt</span>
-                Sync Status
-            </a>
-<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant/20 active:opacity-80 transition-opacity mx-2 rounded-full font-body-md text-body-md" href="#">
-<span class="material-symbols-outlined">group</span>
-                Team Settings
-            </a>
-<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant/20 active:opacity-80 transition-opacity mx-2 rounded-full font-body-md text-body-md" href="#">
-<span class="material-symbols-outlined">map</span>
-                Offline Maps
-            </a>
-<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant/20 active:opacity-80 transition-opacity mx-2 rounded-full font-body-md text-body-md" href="#">
-<span class="material-symbols-outlined">potted_plant</span>
-                Carbon Reports
-            </a>
-<div class="mt-auto pt-4">
-<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant/20 active:opacity-80 transition-opacity mx-2 rounded-full font-body-md text-body-md" href="#">
-<span class="material-symbols-outlined">help</span>
-                    Support
-                </a>
-</div>
-</nav>
-</aside>
 </body></html>

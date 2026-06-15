@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Report Export Configuration - ArborSync Pro</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed-variant": "#005312",
+                        "outline-variant": "#c2c7d1",
+                        "surface-container": "#ededf3",
+                        "on-primary-fixed": "#001c38",
+                        "on-primary-container": "#91c0ff",
+                        "on-tertiary-fixed": "#320047",
+                        "secondary-fixed-dim": "#87d982",
+                        "on-secondary-container": "#207128",
+                        "inverse-on-surface": "#f0f0f6",
+                        "surface-dim": "#d9dadf",
+                        "on-secondary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "tertiary-container": "#781b9f",
+                        "on-surface-variant": "#424750",
+                        "on-secondary-fixed": "#002204",
+                        "surface-container-highest": "#e1e2e8",
+                        "on-error-container": "#93000a",
+                        "primary-container": "#004e8b",
+                        "inverse-primary": "#a2c9ff",
+                        "background": "#f8f9ff",
+                        "primary": "#003765",
+                        "tertiary-fixed-dim": "#ebb2ff",
+                        "on-tertiary": "#ffffff",
+                        "secondary": "#1b6d24",
+                        "surface-container-high": "#e7e8ee",
+                        "error": "#ba1a1a",
+                        "outline": "#727781",
+                        "primary-fixed-dim": "#a2c9ff",
+                        "surface-container-low": "#f3f3f9",
+                        "on-tertiary-fixed-variant": "#721199",
+                        "tertiary-fixed": "#f8d8ff",
+                        "surface": "#f8f9ff",
+                        "secondary-fixed": "#a3f69c",
+                        "on-primary": "#ffffff",
+                        "surface-bright": "#f8f9ff",
+                        "inverse-surface": "#2e3035",
+                        "primary-fixed": "#d3e4ff",
+                        "on-tertiary-container": "#e7a5ff",
+                        "on-surface": "#191c20",
+                        "tertiary": "#5a007c",
+                        "on-primary-fixed-variant": "#004881",
+                        "surface-tint": "#24609e",
+                        "on-background": "#191c20",
+                        "error-container": "#ffdad6",
+                        "secondary-container": "#a0f499",
+                        "surface-variant": "#e1e2e8",
+                        "surface-container-lowest": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-lg": "24px",
+                        "stack-sm": "8px",
+                        "gutter": "16px",
+                        "touch-target-min": "48px",
+                        "screen-margin": "20px",
+                        "stack-md": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #FCF8FF; }
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md antialiased min-h-screen pb-24 md:pb-0 flex flex-col">
+<!-- Top AppBar -->
+<header class="w-full top-0 sticky bg-surface dark:bg-surface-dim shadow-sm z-40">
+<div class="flex items-center justify-between px-screen-margin h-16 bg-surface-container-low dark:bg-surface-container-high">
+<button class="flex items-center justify-center min-w-touch-target-min min-h-touch-target-min text-on-surface-variant hover:bg-surface-variant/50 transition-colors rounded-full active:scale-95 duration-100">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="font-headline-sm text-headline-sm text-primary dark:text-inverse-primary">Report Export Configuration</h1>
+<button class="flex items-center justify-center min-w-touch-target-min min-h-touch-target-min text-on-surface-variant hover:bg-surface-variant/50 transition-colors rounded-full active:scale-95 duration-100">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</button>
+</div>
+<!-- Status Chip -->
+<div class="absolute top-0 left-1/2 transform -translate-x-1/2 -mt-3 z-50">
+<div class="bg-secondary text-on-secondary font-label-sm text-label-sm px-3 py-1 rounded-full shadow-sm flex items-center gap-1 border border-secondary-container">
+<span class="w-2 h-2 rounded-full bg-secondary-container"></span>
+                已連線
+            </div>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-grow w-full max-w-3xl mx-auto px-screen-margin py-stack-lg flex flex-col gap-stack-lg">
+<!-- Header Section -->
+<section>
+<h2 class="font-headline-md text-headline-md text-on-surface mb-2">Export Data</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Configure parameters to generate a specialized report for external analysis.</p>
+</section>
+<!-- Configuration Form Grid -->
+<form class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Format Card -->
+<div class="bg-surface-container-lowest p-stack-md rounded-xl shadow-[0_4px_8px_rgba(0,0,0,0.12)] col-span-1 md:col-span-2">
+<h3 class="font-label-lg text-label-lg text-primary mb-stack-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="description">description</span> Format
+                </h3>
+<div class="grid grid-cols-3 gap-2 mt-4">
+<label class="cursor-pointer relative flex flex-col items-center justify-center p-4 border-2 border-outline-variant rounded-lg hover:border-primary transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary-container/10">
+<input checked="" class="sr-only" name="format" type="radio" value="csv"/>
+<span class="material-symbols-outlined mb-2 text-on-surface-variant" data-icon="table">table</span>
+<span class="font-label-lg text-label-lg text-on-surface">CSV</span>
+</label>
+<label class="cursor-pointer relative flex flex-col items-center justify-center p-4 border-2 border-outline-variant rounded-lg hover:border-primary transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary-container/10">
+<input class="sr-only" name="format" type="radio" value="pdf"/>
+<span class="material-symbols-outlined mb-2 text-on-surface-variant" data-icon="picture_as_pdf">picture_as_pdf</span>
+<span class="font-label-lg text-label-lg text-on-surface">PDF</span>
+</label>
+<label class="cursor-pointer relative flex flex-col items-center justify-center p-4 border-2 border-outline-variant rounded-lg hover:border-primary transition-colors has-[:checked]:border-primary has-[:checked]:bg-primary-container/10">
+<input class="sr-only" name="format" type="radio" value="geojson"/>
+<span class="material-symbols-outlined mb-2 text-on-surface-variant" data-icon="map">map</span>
+<span class="font-label-lg text-label-lg text-on-surface">GeoJSON</span>
+</label>
+</div>
+</div>
+<!-- Date Range Card -->
+<div class="bg-surface-container-lowest p-stack-md rounded-xl shadow-[0_4px_8px_rgba(0,0,0,0.12)] flex flex-col">
+<h3 class="font-label-lg text-label-lg text-primary mb-stack-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="calendar_month">calendar_month</span> Date Range
+                </h3>
+<div class="flex flex-col gap-4 mt-4">
+<div class="relative">
+<label class="block font-label-sm text-label-sm text-on-surface-variant mb-1" for="start_date">Start Date</label>
+<input class="w-full bg-surface-container border border-outline text-on-surface rounded-md px-3 py-2 min-h-touch-target-min focus:border-primary focus:ring-1 focus:ring-primary outline-none font-body-md text-body-md" id="start_date" type="date"/>
+</div>
+<div class="relative">
+<label class="block font-label-sm text-label-sm text-on-surface-variant mb-1" for="end_date">End Date</label>
+<input class="w-full bg-surface-container border border-outline text-on-surface rounded-md px-3 py-2 min-h-touch-target-min focus:border-primary focus:ring-1 focus:ring-primary outline-none font-body-md text-body-md" id="end_date" type="date"/>
+</div>
+</div>
+</div>
+<!-- Data Fields Card -->
+<div class="bg-surface-container-lowest p-stack-md rounded-xl shadow-[0_4px_8px_rgba(0,0,0,0.12)] flex flex-col">
+<h3 class="font-label-lg text-label-lg text-primary mb-stack-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="checklist">checklist</span> Include Fields
+                </h3>
+<div class="flex flex-col gap-3 mt-4">
+<label class="flex items-center gap-3 cursor-pointer p-2 rounded-md hover:bg-surface-variant/50 transition-colors min-h-touch-target-min">
+<input checked="" class="w-5 h-5 text-primary bg-surface-container border-outline rounded focus:ring-primary focus:ring-2" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface">Tree Species DB</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer p-2 rounded-md hover:bg-surface-variant/50 transition-colors min-h-touch-target-min">
+<input checked="" class="w-5 h-5 text-primary bg-surface-container border-outline rounded focus:ring-primary focus:ring-2" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface">Include DBH (Diameter)</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer p-2 rounded-md hover:bg-surface-variant/50 transition-colors min-h-touch-target-min">
+<input checked="" class="w-5 h-5 text-primary bg-surface-container border-outline rounded focus:ring-primary focus:ring-2" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface">Include Geolocation</span>
+</label>
+<label class="flex items-center gap-3 cursor-pointer p-2 rounded-md hover:bg-surface-variant/50 transition-colors min-h-touch-target-min">
+<input class="w-5 h-5 text-primary bg-surface-container border-outline rounded focus:ring-primary focus:ring-2" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface">Carbon Yield Estimates</span>
+</label>
+</div>
+</div>
+<!-- Sectors Filter Card -->
+<div class="bg-surface-container-lowest p-stack-md rounded-xl shadow-[0_4px_8px_rgba(0,0,0,0.12)] col-span-1 md:col-span-2">
+<h3 class="font-label-lg text-label-lg text-primary mb-stack-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="forest">forest</span> Sectors
+                </h3>
+<div class="flex flex-wrap gap-2 mt-4">
+<button class="px-4 py-2 rounded-[16px] bg-primary text-on-primary font-label-lg text-label-lg min-h-touch-target-min flex items-center gap-2 active:scale-95 transition-transform" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="check">check</span> North Sector Range
+                    </button>
+<button class="px-4 py-2 rounded-[16px] bg-surface-container text-on-surface-variant font-label-lg text-label-lg min-h-touch-target-min flex items-center gap-2 active:scale-95 transition-transform hover:bg-surface-variant" type="button">
+                        South Ridge
+                    </button>
+<button class="px-4 py-2 rounded-[16px] bg-surface-container text-on-surface-variant font-label-lg text-label-lg min-h-touch-target-min flex items-center gap-2 active:scale-95 transition-transform hover:bg-surface-variant" type="button">
+                        East Valley
+                    </button>
+<button class="px-4 py-2 rounded-[16px] border border-outline-variant text-on-surface-variant font-label-lg text-label-lg min-h-touch-target-min flex items-center gap-2 active:scale-95 transition-transform hover:bg-surface-variant border-dashed" type="button">
+<span class="material-symbols-outlined text-[18px]" data-icon="add">add</span> Add Sector
+                    </button>
+</div>
+</div>
+<!-- Action Area -->
+<div class="col-span-1 md:col-span-2 mt-stack-md flex justify-end">
+<button class="bg-primary text-on-primary font-label-lg text-label-lg rounded-full px-8 py-3 min-h-touch-target-min flex items-center gap-2 shadow-[0_4px_8px_rgba(0,0,0,0.12)] hover:bg-primary-fixed-variant active:scale-95 transition-all" type="submit">
+<span class="material-symbols-outlined" data-icon="download">download</span> Generate Report
+                </button>
+</div>
+</form>
+</main>
+<!-- Bottom Navigation Shell (Mobile Only) -->
+<nav class="fixed bottom-0 left-0 right-0 mx-3 mb-3 rounded-full bg-white dark:bg-inverse-surface shadow-[0_16px_32px_rgba(0,0,0,0.18)] z-50 md:hidden">
+<div class="w-full flex justify-around items-center p-2 pb-4">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-sm text-label-sm mt-1">Dash</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="forest">forest</span>
+<span class="font-label-sm text-label-sm mt-1">Trees</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="straighten">straighten</span>
+<span class="font-label-sm text-label-sm mt-1">Measure</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="account_tree">account_tree</span>
+<span class="font-label-sm text-label-sm mt-1">Projects</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200" href="#">
+<span class="material-symbols-outlined" data-icon="analytics" data-weight="fill" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span class="font-label-sm text-label-sm mt-1">Analysis</span>
+</a>
+</div>
+</nav>
+</body></html>

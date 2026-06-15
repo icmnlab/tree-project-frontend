@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+
+<html lang="zh-TW"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>What's New - Forestry Audit</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#ededf3",
+                        "secondary-fixed": "#a3f69c",
+                        "primary": "#003765",
+                        "outline": "#727781",
+                        "on-tertiary-container": "#e7a5ff",
+                        "surface": "#f8f9ff",
+                        "error": "#ba1a1a",
+                        "surface-container-high": "#e7e8ee",
+                        "on-error": "#ffffff",
+                        "primary-container": "#004e8b",
+                        "surface-dim": "#d9dadf",
+                        "inverse-primary": "#a2c9ff",
+                        "on-secondary-fixed-variant": "#005312",
+                        "on-secondary-fixed": "#002204",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#721199",
+                        "on-primary-fixed": "#001c38",
+                        "secondary-fixed-dim": "#87d982",
+                        "on-surface": "#191c20",
+                        "on-primary-fixed-variant": "#004881",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed": "#320047",
+                        "on-surface-variant": "#424750",
+                        "background": "#f8f9ff",
+                        "on-background": "#191c20",
+                        "on-tertiary": "#ffffff",
+                        "secondary": "#1b6d24",
+                        "tertiary": "#5a007c",
+                        "tertiary-fixed-dim": "#ebb2ff",
+                        "surface-tint": "#24609e",
+                        "outline-variant": "#c2c7d1",
+                        "primary-fixed": "#d3e4ff",
+                        "surface-container-low": "#f3f3f9",
+                        "on-secondary-container": "#207128",
+                        "on-error-container": "#93000a",
+                        "tertiary-container": "#781b9f",
+                        "surface-bright": "#f8f9ff",
+                        "secondary-container": "#a0f499",
+                        "surface-variant": "#e1e2e8",
+                        "inverse-on-surface": "#f0f0f6",
+                        "primary-fixed-dim": "#a2c9ff",
+                        "tertiary-fixed": "#f8d8ff",
+                        "on-primary": "#ffffff",
+                        "inverse-surface": "#2e3035",
+                        "error-container": "#ffdad6",
+                        "surface-container-highest": "#e1e2e8",
+                        "on-primary-container": "#91c0ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-sm": "8px",
+                        "screen-margin": "20px",
+                        "stack-md": "16px",
+                        "stack-lg": "24px",
+                        "gutter": "16px",
+                        "touch-target-min": "48px"
+                    },
+                    "fontFamily": {
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .timeline-line {
+            width: 2px;
+            background: linear-gradient(to bottom, #003765 0%, #1b6d24 50%, #e1e2e8 100%);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-[100px] md:pb-0 pt-[64px]">
+<!-- Status Chip -->
+<div class="fixed top-0 left-0 right-0 z-[60] bg-surface flex justify-center py-1 shadow-sm">
+<div class="bg-surface-container-high text-on-surface-variant px-3 py-1 rounded-full text-label-sm font-label-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">cloud_off</span>
+            離線
+        </div>
+</div>
+<!-- TopAppBar (Transactional - Hidden Navigation Elements) -->
+<header class="fixed top-0 w-full z-50 bg-surface dark:bg-on-surface shadow-sm h-touch-target-min flex justify-between items-center px-screen-margin pt-6">
+<button aria-label="Go back" class="text-primary dark:text-primary-fixed hover:bg-surface-variant p-2 rounded-full h-10 w-10 flex items-center justify-center transition-transform active:scale-95">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+</button>
+<h1 class="text-headline-sm-mobile font-headline-sm-mobile font-bold text-primary dark:text-primary-fixed">Forestry Audit</h1>
+<div class="w-10"></div> <!-- Placeholder for balance -->
+</header>
+<main class="max-w-3xl mx-auto px-screen-margin py-stack-lg">
+<header class="mb-stack-lg">
+<h2 class="text-headline-lg-mobile md:text-headline-lg font-headline-lg-mobile md:font-headline-lg text-primary mb-stack-sm">更新日誌</h2>
+<p class="text-body-md font-body-md text-on-surface-variant">查看最新的應用程式更新、新功能與調查協議變更。</p>
+</header>
+<!-- Timeline Layout -->
+<div class="relative">
+<!-- Continuous Line -->
+<div class="absolute left-[23px] top-4 bottom-0 timeline-line z-0 md:left-1/2 md:-ml-[1px]"></div>
+<!-- Version 2.4.0 (Latest) -->
+<div class="relative z-10 mb-stack-lg flex flex-col md:flex-row md:justify-between items-start">
+<div class="md:w-5/12 text-left md:text-right mb-4 md:mb-0 pl-14 md:pl-0 md:pr-10 relative">
+<div class="absolute left-0 top-1 w-12 h-12 bg-primary rounded-full flex items-center justify-center shadow-md md:hidden border-4 border-surface z-20">
+<span class="material-symbols-outlined text-on-primary" data-icon="star">star</span>
+</div>
+<span class="text-label-sm font-label-sm text-secondary tracking-widest uppercase block mb-1">Latest Release</span>
+<h3 class="text-headline-sm font-headline-sm text-primary">v2.4.0</h3>
+<p class="text-label-sm font-label-sm text-on-surface-variant">2023年10月15日</p>
+</div>
+<div class="hidden md:flex absolute left-1/2 -ml-6 top-0 w-12 h-12 bg-primary rounded-full items-center justify-center shadow-md border-4 border-surface z-20">
+<span class="material-symbols-outlined text-on-primary" data-icon="star">star</span>
+</div>
+<div class="md:w-5/12 bg-surface shadow-[0_12px_8px_-4px_rgba(0,0,0,0.12)] rounded-xl p-stack-md ml-14 md:ml-0 relative border border-surface-variant">
+<div class="flex items-center gap-2 mb-3">
+<span class="bg-secondary-container text-on-secondary-container text-label-sm font-label-sm px-2 py-1 rounded-md">協議更新</span>
+</div>
+<ul class="space-y-3">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-secondary mt-0.5 text-[20px]">check_circle</span>
+<span class="text-body-md font-body-md text-on-surface">新增針對高海拔地區的碳匯估算公式調整功能。</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-secondary mt-0.5 text-[20px]">check_circle</span>
+<span class="text-body-md font-body-md text-on-surface">更新「闊葉林」物種分類選項，包含最新指引。</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-outline mt-0.5 text-[20px]">bug_report</span>
+<span class="text-body-md font-body-md text-on-surface-variant">修正離線地圖在特定縮放比例下圖磚無法載入的問題。</span>
+</li>
+</ul>
+</div>
+</div>
+<!-- Version 2.3.1 -->
+<div class="relative z-10 mb-stack-lg flex flex-col md:flex-row md:justify-between items-start md:flex-row-reverse">
+<div class="md:w-5/12 text-left mb-4 md:mb-0 pl-14 md:pl-10 relative">
+<div class="absolute left-0 top-1 w-12 h-12 bg-surface-container-high rounded-full flex items-center justify-center shadow-sm md:hidden border-4 border-surface z-20">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="update">update</span>
+</div>
+<h3 class="text-headline-sm font-headline-sm text-on-surface">v2.3.1</h3>
+<p class="text-label-sm font-label-sm text-on-surface-variant">2023年9月28日</p>
+</div>
+<div class="hidden md:flex absolute left-1/2 -ml-6 top-0 w-12 h-12 bg-surface-container-high rounded-full items-center justify-center shadow-sm border-4 border-surface z-20">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="update">update</span>
+</div>
+<div class="md:w-5/12 bg-surface shadow-[0_12px_8px_-4px_rgba(0,0,0,0.12)] rounded-xl p-stack-md ml-14 md:ml-0 relative border border-surface-variant">
+<div class="flex items-center gap-2 mb-3">
+<span class="bg-surface-variant text-on-surface-variant text-label-sm font-label-sm px-2 py-1 rounded-md">效能提升</span>
+</div>
+<ul class="space-y-3">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-secondary mt-0.5 text-[20px]">bolt</span>
+<span class="text-body-md font-body-md text-on-surface">優化藍牙測距儀 (BLE) 連線穩定性，減少中斷率。</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-outline mt-0.5 text-[20px]">bug_report</span>
+<span class="text-body-md font-body-md text-on-surface-variant">修正同步資料時偶發的「憑證逾時」錯誤。</span>
+</li>
+</ul>
+</div>
+</div>
+<!-- Version 2.3.0 -->
+<div class="relative z-10 flex flex-col md:flex-row md:justify-between items-start">
+<div class="md:w-5/12 text-left md:text-right mb-4 md:mb-0 pl-14 md:pl-0 md:pr-10 relative">
+<div class="absolute left-0 top-1 w-12 h-12 bg-surface-container-high rounded-full flex items-center justify-center shadow-sm md:hidden border-4 border-surface z-20">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="map">map</span>
+</div>
+<h3 class="text-headline-sm font-headline-sm text-on-surface">v2.3.0</h3>
+<p class="text-label-sm font-label-sm text-on-surface-variant">2023年9月10日</p>
+</div>
+<div class="hidden md:flex absolute left-1/2 -ml-6 top-0 w-12 h-12 bg-surface-container-high rounded-full items-center justify-center shadow-sm border-4 border-surface z-20">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="map">map</span>
+</div>
+<div class="md:w-5/12 bg-surface shadow-[0_12px_8px_-4px_rgba(0,0,0,0.12)] rounded-xl p-stack-md ml-14 md:ml-0 relative border border-surface-variant opacity-80">
+<div class="flex items-center gap-2 mb-3">
+<span class="bg-primary-container text-on-primary-container text-label-sm font-label-sm px-2 py-1 rounded-md">重大更新</span>
+</div>
+<ul class="space-y-3">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary mt-0.5 text-[20px]">add_location_alt</span>
+<span class="text-body-md font-body-md text-on-surface">引入全新的離線圖資引擎，支援更高解析度的空照圖下載。</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary mt-0.5 text-[20px]">edit_note</span>
+<span class="text-body-md font-body-md text-on-surface">新增實地照片批次標註功能。</span>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</main>
+</body></html>

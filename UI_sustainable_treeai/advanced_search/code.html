@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Research Dataset Search - Forest Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-container": "#004e8b",
+                        "on-secondary-fixed-variant": "#005312",
+                        "primary": "#003765",
+                        "surface-dim": "#d9dadf",
+                        "surface-container-highest": "#e1e2e8",
+                        "surface-bright": "#f8f9ff",
+                        "tertiary-fixed-dim": "#ebb2ff",
+                        "outline-variant": "#c2c7d1",
+                        "surface-container": "#ededf3",
+                        "tertiary": "#5a007c",
+                        "surface": "#f8f9ff",
+                        "background": "#f8f9ff",
+                        "on-error-container": "#93000a",
+                        "on-background": "#191c20",
+                        "secondary-fixed": "#a3f69c",
+                        "outline": "#727781",
+                        "inverse-surface": "#2e3035",
+                        "on-primary-fixed-variant": "#004881",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed-variant": "#721199",
+                        "surface-container-low": "#f3f3f9",
+                        "tertiary-container": "#781b9f",
+                        "secondary-container": "#a0f499",
+                        "surface-variant": "#e1e2e8",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed-dim": "#a2c9ff",
+                        "on-secondary-container": "#207128",
+                        "surface-container-high": "#e7e8ee",
+                        "inverse-on-surface": "#f0f0f6",
+                        "secondary": "#1b6d24",
+                        "on-primary-container": "#91c0ff",
+                        "on-surface": "#191c20",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "surface-tint": "#24609e",
+                        "on-surface-variant": "#424750",
+                        "primary-fixed": "#d3e4ff",
+                        "tertiary-fixed": "#f8d8ff",
+                        "on-secondary-fixed": "#002204",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed": "#001c38",
+                        "on-error": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "inverse-primary": "#a2c9ff",
+                        "secondary-fixed-dim": "#87d982",
+                        "on-tertiary-fixed": "#320047",
+                        "on-tertiary-container": "#e7a5ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px",
+                        "chips": "16px",
+                        "list": "16px"
+                    },
+                    "spacing": {
+                        "touch-target-min": "48px",
+                        "screen-margin": "20px",
+                        "gutter": "16px",
+                        "stack-md": "16px",
+                        "stack-sm": "8px",
+                        "stack-lg": "24px"
+                    },
+                    "fontFamily": {
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "700"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}]
+                    },
+                    "boxShadow": {
+                        "card": "0 4px 8px rgba(0,0,0,0.12)",
+                        "overlay": "0 8px 16px rgba(0,0,0,0.18)"
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #FCF8FF; }
+        /* Industrial Minimalism focus rings */
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border: 2px solid #003765 !important;
+            box-shadow: none !important;
+        }
+        /* Custom scrollbar for desktop */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f3f3f9; }
+        ::-webkit-scrollbar-thumb { background: #c2c7d1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #727781; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-md text-body-md text-on-background min-h-screen flex flex-col md:flex-row antialiased">
+<!-- Status Chip -->
+<div class="fixed top-0 left-0 right-0 z-50 flex justify-center mt-2 pointer-events-none">
+<div class="bg-surface-container-high text-secondary px-4 py-1 rounded-chips font-label-sm text-label-sm shadow-card flex items-center gap-2 pointer-events-auto">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">cloud_sync</span>
+            已連線
+        </div>
+</div>
+<!-- TopAppBar (Mobile) -->
+<header class="md:hidden sticky top-0 z-40 bg-surface dark:bg-on-background shadow-sm flex justify-between items-center w-full px-screen-margin h-touch-target-min transition-colors duration-200 ease-in-out">
+<button aria-label="Back" class="w-touch-target-min h-touch-target-min flex items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-variant rounded-full">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-headline-sm text-headline-sm-mobile md:text-headline-sm text-primary dark:text-primary-fixed tracking-tight">Advanced Search</h1>
+<button aria-label="Clear Filters" class="w-touch-target-min h-touch-target-min flex items-center justify-center text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-low dark:hover:bg-surface-variant rounded-full">
+<span class="material-symbols-outlined">restart_alt</span>
+</button>
+</header>
+<!-- SideNav (Desktop) -->
+<nav class="hidden md:flex flex-col w-64 bg-surface dark:bg-on-background shadow-overlay z-40 sticky top-0 h-screen">
+<div class="p-screen-margin flex items-center gap-3">
+<button aria-label="Back" class="w-10 h-10 flex items-center justify-center text-on-surface-variant hover:bg-surface-container-low rounded-full">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-headline-sm text-headline-sm text-primary tracking-tight">Search</h1>
+</div>
+<div class="flex-1 overflow-y-auto px-4 py-2 space-y-2">
+<div class="text-label-sm font-label-sm text-outline px-4 py-2 uppercase tracking-wider">Navigation</div>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-lg text-label-lg">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 bg-primary-container text-on-primary-container rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">search</span>
+<span class="font-label-lg text-label-lg">AI Scan</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-low rounded-lg transition-colors" href="#">
+<span class="material-symbols-outlined">map</span>
+<span class="font-label-lg text-label-lg">Zones</span>
+</a>
+</div>
+</nav>
+<!-- Main Canvas -->
+<main class="flex-1 pb-32 md:pb-8 pt-6 md:pt-12 px-screen-margin max-w-4xl mx-auto w-full">
+<div class="hidden md:flex justify-between items-end mb-stack-lg">
+<div>
+<h2 class="font-headline-lg text-headline-lg text-on-background mb-2">Research Dataset</h2>
+<p class="text-on-surface-variant">Configure parameters to filter global field records.</p>
+</div>
+<button class="text-secondary font-label-lg text-label-lg flex items-center gap-2 hover:bg-surface-container-low px-4 py-2 rounded-lg transition-colors">
+<span class="material-symbols-outlined">restart_alt</span>
+                Reset All
+            </button>
+</div>
+<!-- Global Search Bar -->
+<div class="relative mb-stack-lg">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full h-[56px] pl-12 pr-4 bg-surface-container-lowest border border-outline rounded-lg text-on-surface font-body-lg text-body-lg placeholder:text-outline-variant focus:border-primary focus:ring-0 transition-colors shadow-sm" placeholder="Search by Plot ID, Surveyor, or Notes..." type="text"/>
+</div>
+<!-- Saved Searches Chips -->
+<div class="mb-stack-lg">
+<h3 class="font-label-lg text-label-lg text-on-surface-variant mb-stack-sm">Saved Queries</h3>
+<div class="flex flex-wrap gap-2">
+<button class="px-4 py-2 rounded-chips border border-outline text-on-surface font-label-sm text-label-sm hover:bg-surface-container-low transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">bookmark</span>
+                    High Density Conifers
+                </button>
+<button class="px-4 py-2 rounded-chips border border-outline text-on-surface font-label-sm text-label-sm hover:bg-surface-container-low transition-colors flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">bookmark</span>
+                    Sector 7 Anomalies
+                </button>
+<button class="px-4 py-2 rounded-chips border border-outline text-on-surface font-label-sm text-label-sm hover:bg-surface-container-low transition-colors flex items-center gap-2 text-primary border-primary bg-primary-container/10">
+<span class="material-symbols-outlined text-[16px]">add</span>
+                    Save Current
+                </button>
+</div>
+</div>
+<!-- Bento Grid Filters -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-gutter mb-stack-lg">
+<!-- Date Range (Full Width Mobile, Half Desktop) -->
+<div class="col-span-1 md:col-span-6 bg-surface-container-lowest rounded-list p-5 shadow-card border border-surface-container">
+<div class="flex items-center gap-2 mb-4 text-primary">
+<span class="material-symbols-outlined">calendar_today</span>
+<h3 class="font-headline-sm text-headline-sm">Temporal Range</h3>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block font-label-sm text-label-sm text-on-surface-variant mb-1">Start Date</label>
+<input class="w-full h-touch-target-min px-3 bg-surface border border-outline rounded-md text-on-surface focus:border-primary" type="date"/>
+</div>
+<div>
+<label class="block font-label-sm text-label-sm text-on-surface-variant mb-1">End Date</label>
+<input class="w-full h-touch-target-min px-3 bg-surface border border-outline rounded-md text-on-surface focus:border-primary" type="date"/>
+</div>
+</div>
+</div>
+<!-- Audit Status (Half Desktop) -->
+<div class="col-span-1 md:col-span-6 bg-surface-container-lowest rounded-list p-5 shadow-card border border-surface-container">
+<div class="flex items-center gap-2 mb-4 text-primary">
+<span class="material-symbols-outlined">fact_check</span>
+<h3 class="font-headline-sm text-headline-sm">Audit Status</h3>
+</div>
+<div class="flex flex-col gap-3">
+<label class="flex items-center gap-3 p-2 rounded-md hover:bg-surface-container-low cursor-pointer">
+<input checked="" class="w-5 h-5 rounded border-outline text-primary focus:ring-primary" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface">Verified Primary</span>
+</label>
+<label class="flex items-center gap-3 p-2 rounded-md hover:bg-surface-container-low cursor-pointer">
+<input checked="" class="w-5 h-5 rounded border-outline text-primary focus:ring-primary" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface">Pending Review</span>
+</label>
+<label class="flex items-center gap-3 p-2 rounded-md hover:bg-surface-container-low cursor-pointer">
+<input class="w-5 h-5 rounded border-outline text-primary focus:ring-primary" type="checkbox"/>
+<span class="font-body-md text-body-md text-on-surface">Flagged / Anomaly</span>
+</label>
+</div>
+</div>
+<!-- Species Multi-Select (Full Width) -->
+<div class="col-span-1 md:col-span-12 bg-surface-container-lowest rounded-list p-5 shadow-card border border-surface-container">
+<div class="flex items-center gap-2 mb-4 text-primary">
+<span class="material-symbols-outlined">forest</span>
+<h3 class="font-headline-sm text-headline-sm">Target Species</h3>
+</div>
+<div class="flex flex-wrap gap-3">
+<label class="cursor-pointer group">
+<input checked="" class="peer sr-only" type="checkbox"/>
+<div class="px-4 py-2 rounded-chips border border-outline text-on-surface font-label-md text-label-md peer-checked:bg-primary-container peer-checked:text-on-primary-container peer-checked:border-primary-container transition-colors group-hover:bg-surface-container-high">
+                            Pinus sylvestris
+                        </div>
+</label>
+<label class="cursor-pointer group">
+<input checked="" class="peer sr-only" type="checkbox"/>
+<div class="px-4 py-2 rounded-chips border border-outline text-on-surface font-label-md text-label-md peer-checked:bg-primary-container peer-checked:text-on-primary-container peer-checked:border-primary-container transition-colors group-hover:bg-surface-container-high">
+                            Picea abies
+                        </div>
+</label>
+<label class="cursor-pointer group">
+<input class="peer sr-only" type="checkbox"/>
+<div class="px-4 py-2 rounded-chips border border-outline text-on-surface font-label-md text-label-md peer-checked:bg-primary-container peer-checked:text-on-primary-container peer-checked:border-primary-container transition-colors group-hover:bg-surface-container-high">
+                            Betula pendula
+                        </div>
+</label>
+<label class="cursor-pointer group">
+<input class="peer sr-only" type="checkbox"/>
+<div class="px-4 py-2 rounded-chips border border-outline text-on-surface font-label-md text-label-md peer-checked:bg-primary-container peer-checked:text-on-primary-container peer-checked:border-primary-container transition-colors group-hover:bg-surface-container-high">
+                            Quercus robur
+                        </div>
+</label>
+</div>
+</div>
+<!-- Carbon Density Slider (Full Width) -->
+<div class="col-span-1 md:col-span-12 bg-surface-container-lowest rounded-list p-5 shadow-card border border-surface-container">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined">bar_chart</span>
+<h3 class="font-headline-sm text-headline-sm">Carbon Density Threshold (tC/ha)</h3>
+</div>
+<span class="font-label-lg text-label-lg text-secondary bg-secondary-container px-3 py-1 rounded-md">45 - 120+</span>
+</div>
+<div class="px-2 pt-6 pb-2">
+<!-- Faux Range Slider for UI demonstration -->
+<div class="relative h-2 bg-surface-container-highest rounded-full">
+<div class="absolute left-[20%] right-[30%] h-full bg-primary rounded-full"></div>
+<div class="absolute left-[20%] top-1/2 -translate-y-1/2 w-6 h-6 bg-primary rounded-full border-2 border-surface-container-lowest shadow-sm cursor-pointer"></div>
+<div class="absolute right-[30%] top-1/2 -translate-y-1/2 w-6 h-6 bg-primary rounded-full border-2 border-surface-container-lowest shadow-sm cursor-pointer"></div>
+</div>
+<div class="flex justify-between mt-4 text-label-sm font-label-sm text-outline">
+<span>0</span>
+<span>50</span>
+<span>100</span>
+<span>150</span>
+<span>200+</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Action Bar (Floating for Results) -->
+<div class="fixed bottom-0 md:bottom-6 left-0 right-0 z-50 px-screen-margin pb-4 md:pb-0 flex justify-center pointer-events-none">
+<div class="w-full max-w-md bg-inverse-surface text-inverse-on-surface rounded-list shadow-overlay p-4 flex items-center justify-between pointer-events-auto">
+<div>
+<div class="font-label-sm text-label-sm opacity-80 mb-1">Matching Records</div>
+<div class="font-headline-md text-headline-md text-primary-fixed">1,248</div>
+</div>
+<button class="bg-primary text-on-primary h-touch-target-min px-6 rounded-lg font-label-lg text-label-lg flex items-center gap-2 hover:bg-on-primary-fixed-variant transition-colors shadow-sm">
+                View Results
+                <span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+</body></html>

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+
+<html class="light" lang="zh-TW"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Profile &amp; Performance Dashboard - Forest Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .material-symbols-outlined.fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            background-color: #f8f9ff;
+            color: #191c20;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-dim": "#d9dadf",
+                        "secondary-fixed-dim": "#87d982",
+                        "on-secondary-container": "#207128",
+                        "inverse-on-surface": "#f0f0f6",
+                        "tertiary-container": "#781b9f",
+                        "on-surface-variant": "#424750",
+                        "on-secondary-fixed": "#002204",
+                        "on-secondary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "outline-variant": "#c2c7d1",
+                        "on-secondary-fixed-variant": "#005312",
+                        "on-primary-container": "#91c0ff",
+                        "on-tertiary-fixed": "#320047",
+                        "surface-container": "#ededf3",
+                        "on-primary-fixed": "#001c38",
+                        "surface-container-high": "#e7e8ee",
+                        "error": "#ba1a1a",
+                        "secondary": "#1b6d24",
+                        "on-error-container": "#93000a",
+                        "primary-container": "#004e8b",
+                        "inverse-primary": "#a2c9ff",
+                        "background": "#f8f9ff",
+                        "surface-container-highest": "#e1e2e8",
+                        "tertiary-fixed-dim": "#ebb2ff",
+                        "on-tertiary": "#ffffff",
+                        "primary": "#003765",
+                        "on-tertiary-fixed-variant": "#721199",
+                        "tertiary-fixed": "#f8d8ff",
+                        "surface": "#f8f9ff",
+                        "secondary-fixed": "#a3f69c",
+                        "surface-container-low": "#f3f3f9",
+                        "surface-bright": "#f8f9ff",
+                        "inverse-surface": "#2e3035",
+                        "on-primary": "#ffffff",
+                        "outline": "#727781",
+                        "primary-fixed-dim": "#a2c9ff",
+                        "surface-tint": "#24609e",
+                        "on-background": "#191c20",
+                        "error-container": "#ffdad6",
+                        "surface-variant": "#e1e2e8",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-container": "#a0f499",
+                        "tertiary": "#5a007c",
+                        "on-primary-fixed-variant": "#004881",
+                        "primary-fixed": "#d3e4ff",
+                        "on-tertiary-container": "#e7a5ff",
+                        "on-surface": "#191c20"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-lg": "24px",
+                        "stack-sm": "8px",
+                        "gutter": "16px",
+                        "stack-md": "16px",
+                        "touch-target-min": "48px",
+                        "screen-margin": "20px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-[100px] md:pb-0">
+<!-- Status Chip -->
+<div class="fixed top-0 left-0 right-0 z-50 flex justify-center mt-2 pointer-events-none md:hidden">
+<div class="bg-secondary text-on-secondary px-4 py-1 rounded-full font-label-sm text-label-sm shadow-sm flex items-center gap-1 pointer-events-auto">
+<span class="w-2 h-2 rounded-full bg-secondary-fixed block"></span>
+            已連線/同步中
+        </div>
+</div>
+<!-- TopAppBar (Web) -->
+<header class="hidden md:flex fixed top-0 w-full z-50 bg-surface dark:bg-on-background shadow-sm h-touch-target-min items-center justify-between px-screen-margin">
+<div class="flex items-center gap-4">
+<button class="text-primary dark:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-surface-variant p-2 rounded-full active:scale-95 transition-transform duration-100 flex items-center justify-center w-10 h-10">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary dark:text-primary-fixed tracking-tight">Forest Intelligence</h1>
+</div>
+<nav class="flex items-center gap-6">
+<a class="font-label-lg text-label-lg text-on-surface-variant hover:bg-surface-container-low px-4 py-2 rounded-full transition-colors flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="map">map</span>
+                地圖
+            </a>
+<a class="font-label-lg text-label-lg text-on-surface-variant hover:bg-surface-container-low px-4 py-2 rounded-full transition-colors flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="straighten">straighten</span>
+                測量
+            </a>
+<a class="font-label-lg text-label-lg text-on-surface-variant hover:bg-surface-container-low px-4 py-2 rounded-full transition-colors flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-lg" data-icon="sync_alt">sync_alt</span>
+                同步
+            </a>
+<a class="font-label-lg text-label-lg text-primary bg-primary-container/20 px-4 py-2 rounded-full transition-colors flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-lg fill" data-icon="settings">settings</span>
+                設定
+            </a>
+</nav>
+<button class="text-primary dark:text-primary-fixed hover:bg-surface-container-low dark:hover:bg-surface-variant p-2 rounded-full active:scale-95 transition-transform duration-100 flex items-center justify-center w-10 h-10">
+<span class="material-symbols-outlined" data-icon="sync">sync</span>
+</button>
+</header>
+<!-- Main Content -->
+<main class="px-screen-margin pt-stack-lg md:pt-24 max-w-4xl mx-auto space-y-stack-lg pb-stack-lg">
+<!-- Header / Mobile Title -->
+<div class="md:hidden pt-8 pb-2">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile text-primary">Profile</h1>
+</div>
+<!-- Profile Hero Card -->
+<section class="bg-surface-container-lowest rounded-xl p-6 shadow-[0px_4px_16px_rgba(0,0,0,0.08)] flex flex-col sm:flex-row items-center gap-6 relative overflow-hidden">
+<!-- Decorative accent -->
+<div class="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-bl-full -mr-8 -mt-8 pointer-events-none"></div>
+<div class="w-24 h-24 rounded-full overflow-hidden border-4 border-surface shadow-sm shrink-0">
+<img alt="Avatar of 張工程師" class="w-full h-full object-cover" data-alt="A professional headshot of an experienced male forester wearing outdoor utility gear. The portrait is taken outdoors with soft, natural daylight highlighting a reliable and authoritative expression. The background is a gently blurred forest environment, blending deep industrial blues and organic greens to match the Forest Intelligence aesthetic. The mood is functional and rigorous, reflecting a modern industrial minimalism approach." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBlZ5jLZJ10I0dNyZWsoueD4YzhCJc5sShtF__Oil3zU-4woAmzC3Da_ryKTJzF6B3kSK6WkBUoVUFrdKCpfTQsVqect3JIrIsXrV7ydHuppUBbobBxdX00gtEbZWNjqvkQvXO1zOTRc2y_b0Cm099GFvLKGl68trx2T9gzkJWIsCZG3ii6m-NO5k4m6ghpWV4wF0KU7W1aj4M_-rpZozKLhR-M2De_UyrlDOejcAQBI4cN6KL8y-ByTvevRQrnRENl4KbDqZhGRQ"/>
+</div>
+<div class="text-center sm:text-left flex-1 z-10">
+<h2 class="font-headline-md text-headline-md text-on-surface mb-1">張工程師</h2>
+<div class="flex items-center justify-center sm:justify-start gap-2 mb-3">
+<span class="material-symbols-outlined text-secondary text-sm" data-icon="verified">verified</span>
+<span class="font-label-lg text-label-lg text-secondary">Lead Auditor</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-md">Specializing in high-density carbon sequestration measurement and advanced spatial analysis in challenging terrains.</p>
+</div>
+<div class="shrink-0 z-10 w-full sm:w-auto mt-4 sm:mt-0">
+<button class="w-full sm:w-auto bg-surface border-2 border-outline hover:border-primary text-primary font-label-lg text-label-lg px-6 h-touch-target-min rounded-lg transition-colors flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-xl" data-icon="edit">edit</span>
+                    Edit Profile
+                </button>
+</div>
+</section>
+<!-- Performance Metrics (Bento Grid) -->
+<section>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-stack-md flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" data-icon="bar_chart">bar_chart</span>
+                Performance Metrics
+            </h3>
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-gutter">
+<!-- Metric 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-[0px_4px_12px_rgba(0,0,0,0.06)] border border-surface-variant flex flex-col justify-between h-32 relative overflow-hidden group">
+<div class="absolute -right-4 -bottom-4 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity duration-300">
+<span class="material-symbols-outlined text-9xl text-primary" data-icon="nature" style="font-size: 120px;">nature</span>
+</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant mb-2">Trees Measured (This Month)</div>
+<div class="font-headline-lg-mobile text-headline-lg-mobile text-primary flex items-baseline gap-1">
+                        1,240
+                        <span class="font-label-sm text-label-sm text-secondary-fixed-dim flex items-center">
+<span class="material-symbols-outlined text-xs" data-icon="arrow_upward">arrow_upward</span> 12%
+                        </span>
+</div>
+</div>
+<!-- Metric 2 -->
+<div class="bg-primary text-on-primary rounded-xl p-5 shadow-[0px_4px_12px_rgba(0,0,0,0.12)] flex flex-col justify-between h-32 relative overflow-hidden">
+<div class="absolute right-0 top-0 w-16 h-16 bg-white/10 rounded-bl-full pointer-events-none"></div>
+<div class="font-label-sm text-label-sm text-primary-fixed-dim mb-2">Carbon Sequestered</div>
+<div class="font-headline-lg-mobile text-headline-lg-mobile flex items-baseline gap-1">
+                        450t
+                    </div>
+</div>
+<!-- Metric 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-5 shadow-[0px_4px_12px_rgba(0,0,0,0.06)] border border-surface-variant flex flex-col justify-between h-32 sm:col-span-2 md:col-span-1">
+<div class="font-label-sm text-label-sm text-on-surface-variant mb-2">Accuracy Rating</div>
+<div class="flex items-end justify-between">
+<div class="font-headline-lg-mobile text-headline-lg-mobile text-secondary flex items-baseline gap-1">
+                            99.2%
+                        </div>
+<div class="w-16 h-16 rounded-full border-4 border-secondary/20 flex items-center justify-center relative">
+<svg class="absolute inset-0 w-full h-full -rotate-90" viewbox="0 0 36 36">
+<path class="text-secondary" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" stroke-dasharray="99.2, 100" stroke-width="4"></path>
+</svg>
+<span class="material-symbols-outlined text-secondary" data-icon="check_circle">check_circle</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Achievements / Badges -->
+<section>
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-stack-md flex items-center gap-2">
+<span class="material-symbols-outlined text-tertiary-container" data-icon="military_tech">military_tech</span>
+                Certifications
+            </h3>
+<div class="flex gap-gutter overflow-x-auto pb-4 snap-x no-scrollbar">
+<!-- Badge 1 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 min-w-[200px] snap-start flex flex-col items-center text-center">
+<div class="w-16 h-16 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center mb-3">
+<span class="material-symbols-outlined text-3xl" data-icon="workspace_premium">workspace_premium</span>
+</div>
+<div class="font-label-lg text-label-lg text-on-surface mb-1">Certified Carbon Auditor</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Level 3 • Valid to 2025</div>
+</div>
+<!-- Badge 2 -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl p-4 min-w-[200px] snap-start flex flex-col items-center text-center">
+<div class="w-16 h-16 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center mb-3">
+<span class="material-symbols-outlined text-3xl" data-icon="explore">explore</span>
+</div>
+<div class="font-label-lg text-label-lg text-on-surface mb-1">Advanced GIS Handler</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Expert • Permanent</div>
+</div>
+<!-- Badge Placeholder -->
+<div class="bg-surface-container-low border border-dashed border-outline-variant rounded-xl p-4 min-w-[200px] snap-start flex flex-col items-center justify-center text-center cursor-pointer hover:bg-surface-container transition-colors">
+<div class="w-12 h-12 rounded-full border-2 border-dashed border-outline-variant text-outline flex items-center justify-center mb-2">
+<span class="material-symbols-outlined" data-icon="add">add</span>
+</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant">Upload Certification</div>
+</div>
+</div>
+</section>
+<!-- Quick Links (High-density List) -->
+<section>
+<div class="bg-surface-container-lowest rounded-xl shadow-[0px_4px_12px_rgba(0,0,0,0.06)] overflow-hidden">
+<a class="flex items-center justify-between p-4 hover:bg-surface-container-low transition-colors border-b border-surface-variant h-touch-target-min" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary" data-icon="menu_book">menu_book</span>
+<span class="font-body-md text-body-md text-on-surface">Training Material</span>
+</div>
+<span class="material-symbols-outlined text-outline" data-icon="chevron_right">chevron_right</span>
+</a>
+<a class="flex items-center justify-between p-4 hover:bg-surface-container-low transition-colors border-b border-surface-variant h-touch-target-min" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary" data-icon="help">help</span>
+<span class="font-body-md text-body-md text-on-surface">Help &amp; Support</span>
+</div>
+<span class="material-symbols-outlined text-outline" data-icon="chevron_right">chevron_right</span>
+</a>
+<a class="flex items-center justify-between p-4 hover:bg-error-container transition-colors h-touch-target-min group" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-error group-hover:text-on-error-container" data-icon="logout">logout</span>
+<span class="font-body-md text-body-md text-error group-hover:text-on-error-container">Logout</span>
+</div>
+</a>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 w-[calc(100%-24px)] mx-auto mb-stack-md rounded-full bg-surface-container-lowest dark:bg-inverse-surface shadow-[0px_16px_32px_rgba(0,0,0,0.18)] z-50 flex justify-around items-center px-4 py-2">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-spacing-gutter py-1 hover:bg-surface-container-high dark:hover:bg-on-surface-variant active:scale-90 transition-all duration-200 rounded-full h-touch-target-min min-w-[64px]" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="map">map</span>
+<span class="font-label-sm text-label-sm">地圖</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-spacing-gutter py-1 hover:bg-surface-container-high dark:hover:bg-on-surface-variant active:scale-90 transition-all duration-200 rounded-full h-touch-target-min min-w-[64px]" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="straighten">straighten</span>
+<span class="font-label-sm text-label-sm">測量</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-spacing-gutter py-1 hover:bg-surface-container-high dark:hover:bg-on-surface-variant active:scale-90 transition-all duration-200 rounded-full h-touch-target-min min-w-[64px]" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="sync_alt">sync_alt</span>
+<span class="font-label-sm text-label-sm">同步</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container dark:bg-primary dark:text-on-primary rounded-full px-spacing-gutter py-1 hover:bg-surface-container-high dark:hover:bg-on-surface-variant active:scale-90 transition-all duration-200 h-touch-target-min min-w-[64px]" href="#">
+<span class="material-symbols-outlined mb-1 fill" data-icon="settings">settings</span>
+<span class="font-label-sm text-label-sm">設定</span>
+</a>
+</nav>
+<style>
+        /* Hide scrollbar for horizontal scrolling but keep functionality */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+</body></html>

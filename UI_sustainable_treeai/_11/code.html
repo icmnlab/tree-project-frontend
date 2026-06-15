@@ -3,69 +3,64 @@
 <html lang="zh-TW"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>註冊新帳號 - Forest Intelligence</title>
-<!-- Google Fonts & Material Symbols -->
-<link href="https://fonts.googleapis.com" rel="preconnect"/>
-<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<title>樹木詳細資訊 - Forest Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<!-- Tailwind CSS -->
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<!-- Tailwind Configuration -->
 <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
             theme: {
                 extend: {
                     "colors": {
-                        "inverse-primary": "#a2c9ff",
-                        "error-container": "#ffdad6",
-                        "surface-container-lowest": "#ffffff",
-                        "background": "#fcf8ff",
-                        "outline-variant": "#c1c7d3",
-                        "surface": "#fcf8ff",
                         "surface-tint": "#0060a9",
-                        "on-tertiary": "#ffffff",
-                        "on-tertiary-fixed": "#320047",
-                        "on-surface": "#1a1a2e",
-                        "surface-dim": "#dad7f3",
-                        "outline": "#717782",
-                        "tertiary-fixed-dim": "#ebb2ff",
-                        "primary": "#004e8b",
-                        "secondary-fixed": "#a3f69c",
-                        "error": "#ba1a1a",
-                        "primary-fixed": "#d3e4ff",
-                        "inverse-on-surface": "#f2efff",
-                        "on-secondary-fixed": "#002204",
-                        "on-background": "#1a1a2e",
-                        "surface-variant": "#e2e0fc",
-                        "on-primary-container": "#d2e3ff",
-                        "surface-container-high": "#e8e5ff",
-                        "secondary-container": "#a0f399",
-                        "on-primary": "#ffffff",
-                        "on-error-container": "#93000a",
-                        "inverse-surface": "#2f2e43",
-                        "secondary-fixed-dim": "#88d982",
-                        "surface-bright": "#fcf8ff",
+                        "surface-container-lowest": "#ffffff",
+                        "surface": "#fcf8ff",
                         "on-tertiary-container": "#f7d7ff",
-                        "on-secondary-fixed-variant": "#005312",
-                        "primary-container": "#0066b3",
-                        "surface-container-low": "#f5f2ff",
-                        "on-primary-fixed-variant": "#004881",
                         "on-error": "#ffffff",
-                        "on-primary-fixed": "#001c38",
-                        "secondary": "#1b6d24",
-                        "tertiary": "#781b9f",
-                        "primary-fixed-dim": "#a2c9ff",
-                        "on-secondary-container": "#217128",
-                        "on-secondary": "#ffffff",
-                        "on-surface-variant": "#414751",
-                        "tertiary-container": "#933ab9",
-                        "tertiary-fixed": "#f8d8ff",
-                        "surface-container-highest": "#e2e0fc",
+                        "surface-dim": "#dad7f3",
                         "surface-container": "#efecff",
-                        "on-tertiary-fixed-variant": "#721199"
+                        "secondary-container": "#a0f399",
+                        "on-primary-fixed-variant": "#004881",
+                        "tertiary-container": "#933ab9",
+                        "on-primary": "#ffffff",
+                        "on-secondary-fixed-variant": "#005312",
+                        "on-tertiary-fixed-variant": "#721199",
+                        "inverse-surface": "#2f2e43",
+                        "outline-variant": "#c1c7d3",
+                        "outline": "#717782",
+                        "on-primary-container": "#d2e3ff",
+                        "secondary-fixed-dim": "#88d982",
+                        "secondary-fixed": "#a3f69c",
+                        "surface-container-low": "#f5f2ff",
+                        "inverse-on-surface": "#f2efff",
+                        "on-tertiary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "on-surface-variant": "#414751",
+                        "on-primary-fixed": "#001c38",
+                        "tertiary-fixed-dim": "#ebb2ff",
+                        "surface-container-highest": "#e2e0fc",
+                        "on-secondary-container": "#217128",
+                        "tertiary-fixed": "#f8d8ff",
+                        "surface-bright": "#fcf8ff",
+                        "primary-fixed": "#d3e4ff",
+                        "surface-container-high": "#e8e5ff",
+                        "on-tertiary-fixed": "#320047",
+                        "error-container": "#ffdad6",
+                        "primary-fixed-dim": "#a2c9ff",
+                        "on-surface": "#1a1a2e",
+                        "primary": "#004e8b",
+                        "tertiary": "#781b9f",
+                        "on-secondary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "inverse-primary": "#a2c9ff",
+                        "background": "#fcf8ff",
+                        "on-background": "#1a1a2e",
+                        "secondary": "#1b6d24",
+                        "primary-container": "#0066b3",
+                        "on-secondary-fixed": "#002204",
+                        "surface-variant": "#e2e0fc"
                     },
                     "borderRadius": {
                         "DEFAULT": "0.25rem",
@@ -74,56 +69,46 @@
                         "full": "9999px"
                     },
                     "spacing": {
-                        "touch-target-min": "48px",
-                        "stack-md": "16px",
                         "margin-screen": "20px",
+                        "gutter-grid": "16px",
                         "stack-sm": "8px",
                         "stack-lg": "24px",
-                        "gutter-grid": "16px"
+                        "touch-target-min": "48px",
+                        "stack-md": "16px"
                     },
                     "fontFamily": {
-                        "display-md": ["Plus Jakarta Sans"],
-                        "label-lg": ["Plus Jakarta Sans"],
                         "label-md": ["Plus Jakarta Sans"],
-                        "display-md-mobile": ["Plus Jakarta Sans"],
                         "body-lg": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
                         "headline-sm": ["Plus Jakarta Sans"],
                         "display-lg": ["Plus Jakarta Sans"],
                         "display-lg-mobile": ["Plus Jakarta Sans"],
-                        "body-md": ["Plus Jakarta Sans"]
+                        "display-md": ["Plus Jakarta Sans"],
+                        "display-md-mobile": ["Plus Jakarta Sans"]
                     },
                     "fontSize": {
-                        "display-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
-                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
                         "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
-                        "display-md-mobile": ["22px", { "lineHeight": "30px", "fontWeight": "700" }],
                         "body-lg": ["18px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
                         "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
                         "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
                         "display-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
-                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                        "display-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "display-md-mobile": ["22px", { "lineHeight": "30px", "fontWeight": "700" }]
                     }
                 }
             }
         }
     </script>
 <style>
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        body { background-color: #fcf8ff; }
+        .ambient-shadow-card {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
         }
-        /* Custom scrollbar for modern feel */
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #fcf8ff;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #c1c7d3;
-            border-radius: 4px;
-        }
-        ::-webkit-scrollbar-thumb:hover {
-            background: #717782;
+        .hero-gradient {
+            background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 100%);
         }
     </style>
 <style>
@@ -132,95 +117,136 @@
     }
   </style>
   </head>
-<body class="bg-surface text-on-surface antialiased min-h-screen flex items-center justify-center p-4 md:p-8 relative overflow-hidden">
-<!-- Decorative background elements -->
-<div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
-<div class="absolute top-[-10%] right-[-5%] w-[40vw] h-[40vw] rounded-full bg-primary/5 blur-[100px]"></div>
-<div class="absolute bottom-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-secondary-container/20 blur-[120px]"></div>
-</div>
-<!-- Main Registration Card -->
-<main class="w-full max-w-5xl bg-surface-container-lowest rounded-[24px] shadow-[0_16px_40px_rgba(0,0,0,0.06)] flex flex-col md:flex-row overflow-hidden relative z-10 border border-surface-container-highest">
-<!-- Form Section -->
-<div class="w-full md:w-1/2 p-6 sm:p-10 lg:p-14 flex flex-col justify-center">
-<div class="mb-stack-lg flex items-center gap-2">
-<div class="w-8 h-8 rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">eco</span>
-</div>
-<span class="font-headline-sm text-headline-sm text-primary tracking-tight">Forest Intelligence</span>
-</div>
-<h1 class="font-display-md-mobile text-display-md-mobile md:font-display-md md:text-display-md text-on-surface mb-2">
-                註冊新帳號
-            </h1>
-<p class="font-body-md text-body-md text-on-surface-variant mb-8">
-                加入我們的碳審計調查員網絡，開始精準的環境數據採集。
-            </p>
-<form action="#" class="flex flex-col gap-5" method="POST">
-<!-- Name Field -->
-<div class="flex flex-col gap-1">
-<label class="font-label-md text-label-md text-on-surface ml-1" for="name">姓名</label>
-<div class="relative">
-<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant pointer-events-none">person</span>
-<input class="w-full h-touch-target-min pl-12 pr-4 bg-transparent border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface placeholder:text-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none" id="name" name="name" placeholder="輸入您的真實姓名" required="" type="text"/>
-</div>
-</div>
-<!-- Account ID Field -->
-<div class="flex flex-col gap-1">
-<label class="font-label-md text-label-md text-on-surface ml-1" for="account_id">帳號 ID</label>
-<div class="relative">
-<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant pointer-events-none">badge</span>
-<input class="w-full h-touch-target-min pl-12 pr-4 bg-transparent border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface placeholder:text-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none" id="account_id" name="account_id" placeholder="設定登入帳號" required="" type="text"/>
-</div>
-</div>
-<!-- Password Field -->
-<div class="flex flex-col gap-1">
-<label class="font-label-md text-label-md text-on-surface ml-1" for="password">密碼</label>
-<div class="relative">
-<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant pointer-events-none">lock</span>
-<input class="w-full h-touch-target-min pl-12 pr-12 bg-transparent border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface placeholder:text-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none" id="password" name="password" placeholder="請輸入至少 8 位字元" required="" type="password"/>
-<button class="absolute right-4 top-1/2 -translate-y-1/2 text-outline-variant hover:text-on-surface transition-colors" type="button">
-<span class="material-symbols-outlined">visibility_off</span>
+<body class="text-on-background min-h-screen pb-24 md:pb-0">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-on-background text-primary dark:text-primary-fixed font-headline-sm text-headline-sm-mobile md:text-headline-sm docked full-width top-0 shadow-sm transition-colors duration-200 ease-in-out flex justify-between items-center w-full px-margin-screen h-touch-target-min fixed z-50">
+<button class="flex items-center justify-center h-touch-target-min w-touch-target-min text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
 </button>
-</div>
-</div>
-<!-- Invite Code Field (Required) -->
-<div class="flex flex-col gap-1">
-<label class="font-label-md text-label-md text-on-surface ml-1 flex items-center gap-1" for="invite_code">
-                        邀請碼 <span class="text-error">*</span>
-</label>
-<div class="relative">
-<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant pointer-events-none">key</span>
-<input class="w-full h-touch-target-min pl-12 pr-4 bg-transparent border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface placeholder:text-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none bg-surface-container-low" id="invite_code" name="invite_code" placeholder="輸入組織發放的邀請碼" required="" type="text"/>
-</div>
-<p class="font-label-md text-label-md text-outline ml-1 mt-1">此為必填欄位，請向區域負責人索取。</p>
-</div>
-<!-- Submit Action -->
-<div class="mt-4 flex flex-col gap-4">
-<button class="w-full h-touch-target-min bg-primary-container text-on-primary-container font-label-lg text-label-lg rounded-full hover:bg-primary hover:text-on-primary transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2 shadow-sm" type="submit">
-                        提交申請
-                        <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+<span class="font-display-md text-display-md-mobile text-primary dark:text-primary-fixed">樹木詳細資訊</span>
+<button class="flex items-center justify-center h-touch-target-min w-touch-target-min text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors">
+<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
 </button>
-<div class="text-center">
-<a class="font-label-md text-label-md text-primary hover:text-surface-tint transition-colors underline-offset-4 hover:underline" href="#">
-                            已有帳號？立即登入
-                        </a>
+</header>
+<main class="pt-[64px] max-w-4xl mx-auto px-margin-screen md:px-8">
+<!-- Hero Section -->
+<section class="relative w-full h-[300px] md:h-[400px] rounded-xl overflow-hidden mt-stack-md ambient-shadow-card">
+<img alt="Tree Image" class="w-full h-full object-cover" data-alt="A majestic, mature oak tree standing alone in a clearing of a dense forest during early morning. The sunlight filters softly through its expansive canopy, highlighting the deeply textured bark and vibrant green leaves. The overall mood is serene and natural, embodying a sense of environmental stewardship, captured in high-resolution with a bright, crisp lighting style typical of a modern corporate agricultural interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSpTi08KnPSOCA7RYvKflGVn4FfDhB_F1z-rWdwHn6g6T7_zlsVAI6J9RGLARWYv6qeMMcdpmju47xdTvOgY9JkLnZE4BJaeaUbs_AeVQ_IlWvDWx4oKcf5U9tNXhA2iNSIr4Ol9v3vI1NF9p0R5DUkMJ3tp7tHfPs5du89y9NfxHoDsHc6jLoAkjt0al6cUu-3RB4xpe4B4Lnix7kjjqXHcqOWJ2YCHlrmJvq7sNOH74aZCuc4M8dNn25-TkGN1SjBIacBSWlWA"/>
+<div class="absolute inset-0 hero-gradient flex flex-col justify-end p-stack-lg">
+<div class="flex items-center gap-2 mb-2">
+<span class="bg-secondary text-on-secondary px-3 py-1 rounded-full font-label-md text-label-md">活躍中 (Active)</span>
+<span class="bg-surface-container-highest text-on-surface-variant px-3 py-1 rounded-full font-label-md text-label-md">系統 ID: TR-8942</span>
+</div>
+<h1 class="font-display-lg text-display-lg-mobile md:text-display-lg text-surface-container-lowest">台灣紅檜 (Taiwan Cypress)</h1>
+<p class="font-body-md text-body-md text-surface-container-lowest opacity-90 mt-1">Chamaecyparis formosensis</p>
+</div>
+</section>
+<!-- Main Content Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter-grid mt-stack-lg">
+<!-- Left Column: Metrics & Actions -->
+<div class="md:col-span-2 space-y-gutter-grid">
+<!-- Key Metrics Bento Grid -->
+<div class="grid grid-cols-2 sm:grid-cols-3 gap-gutter-grid">
+<div class="bg-surface-container-lowest rounded-xl p-stack-md ambient-shadow-card flex flex-col items-center justify-center relative overflow-hidden">
+<div class="absolute inset-0 bg-primary opacity-[0.03]"></div>
+<div class="bg-primary-container/10 p-3 rounded-full mb-3">
+<span class="material-symbols-outlined text-primary" data-icon="straighten" data-weight="fill" style="font-variation-settings: 'FILL' 1;">straighten</span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface-variant">胸高直徑 (DBH)</span>
+<span class="font-headline-sm text-headline-sm text-primary mt-1">45.2 cm</span>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-stack-md ambient-shadow-card flex flex-col items-center justify-center relative overflow-hidden">
+<div class="absolute inset-0 bg-primary opacity-[0.03]"></div>
+<div class="bg-primary-container/10 p-3 rounded-full mb-3">
+<span class="material-symbols-outlined text-primary" data-icon="height" data-weight="fill" style="font-variation-settings: 'FILL' 1;">height</span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface-variant">樹高 (Height)</span>
+<span class="font-headline-sm text-headline-sm text-primary mt-1">14.2 m</span>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-stack-md ambient-shadow-card flex flex-col items-center justify-center relative overflow-hidden sm:col-span-1 col-span-2">
+<div class="absolute inset-0 bg-secondary opacity-[0.05]"></div>
+<div class="bg-secondary-container/20 p-3 rounded-full mb-3">
+<span class="material-symbols-outlined text-secondary" data-icon="co2" data-weight="fill" style="font-variation-settings: 'FILL' 1;">co2</span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface-variant">碳補償 (CO2 Offset)</span>
+<span class="font-headline-sm text-headline-sm text-secondary mt-1">42.5 kg</span>
 </div>
 </div>
-</form>
+<!-- Measurement History -->
+<div class="bg-surface-container-lowest rounded-xl ambient-shadow-card overflow-hidden">
+<button class="w-full flex justify-between items-center p-stack-md bg-surface-container-low hover:bg-surface-container transition-colors" id="history-toggle">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="history">history</span>
+<span class="font-headline-sm text-headline-sm text-on-surface">測量歷史紀錄</span>
 </div>
-<!-- Image Presentation Section (Desktop) -->
-<div class="hidden md:block w-1/2 relative bg-surface-container-low overflow-hidden">
-<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent z-10"></div>
-<img alt="Forest canopy background" class="absolute inset-0 w-full h-full object-cover" data-alt="A breathtaking, high-resolution aerial photograph looking straight down into a dense, vibrant green coniferous forest canopy. The scene is illuminated by soft, diffused morning sunlight that highlights the rich textures of the treetops. The color palette emphasizes deep emerald greens and subtle earth tones, projecting a sense of environmental scale, scientific observation, and serene nature. The composition is strictly structural, fitting a modern corporate light-mode design aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCO0pUXspuN9p31uo8y1ibJjSNGsxoYiP4IbS_mc9b8SVQ6W5NCKkwwj4x2dSPhkcJBnXlWwNfhjyTJ2gR8m_YVD3jiVz4PuH6u_bD0bsLdNkfR3em-bYorDVOaUXtBxdUBYHOiL-ei1cMVJukVXHjc9x1A37cw6kYg61gzLm0k0AZ2KGPXExt0mVkdwqwTHKfHCn7x7s66QicQM08fXpRwlrZHm2bABE44912NR_7Ve2o90zVDZt4IoVpyv9ShAY1G1K2z9-BXsQ"/>
-<div class="absolute bottom-10 left-10 right-10 z-20 text-white">
-<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 mb-4">
-<span class="material-symbols-outlined text-[16px]">satellite_alt</span>
-<span class="font-label-md text-label-md">v2.4.0-Stable</span>
+<span class="material-symbols-outlined text-on-surface-variant transition-transform duration-300" data-icon="expand_more" id="history-icon">expand_more</span>
+</button>
+<div class="hidden" id="history-content">
+<ul class="divide-y divide-outline-variant/30">
+<li class="p-stack-md flex justify-between items-center hover:bg-surface-container-lowest/50">
+<div>
+<p class="font-body-md text-body-md text-on-surface">2023-10-15</p>
+<p class="font-label-md text-label-md text-on-surface-variant">DBH: 45.2cm | 高度: 14.2m</p>
 </div>
-<h2 class="font-display-md text-display-md mb-2 text-white">精確追蹤每一棵樹的碳匯價值。</h2>
-<p class="font-body-md text-body-md text-white/80 max-w-md">
-                    Forest Intelligence 專為專業林業人員打造，在極端戶外環境下提供穩定、高對比的數據輸入體驗。
-                </p>
+<span class="bg-secondary-container text-on-secondary-container px-2 py-1 rounded font-label-md text-label-md text-[10px]">最新</span>
+</li>
+<li class="p-stack-md flex justify-between items-center hover:bg-surface-container-lowest/50">
+<div>
+<p class="font-body-md text-body-md text-on-surface">2023-04-10</p>
+<p class="font-label-md text-label-md text-on-surface-variant">DBH: 44.8cm | 高度: 14.0m</p>
+</div>
+</li>
+<li class="p-stack-md flex justify-between items-center hover:bg-surface-container-lowest/50">
+<div>
+<p class="font-body-md text-body-md text-on-surface">2022-11-05</p>
+<p class="font-label-md text-label-md text-on-surface-variant">DBH: 44.1cm | 高度: 13.8m</p>
+</div>
+</li>
+</ul>
+</div>
+</div>
+<!-- Action Buttons -->
+<div class="flex flex-col sm:flex-row gap-stack-md pt-stack-sm">
+<button class="flex-1 bg-primary text-on-primary h-touch-target-min rounded-full font-label-lg text-label-lg flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors shadow-sm">
+<span class="material-symbols-outlined text-[20px]" data-icon="edit">edit</span>
+                        編輯資料 (Edit)
+                    </button>
+<button class="flex-1 border-2 border-tertiary text-tertiary h-touch-target-min rounded-full font-label-lg text-label-lg flex items-center justify-center gap-2 hover:bg-tertiary-container/20 transition-colors">
+<span class="material-symbols-outlined text-[20px]" data-icon="auto_awesome">auto_awesome</span>
+                        AI 掃描分析 (AI Analysis)
+                    </button>
+</div>
+</div>
+<!-- Right Column: Context/Location (Tablet/Desktop) -->
+<div class="hidden md:block space-y-gutter-grid">
+<div class="bg-surface-container-lowest rounded-xl p-stack-md ambient-shadow-card">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-stack-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="location_on">location_on</span>
+                        位置資訊
+                    </h3>
+<div class="h-[200px] bg-surface-variant rounded-lg mb-3 relative overflow-hidden flex items-center justify-center">
+<img alt="Map showing tree location" class="w-full h-full object-cover opacity-80 mix-blend-multiply" data-alt="A topographical map interface showing a forested mountainous region, likely Alishan, Taiwan. The map features subtle contour lines, green shaded areas indicating dense vegetation, and a distinct digital marker pinpointing a specific location. The styling is clean, high-contrast, and professional, aligning with a modern forestry or environmental management application interface." data-location="Alishan, Taiwan" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGbntae6HX4SdJOvpEUrLnehi8Od2fN_7u-WBtO_LGkQOmbOu9YBT18GbQoZbFaa4bEVQsfvC7An5kv-zkJs0qN4xvZ91n7pkrm256csLm0h4cmCEgZv8RyvMHvf4J3TGbve0EZc2entd8NI97t63mM8hWjgeIdovCaFGVIhHooSxV2xMFI-binlJQf3TviIeiLMR5T5wBLtVWj3laokLLcTAwzNJiSzG4ou7w84dVsCPC_9Db4Qe2EogwFFTPKHm4Kyw_Q-AGiQ"/>
+<div class="absolute w-4 h-4 bg-error rounded-full border-2 border-white shadow-md"></div>
+</div>
+<p class="font-body-md text-body-md text-on-surface">區塊 A (Zone A)</p>
+<p class="font-label-md text-label-md text-on-surface-variant font-mono mt-1">23.508° N, 120.801° E</p>
+</div>
 </div>
 </div>
 </main>
+<script>
+        // Simple accordion logic for Measurement History
+        document.getElementById('history-toggle').addEventListener('click', function() {
+            const content = document.getElementById('history-content');
+            const icon = document.getElementById('history-icon');
+            
+            if (content.classList.contains('hidden')) {
+                content.classList.remove('hidden');
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                content.classList.add('hidden');
+                icon.style.transform = 'rotate(0deg)';
+            }
+        });
+    </script>
 </body></html>

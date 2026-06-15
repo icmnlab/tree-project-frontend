@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+
+<html lang="zh-TW"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>區位邊界繪製</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary-container": "#e7a5ff",
+                    "surface-container": "#ededf3",
+                    "inverse-on-surface": "#f0f0f6",
+                    "outline-variant": "#c2c7d1",
+                    "surface-container-highest": "#e1e2e8",
+                    "on-primary": "#ffffff",
+                    "outline": "#727781",
+                    "secondary-fixed-dim": "#87d982",
+                    "on-surface": "#191c20",
+                    "secondary": "#1b6d24",
+                    "on-primary-fixed-variant": "#004881",
+                    "on-primary-fixed": "#001c38",
+                    "on-background": "#191c20",
+                    "on-secondary-fixed": "#002204",
+                    "surface-container-high": "#e7e8ee",
+                    "inverse-primary": "#a2c9ff",
+                    "primary-container": "#004e8b",
+                    "error": "#ba1a1a",
+                    "background": "#f8f9ff",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-tint": "#24609e",
+                    "on-tertiary-fixed": "#320047",
+                    "on-secondary-fixed-variant": "#005312",
+                    "surface-dim": "#d9dadf",
+                    "on-error": "#ffffff",
+                    "inverse-surface": "#2e3035",
+                    "primary-fixed": "#d3e4ff",
+                    "on-error-container": "#93000a",
+                    "surface-variant": "#e1e2e8",
+                    "tertiary-container": "#781b9f",
+                    "on-secondary-container": "#207128",
+                    "secondary-fixed": "#a3f69c",
+                    "secondary-container": "#a0f499",
+                    "error-container": "#ffdad6",
+                    "primary": "#003765",
+                    "surface-container-low": "#f3f3f9",
+                    "on-secondary": "#ffffff",
+                    "surface-bright": "#f8f9ff",
+                    "primary-fixed-dim": "#a2c9ff",
+                    "on-tertiary-fixed-variant": "#721199",
+                    "on-primary-container": "#91c0ff",
+                    "tertiary-fixed-dim": "#ebb2ff",
+                    "on-tertiary": "#ffffff",
+                    "on-surface-variant": "#424750",
+                    "surface": "#f8f9ff",
+                    "tertiary": "#5a007c",
+                    "tertiary-fixed": "#f8d8ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "stack-md": "16px",
+                    "screen-margin": "20px",
+                    "touch-target-min": "48px",
+                    "stack-sm": "8px",
+                    "stack-lg": "24px",
+                    "gutter": "16px"
+            },
+            "fontFamily": {
+                    "body-md": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "label-sm": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "headline-sm": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "headline-lg": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "headline-lg-mobile": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "label-lg": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "headline-md": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "body-lg": [
+                            "Plus Jakarta Sans"
+                    ]
+            },
+            "fontSize": {
+                    "body-md": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "label-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "headline-sm": [
+                            "20px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-lg-mobile": [
+                            "28px",
+                            {
+                                    "lineHeight": "36px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "label-lg": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "body-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "400"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>.map-bg {
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuCe_eV5U4QQbszC-P6h1nRqWdGet13xAw617Ppbj2GBIthKLY3DvmvrtwGtgP2Hwwjn97D4oDAB9Rd-YY7VD3QQiZsuien0fr1cKeNxkHYG3ROJHrdJXT9ChEwiVMHOelI66JIDWmadDPI3szhMNmEiazLTlu9OjufxG9HGZ-Y7cFFTjMMttBNhG65VJkRHlWZOr0eIpRtNNA19RUPpLxuer1vUswMylq0nS9fFtRFv-82JhP0Gs4skoeUyxNpuNQ4AoqWooOXTxw);
+    background-size: cover;
+    background-position: center
+    }</style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background h-screen w-screen overflow-hidden relative font-body-md text-body-md flex flex-col">
+<!-- Map Area (Background) -->
+<div class="absolute inset-0 map-bg z-0" data-alt="A detailed, high-resolution satellite map view of a forested area, viewed from directly above. The map displays varying shades of dense organic greens interspersed with subtle dirt paths and natural topography. The lighting is bright and even, characteristic of a clear day, highlighting the textural differences in the tree canopy. The overall aesthetic is functional and precise, fitting an industrial minimalism style suitable for environmental analysis and carbon auditing.">
+<!-- Polygon Overlay Simulation -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none" preserveaspectratio="none" viewbox="0 0 1000 1000">
+<polygon fill="rgba(0, 78, 139, 0.4)" points="300,200 700,300 800,700 400,800 200,500" stroke="#003765" stroke-dasharray="10,5" stroke-width="4"></polygon>
+<!-- Vertices -->
+<circle cx="300" cy="200" fill="#ffffff" r="8" stroke="#003765" stroke-width="3"></circle>
+<circle cx="700" cy="300" fill="#ffffff" r="8" stroke="#003765" stroke-width="3"></circle>
+<circle cx="800" cy="700" fill="#ffffff" r="8" stroke="#003765" stroke-width="3"></circle>
+<circle cx="400" cy="800" fill="#ffffff" r="8" stroke="#003765" stroke-width="3"></circle>
+<circle cx="200" cy="500" fill="#ffffff" r="8" stroke="#003765" stroke-width="3"></circle>
+</svg>
+</div>
+<!-- Status Chip -->
+<div class="absolute top-4 left-1/2 transform -translate-x-1/2 z-20">
+<div class="bg-secondary text-on-secondary px-4 py-1 rounded-full flex items-center gap-2 shadow-md">
+<span class="w-2 h-2 rounded-full bg-secondary-fixed animate-pulse"></span>
+<span class="font-label-sm text-label-sm">已連線</span>
+</div>
+</div>
+<!-- Top App Bar (Custom for this view) -->
+<header class="w-full z-10 px-screen-margin py-stack-md flex justify-between items-center bg-gradient-to-b from-surface/80 to-transparent backdrop-blur-sm pointer-events-none">
+<div class="flex items-center gap-3 pointer-events-auto">
+<button aria-label="Back" class="w-touch-target-min h-touch-target-min flex items-center justify-center rounded-full bg-surface text-on-surface shadow-sm hover:opacity-80 active:scale-95 transition-transform">
+<span class="material-symbols-outlined" data-weight="fill" style="font-variation-settings: 'FILL' 1;">arrow_back</span>
+</button>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary drop-shadow-md">區位邊界繪製</h1>
+</div>
+</header>
+<!-- Floating Drawing Tools (Right Side) -->
+<div class="absolute right-screen-margin top-1/4 flex flex-col gap-stack-sm z-20">
+<button aria-label="新增頂點" class="w-touch-target-min h-touch-target-min bg-surface text-primary rounded-full shadow-[0px_16px_32px_rgba(0,0,0,0.18)] flex items-center justify-center hover:bg-surface-variant active:scale-90 transition-transform">
+<span class="material-symbols-outlined">add_location</span>
+</button>
+<button aria-label="撤銷" class="w-touch-target-min h-touch-target-min bg-surface text-outline rounded-full shadow-[0px_16px_32px_rgba(0,0,0,0.18)] flex items-center justify-center hover:bg-surface-variant active:scale-90 transition-transform">
+<span class="material-symbols-outlined">undo</span>
+</button>
+<button aria-label="刪除多邊形" class="w-touch-target-min h-touch-target-min bg-surface text-error rounded-full shadow-[0px_16px_32px_rgba(0,0,0,0.18)] flex items-center justify-center hover:bg-error-container active:scale-90 transition-transform">
+<span class="material-symbols-outlined">delete</span>
+</button>
+</div>
+<!-- Bottom Data Bar & FAB Container -->
+<div class="mt-auto z-20 pb-screen-margin px-screen-margin flex flex-col gap-stack-md w-full md:max-w-md md:mx-auto">
+<!-- FAB -->
+<button class="self-end w-auto h-touch-target-min px-6 bg-[#0066B3] text-white rounded-full shadow-[0px_16px_32px_rgba(0,0,0,0.18)] flex items-center gap-2 hover:bg-primary-container active:scale-90 transition-transform font-label-lg text-label-lg font-bold">
+<span class="material-symbols-outlined">check</span>
+            完成繪製
+        </button>
+<!-- Data Card -->
+<div class="bg-surface/95 backdrop-blur-md rounded-xl p-stack-md shadow-[0px_16px_32px_rgba(0,0,0,0.18)] flex justify-between items-center border border-surface-variant">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline">預估面積 (ha)</span>
+<span class="font-headline-md text-headline-md text-primary font-bold">12.45</span>
+</div>
+<div class="w-px h-10 bg-outline-variant"></div>
+<div class="flex flex-col items-end">
+<span class="font-label-sm text-label-sm text-outline">頂點數量</span>
+<span class="font-headline-md text-headline-md text-on-surface font-bold">5</span>
+</div>
+</div>
+</div>
+</body></html>

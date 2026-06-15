@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+
+<html class="light" lang="zh-TW"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>回報問題 - Forestry Audit</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#ededf3",
+                        "secondary-fixed": "#a3f69c",
+                        "primary": "#003765",
+                        "outline": "#727781",
+                        "on-tertiary-container": "#e7a5ff",
+                        "surface": "#f8f9ff",
+                        "error": "#ba1a1a",
+                        "surface-container-high": "#e7e8ee",
+                        "on-error": "#ffffff",
+                        "primary-container": "#004e8b",
+                        "surface-dim": "#d9dadf",
+                        "inverse-primary": "#a2c9ff",
+                        "on-secondary-fixed-variant": "#005312",
+                        "on-secondary-fixed": "#002204",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary-fixed-variant": "#721199",
+                        "on-primary-fixed": "#001c38",
+                        "secondary-fixed-dim": "#87d982",
+                        "on-surface": "#191c20",
+                        "on-primary-fixed-variant": "#004881",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed": "#320047",
+                        "on-surface-variant": "#424750",
+                        "background": "#f8f9ff",
+                        "on-background": "#191c20",
+                        "on-tertiary": "#ffffff",
+                        "secondary": "#1b6d24",
+                        "tertiary": "#5a007c",
+                        "tertiary-fixed-dim": "#ebb2ff",
+                        "surface-tint": "#24609e",
+                        "outline-variant": "#c2c7d1",
+                        "primary-fixed": "#d3e4ff",
+                        "surface-container-low": "#f3f3f9",
+                        "on-secondary-container": "#207128",
+                        "on-error-container": "#93000a",
+                        "tertiary-container": "#781b9f",
+                        "surface-bright": "#f8f9ff",
+                        "secondary-container": "#a0f499",
+                        "surface-variant": "#e1e2e8",
+                        "inverse-on-surface": "#f0f0f6",
+                        "primary-fixed-dim": "#a2c9ff",
+                        "tertiary-fixed": "#f8d8ff",
+                        "on-primary": "#ffffff",
+                        "inverse-surface": "#2e3035",
+                        "error-container": "#ffdad6",
+                        "surface-container-highest": "#e1e2e8",
+                        "on-primary-container": "#91c0ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-sm": "8px",
+                        "screen-margin": "20px",
+                        "stack-md": "16px",
+                        "stack-lg": "24px",
+                        "gutter": "16px",
+                        "touch-target-min": "48px"
+                    },
+                    "fontFamily": {
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #FCF8FF; } /* Base Layer Override */
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-md text-on-surface antialiased flex flex-col min-h-screen">
+<!-- TopAppBar (Transactional - Hidden Navigation Elements) -->
+<header class="bg-surface dark:bg-on-surface flex justify-between items-center px-screen-margin h-touch-target-min w-full z-50 shadow-sm fixed top-0 left-0 right-0">
+<button aria-label="返回" class="flex items-center justify-center w-touch-target-min h-touch-target-min text-on-surface-variant hover:bg-surface-variant rounded-full transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">arrow_back</span>
+</button>
+<h1 class="text-headline-sm-mobile font-headline-sm-mobile font-bold text-primary dark:text-primary-fixed truncate px-4">回報問題</h1>
+<div class="w-touch-target-min h-touch-target-min"></div> <!-- Placeholder for balance -->
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 px-screen-margin pt-[calc(48px+20px)] pb-[calc(80px+20px)] overflow-y-auto">
+<form class="flex flex-col gap-stack-lg max-w-2xl mx-auto">
+<!-- Context Notice -->
+<div class="bg-surface-container-low border-l-4 border-primary rounded-r-lg p-4 flex items-start gap-3">
+<span class="material-symbols-outlined text-primary mt-1" style="font-variation-settings: 'FILL' 0;">info</span>
+<p class="text-body-md font-body-md text-on-surface-variant">
+                    請詳細描述您在調查過程中遇到的問題。您的回饋有助於我們提升系統穩定性與地圖準確度。
+                </p>
+</div>
+<!-- Issue Category -->
+<section class="flex flex-col gap-stack-sm">
+<label class="text-label-lg font-label-lg text-on-surface font-semibold">問題類別</label>
+<div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+<label class="cursor-pointer relative">
+<input checked="" class="peer sr-only" name="issue_category" type="radio" value="sensor"/>
+<div class="h-12 flex items-center justify-center px-4 rounded-full border-2 border-outline-variant bg-surface text-on-surface peer-checked:border-primary peer-checked:bg-primary-fixed peer-checked:text-on-primary-fixed transition-all font-label-lg text-label-lg">
+<span class="material-symbols-outlined mr-2 text-sm" style="font-variation-settings: 'FILL' 0;">sensors</span>
+                            感測器錯誤
+                        </div>
+</label>
+<label class="cursor-pointer relative">
+<input class="peer sr-only" name="issue_category" type="radio" value="map"/>
+<div class="h-12 flex items-center justify-center px-4 rounded-full border-2 border-outline-variant bg-surface text-on-surface peer-checked:border-primary peer-checked:bg-primary-fixed peer-checked:text-on-primary-fixed transition-all font-label-lg text-label-lg">
+<span class="material-symbols-outlined mr-2 text-sm" style="font-variation-settings: 'FILL' 0;">map</span>
+                            地圖不符
+                        </div>
+</label>
+<label class="cursor-pointer relative">
+<input class="peer sr-only" name="issue_category" type="radio" value="sync"/>
+<div class="h-12 flex items-center justify-center px-4 rounded-full border-2 border-outline-variant bg-surface text-on-surface peer-checked:border-primary peer-checked:bg-primary-fixed peer-checked:text-on-primary-fixed transition-all font-label-lg text-label-lg">
+<span class="material-symbols-outlined mr-2 text-sm" style="font-variation-settings: 'FILL' 0;">sync_problem</span>
+                            同步問題
+                        </div>
+</label>
+<label class="cursor-pointer relative col-span-2 md:col-span-1">
+<input class="peer sr-only" name="issue_category" type="radio" value="other"/>
+<div class="h-12 flex items-center justify-center px-4 rounded-full border-2 border-outline-variant bg-surface text-on-surface peer-checked:border-primary peer-checked:bg-primary-fixed peer-checked:text-on-primary-fixed transition-all font-label-lg text-label-lg">
+<span class="material-symbols-outlined mr-2 text-sm" style="font-variation-settings: 'FILL' 0;">more_horiz</span>
+                            其他
+                        </div>
+</label>
+</div>
+</section>
+<!-- Priority Toggle -->
+<section class="flex flex-col gap-stack-sm bg-surface p-4 rounded-xl shadow-[0_4px_12px_rgba(0,0,0,0.08)] border border-surface-variant">
+<div class="flex justify-between items-center h-touch-target-min">
+<label class="text-label-lg font-label-lg text-on-surface font-semibold flex items-center gap-2" for="priority_toggle">
+<span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1;">warning</span>
+                        高優先級 (阻礙作業)
+                    </label>
+<label class="relative inline-flex items-center cursor-pointer">
+<input class="sr-only peer" id="priority_toggle" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-error"></div>
+</label>
+</div>
+</section>
+<!-- Description Input -->
+<section class="flex flex-col gap-stack-sm">
+<label class="text-label-lg font-label-lg text-on-surface font-semibold" for="description">詳細描述</label>
+<div class="relative">
+<textarea class="w-full bg-surface border border-outline rounded-lg p-4 text-body-md font-body-md text-on-surface focus:border-primary focus:ring-1 focus:ring-primary focus:outline-none transition-shadow resize-y" id="description" placeholder="請描述發生時間、操作步驟及異常現象..." rows="5"></textarea>
+</div>
+</section>
+<!-- Photo Upload -->
+<section class="flex flex-col gap-stack-sm">
+<label class="text-label-lg font-label-lg text-on-surface font-semibold flex items-center justify-between">
+<span>附件截圖 (選填)</span>
+<span class="text-label-sm font-label-sm text-on-surface-variant font-normal">最多 3 張</span>
+</label>
+<div class="grid grid-cols-3 gap-4">
+<!-- Upload Button -->
+<button class="aspect-square flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-outline-variant bg-surface-container-lowest hover:bg-surface-variant transition-colors text-primary h-full min-h-[100px]" type="button">
+<span class="material-symbols-outlined text-3xl mb-2" style="font-variation-settings: 'FILL' 0;">add_a_photo</span>
+<span class="text-label-sm font-label-sm">上傳照片</span>
+</button>
+<!-- Placeholder for uploaded image (hidden by default, shown for UI completeness) -->
+<div class="aspect-square rounded-lg bg-surface-variant relative overflow-hidden hidden group">
+<img alt="Screenshot preview" class="w-full h-full object-cover" src=""/>
+<button class="absolute top-1 right-1 bg-surface/80 rounded-full p-1 text-on-surface hover:text-error transition-colors h-8 w-8 flex items-center justify-center" type="button">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 0;">close</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Submit Action -->
+<div class="mt-stack-md flex gap-4">
+<button class="flex-1 h-touch-target-min flex items-center justify-center rounded-full border-2 border-secondary text-secondary font-label-lg text-label-lg font-bold hover:bg-secondary/10 transition-colors" type="button">
+                    取消
+                </button>
+<button class="flex-1 h-touch-target-min flex items-center justify-center rounded-full bg-primary text-on-primary font-label-lg text-label-lg font-bold hover:bg-primary/90 transition-colors shadow-sm" type="button">
+                    提交報告
+                </button>
+</div>
+</form>
+</main>
+<!-- BottomNavBar Suppressed: This is a linear/transactional task (bug reporting). -->
+</body></html>

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+
+<html lang="zh-TW"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>IP 黑名單管理 - ForestAudit</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#ededf3",
+                        "primary-fixed": "#d3e4ff",
+                        "surface-container-highest": "#e1e2e8",
+                        "outline": "#727781",
+                        "inverse-surface": "#2e3035",
+                        "secondary-container": "#a0f499",
+                        "secondary-fixed": "#a3f69c",
+                        "inverse-primary": "#a2c9ff",
+                        "outline-variant": "#c2c7d1",
+                        "primary": "#003765",
+                        "on-surface-variant": "#424750",
+                        "on-primary-container": "#91c0ff",
+                        "secondary-fixed-dim": "#87d982",
+                        "on-error-container": "#93000a",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed-dim": "#a2c9ff",
+                        "tertiary-container": "#781b9f",
+                        "on-error": "#ffffff",
+                        "on-surface": "#191c20",
+                        "on-background": "#191c20",
+                        "tertiary-fixed": "#f8d8ff",
+                        "on-secondary-fixed-variant": "#005312",
+                        "error": "#ba1a1a",
+                        "on-secondary": "#ffffff",
+                        "surface": "#f8f9ff",
+                        "on-tertiary-fixed-variant": "#721199",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed-variant": "#004881",
+                        "tertiary": "#5a007c",
+                        "on-secondary-fixed": "#002204",
+                        "surface-dim": "#d9dadf",
+                        "primary-container": "#004e8b",
+                        "on-tertiary-container": "#e7a5ff",
+                        "surface-container-low": "#f3f3f9",
+                        "surface-variant": "#e1e2e8",
+                        "surface-container-high": "#e7e8ee",
+                        "tertiary-fixed-dim": "#ebb2ff",
+                        "surface-bright": "#f8f9ff",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#320047",
+                        "on-secondary-container": "#207128",
+                        "error-container": "#ffdad6",
+                        "on-primary-fixed": "#001c38",
+                        "secondary": "#1b6d24",
+                        "inverse-on-surface": "#f0f0f6",
+                        "background": "#f8f9ff",
+                        "surface-tint": "#24609e"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-sm": "8px",
+                        "touch-target-min": "48px",
+                        "stack-lg": "24px",
+                        "stack-md": "16px",
+                        "screen-margin": "20px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #FCF8FF; }
+        .shadow-soft { box-shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.12); }
+        .shadow-float { box-shadow: 0 16px 32px -8px rgba(0, 0, 0, 0.18); }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background flex min-h-screen">
+<!-- NavigationDrawer (Sidebar - Hidden on mobile, visible on md) -->
+<aside class="hidden md:flex fixed inset-y-0 left-0 w-80 z-50 border-r border-outline-variant dark:border-outline shadow-xl bg-surface-container-low dark:bg-inverse-surface flex-col h-full py-stack-lg">
+<!-- Header -->
+<div class="px-6 mb-8 flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-variant overflow-hidden flex-shrink-0">
+<img alt="Auditor Profile" class="w-full h-full object-cover" data-alt="A close-up portrait of a professional forest auditor outdoors, wearing rugged outdoor gear. The lighting is bright and natural, reflecting an industrial minimalism aesthetic. Deep blues and organic greens are present in the subtle background out of focus. The mood is authoritative and reliable." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDrJ2Uhds_BNqefhMpmLDq9xXN1A0TuBpbwpBkX2FBMTOtsDWQDkUnevdKc4-j5F05As8vFGDp6L4ttUitZZIcSEB2aqupRwYUk4bWQwt_Q0UCYiK9CyJlne_HNa8vGCuO6h7EZzk6XkuEZQXh-dnQpKZVB3AUOlQmBHIkNLNq3zkJl9yL8pYvEKcdvUzBeLql72bcYGZ9xMUFG6gpul9Wu_qrgCKmKkKmWGVyoJ8rpxC3Hnm107x1ZBDRCbq5XrzbM9nqabheROg"/>
+</div>
+<div>
+<h2 class="font-headline-sm text-headline-sm font-bold text-primary dark:text-inverse-primary">林木審核員</h2>
+<p class="font-label-sm text-label-sm text-on-surface-variant dark:text-outline-variant">區域: A-102</p>
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="flex-1 px-4 space-y-2">
+<a class="flex items-center gap-4 text-on-surface-variant dark:text-outline-variant mx-2 p-3 rounded-lg hover:bg-surface-container-highest dark:hover:bg-on-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">dashboard</span>
+<span class="font-label-lg text-label-lg">儀表板</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant dark:text-outline-variant mx-2 p-3 rounded-lg hover:bg-surface-container-highest dark:hover:bg-on-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">nature_people</span>
+<span class="font-label-lg text-label-lg">林分管理</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant dark:text-outline-variant mx-2 p-3 rounded-lg hover:bg-surface-container-highest dark:hover:bg-on-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">analytics</span>
+<span class="font-label-lg text-label-lg">碳匯報告</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant dark:text-outline-variant mx-2 p-3 rounded-lg hover:bg-surface-container-highest dark:hover:bg-on-surface-variant transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">verified</span>
+<span class="font-label-lg text-label-lg">核證進度</span>
+</a>
+<!-- Active State -->
+<a class="flex items-center gap-4 bg-secondary-container dark:bg-secondary text-on-secondary-container dark:text-on-secondary mx-2 rounded-lg p-3 hover:bg-surface-container-highest dark:hover:bg-on-surface-variant transition-colors active:scale-98" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">settings_applications</span>
+<span class="font-label-lg text-label-lg">系統設定</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col md:ml-80 w-full min-h-screen">
+<!-- TopAppBar (Visible on all screens) -->
+<header class="fixed md:static top-0 w-full md:w-auto z-40 bg-surface dark:bg-inverse-surface flex justify-between items-center px-screen-margin h-touch-target-min border-b border-outline-variant dark:border-outline md:border-b-0 shadow-sm md:shadow-none">
+<div class="flex items-center gap-4">
+<button class="md:hidden text-on-surface-variant dark:text-outline-variant hover:bg-surface-container-highest dark:hover:bg-on-surface-variant transition-colors p-2 rounded-full active:opacity-80 scale-95">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary dark:text-primary-fixed-dim">IP 黑名單管理</h1>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden sm:flex items-center gap-2 bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full border border-secondary">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<span class="font-label-sm text-label-sm">已連線</span>
+</div>
+<button class="bg-primary text-on-primary hover:bg-primary-container hover:text-on-primary-container transition-colors px-4 py-2 rounded-lg font-label-lg text-label-lg flex items-center gap-2 h-touch-target-min shadow-soft active:scale-95 duration-200">
+<span class="material-symbols-outlined text-[20px]">add</span>
+                    新增黑名單
+                </button>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 p-screen-margin pt-20 md:pt-screen-margin overflow-y-auto">
+<!-- Filters & Search (Bento style row) -->
+<div class="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-stack-lg">
+<div class="lg:col-span-2 bg-surface-container-lowest rounded-xl shadow-soft p-1 border border-outline-variant/30 flex items-center h-touch-target-min">
+<span class="material-symbols-outlined text-outline ml-4 mr-2">search</span>
+<input class="flex-1 bg-transparent border-none focus:ring-0 text-on-surface font-body-md placeholder:text-outline h-full px-2" placeholder="搜尋 IP 位址或原因..." type="text"/>
+</div>
+<div class="bg-surface-container-lowest rounded-xl shadow-soft p-1 border border-outline-variant/30 flex items-center h-touch-target-min px-4">
+<span class="material-symbols-outlined text-outline mr-2 text-[20px]">filter_list</span>
+<select class="flex-1 bg-transparent border-none focus:ring-0 text-on-surface font-body-md appearance-none cursor-pointer">
+<option>所有原因</option>
+<option>可疑活動</option>
+<option>多次登入失敗</option>
+<option>手動阻擋</option>
+</select>
+</div>
+<div class="bg-surface-container-lowest rounded-xl shadow-soft p-1 border border-outline-variant/30 flex items-center justify-center h-touch-target-min cursor-pointer hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-primary mr-2">download</span>
+<span class="font-label-lg text-label-lg text-primary">匯出清單</span>
+</div>
+</div>
+<!-- Data Table / List (High density cards) -->
+<div class="bg-surface-container-lowest rounded-2xl shadow-soft border border-outline-variant/20 overflow-hidden">
+<!-- Table Header (Desktop only) -->
+<div class="hidden md:grid grid-cols-12 gap-4 p-4 border-b border-surface-variant bg-surface-container-low font-label-sm text-label-sm text-outline uppercase tracking-wider">
+<div class="col-span-3">IP 位址</div>
+<div class="col-span-3">阻擋原因</div>
+<div class="col-span-2">阻擋時間</div>
+<div class="col-span-2">來源區域</div>
+<div class="col-span-2 text-right">操作</div>
+</div>
+<!-- List Items -->
+<div class="divide-y divide-surface-variant">
+<!-- Item 1 -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 items-center hover:bg-surface-container-lowest transition-colors group">
+<div class="md:col-span-3 flex flex-col">
+<span class="md:hidden font-label-sm text-outline mb-1">IP 位址</span>
+<span class="font-body-md text-on-surface font-semibold font-mono">192.168.1.105</span>
+</div>
+<div class="md:col-span-3 flex flex-col">
+<span class="md:hidden font-label-sm text-outline mb-1">阻擋原因</span>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+<span class="font-body-md text-on-surface-variant">多次登入失敗</span>
+</div>
+</div>
+<div class="md:col-span-2 flex flex-col">
+<span class="md:hidden font-label-sm text-outline mb-1">阻擋時間</span>
+<span class="font-body-md text-outline">2023-10-25 14:32</span>
+</div>
+<div class="md:col-span-2 flex flex-col">
+<span class="md:hidden font-label-sm text-outline mb-1">來源區域</span>
+<span class="font-body-md text-outline">未授權網段</span>
+</div>
+<div class="md:col-span-2 flex justify-end gap-2 mt-2 md:mt-0">
+<button class="h-10 w-10 flex items-center justify-center rounded-lg border border-outline text-outline hover:bg-surface-container hover:text-on-surface transition-colors focus:ring-2 focus:ring-primary focus:border-transparent">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="h-10 px-4 flex items-center justify-center rounded-lg border border-secondary text-secondary hover:bg-secondary-container hover:text-on-secondary-container transition-colors font-label-lg text-label-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                解除阻擋
+                            </button>
+</div>
+</div>
+<!-- Item 2 -->
+<div class="grid grid-cols-1 md:grid-cols-12 gap-4 p-4 items-center hover:bg-surface-container-lowest transition-colors group">
+<div class="md:col-span-3 flex flex-col">
+<span class="md:hidden font-label-sm text-outline mb-1">IP 位址</span>
+<span class="font-body-md text-on-surface font-semibold font-mono">203.0.113.42</span>
+</div>
+<div class="md:col-span-3 flex flex-col">
+<span class="md:hidden font-label-sm text-outline mb-1">阻擋原因</span>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-tertiary"></span>
+<span class="font-body-md text-on-surface-variant">可疑活動 (API掃描)</span>
+</div>
+</div>
+<div class="md:col-span-2 flex flex-col">
+<span class="md:hidden font-label-sm text-outline mb-1">阻擋時間</span>
+<span class="font-body-md text-outline">2023-10-24 09:15</span>
+</div>
+<div class="md:col-span-2 flex flex-col">
+<span class="md:hidden font-label-sm text-outline mb-1">來源區域</span>
+<span class="font-body-md text-outline">外部網路</span>
+</div>
+<div class="md:col-span-2 flex justify-end gap-2 mt-2 md:mt-0">
+<button class="h-10 w-10 flex items-center justify-center rounded-lg border border-outline text-outline hover:bg-surface-container hover:text-on-surface transition-colors focus:ring-2 focus:ring-primary focus:border-transparent">
+<span class="material-symbols-outlined text-[20px]">edit</span>
+</button>
+<button class="h-10 px-4 flex items-center justify-center rounded-lg border border-secondary text-secondary hover:bg-secondary-container hover:text-on-secondary-container transition-colors font-label-lg text-label-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                解除阻擋
+                            </button>
+</div>
+</div>
+</div>
+<!-- Pagination -->
+<div class="p-4 border-t border-surface-variant bg-surface-container-low flex justify-between items-center">
+<span class="font-label-sm text-outline">顯示 1-2 筆，共 2 筆</span>
+<div class="flex gap-2">
+<button class="w-8 h-8 flex items-center justify-center rounded border border-outline-variant text-outline-variant cursor-not-allowed">
+<span class="material-symbols-outlined text-[16px]">chevron_left</span>
+</button>
+<button class="w-8 h-8 flex items-center justify-center rounded border border-outline text-on-surface hover:bg-surface-container">
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

@@ -1,114 +1,120 @@
 <!DOCTYPE html>
 
-<html lang="zh-TW"><head>
+<html lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>區邊界繪製 - Sustainable TreeAI</title>
+<title>Sustainable TreeAI - Tree Survey Form</title>
+<!-- Tailwind CSS -->
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Google Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Config from Guidelines -->
 <script id="tailwind-config">
-        tailwind.config = {
-            darkMode: "class",
-            theme: {
-                extend: {
-                    "colors": {
-                        "on-tertiary": "#ffffff",
-                        "on-surface-variant": "#414751",
-                        "tertiary-fixed": "#f8d8ff",
-                        "on-primary-fixed-variant": "#004881",
-                        "on-primary": "#ffffff",
-                        "surface-variant": "#e2e0fc",
-                        "surface-bright": "#fcf8ff",
-                        "surface": "#fcf8ff",
-                        "on-secondary": "#ffffff",
-                        "inverse-surface": "#2f2e43",
-                        "surface-container-lowest": "#ffffff",
-                        "primary-container": "#0066b3",
-                        "on-tertiary-fixed-variant": "#721199",
-                        "tertiary-container": "#933ab9",
-                        "primary-fixed": "#d3e4ff",
-                        "on-secondary-fixed-variant": "#005312",
-                        "error": "#ba1a1a",
-                        "inverse-primary": "#a2c9ff",
-                        "on-surface": "#1a1a2e",
-                        "surface-dim": "#dad7f3",
-                        "secondary-fixed-dim": "#88d982",
-                        "inverse-on-surface": "#f2efff",
-                        "error-container": "#ffdad6",
-                        "on-secondary-fixed": "#002204",
-                        "outline": "#717782",
-                        "surface-container": "#efecff",
-                        "secondary-fixed": "#a3f69c",
-                        "background": "#fcf8ff",
-                        "primary-fixed-dim": "#a2c9ff",
-                        "surface-container-highest": "#e2e0fc",
-                        "on-secondary-container": "#217128",
-                        "outline-variant": "#c1c7d3",
-                        "on-tertiary-container": "#f7d7ff",
-                        "on-error": "#ffffff",
-                        "secondary-container": "#a0f399",
-                        "secondary": "#1b6d24",
-                        "tertiary": "#781b9f",
-                        "on-primary-container": "#d2e3ff",
-                        "surface-container-high": "#e8e5ff",
-                        "primary": "#004e8b",
-                        "surface-tint": "#0060a9",
-                        "on-primary-fixed": "#001c38",
-                        "on-error-container": "#93000a",
-                        "surface-container-low": "#f5f2ff",
-                        "tertiary-fixed-dim": "#ebb2ff",
-                        "on-tertiary-fixed": "#320047",
-                        "on-background": "#1a1a2e"
-                    },
-                    "borderRadius": {
-                        "DEFAULT": "0.25rem",
-                        "lg": "0.5rem",
-                        "xl": "0.75rem",
-                        "full": "9999px",
-                        "2xl": "1rem"
-                    },
-                    "spacing": {
-                        "gutter-grid": "16px",
-                        "stack-sm": "8px",
-                        "stack-md": "16px",
-                        "margin-screen": "20px",
-                        "touch-target-min": "48px",
-                        "stack-lg": "24px"
-                    },
-                    "fontFamily": {
-                        "headline-sm": ["Plus Jakarta Sans"],
-                        "display-lg-mobile": ["Plus Jakarta Sans"],
-                        "body-md": ["Plus Jakarta Sans"],
-                        "label-md": ["Plus Jakarta Sans"],
-                        "display-md-mobile": ["Plus Jakarta Sans"],
-                        "display-md": ["Plus Jakarta Sans"],
-                        "body-lg": ["Plus Jakarta Sans"],
-                        "label-lg": ["Plus Jakarta Sans"],
-                        "display-lg": ["Plus Jakarta Sans"]
-                    },
-                    "fontSize": {
-                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
-                        "display-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
-                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
-                        "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
-                        "display-md-mobile": ["22px", { "lineHeight": "30px", "fontWeight": "700" }],
-                        "display-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
-                        "body-lg": ["18px", { "lineHeight": "26px", "fontWeight": "400" }],
-                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
-                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
-                    }
-                }
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-variant": "#e2e0fc",
+                    "surface-container": "#efecff",
+                    "inverse-on-surface": "#f2efff",
+                    "on-secondary-fixed": "#002204",
+                    "tertiary-fixed-dim": "#ebb2ff",
+                    "on-surface": "#1a1a2e",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-container": "#0066b3",
+                    "error-container": "#ffdad6",
+                    "secondary-fixed": "#a3f69c",
+                    "background": "#fcf8ff",
+                    "on-secondary": "#ffffff",
+                    "primary-fixed": "#d3e4ff",
+                    "on-background": "#1a1a2e",
+                    "outline": "#717782",
+                    "secondary-fixed-dim": "#88d982",
+                    "on-primary-container": "#d2e3ff",
+                    "inverse-primary": "#a2c9ff",
+                    "tertiary-fixed": "#f8d8ff",
+                    "tertiary-container": "#933ab9",
+                    "outline-variant": "#c1c7d3",
+                    "primary": "#004e8b",
+                    "surface-bright": "#fcf8ff",
+                    "on-error": "#ffffff",
+                    "on-primary-fixed": "#001c38",
+                    "secondary-container": "#a0f399",
+                    "secondary": "#1b6d24",
+                    "surface-container-highest": "#e2e0fc",
+                    "surface-container-high": "#e8e5ff",
+                    "inverse-surface": "#2f2e43",
+                    "on-error-container": "#93000a",
+                    "primary-fixed-dim": "#a2c9ff",
+                    "on-secondary-container": "#217128",
+                    "on-primary": "#ffffff",
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-fixed": "#320047",
+                    "surface-dim": "#dad7f3",
+                    "surface-tint": "#0060a9",
+                    "on-primary-fixed-variant": "#004881",
+                    "on-tertiary-fixed-variant": "#721199",
+                    "on-surface-variant": "#414751",
+                    "tertiary": "#781b9f",
+                    "surface-container-low": "#f5f2ff",
+                    "error": "#ba1a1a",
+                    "on-secondary-fixed-variant": "#005312",
+                    "on-tertiary-container": "#f7d7ff",
+                    "surface": "#fcf8ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "stack-lg": "24px",
+                    "margin-screen": "20px",
+                    "touch-target-min": "48px",
+                    "stack-md": "16px",
+                    "stack-sm": "8px",
+                    "gutter-grid": "16px"
+            },
+            "fontFamily": {
+                    "display-lg": ["Plus Jakarta Sans"],
+                    "label-lg": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"],
+                    "display-md-mobile": ["Plus Jakarta Sans"],
+                    "label-md": ["Plus Jakarta Sans"],
+                    "headline-sm": ["Plus Jakarta Sans"],
+                    "display-md": ["Plus Jakarta Sans"],
+                    "display-lg-mobile": ["Plus Jakarta Sans"],
+                    "body-lg": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "display-md-mobile": ["22px", {"lineHeight": "30px", "fontWeight": "700"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
+                    "display-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
+                    "display-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "26px", "fontWeight": "400"}]
             }
+          }
         }
+      }
     </script>
 <style>
-        .material-symbols-outlined {
-            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        /* Ensuring baseline styles for form inputs */
+        input[type="number"]::-webkit-inner-spin-button,
+        input[type="number"]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
-        .fill-icon {
-            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        input[type="number"] {
+            -moz-appearance: textfield;
         }
     </style>
 <style>
@@ -117,130 +123,163 @@
     }
   </style>
   </head>
-<body class="bg-background text-on-background min-h-screen flex flex-col relative overflow-hidden">
-<!-- TopAppBar (Suppressed default layout, using transactional layout) -->
-<header class="bg-surface dark:bg-surface w-full px-margin-screen h-touch-target-min flex justify-between items-center z-50 absolute top-0 left-0 right-0 shadow-sm md:hidden">
-<div class="flex items-center">
-<button class="w-touch-target-min h-touch-target-min flex items-center justify-center text-on-surface-variant hover:bg-surface-variant/50 rounded-full transition-colors duration-200 active:scale-95">
+<body class="bg-surface text-on-surface antialiased min-h-screen pb-[100px] flex flex-col font-body-md">
+<!-- TopAppBar Component (from JSON guidelines) -->
+<!-- Suppressed BottomNavBar/SideNav as this is a linear, task-focused data entry form -->
+<header class="bg-surface flex justify-between items-center w-full px-margin-screen h-touch-target-min docked full-width top-0 sticky z-50 border-b border-outline-variant/20 backdrop-blur-md bg-surface/90">
+<div class="flex items-center gap-3">
+<button aria-label="Go Back" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant/50 transition-colors text-on-surface-variant">
 <span class="material-symbols-outlined">arrow_back</span>
 </button>
-<h1 class="font-display-md-mobile text-display-md-mobile font-bold text-primary dark:text-primary-fixed-dim ml-2">區邊界繪製</h1>
 </div>
-<button class="font-label-lg text-label-lg text-primary hover:bg-primary/10 px-4 py-2 rounded-full transition-colors duration-200">
-            完成
-        </button>
+<h1 class="font-display-md-mobile text-display-md-mobile font-bold text-primary">Sustainable TreeAI</h1>
+<button aria-label="Settings" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant/50 transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined text-[24px]">settings</span>
+</button>
 </header>
-<header class="bg-surface dark:bg-surface w-full px-margin-screen h-touch-target-min hidden md:flex justify-between items-center z-50 absolute top-0 left-0 right-0 shadow-sm">
-<div class="flex items-center">
-<button class="w-touch-target-min h-touch-target-min flex items-center justify-center text-on-surface-variant hover:bg-surface-variant/50 rounded-full transition-colors duration-200 active:scale-95">
-<span class="material-symbols-outlined">arrow_back</span>
-</button>
-<h1 class="font-display-md text-display-md font-bold text-primary dark:text-primary-fixed-dim ml-4">區邊界繪製</h1>
+<main class="flex-1 px-margin-screen flex flex-col gap-stack-lg pt-stack-md max-w-2xl mx-auto w-full">
+<!-- Form Context Header -->
+<div class="flex flex-col gap-1">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Integrated Tree Survey</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Record field measurements, status, and photographic evidence for carbon auditing.</p>
 </div>
-<button class="font-label-lg text-label-lg text-on-primary bg-primary hover:bg-primary/90 px-6 py-2 rounded-full transition-colors duration-200 shadow-sm">
-            完成
-        </button>
-</header>
-<!-- Map Area -->
-<main class="flex-grow relative mt-touch-target-min md:mt-[64px]">
-<!-- Pseudo Map Image -->
-<div class="absolute inset-0 w-full h-full bg-surface-container-low" data-alt="An aerial, top-down satellite view of a lush, dense forest landscape intersected by a few dirt logging roads. The image is clear and high-resolution, suitable for use as a background map in a geographic information system UI. The lighting is bright and sunny, highlighting the varying shades of green in the tree canopy. The overall aesthetic is natural, professional, and consistent with an environmental auditing application." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAG5aJf7QVFQZE_5f5RPsYwj6gXZopq9LCSp3GofZi9n9cyL-uh3NDmn0ky1X78RJWZfQ9aHOSCM8uSI5P-RsURKmENHmINFcenFDQC4u4jA9xst-3ak5shO_Nh16gCFc3B5OpCyxRPE8um9_Vz1aBdbiS059lD7etwWXIdMF-kNDYqxudB6qyMG3e-8xweP384AfUCqK48dnQDdl5wQkEex6YKsKRI8aRZCRo_FYUjadnwoaYCPQtjrwwnPZiYV--m_GUapcVqjw'); background-size: cover; background-position: center;">
-<!-- Map Overlay Gradient for readability -->
-<div class="absolute inset-0 bg-white/20"></div>
-<!-- Polygon Overlay -->
-<svg class="absolute inset-0 w-full h-full pointer-events-none" preserveaspectratio="xMidYMid slice" viewbox="0 0 1000 800">
-<polygon fill="rgba(0, 102, 179, 0.3)" points="300,200 600,150 800,400 500,600 200,500" stroke="#0066b3" stroke-linejoin="round" stroke-width="3"></polygon>
-<!-- Vertices -->
-<circle class="pointer-events-auto cursor-pointer hover:scale-125 transition-transform" cx="300" cy="200" fill="white" r="8" stroke="#0066b3" stroke-width="2"></circle>
-<circle class="pointer-events-auto cursor-pointer hover:scale-125 transition-transform" cx="600" cy="150" fill="white" r="8" stroke="#0066b3" stroke-width="2"></circle>
-<circle class="pointer-events-auto cursor-pointer hover:scale-125 transition-transform" cx="800" cy="400" fill="white" r="8" stroke="#0066b3" stroke-width="2"></circle>
-<circle class="pointer-events-auto cursor-pointer hover:scale-125 transition-transform" cx="500" cy="600" fill="white" r="8" stroke="#0066b3" stroke-width="2"></circle>
-<circle class="pointer-events-auto cursor-pointer hover:scale-125 transition-transform" cx="200" cy="500" fill="white" r="8" stroke="#0066b3" stroke-width="2"></circle>
-</svg>
-</div>
-<!-- Floating Action Buttons on Map -->
-<div class="absolute top-4 right-4 flex flex-col gap-4 z-40">
-<button aria-label="Layer Control" class="w-12 h-12 bg-surface rounded-full shadow-md flex items-center justify-center text-on-surface-variant hover:bg-surface-variant/50 transition-colors active:scale-95">
-<span class="material-symbols-outlined">layers</span>
-</button>
-<div class="flex flex-col bg-surface rounded-full shadow-md overflow-hidden">
-<button aria-label="Zoom In" class="w-12 h-12 flex items-center justify-center text-on-surface-variant hover:bg-surface-variant/50 transition-colors active:scale-95 border-b border-surface-variant">
-<span class="material-symbols-outlined">add</span>
-</button>
-<button aria-label="Zoom Out" class="w-12 h-12 flex items-center justify-center text-on-surface-variant hover:bg-surface-variant/50 transition-colors active:scale-95">
-<span class="material-symbols-outlined">remove</span>
-</button>
-</div>
-<button aria-label="My Location" class="w-12 h-12 bg-surface rounded-full shadow-md flex items-center justify-center text-primary hover:bg-surface-variant/50 transition-colors active:scale-95 mt-4">
-<span class="material-symbols-outlined fill-icon">my_location</span>
-</button>
-</div>
-</main>
-<!-- Bottom Panel Overlay -->
-<div class="absolute bottom-0 left-0 right-0 bg-surface rounded-t-3xl shadow-[0px_-8px_24px_rgba(0,0,0,0.12)] z-50 flex flex-col max-h-[530px] md:max-h-[442px]">
-<!-- Drag Handle -->
-<div class="w-full flex justify-center py-3 cursor-grab">
-<div class="w-12 h-1.5 bg-outline-variant rounded-full"></div>
-</div>
-<div class="px-margin-screen pb-stack-lg overflow-y-auto flex-grow flex flex-col gap-stack-md">
-<!-- Warning Banner (Mock active) -->
-<div class="bg-error-container text-on-error-container rounded-lg p-3 flex items-start gap-3">
-<span class="material-symbols-outlined text-error mt-0.5">warning</span>
-<div>
-<p class="font-label-lg text-label-lg font-bold">注意：偵測到自相交線段</p>
-<p class="font-body-md text-body-md text-sm mt-1 opacity-90">請調整頂點以確保邊界是一個簡單的多邊形。</p>
-</div>
-</div>
-<!-- Tab Bar -->
-<div class="flex bg-surface-container-low rounded-lg p-1">
-<button class="flex-1 py-2 font-label-lg text-label-lg rounded-md bg-surface text-primary shadow-sm transition-all text-center">手動繪製</button>
-<button class="flex-1 py-2 font-label-lg text-label-lg rounded-md text-on-surface-variant hover:bg-surface-variant/50 transition-all text-center">貼上座標</button>
-<button class="flex-1 py-2 font-label-lg text-label-lg rounded-md text-on-surface-variant hover:bg-surface-variant/50 transition-all text-center">匯入檔案</button>
-</div>
-<!-- Analysis Info Cards -->
+<!-- 1. Instrument Data (BLE) -->
+<section class="flex flex-col gap-stack-sm">
+<h3 class="font-label-lg text-label-lg text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">bluetooth</span> Instrument Data (BLE Sync)
+            </h3>
 <div class="grid grid-cols-3 gap-3">
-<div class="bg-surface-container rounded-xl p-3 flex flex-col items-center justify-center text-center">
-<span class="material-symbols-outlined text-primary mb-1">area_chart</span>
-<span class="font-label-md text-label-md text-on-surface-variant">面積</span>
-<span class="font-headline-sm text-headline-sm text-on-surface mt-1">12.45<span class="text-sm font-normal ml-1">ha</span></span>
-</div>
-<div class="bg-surface-container rounded-xl p-3 flex flex-col items-center justify-center text-center">
-<span class="material-symbols-outlined text-secondary mb-1">polyline</span>
-<span class="font-label-md text-label-md text-on-surface-variant">頂點</span>
-<span class="font-headline-sm text-headline-sm text-on-surface mt-1">5</span>
-</div>
-<div class="bg-surface-container rounded-xl p-3 flex flex-col items-center justify-center text-center">
-<span class="material-symbols-outlined text-tertiary mb-1">public</span>
-<span class="font-label-md text-label-md text-on-surface-variant">座標系統</span>
-<span class="font-body-md text-body-md font-semibold text-on-surface mt-1">WGS84</span>
+<div class="bg-surface-container-low rounded-xl p-3 border border-outline-variant/30 flex flex-col justify-center items-center shadow-sm">
+<span class="font-label-md text-label-md text-on-surface-variant mb-1">Height</span>
+<div class="font-display-md-mobile text-display-md-mobile text-on-surface flex items-baseline">
+                        14.2<span class="font-label-md text-label-md text-on-surface-variant ml-1">m</span>
 </div>
 </div>
-<!-- Import Options (Hidden in 'Manual' tab state, showing for layout context) -->
-<div class="flex gap-3 hidden">
-<button class="flex-1 py-3 border border-outline rounded-xl flex items-center justify-center gap-2 text-on-surface hover:bg-surface-variant/30 transition-colors">
-<span class="material-symbols-outlined">upload_file</span>
-<span class="font-label-lg text-label-lg">KML/KMZ</span>
-</button>
-<button class="flex-1 py-3 border border-outline rounded-xl flex items-center justify-center gap-2 text-on-surface hover:bg-surface-variant/30 transition-colors">
-<span class="material-symbols-outlined">data_object</span>
-<span class="font-label-lg text-label-lg">GeoJSON</span>
-</button>
+<div class="bg-surface-container-low rounded-xl p-3 border border-outline-variant/30 flex flex-col justify-center items-center shadow-sm">
+<span class="font-label-md text-label-md text-on-surface-variant mb-1">Distance</span>
+<div class="font-display-md-mobile text-display-md-mobile text-on-surface flex items-baseline">
+                        8.5<span class="font-label-md text-label-md text-on-surface-variant ml-1">m</span>
 </div>
-<!-- Control Buttons -->
-<div class="flex gap-3 mt-2">
-<button class="flex-1 py-3 bg-surface-container-high rounded-xl text-primary font-label-lg text-label-lg flex items-center justify-center gap-2 hover:bg-surface-variant transition-colors active:scale-95">
-<span class="material-symbols-outlined">sort</span>
-                    自動重排
-                </button>
-<button class="flex-1 py-3 border border-error text-error rounded-xl font-label-lg text-label-lg flex items-center justify-center gap-2 hover:bg-error-container transition-colors active:scale-95">
-<span class="material-symbols-outlined">delete</span>
-                    清除全部
+</div>
+<div class="bg-surface-container-low rounded-xl p-3 border border-outline-variant/30 flex flex-col justify-center items-center shadow-sm">
+<span class="font-label-md text-label-md text-on-surface-variant mb-1">Azimuth</span>
+<div class="font-display-md-mobile text-display-md-mobile text-on-surface flex items-baseline">
+                        145<span class="font-label-md text-label-md text-on-surface-variant ml-1">°</span>
+</div>
+</div>
+</div>
+</section>
+<!-- 2. GPS Data -->
+<section class="flex flex-col gap-stack-sm">
+<div class="flex justify-between items-center">
+<h3 class="font-label-lg text-label-lg text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">location_on</span> GPS Coordinates
+                </h3>
+<button class="flex items-center gap-1 text-primary font-label-md text-label-md h-8 px-3 rounded-full hover:bg-primary-fixed transition-colors">
+<span class="material-symbols-outlined text-[16px]">my_location</span> Re-measure
                 </button>
 </div>
-<!-- Primary Action (Fixed at bottom of panel content) -->
-<button class="w-full py-4 mt-4 bg-primary text-on-primary rounded-full font-label-lg text-label-lg shadow-md hover:bg-primary/90 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-<span class="material-symbols-outlined">save</span>
-                儲存區邊界
+<div class="bg-surface-container-low rounded-xl p-4 border border-outline-variant/30 shadow-sm flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container shrink-0">
+<span class="material-symbols-outlined text-[20px]">satellite_alt</span>
+</div>
+<div class="flex flex-col flex-1">
+<div class="font-body-md text-body-md text-on-surface font-medium tracking-wide">23.9738° N, 120.9821° E</div>
+<div class="font-label-md text-label-md text-secondary flex items-center gap-1 mt-0.5">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> Accuracy ± 2.4m (WGS84)
+                    </div>
+</div>
+</div>
+</section>
+<!-- 3. DBH Input -->
+<section class="flex flex-col gap-stack-sm">
+<h3 class="font-label-lg text-label-lg text-primary">Diameter at Breast Height (DBH)</h3>
+<div class="relative w-full">
+<input class="w-full bg-surface-container-lowest border-2 border-outline-variant focus:border-primary focus:ring-4 focus:ring-primary/10 rounded-xl h-[80px] px-6 font-display-lg-mobile text-display-lg-mobile text-center text-on-surface outline-none transition-all shadow-sm" placeholder="0.0" step="0.1" type="number" value="45.2"/>
+<span class="absolute right-6 top-1/2 -translate-y-1/2 font-label-lg text-label-lg text-on-surface-variant bg-surface-container-lowest px-2">cm</span>
+</div>
+</section>
+<!-- 4. Species Selection -->
+<section class="flex flex-col gap-stack-sm">
+<h3 class="font-label-lg text-label-lg text-primary">Species Identification</h3>
+<div class="flex gap-2 items-center w-full">
+<div class="relative flex-1">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
+<input class="w-full bg-surface-container-lowest border-2 border-outline-variant focus:border-primary focus:ring-4 focus:ring-primary/10 rounded-xl h-touch-target-min pl-12 pr-4 font-body-md text-body-md text-on-surface outline-none transition-all shadow-sm" placeholder="Search species database..." type="text" value="Taiwan Beech (Fagus hayatae)"/>
+</div>
+<button class="h-touch-target-min px-4 bg-tertiary text-on-tertiary rounded-xl flex items-center justify-center gap-2 font-label-lg text-label-lg hover:bg-tertiary/90 active:scale-95 transition-all shadow-md shrink-0">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">eco</span> Photo ID
+                </button>
+</div>
+</section>
+<!-- 5. Status Choice Chips -->
+<section class="flex flex-col gap-stack-sm">
+<h3 class="font-label-lg text-label-lg text-primary">Tree Health Status</h3>
+<div class="flex flex-wrap gap-3">
+<!-- Selected State -->
+<button class="h-touch-target-min px-5 rounded-full bg-primary-container text-on-primary-container font-label-lg text-label-lg flex items-center gap-2 border border-primary-container shadow-sm transition-transform active:scale-95">
+<span class="material-symbols-outlined text-[18px]">check</span> Normal
+                </button>
+<!-- Unselected States -->
+<button class="h-touch-target-min px-5 rounded-full bg-surface border-2 border-outline text-on-surface-variant font-label-lg text-label-lg hover:bg-surface-variant/50 transition-all active:scale-95">Dead</button>
+<button class="h-touch-target-min px-5 rounded-full bg-surface border-2 border-outline text-on-surface-variant font-label-lg text-label-lg hover:bg-surface-variant/50 transition-all active:scale-95">Fallen</button>
+<button class="h-touch-target-min px-5 rounded-full bg-surface border-2 border-outline text-on-surface-variant font-label-lg text-label-lg hover:bg-surface-variant/50 transition-all active:scale-95">Removed</button>
+<button class="h-touch-target-min px-5 rounded-full bg-surface border-2 border-outline text-on-surface-variant font-label-lg text-label-lg hover:bg-surface-variant/50 transition-all active:scale-95">Pest</button>
+<button class="h-touch-target-min px-5 rounded-full bg-surface border-2 border-outline text-on-surface-variant font-label-lg text-label-lg hover:bg-surface-variant/50 transition-all active:scale-95">Tilted</button>
+</div>
+</section>
+<!-- 6. Photos Grid -->
+<section class="flex flex-col gap-stack-sm">
+<h3 class="font-label-lg text-label-lg text-primary flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">photo_camera</span> Photographic Evidence
+            </h3>
+<div class="grid grid-cols-2 gap-4">
+<!-- Existing Photo Slot -->
+<div class="aspect-square bg-surface-container rounded-xl overflow-hidden relative border border-outline-variant/30 shadow-sm group">
+<img alt="Tree bark texture" class="w-full h-full object-cover" data-alt="A close-up, high-resolution photograph of rough, textured tree bark taken outdoors during daytime. The lighting is bright and natural, casting subtle shadows that emphasize the deep grooves and ridges of the wood. The image has a highly detailed, professional documentary style, suitable for scientific environmental analysis. The color palette focuses on natural earthy browns and greys, reflecting a realistic forest setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBStVCUq8xH_38vuank3HbBNB62oEgwRkLE4zLpp67jFKFCjzhfn9ofXB5hSoUEzkTusMDoblpqZJQ45008P9E_mS8hQ4JpTzHY9Uh3vtoBGL1ajfNQ7-KNOyhhesiH04OHwBtsTdURYtKO2teTkcbp0JdGoYTrAv7m1Ux3xlaz3ysJwjoUGNXNghDQcjRo5BOS1z_2imVBtTdPQna--mJRhTL8jMqWQbb0Scziu3egEu_be5rLtnwnyNdmY_0Ld8Z9kZTAunO8_g"/>
+<button class="absolute top-2 right-2 w-8 h-8 rounded-full bg-inverse-surface/70 flex items-center justify-center text-inverse-on-surface backdrop-blur-md opacity-90 hover:opacity-100 transition-opacity">
+<span class="material-symbols-outlined text-[16px]">close</span>
+</button>
+</div>
+<!-- Add Photo Slots -->
+<button class="aspect-square bg-surface-container-low rounded-xl border-2 border-dashed border-outline-variant flex flex-col items-center justify-center text-primary hover:bg-surface-variant/60 hover:border-primary/50 transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined text-[32px] mb-2 text-primary/70">add_a_photo</span>
+<span class="font-label-md text-label-md">Add Crown</span>
+</button>
+<button class="aspect-square bg-surface-container-low rounded-xl border-2 border-dashed border-outline-variant flex flex-col items-center justify-center text-primary hover:bg-surface-variant/60 hover:border-primary/50 transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined text-[32px] mb-2 text-primary/70">add_a_photo</span>
+<span class="font-label-md text-label-md">Add Leaves</span>
+</button>
+<button class="aspect-square bg-surface-container-low rounded-xl border-2 border-dashed border-outline-variant flex flex-col items-center justify-center text-primary hover:bg-surface-variant/60 hover:border-primary/50 transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined text-[32px] mb-2 text-primary/70">add_a_photo</span>
+<span class="font-label-md text-label-md">Add Surroundings</span>
+</button>
+</div>
+</section>
+<!-- 7. Carbon Preview Badge -->
+<section class="mt-2 mb-4">
+<div class="bg-gradient-to-br from-secondary-container to-secondary-fixed-dim rounded-xl p-4 flex items-center justify-between shadow-sm border border-secondary/10">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-on-secondary-container/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[28px] text-on-secondary-container" style="font-variation-settings: 'FILL' 1;">eco</span>
+</div>
+<div>
+<div class="font-label-md text-label-md text-on-secondary-container/80 uppercase tracking-wide mb-0.5">Estimated Carbon</div>
+<div class="font-display-md-mobile text-display-md-mobile text-on-secondary-container">42.5 kg CO2e</div>
+</div>
+</div>
+<div class="font-label-md text-label-md bg-surface-container-lowest/60 text-on-secondary-container px-3 py-1.5 rounded-full backdrop-blur-sm shadow-sm font-medium">
+                    依 DBH 試算
+                </div>
+</div>
+</section>
+</main>
+<!-- Bottom: Sticky Submit Button -->
+<div class="fixed bottom-0 left-0 w-full bg-surface border-t border-outline-variant/20 p-4 pb-8 md:pb-4 z-40 shadow-[0_-8px_24px_rgba(0,0,0,0.04)] flex justify-center">
+<div class="w-full max-w-2xl px-margin-screen md:px-0">
+<button class="w-full h-14 bg-primary text-on-primary rounded-xl font-label-lg text-label-lg shadow-lg shadow-primary/20 hover:bg-primary/90 hover:shadow-xl active:scale-[0.98] transition-all flex justify-center items-center gap-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">cloud_upload</span> 
+                Submit Survey Data
             </button>
 </div>
 </div>

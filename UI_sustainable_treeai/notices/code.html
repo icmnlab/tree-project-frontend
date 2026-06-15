@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+
+<html class="light" lang="zh-TW"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Field Notes &amp; Notifications - Forest Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-dim": "#d9dadf",
+                        "secondary-fixed-dim": "#87d982",
+                        "on-secondary-container": "#207128",
+                        "inverse-on-surface": "#f0f0f6",
+                        "tertiary-container": "#781b9f",
+                        "on-surface-variant": "#424750",
+                        "on-secondary-fixed": "#002204",
+                        "on-secondary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "outline-variant": "#c2c7d1",
+                        "on-secondary-fixed-variant": "#005312",
+                        "on-primary-container": "#91c0ff",
+                        "on-tertiary-fixed": "#320047",
+                        "surface-container": "#ededf3",
+                        "on-primary-fixed": "#001c38",
+                        "surface-container-high": "#e7e8ee",
+                        "error": "#ba1a1a",
+                        "secondary": "#1b6d24",
+                        "on-error-container": "#93000a",
+                        "primary-container": "#004e8b",
+                        "inverse-primary": "#a2c9ff",
+                        "background": "#f8f9ff",
+                        "surface-container-highest": "#e1e2e8",
+                        "tertiary-fixed-dim": "#ebb2ff",
+                        "on-tertiary": "#ffffff",
+                        "primary": "#003765",
+                        "on-tertiary-fixed-variant": "#721199",
+                        "tertiary-fixed": "#f8d8ff",
+                        "surface": "#f8f9ff",
+                        "secondary-fixed": "#a3f69c",
+                        "surface-container-low": "#f3f3f9",
+                        "surface-bright": "#f8f9ff",
+                        "inverse-surface": "#2e3035",
+                        "on-primary": "#ffffff",
+                        "outline": "#727781",
+                        "primary-fixed-dim": "#a2c9ff",
+                        "surface-tint": "#24609e",
+                        "on-background": "#191c20",
+                        "error-container": "#ffdad6",
+                        "surface-variant": "#e1e2e8",
+                        "surface-container-lowest": "#ffffff",
+                        "secondary-container": "#a0f499",
+                        "tertiary": "#5a007c",
+                        "on-primary-fixed-variant": "#004881",
+                        "primary-fixed": "#d3e4ff",
+                        "on-tertiary-container": "#e7a5ff",
+                        "on-surface": "#191c20"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-lg": "24px",
+                        "stack-sm": "8px",
+                        "gutter": "16px",
+                        "stack-md": "16px",
+                        "touch-target-min": "48px",
+                        "screen-margin": "20px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md min-h-screen flex flex-col pt-[72px] pb-[100px]">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface shadow-sm">
+<div class="flex items-center justify-between px-screen-margin h-touch-target-min w-full">
+<button class="flex items-center justify-center w-touch-target-min h-touch-target-min text-on-surface-variant active:scale-95 transition-transform duration-100 hover:bg-surface-container-low rounded-full">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary">通知與記錄 (Notices)</h1>
+<button class="flex items-center justify-center w-touch-target-min h-touch-target-min text-on-surface-variant active:scale-95 transition-transform duration-100 hover:bg-surface-container-low rounded-full">
+<span class="material-symbols-outlined">sync</span>
+</button>
+</div>
+</header>
+<!-- Connectivity Status Chip -->
+<div class="px-screen-margin mt-stack-sm flex justify-center">
+<div class="bg-secondary-container text-on-secondary-container font-label-sm text-label-sm px-4 py-1.5 rounded-full flex items-center gap-2 shadow-sm">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+            已連線
+        </div>
+</div>
+<!-- Main Content Canvas -->
+<main class="flex-grow px-screen-margin mt-stack-md flex flex-col gap-stack-lg">
+<!-- Tab Navigation -->
+<div class="flex bg-surface-container rounded-lg p-1 w-full max-w-md mx-auto">
+<button class="flex-1 py-2 font-label-lg text-label-lg rounded-md bg-primary text-on-primary shadow-sm transition-colors duration-200" id="tab-notices" onclick="switchTab('notices')">
+                System Notifications
+            </button>
+<button class="flex-1 py-2 font-label-lg text-label-lg rounded-md text-on-surface-variant hover:bg-surface-container-high transition-colors duration-200" id="tab-logbook" onclick="switchTab('logbook')">
+                Field Logbook
+            </button>
+</div>
+<!-- Tab Content: Notifications -->
+<div class="flex flex-col gap-stack-md" id="content-notices">
+<!-- Notification Item 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-[0px_4px_12px_rgba(0,0,0,0.12)] flex gap-4 items-start border-l-4 border-primary">
+<div class="bg-primary-container text-on-primary-container rounded-full p-2 flex-shrink-0 mt-1">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">assignment</span>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-label-lg text-label-lg text-on-surface">New Project Assigned</h3>
+<span class="font-label-sm text-label-sm text-outline">10m ago</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">You have been assigned to "Sector 7 Carbon Audit". Please download offline maps before heading out.</p>
+</div>
+</div>
+<!-- Notification Item 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-[0px_4px_12px_rgba(0,0,0,0.12)] flex gap-4 items-start border-l-4 border-secondary">
+<div class="bg-secondary-container text-on-secondary-container rounded-full p-2 flex-shrink-0 mt-1">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">cloud_done</span>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-label-lg text-label-lg text-on-surface">Sync Completed</h3>
+<span class="font-label-sm text-label-sm text-outline">1h ago</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">24 data points and 3 images successfully uploaded to main server.</p>
+</div>
+</div>
+<!-- Notification Item 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-[0px_4px_12px_rgba(0,0,0,0.12)] flex gap-4 items-start border-l-4 border-error">
+<div class="bg-error-container text-on-error-container rounded-full p-2 flex-shrink-0 mt-1">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">battery_alert</span>
+</div>
+<div class="flex-grow">
+<div class="flex justify-between items-start mb-1">
+<h3 class="font-label-lg text-label-lg text-on-surface">Device Battery Low Alert</h3>
+<span class="font-label-sm text-label-sm text-outline">2h ago</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">GPS module reporting 15% battery. Connect to power bank soon to ensure tracking continuity.</p>
+</div>
+</div>
+</div>
+<!-- Tab Content: Field Logbook (Hidden by default) -->
+<div class="hidden flex-col gap-stack-md" id="content-logbook">
+<div class="flex justify-between items-center mb-2">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">Recent Observations</h2>
+<button class="bg-primary text-on-primary p-2 rounded-full shadow-sm hover:bg-primary-fixed-dim transition-colors flex items-center justify-center h-touch-target-min w-touch-target-min">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+<!-- Logbook Item 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-[0px_4px_12px_rgba(0,0,0,0.12)] border border-outline-variant">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-2">
+<span class="bg-surface-dim text-on-surface font-label-sm text-label-sm px-2 py-1 rounded-md border border-outline-variant">T-8924</span>
+<span class="font-label-sm text-label-sm text-secondary">Pinus sylvestris</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">10:42 AM</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mb-3">Crown looks healthy, but noticed some signs of minor bark beetle activity on lower trunk. Will monitor next quarter.</p>
+<div class="flex gap-2">
+<div class="bg-surface-container w-16 h-16 rounded-md flex items-center justify-center text-outline">
+<span class="material-symbols-outlined">image</span>
+</div>
+</div>
+</div>
+<!-- Logbook Item 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-[0px_4px_12px_rgba(0,0,0,0.12)] border border-outline-variant">
+<div class="flex justify-between items-start mb-2">
+<div class="flex items-center gap-2">
+<span class="bg-surface-dim text-on-surface font-label-sm text-label-sm px-2 py-1 rounded-md border border-outline-variant">T-8925</span>
+</div>
+<span class="font-label-sm text-label-sm text-outline">09:15 AM</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant">Soil moisture unusually high in this quadrant. Possible drainage issue causing slight tilt in younger saplings.</p>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 flex justify-around items-center px-4 pb-6 bg-surface-container-lowest shadow-[0px_16px_32px_rgba(0,0,0,0.18)] h-[80px]">
+<div class="flex w-full max-w-md mx-auto justify-around">
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-spacing-gutter py-1 hover:bg-surface-container-high rounded-lg transition-all duration-200 min-h-touch-target-min min-w-touch-target-min" href="#">
+<span class="material-symbols-outlined mb-1">map</span>
+<span class="font-label-sm text-label-sm">地圖</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-spacing-gutter py-1 hover:bg-surface-container-high rounded-lg transition-all duration-200 min-h-touch-target-min min-w-touch-target-min" href="#">
+<span class="material-symbols-outlined mb-1">straighten</span>
+<span class="font-label-sm text-label-sm">測量</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-spacing-gutter py-1 min-h-touch-target-min min-w-touch-target-min shadow-sm" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">notifications</span>
+<span class="font-label-sm text-label-sm font-bold">通知</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-spacing-gutter py-1 hover:bg-surface-container-high rounded-lg transition-all duration-200 min-h-touch-target-min min-w-touch-target-min" href="#">
+<span class="material-symbols-outlined mb-1">sync_alt</span>
+<span class="font-label-sm text-label-sm">同步</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-spacing-gutter py-1 hover:bg-surface-container-high rounded-lg transition-all duration-200 min-h-touch-target-min min-w-touch-target-min" href="#">
+<span class="material-symbols-outlined mb-1">settings</span>
+<span class="font-label-sm text-label-sm">設定</span>
+</a>
+</div>
+</nav>
+<script>
+        function switchTab(tabId) {
+            const noticesTabBtn = document.getElementById('tab-notices');
+            const logbookTabBtn = document.getElementById('tab-logbook');
+            const noticesContent = document.getElementById('content-notices');
+            const logbookContent = document.getElementById('content-logbook');
+
+            if (tabId === 'notices') {
+                noticesTabBtn.classList.add('bg-primary', 'text-on-primary', 'shadow-sm');
+                noticesTabBtn.classList.remove('text-on-surface-variant', 'hover:bg-surface-container-high');
+                
+                logbookTabBtn.classList.remove('bg-primary', 'text-on-primary', 'shadow-sm');
+                logbookTabBtn.classList.add('text-on-surface-variant', 'hover:bg-surface-container-high');
+
+                noticesContent.classList.remove('hidden');
+                noticesContent.classList.add('flex');
+                
+                logbookContent.classList.add('hidden');
+                logbookContent.classList.remove('flex');
+            } else {
+                logbookTabBtn.classList.add('bg-primary', 'text-on-primary', 'shadow-sm');
+                logbookTabBtn.classList.remove('text-on-surface-variant', 'hover:bg-surface-container-high');
+                
+                noticesTabBtn.classList.remove('bg-primary', 'text-on-primary', 'shadow-sm');
+                noticesTabBtn.classList.add('text-on-surface-variant', 'hover:bg-surface-container-high');
+
+                logbookContent.classList.remove('hidden');
+                logbookContent.classList.add('flex');
+                
+                noticesContent.classList.add('hidden');
+                noticesContent.classList.remove('flex');
+            }
+        }
+    </script>
+</body></html>

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+
+<html lang="zh-TW"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>樹木清單 - Forest Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary": "#003765",
+                        "surface-container": "#ededf3",
+                        "on-error-container": "#93000a",
+                        "background": "#f8f9ff",
+                        "surface": "#f8f9ff",
+                        "error-container": "#ffdad6",
+                        "on-secondary-fixed": "#002204",
+                        "primary-fixed-dim": "#a2c9ff",
+                        "surface-dim": "#d9dadf",
+                        "outline-variant": "#c2c7d1",
+                        "surface-container-lowest": "#ffffff",
+                        "tertiary": "#5a007c",
+                        "secondary-container": "#a0f499",
+                        "outline": "#727781",
+                        "on-primary-container": "#91c0ff",
+                        "inverse-surface": "#2e3035",
+                        "surface-tint": "#24609e",
+                        "secondary-fixed-dim": "#87d982",
+                        "on-tertiary-container": "#e7a5ff",
+                        "surface-container-low": "#f3f3f9",
+                        "surface-variant": "#e1e2e8",
+                        "tertiary-container": "#781b9f",
+                        "on-primary-fixed-variant": "#004881",
+                        "surface-container-highest": "#e1e2e8",
+                        "on-tertiary-fixed-variant": "#721199",
+                        "on-primary-fixed": "#001c38",
+                        "on-error": "#ffffff",
+                        "on-surface-variant": "#424750",
+                        "primary-fixed": "#d3e4ff",
+                        "tertiary-fixed": "#f8d8ff",
+                        "error": "#ba1a1a",
+                        "on-surface": "#191c20",
+                        "on-secondary-fixed-variant": "#005312",
+                        "surface-container-high": "#e7e8ee",
+                        "on-tertiary-fixed": "#320047",
+                        "secondary": "#1b6d24",
+                        "on-background": "#191c20",
+                        "inverse-primary": "#a2c9ff",
+                        "on-secondary-container": "#207128",
+                        "surface-bright": "#f8f9ff",
+                        "on-secondary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "inverse-on-surface": "#f0f0f6",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed-dim": "#ebb2ff",
+                        "secondary-fixed": "#a3f69c",
+                        "primary-container": "#004e8b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "screen-margin": "20px",
+                        "stack-md": "16px",
+                        "gutter": "16px",
+                        "touch-target-min": "48px",
+                        "stack-sm": "8px",
+                        "stack-lg": "24px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "700" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #FCF8FF; /* From style guidance */
+        }
+        .card-shadow {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12); /* 12% shadow, 8px blur */
+        }
+        .nav-shadow {
+            box-shadow: 0 16px 32px rgba(0, 0, 0, 0.18); /* From JSON */
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-surface antialiased pt-[88px] pb-[100px]">
+<!-- Status Chip -->
+<div class="fixed top-0 left-0 right-0 z-[60] flex justify-center pt-2 pointer-events-none">
+<div class="bg-secondary text-on-secondary font-label-sm text-label-sm px-3 py-1 rounded-full shadow-sm pointer-events-auto flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-secondary-container"></span>
+            已連線
+        </div>
+</div>
+<!-- TopAppBar (From JSON, modified content for specific page) -->
+<header class="fixed top-0 w-full z-50 bg-surface dark:bg-on-surface flex justify-between items-center px-screen-margin py-stack-md mt-6">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary font-bold text-2xl">forest</span>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary">樹木清單</h1>
+</div>
+<button class="hover:opacity-80 transition-opacity active:scale-95 transition-transform flex items-center gap-1 text-outline">
+<span class="material-symbols-outlined">add</span>
+</button>
+</header>
+<main class="px-screen-margin max-w-4xl mx-auto flex flex-col gap-stack-lg">
+<!-- Search and Filter Section -->
+<section class="flex flex-col gap-stack-md">
+<!-- Search Bar -->
+<div class="relative w-full h-touch-target-min">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline">search</span>
+<input class="w-full h-full pl-12 pr-4 bg-surface-container-lowest border border-outline rounded-lg focus:outline-none focus:border-primary focus:border-2 focus:ring-0 font-body-md text-body-md text-on-surface placeholder:text-outline transition-all card-shadow" placeholder="搜尋編號或樹種" type="text"/>
+</div>
+<!-- Advanced Filter Chips -->
+<div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+<button class="flex-shrink-0 h-[32px] px-4 rounded-[16px] border border-outline text-on-surface-variant font-label-sm text-label-sm flex items-center gap-1 hover:bg-surface-variant transition-colors">
+                    依專案
+                    <span class="material-symbols-outlined text-[16px]">arrow_drop_down</span>
+</button>
+<button class="flex-shrink-0 h-[32px] px-4 rounded-[16px] border border-outline text-on-surface-variant font-label-sm text-label-sm flex items-center gap-1 hover:bg-surface-variant transition-colors">
+                    依狀態
+                    <span class="material-symbols-outlined text-[16px]">arrow_drop_down</span>
+</button>
+<button class="flex-shrink-0 h-[32px] px-4 rounded-[16px] border border-outline text-on-surface-variant font-label-sm text-label-sm flex items-center gap-1 hover:bg-surface-variant transition-colors">
+                    依樹種
+                    <span class="material-symbols-outlined text-[16px]">arrow_drop_down</span>
+</button>
+</div>
+</section>
+<!-- Tree List -->
+<section class="flex flex-col gap-gutter">
+<!-- Card 1 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 flex gap-4 card-shadow">
+<div class="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-surface-variant">
+<img alt="Tree trunk photo" class="w-full h-full object-cover" data-alt="A close-up shot of a textured tree trunk in a dense forest. The lighting is bright and natural, casting soft shadows that highlight the rough bark. The surrounding environment is lush green. The aesthetic is realistic, detailed, and clear, suitable for an industrial environmental application. High contrast and sharpness." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDKIKy-1qKPxGlyVQzbcXthHqEaO5y1YvdcUAqqfsWpQ3zz_WU7xMii0dgQcrwK5OrwVpzizO00qajOHi2t2h0TxMo3kRKY4-RnrBTvrbK8HU0iJc_7cXeYKNPQYMPoRnfZcZx59u7Jbn9x_d3q7DZ7TKHvvapGYHkQyLk3d35QZMt1PC9b-M6Y27iQihu0WjM5ASZLUNGsDHjQBdFg97o8HKr68ZuvCqU2zaHqeal42_27Z5kpH5-oyPIEA2_LhqXln7iZtk-DEw"/>
+</div>
+<div class="flex flex-col justify-between flex-grow">
+<div class="flex justify-between items-start">
+<div>
+<div class="font-label-lg text-label-lg text-primary mb-1">T-8924</div>
+<div class="font-headline-sm text-headline-sm text-on-surface leading-tight">台灣肖楠</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant italic">Calocedrus macrolepis var. formosana</div>
+</div>
+<div class="bg-secondary-container text-on-secondary-container font-label-sm text-label-sm px-2 py-1 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                            正常
+                        </div>
+</div>
+<div class="flex items-center gap-4 mt-2">
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">straighten</span>
+<span class="font-label-sm text-label-sm">DBH: 45.2 cm</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">height</span>
+<span class="font-label-sm text-label-sm">12.5 m</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 flex gap-4 card-shadow border-l-4 border-error">
+<div class="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-surface-variant">
+<img alt="Tree photo" class="w-full h-full object-cover" data-alt="A photograph of a slightly leaning pine tree in a forest setting. The bright daylight filtering through the canopy reveals some dead branches. The focus is sharp on the tree's structure against a slightly blurred background. The style is objective and documentary, fitting for a forester's app. Deep greens and earthy browns dominate the color palette." src="https://lh3.googleusercontent.com/aida-public/AB6AXuATlTofraXE6A2okxyBpj0f60d_Oi-1iBZj4CqS6E_3dgsgsgDevM_5IoXFIuUPJX9fh3xyFT7KmoMD3VWjoAU60mQOExZ1zHX-eYFWHbrm7B47_mh9_J9vsNLxQu73Duf2yJCc1lnSkCHOI7jRUJknmMKItj4CmwISPeleNBZkmCxI_5h8VpfS9OG6VGk72wU0ohdmfyAuw-X0LsU94ldGfyLz2N2v15d7aKpj-M32OcYBeeRpqNu4fNeMIuZn3CMQPOOQAtYPog"/>
+</div>
+<div class="flex flex-col justify-between flex-grow">
+<div class="flex justify-between items-start">
+<div>
+<div class="font-label-lg text-label-lg text-primary mb-1">T-8925</div>
+<div class="font-headline-sm text-headline-sm text-on-surface leading-tight">二葉松</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant italic">Pinus taiwanensis</div>
+</div>
+<div class="bg-error-container text-on-error-container font-label-sm text-label-sm px-2 py-1 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">warning</span>
+                            傾斜
+                        </div>
+</div>
+<div class="flex items-center gap-4 mt-2">
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">straighten</span>
+<span class="font-label-sm text-label-sm">DBH: 32.8 cm</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">height</span>
+<span class="font-label-sm text-label-sm">8.2 m</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-lowest rounded-xl p-4 flex gap-4 card-shadow">
+<div class="w-20 h-20 rounded-lg overflow-hidden flex-shrink-0 bg-surface-variant">
+<img alt="Tree foliage" class="w-full h-full object-cover" data-alt="A detailed view of broad green leaves on a sturdy branch, captured in natural, bright daylight. The image is crisp and professional, highlighting the botanical details. The background is a soft blur of a dense forest. The aesthetic is clear and functional, ideal for species identification." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDQ9OC9CuH1oHp3pIIRvFuL3Wlv4tNxQPuIZmxZWAQ8ySFzNBxxDXoGJifkpnh_CN1PRjmVBysX85BUDmN_w0Or2jBoJWIWHJ71JBH1koWKrFNNvL6D73ofsF7bZUXlVHEclrYPCmaGesxCrE5n-egOGb3hd-UCWjp_nStdmsIE6O4OsQ_qWEHGSfQmpdAPn_7LTLdDmRqFWiGohfZEvwD0idjWFMThfLWke1z4FV2C-HVtvg7L_m58yJp5SnYKAUid8K0hkXQ96Q"/>
+</div>
+<div class="flex flex-col justify-between flex-grow">
+<div class="flex justify-between items-start">
+<div>
+<div class="font-label-lg text-label-lg text-primary mb-1">T-8926</div>
+<div class="font-headline-sm text-headline-sm text-on-surface leading-tight">樟樹</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant italic">Cinnamomum camphora</div>
+</div>
+<div class="bg-secondary-container text-on-secondary-container font-label-sm text-label-sm px-2 py-1 rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">check_circle</span>
+                            正常
+                        </div>
+</div>
+<div class="flex items-center gap-4 mt-2">
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">straighten</span>
+<span class="font-label-sm text-label-sm">DBH: 55.0 cm</span>
+</div>
+<div class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">height</span>
+<span class="font-label-sm text-label-sm">15.1 m</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Loading indicator for infinite scroll -->
+<div class="flex justify-center items-center py-4 text-outline">
+<span class="material-symbols-outlined animate-spin">refresh</span>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (From JSON) -->
+<!-- Active intent: "採樣" (closest match to Trees/Analytics/Surveying) -->
+<nav class="fixed bottom-3 left-3 right-3 rounded-full z-50 bg-surface-container-lowest dark:bg-inverse-surface nav-shadow md:hidden">
+<div class="flex justify-around items-center h-touch-target-min max-w-md mx-auto">
+<!-- Inactive -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-5 py-2 hover:bg-surface-variant dark:hover:bg-on-surface-variant active:scale-90 transition-transform duration-200 rounded-full">
+<span class="material-symbols-outlined">map</span>
+<span class="font-label-sm text-label-sm mt-1">地圖</span>
+</button>
+<!-- Active (Trees/List intent mapped to Analytics/Sampling) -->
+<button class="flex flex-col items-center justify-center bg-primary dark:bg-primary-container text-on-primary dark:text-on-primary-container rounded-full px-5 py-2 active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+<span class="font-label-sm text-label-sm mt-1">採樣</span>
+</button>
+<!-- Inactive -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-5 py-2 hover:bg-surface-variant dark:hover:bg-on-surface-variant active:scale-90 transition-transform duration-200 rounded-full">
+<span class="material-symbols-outlined">sync</span>
+<span class="font-label-sm text-label-sm mt-1">同步</span>
+</button>
+<!-- Inactive -->
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-5 py-2 hover:bg-surface-variant dark:hover:bg-on-surface-variant active:scale-90 transition-transform duration-200 rounded-full">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-sm text-label-sm mt-1">設定</span>
+</button>
+</div>
+</nav>
+</body></html>

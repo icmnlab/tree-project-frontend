@@ -1,66 +1,88 @@
 <!DOCTYPE html>
 
-<html lang="zh-TW"><head>
+<html class="light" lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>樹木詳細資訊 - Forest Intelligence</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<title>Sustainable TreeAI - 永續碳匯管理系統</title>
+<!-- Google Fonts: Plus Jakarta Sans -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+<!-- Tailwind CSS with custom configuration -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <script id="tailwind-config">
         tailwind.config = {
             darkMode: "class",
             theme: {
                 extend: {
                     "colors": {
-                        "surface-tint": "#0060a9",
-                        "surface-container-lowest": "#ffffff",
-                        "surface": "#fcf8ff",
-                        "on-tertiary-container": "#f7d7ff",
-                        "on-error": "#ffffff",
-                        "surface-dim": "#dad7f3",
+                        "surface-variant": "#e2e0fc",
                         "surface-container": "#efecff",
-                        "secondary-container": "#a0f399",
-                        "on-primary-fixed-variant": "#004881",
-                        "tertiary-container": "#933ab9",
-                        "on-primary": "#ffffff",
-                        "on-secondary-fixed-variant": "#005312",
-                        "on-tertiary-fixed-variant": "#721199",
-                        "inverse-surface": "#2f2e43",
-                        "outline-variant": "#c1c7d3",
-                        "outline": "#717782",
-                        "on-primary-container": "#d2e3ff",
-                        "secondary-fixed-dim": "#88d982",
-                        "secondary-fixed": "#a3f69c",
-                        "surface-container-low": "#f5f2ff",
                         "inverse-on-surface": "#f2efff",
-                        "on-tertiary": "#ffffff",
-                        "on-error-container": "#93000a",
-                        "on-surface-variant": "#414751",
-                        "on-primary-fixed": "#001c38",
-                        "tertiary-fixed-dim": "#ebb2ff",
-                        "surface-container-highest": "#e2e0fc",
-                        "on-secondary-container": "#217128",
-                        "tertiary-fixed": "#f8d8ff",
-                        "surface-bright": "#fcf8ff",
-                        "primary-fixed": "#d3e4ff",
-                        "surface-container-high": "#e8e5ff",
-                        "on-tertiary-fixed": "#320047",
-                        "error-container": "#ffdad6",
-                        "primary-fixed-dim": "#a2c9ff",
-                        "on-surface": "#1a1a2e",
-                        "primary": "#004e8b",
-                        "tertiary": "#781b9f",
-                        "on-secondary": "#ffffff",
-                        "error": "#ba1a1a",
-                        "inverse-primary": "#a2c9ff",
-                        "background": "#fcf8ff",
-                        "on-background": "#1a1a2e",
-                        "secondary": "#1b6d24",
-                        "primary-container": "#0066b3",
                         "on-secondary-fixed": "#002204",
-                        "surface-variant": "#e2e0fc"
+                        "tertiary-fixed-dim": "#ebb2ff",
+                        "on-surface": "#1a1a2e",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#0066b3",
+                        "error-container": "#ffdad6",
+                        "secondary-fixed": "#a3f69c",
+                        "background": "#fcf8ff",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed": "#d3e4ff",
+                        "on-background": "#1a1a2e",
+                        "outline": "#717782",
+                        "secondary-fixed-dim": "#88d982",
+                        "on-primary-container": "#d2e3ff",
+                        "inverse-primary": "#a2c9ff",
+                        "tertiary-fixed": "#f8d8ff",
+                        "tertiary-container": "#933ab9",
+                        "outline-variant": "#c1c7d3",
+                        "primary": "#004e8b",
+                        "surface-bright": "#fcf8ff",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed": "#001c38",
+                        "secondary-container": "#a0f399",
+                        "secondary": "#1b6d24",
+                        "surface-container-highest": "#e2e0fc",
+                        "surface-container-high": "#e8e5ff",
+                        "inverse-surface": "#2f2e43",
+                        "on-error-container": "#93000a",
+                        "primary-fixed-dim": "#a2c9ff",
+                        "on-secondary-container": "#217128",
+                        "on-primary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#320047",
+                        "surface-dim": "#dad7f3",
+                        "surface-tint": "#0060a9",
+                        "on-primary-fixed-variant": "#004881",
+                        "on-tertiary-fixed-variant": "#721199",
+                        "on-surface-variant": "#414751",
+                        "tertiary": "#781b9f",
+                        "surface-container-low": "#f5f2ff",
+                        "error": "#ba1a1a",
+                        "on-secondary-fixed-variant": "#005312",
+                        "on-tertiary-container": "#f7d7ff",
+                        "surface": "#fcf8ff"
                     },
                     "borderRadius": {
                         "DEFAULT": "0.25rem",
@@ -69,184 +91,127 @@
                         "full": "9999px"
                     },
                     "spacing": {
-                        "margin-screen": "20px",
-                        "gutter-grid": "16px",
-                        "stack-sm": "8px",
                         "stack-lg": "24px",
+                        "margin-screen": "20px",
                         "touch-target-min": "48px",
-                        "stack-md": "16px"
+                        "stack-md": "16px",
+                        "stack-sm": "8px",
+                        "gutter-grid": "16px"
                     },
                     "fontFamily": {
-                        "label-md": ["Plus Jakarta Sans"],
-                        "body-lg": ["Plus Jakarta Sans"],
+                        "display-lg": ["Plus Jakarta Sans"],
                         "label-lg": ["Plus Jakarta Sans"],
                         "body-md": ["Plus Jakarta Sans"],
+                        "display-md-mobile": ["Plus Jakarta Sans"],
+                        "label-md": ["Plus Jakarta Sans"],
                         "headline-sm": ["Plus Jakarta Sans"],
-                        "display-lg": ["Plus Jakarta Sans"],
-                        "display-lg-mobile": ["Plus Jakarta Sans"],
                         "display-md": ["Plus Jakarta Sans"],
-                        "display-md-mobile": ["Plus Jakarta Sans"]
+                        "display-lg-mobile": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"]
                     },
                     "fontSize": {
-                        "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
-                        "body-lg": ["18px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
                         "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
                         "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "display-md-mobile": ["22px", { "lineHeight": "30px", "fontWeight": "700" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
                         "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
-                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
-                        "display-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
                         "display-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
-                        "display-md-mobile": ["22px", { "lineHeight": "30px", "fontWeight": "700" }]
+                        "display-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "26px", "fontWeight": "400" }]
                     }
                 }
             }
         }
     </script>
 <style>
-        body { background-color: #fcf8ff; }
-        .ambient-shadow-card {
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
-        }
-        .hero-gradient {
-            background: linear-gradient(to bottom, rgba(0,0,0,0) 0%, rgba(0,0,0,0.6) 100%);
-        }
-    </style>
-<style>
     body {
       min-height: max(884px, 100dvh);
     }
   </style>
   </head>
-<body class="text-on-background min-h-screen pb-24 md:pb-0">
-<!-- TopAppBar -->
-<header class="bg-surface dark:bg-on-background text-primary dark:text-primary-fixed font-headline-sm text-headline-sm-mobile md:text-headline-sm docked full-width top-0 shadow-sm transition-colors duration-200 ease-in-out flex justify-between items-center w-full px-margin-screen h-touch-target-min fixed z-50">
-<button class="flex items-center justify-center h-touch-target-min w-touch-target-min text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors">
-<span class="material-symbols-outlined" data-icon="arrow_back">arrow_back</span>
+<body class="bg-surface text-on-surface min-h-screen flex selection:bg-primary-fixed selection:text-on-primary-fixed overflow-hidden">
+<!-- Left Pane (Imagery & Brand) - Hidden on Mobile -->
+<div class="hidden lg:block lg:w-1/2 relative bg-surface-container-low h-full">
+<!-- Abstract Nature AI Background Image -->
+<div class="absolute inset-0 bg-cover bg-center" data-alt="A breathtaking, high-resolution aerial photograph of a pristine, dense temperate forest bathed in soft, early morning sunlight. The lighting creates a serene, modern light-mode aesthetic with ethereal volumetric light rays filtering through the lush green canopy. Interspersed seamlessly among the natural trees are subtle, glowing, transparent geometric data nodes and fine, luminescent blue connection lines, symbolizing the sophisticated integration of advanced AI technology and environmental stewardship. The overall mood is authoritative, optimistic, and technologically advanced, relying on a sophisticated palette of deep greens, earthy browns, and crisp whites." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDrx3lDnrpHnA2DXbZ7VRBe-MKKYKEm86e4QbnKcM8XQKl2SoqS1rwpAYrdV6jDE3KHQF0w_jLp66ootrEnB8xiR6ADHQ4gp7wvGG7AeM4DATZWAuitEWZrytoum4TWezucR6WxnkCcm_mCcXM9q6WbBe92oxoSe-zQCM_zGaQ7jisevBXXiVBphJrSiNdfede07bEKAdpmXcIactYQ5YzrMyN5_vkJ0DdAwPGbmrWEe7T_-er0y7VFMenZKUbXEWKjWi5i1o0D4g');">
+</div>
+<!-- Gradient Overlay for Contrast and Brand Color Integration -->
+<div class="absolute inset-0 bg-gradient-to-br from-surface-tint/80 via-primary/50 to-on-primary-fixed/90 mix-blend-multiply"></div>
+<!-- Brand Messaging Anchor -->
+<div class="absolute bottom-16 left-16 right-16 flex flex-col gap-stack-sm">
+<div class="w-16 h-1 rounded-full bg-secondary-fixed mb-4"></div>
+<h2 class="font-display-lg text-display-lg text-surface-container-lowest">Empowering Nature with AI.</h2>
+<p class="font-body-lg text-body-lg text-primary-fixed max-w-lg">
+                Precision carbon auditing and intelligent forest management tools designed for professional environmental stewardship.
+            </p>
+</div>
+</div>
+<!-- Right Pane (Login Form Container) -->
+<div class="w-full lg:w-1/2 flex flex-col justify-center items-center px-margin-screen py-12 sm:px-12 md:px-24 bg-surface h-full overflow-y-auto">
+<div class="w-full max-w-[420px] flex flex-col gap-stack-lg my-auto">
+<!-- Header Section -->
+<div class="flex flex-col gap-3">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1; font-size: 32px;">energy_savings_leaf</span>
+<span class="font-display-md text-display-md font-bold tracking-tight">Sustainable TreeAI</span>
+</div>
+<h1 class="font-display-lg-mobile text-display-lg-mobile md:font-display-lg md:text-display-lg font-bold text-on-surface">永續碳匯管理系統</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Welcome back. Please enter your credentials to access the secure portal.</p>
+</div>
+<!-- Login Type Toggle (Investigator / Admin) -->
+<div class="flex bg-surface-container-high rounded-lg p-1.5 w-full border border-outline-variant/20">
+<!-- Active State (Investigator) -->
+<button class="flex-1 py-2.5 rounded-md font-label-md text-label-md text-center transition-all bg-surface-container-lowest text-primary shadow-sm font-semibold border border-outline-variant/10" type="button">
+                    Investigator
+                </button>
+<!-- Inactive State (Admin) -->
+<button class="flex-1 py-2.5 rounded-md font-label-md text-label-md text-center transition-all text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/50 font-medium" type="button">
+                    Admin Portal
+                </button>
+</div>
+<!-- Form Section -->
+<form class="flex flex-col gap-stack-md mt-2">
+<!-- Account Field -->
+<div class="flex flex-col gap-2">
+<label class="font-label-md text-label-md text-on-surface font-semibold" for="account">Account</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant">person</span>
+<input class="w-full pl-12 pr-4 py-3.5 rounded-lg border-2 border-outline-variant bg-surface-container-lowest text-on-surface font-body-md text-body-md placeholder:text-outline focus:border-primary focus:ring-4 focus:ring-primary-fixed/30 focus:outline-none transition-all duration-200" id="account" placeholder="Enter your ID or email" type="text"/>
+</div>
+</div>
+<!-- Password Field with Toggle -->
+<div class="flex flex-col gap-2">
+<label class="font-label-md text-label-md text-on-surface font-semibold" for="password">Password</label>
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant">lock</span>
+<input class="w-full pl-12 pr-12 py-3.5 rounded-lg border-2 border-outline-variant bg-surface-container-lowest text-on-surface font-body-md text-body-md placeholder:text-outline focus:border-primary focus:ring-4 focus:ring-primary-fixed/30 focus:outline-none transition-all duration-200" id="password" placeholder="••••••••" type="password"/>
+<button aria-label="Toggle password visibility" class="absolute right-4 top-1/2 -translate-y-1/2 text-outline-variant hover:text-on-surface transition-colors flex items-center justify-center p-1 rounded-full hover:bg-surface-variant/50" type="button">
+<span class="material-symbols-outlined text-[20px]">visibility_off</span>
 </button>
-<span class="font-display-md text-display-md-mobile text-primary dark:text-primary-fixed">樹木詳細資訊</span>
-<button class="flex items-center justify-center h-touch-target-min w-touch-target-min text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors">
-<span class="material-symbols-outlined" data-icon="more_vert">more_vert</span>
+</div>
+</div>
+<!-- Forgot Password Link -->
+<div class="flex justify-end w-full mt-1">
+<a class="font-label-md text-label-md text-primary font-semibold hover:text-primary-container transition-colors hover:underline underline-offset-4" href="#">Forgot Password?</a>
+</div>
+<!-- Primary Submit Action -->
+<!-- The prompt specifies "primary ocean blue buttons" and the config assigns primary-container to #0066b3 -->
+<button class="w-full h-touch-target-min rounded-lg bg-primary-container text-on-primary font-label-lg text-label-lg font-bold hover:bg-surface-tint transition-all duration-200 flex justify-center items-center shadow-md active:scale-[0.98] mt-2 group" type="submit">
+                    Secure Login
+                    <span class="material-symbols-outlined ml-2 text-[20px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
 </button>
-</header>
-<main class="pt-[64px] max-w-4xl mx-auto px-margin-screen md:px-8">
-<!-- Hero Section -->
-<section class="relative w-full h-[300px] md:h-[400px] rounded-xl overflow-hidden mt-stack-md ambient-shadow-card">
-<img alt="Tree Image" class="w-full h-full object-cover" data-alt="A majestic, mature oak tree standing alone in a clearing of a dense forest during early morning. The sunlight filters softly through its expansive canopy, highlighting the deeply textured bark and vibrant green leaves. The overall mood is serene and natural, embodying a sense of environmental stewardship, captured in high-resolution with a bright, crisp lighting style typical of a modern corporate agricultural interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDSpTi08KnPSOCA7RYvKflGVn4FfDhB_F1z-rWdwHn6g6T7_zlsVAI6J9RGLARWYv6qeMMcdpmju47xdTvOgY9JkLnZE4BJaeaUbs_AeVQ_IlWvDWx4oKcf5U9tNXhA2iNSIr4Ol9v3vI1NF9p0R5DUkMJ3tp7tHfPs5du89y9NfxHoDsHc6jLoAkjt0al6cUu-3RB4xpe4B4Lnix7kjjqXHcqOWJ2YCHlrmJvq7sNOH74aZCuc4M8dNn25-TkGN1SjBIacBSWlWA"/>
-<div class="absolute inset-0 hero-gradient flex flex-col justify-end p-stack-lg">
-<div class="flex items-center gap-2 mb-2">
-<span class="bg-secondary text-on-secondary px-3 py-1 rounded-full font-label-md text-label-md">活躍中 (Active)</span>
-<span class="bg-surface-container-highest text-on-surface-variant px-3 py-1 rounded-full font-label-md text-label-md">系統 ID: TR-8942</span>
-</div>
-<h1 class="font-display-lg text-display-lg-mobile md:text-display-lg text-surface-container-lowest">台灣紅檜 (Taiwan Cypress)</h1>
-<p class="font-body-md text-body-md text-surface-container-lowest opacity-90 mt-1">Chamaecyparis formosensis</p>
-</div>
-</section>
-<!-- Main Content Grid -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter-grid mt-stack-lg">
-<!-- Left Column: Metrics & Actions -->
-<div class="md:col-span-2 space-y-gutter-grid">
-<!-- Key Metrics Bento Grid -->
-<div class="grid grid-cols-2 sm:grid-cols-3 gap-gutter-grid">
-<div class="bg-surface-container-lowest rounded-xl p-stack-md ambient-shadow-card flex flex-col items-center justify-center relative overflow-hidden">
-<div class="absolute inset-0 bg-primary opacity-[0.03]"></div>
-<div class="bg-primary-container/10 p-3 rounded-full mb-3">
-<span class="material-symbols-outlined text-primary" data-icon="straighten" data-weight="fill" style="font-variation-settings: 'FILL' 1;">straighten</span>
-</div>
-<span class="font-label-lg text-label-lg text-on-surface-variant">胸高直徑 (DBH)</span>
-<span class="font-headline-sm text-headline-sm text-primary mt-1">45.2 cm</span>
-</div>
-<div class="bg-surface-container-lowest rounded-xl p-stack-md ambient-shadow-card flex flex-col items-center justify-center relative overflow-hidden">
-<div class="absolute inset-0 bg-primary opacity-[0.03]"></div>
-<div class="bg-primary-container/10 p-3 rounded-full mb-3">
-<span class="material-symbols-outlined text-primary" data-icon="height" data-weight="fill" style="font-variation-settings: 'FILL' 1;">height</span>
-</div>
-<span class="font-label-lg text-label-lg text-on-surface-variant">樹高 (Height)</span>
-<span class="font-headline-sm text-headline-sm text-primary mt-1">14.2 m</span>
-</div>
-<div class="bg-surface-container-lowest rounded-xl p-stack-md ambient-shadow-card flex flex-col items-center justify-center relative overflow-hidden sm:col-span-1 col-span-2">
-<div class="absolute inset-0 bg-secondary opacity-[0.05]"></div>
-<div class="bg-secondary-container/20 p-3 rounded-full mb-3">
-<span class="material-symbols-outlined text-secondary" data-icon="co2" data-weight="fill" style="font-variation-settings: 'FILL' 1;">co2</span>
-</div>
-<span class="font-label-lg text-label-lg text-on-surface-variant">碳補償 (CO2 Offset)</span>
-<span class="font-headline-sm text-headline-sm text-secondary mt-1">42.5 kg</span>
-</div>
-</div>
-<!-- Measurement History -->
-<div class="bg-surface-container-lowest rounded-xl ambient-shadow-card overflow-hidden">
-<button class="w-full flex justify-between items-center p-stack-md bg-surface-container-low hover:bg-surface-container transition-colors" id="history-toggle">
-<div class="flex items-center gap-3">
-<span class="material-symbols-outlined text-on-surface-variant" data-icon="history">history</span>
-<span class="font-headline-sm text-headline-sm text-on-surface">測量歷史紀錄</span>
-</div>
-<span class="material-symbols-outlined text-on-surface-variant transition-transform duration-300" data-icon="expand_more" id="history-icon">expand_more</span>
-</button>
-<div class="hidden" id="history-content">
-<ul class="divide-y divide-outline-variant/30">
-<li class="p-stack-md flex justify-between items-center hover:bg-surface-container-lowest/50">
-<div>
-<p class="font-body-md text-body-md text-on-surface">2023-10-15</p>
-<p class="font-label-md text-label-md text-on-surface-variant">DBH: 45.2cm | 高度: 14.2m</p>
-</div>
-<span class="bg-secondary-container text-on-secondary-container px-2 py-1 rounded font-label-md text-label-md text-[10px]">最新</span>
-</li>
-<li class="p-stack-md flex justify-between items-center hover:bg-surface-container-lowest/50">
-<div>
-<p class="font-body-md text-body-md text-on-surface">2023-04-10</p>
-<p class="font-label-md text-label-md text-on-surface-variant">DBH: 44.8cm | 高度: 14.0m</p>
-</div>
-</li>
-<li class="p-stack-md flex justify-between items-center hover:bg-surface-container-lowest/50">
-<div>
-<p class="font-body-md text-body-md text-on-surface">2022-11-05</p>
-<p class="font-label-md text-label-md text-on-surface-variant">DBH: 44.1cm | 高度: 13.8m</p>
-</div>
-</li>
-</ul>
-</div>
-</div>
-<!-- Action Buttons -->
-<div class="flex flex-col sm:flex-row gap-stack-md pt-stack-sm">
-<button class="flex-1 bg-primary text-on-primary h-touch-target-min rounded-full font-label-lg text-label-lg flex items-center justify-center gap-2 hover:bg-primary/90 transition-colors shadow-sm">
-<span class="material-symbols-outlined text-[20px]" data-icon="edit">edit</span>
-                        編輯資料 (Edit)
-                    </button>
-<button class="flex-1 border-2 border-tertiary text-tertiary h-touch-target-min rounded-full font-label-lg text-label-lg flex items-center justify-center gap-2 hover:bg-tertiary-container/20 transition-colors">
-<span class="material-symbols-outlined text-[20px]" data-icon="auto_awesome">auto_awesome</span>
-                        AI 掃描分析 (AI Analysis)
-                    </button>
-</div>
-</div>
-<!-- Right Column: Context/Location (Tablet/Desktop) -->
-<div class="hidden md:block space-y-gutter-grid">
-<div class="bg-surface-container-lowest rounded-xl p-stack-md ambient-shadow-card">
-<h3 class="font-headline-sm text-headline-sm text-on-surface mb-stack-sm flex items-center gap-2">
-<span class="material-symbols-outlined text-on-surface-variant" data-icon="location_on">location_on</span>
-                        位置資訊
-                    </h3>
-<div class="h-[200px] bg-surface-variant rounded-lg mb-3 relative overflow-hidden flex items-center justify-center">
-<img alt="Map showing tree location" class="w-full h-full object-cover opacity-80 mix-blend-multiply" data-alt="A topographical map interface showing a forested mountainous region, likely Alishan, Taiwan. The map features subtle contour lines, green shaded areas indicating dense vegetation, and a distinct digital marker pinpointing a specific location. The styling is clean, high-contrast, and professional, aligning with a modern forestry or environmental management application interface." data-location="Alishan, Taiwan" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGbntae6HX4SdJOvpEUrLnehi8Od2fN_7u-WBtO_LGkQOmbOu9YBT18GbQoZbFaa4bEVQsfvC7An5kv-zkJs0qN4xvZ91n7pkrm256csLm0h4cmCEgZv8RyvMHvf4J3TGbve0EZc2entd8NI97t63mM8hWjgeIdovCaFGVIhHooSxV2xMFI-binlJQf3TviIeiLMR5T5wBLtVWj3laokLLcTAwzNJiSzG4ou7w84dVsCPC_9Db4Qe2EogwFFTPKHm4Kyw_Q-AGiQ"/>
-<div class="absolute w-4 h-4 bg-error rounded-full border-2 border-white shadow-md"></div>
-</div>
-<p class="font-body-md text-body-md text-on-surface">區塊 A (Zone A)</p>
-<p class="font-label-md text-label-md text-on-surface-variant font-mono mt-1">23.508° N, 120.801° E</p>
+</form>
+<!-- Footer Links (Register) -->
+<div class="flex justify-center items-center mt-stack-md pt-stack-md border-t border-outline-variant/30">
+<p class="font-body-md text-body-md text-on-surface-variant flex flex-wrap justify-center gap-1">
+                    Don't have an account?
+                    <a class="font-label-md text-label-md text-primary font-semibold hover:text-primary-container hover:underline underline-offset-4 flex items-center" href="#">
+                        Register (requires invite code)
+                        <span class="material-symbols-outlined text-[16px] ml-1">open_in_new</span>
+</a>
+</p>
 </div>
 </div>
 </div>
-</main>
-<script>
-        // Simple accordion logic for Measurement History
-        document.getElementById('history-toggle').addEventListener('click', function() {
-            const content = document.getElementById('history-content');
-            const icon = document.getElementById('history-icon');
-            
-            if (content.classList.contains('hidden')) {
-                content.classList.remove('hidden');
-                icon.style.transform = 'rotate(180deg)';
-            } else {
-                content.classList.add('hidden');
-                icon.style.transform = 'rotate(0deg)';
-            }
-        });
-    </script>
 </body></html>

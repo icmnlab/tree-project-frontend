@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+
+<html lang="zh-TW"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Task Dispatch &amp; Assignment - Forest Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error-container": "#ffdad6",
+                        "inverse-on-surface": "#f0f0f6",
+                        "secondary-fixed-dim": "#87d982",
+                        "surface-dim": "#d9dadf",
+                        "on-surface": "#191c20",
+                        "inverse-primary": "#a2c9ff",
+                        "error": "#ba1a1a",
+                        "primary-fixed": "#d3e4ff",
+                        "on-secondary-fixed-variant": "#005312",
+                        "tertiary-container": "#781b9f",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#004e8b",
+                        "on-tertiary-fixed-variant": "#721199",
+                        "inverse-surface": "#2e3035",
+                        "on-secondary": "#ffffff",
+                        "surface-variant": "#e1e2e8",
+                        "surface-bright": "#f8f9ff",
+                        "surface": "#f8f9ff",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed-variant": "#004881",
+                        "tertiary-fixed": "#f8d8ff",
+                        "on-tertiary": "#ffffff",
+                        "on-surface-variant": "#424750",
+                        "on-background": "#191c20",
+                        "tertiary-fixed-dim": "#ebb2ff",
+                        "on-tertiary-fixed": "#320047",
+                        "surface-container-low": "#f3f3f9",
+                        "on-error-container": "#93000a",
+                        "surface-tint": "#24609e",
+                        "on-primary-fixed": "#001c38",
+                        "primary": "#003765",
+                        "surface-container-high": "#e7e8ee",
+                        "tertiary": "#5a007c",
+                        "on-primary-container": "#91c0ff",
+                        "secondary": "#1b6d24",
+                        "secondary-container": "#a0f499",
+                        "outline-variant": "#c2c7d1",
+                        "on-tertiary-container": "#e7a5ff",
+                        "on-error": "#ffffff",
+                        "surface-container-highest": "#e1e2e8",
+                        "on-secondary-container": "#207128",
+                        "primary-fixed-dim": "#a2c9ff",
+                        "surface-container": "#ededf3",
+                        "secondary-fixed": "#a3f69c",
+                        "background": "#f8f9ff",
+                        "outline": "#727781",
+                        "on-secondary-fixed": "#002204"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "touch-target-min": "48px",
+                        "screen-margin": "20px",
+                        "stack-lg": "24px",
+                        "gutter": "16px",
+                        "stack-sm": "8px",
+                        "stack-md": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #FCF8FF; } /* Overriding to match base layer from design system */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-background min-h-screen pb-24 md:pb-0">
+<!-- Top AppBar (from JSON) -->
+<header class="flex justify-between items-center w-full px-screen-margin py-stack-sm bg-background dark:bg-background docked full-width top-0 sticky z-40">
+<div class="flex items-center gap-4">
+<button class="p-2 hover:bg-surface-container-high transition-colors rounded-full text-on-surface-variant flex items-center justify-center min-h-[48px] min-w-[48px]">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="text-headline-sm font-headline-sm font-bold text-primary">Forest Intelligence</h1>
+</div>
+<button class="p-2 hover:bg-surface-container-high transition-colors rounded-full text-on-surface-variant flex items-center justify-center min-h-[48px] min-w-[48px]">
+<span class="material-symbols-outlined">sensors</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="px-screen-margin pt-stack-sm md:pt-stack-lg max-w-4xl mx-auto space-y-stack-lg">
+<!-- Header Area -->
+<div>
+<h2 class="text-headline-md font-headline-md text-on-background mb-stack-sm">Dispatch New Task</h2>
+<p class="text-body-md font-body-md text-on-surface-variant">Assign a sector and auditor for field inspection.</p>
+</div>
+<!-- Map Selection Area -->
+<div class="glass-card rounded-xl overflow-hidden shadow-lg border border-outline-variant/30">
+<div class="p-gutter border-b border-outline-variant/30 flex justify-between items-center">
+<h3 class="text-label-lg font-label-lg text-primary flex items-center gap-2">
+<span class="material-symbols-outlined">map</span> Target Sector
+                </h3>
+<span class="text-label-sm font-label-sm bg-secondary-container text-on-secondary-container px-3 py-1 rounded-full">Sector Alpha-4</span>
+</div>
+<div class="relative h-64 w-full bg-surface-container-high">
+<img alt="Topographic map of forest region" class="w-full h-full object-cover" data-alt="A highly detailed, modern digital topographic map interface showing a heavily forested mountainous region. The map uses a sleek, industrial color palette with deep greens, topographic contour lines in light gray, and distinct blue digital overlays indicating selected inspection sectors. The lighting suggests a bright, crisp digital display suitable for light mode. The overall aesthetic is highly technical, precise, and professional, reflecting advanced forestry management software." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBx4pXwvFdkOQJz700pKsV8H1U8MkYkZakgQRQ_-Pcshn1D2RWsDM2iSOycD_k9U8mnPN9nLfIXIReo7medSPcegG7vOxFlQrRHLPzLEanFJ8N868MJPfX-q3JDXKmxVsoQE8En3_YW_EWlveiJKobShH2YbWNcRQ9AVBiDtvIs257NEW4cj7udTE2qmMtP4Rlo2qBGxKKLO5eGS4Km0--uDVUwy6m0gV_Z9q0qtD23RIrCtKuer4JTyKqmGsQRh-IiKgtv-VaNQ"/>
+<!-- Map Overlay UI -->
+<div class="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent pointer-events-none"></div>
+<div class="absolute bottom-4 right-4 flex flex-col gap-2 pointer-events-auto">
+<button class="bg-surface text-on-surface rounded-full shadow-md w-10 h-10 flex items-center justify-center hover:bg-surface-container">
+<span class="material-symbols-outlined text-sm">add</span>
+</button>
+<button class="bg-surface text-on-surface rounded-full shadow-md w-10 h-10 flex items-center justify-center hover:bg-surface-container">
+<span class="material-symbols-outlined text-sm">remove</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Assignment Form -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter">
+<!-- Auditor Selection -->
+<div class="glass-card rounded-xl p-gutter space-y-stack-md">
+<label class="block text-label-lg font-label-lg text-on-background">
+                    Assign Auditor
+                </label>
+<div class="relative">
+<select class="w-full h-[56px] pl-4 pr-10 rounded-DEFAULT border-outline text-body-md font-body-md bg-surface text-on-surface focus:border-primary focus:ring-primary appearance-none">
+<option disabled="" selected="" value="">Select an auditor...</option>
+<option value="1">Dr. Aris Thorne (Sr. Ecologist)</option>
+<option value="2">Elena Rostova (Field Tech II)</option>
+<option value="3">Marcus Vance (Carbon Assessor)</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-on-surface-variant">
+<span class="material-symbols-outlined">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Priority Selection -->
+<div class="glass-card rounded-xl p-gutter space-y-stack-md">
+<label class="block text-label-lg font-label-lg text-on-background">
+                    Priority Level
+                </label>
+<div class="flex gap-4">
+<label class="flex-1 cursor-pointer">
+<input checked="" class="peer sr-only" name="priority" type="radio" value="normal"/>
+<div class="h-[56px] flex items-center justify-center gap-2 rounded-DEFAULT border border-outline text-on-surface-variant peer-checked:bg-primary-container peer-checked:text-on-primary-container peer-checked:border-primary transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">flag</span>
+<span class="text-body-md font-body-md font-medium">Normal</span>
+</div>
+</label>
+<label class="flex-1 cursor-pointer">
+<input class="peer sr-only" name="priority" type="radio" value="urgent"/>
+<div class="h-[56px] flex items-center justify-center gap-2 rounded-DEFAULT border border-outline text-on-surface-variant peer-checked:bg-error-container peer-checked:text-on-error-container peer-checked:border-error transition-colors">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="text-body-md font-body-md font-medium">Urgent</span>
+</div>
+</label>
+</div>
+</div>
+<!-- Instructions -->
+<div class="glass-card rounded-xl p-gutter md:col-span-2 space-y-stack-md">
+<label class="block text-label-lg font-label-lg text-on-background">
+                    Specific Instructions
+                </label>
+<textarea class="w-full rounded-DEFAULT border-outline text-body-md font-body-md bg-surface text-on-surface focus:border-primary focus:ring-primary p-4 min-h-[120px]" placeholder="Enter specific field notes or measurement requirements for this sector..."></textarea>
+</div>
+</div>
+<!-- Action Area -->
+<div class="pt-stack-lg pb-stack-lg flex justify-end gap-4">
+<button class="min-h-[48px] px-6 py-3 rounded-full border border-secondary text-secondary font-label-lg text-label-lg hover:bg-secondary/10 transition-colors" type="button">
+                Save Draft
+            </button>
+<button class="min-h-[48px] px-8 py-3 rounded-full bg-primary text-on-primary font-label-lg text-label-lg hover:bg-primary/90 transition-colors shadow-md flex items-center gap-2" type="button">
+<span class="material-symbols-outlined text-sm">send</span>
+                Confirm Dispatch
+            </button>
+</div>
+</main>
+<!-- Navigation Drawer (Hidden on mobile by default, shown for structure if requested, though instructions suggest suppressing shell on linear/transactional. Since this is a "detail screen" after selecting an action, we will suppress the bottom nav/drawer to focus on the task per "Shell Visibility & Relevance (THE FILTER)"). -->
+</body></html>

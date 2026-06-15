@@ -1,120 +1,113 @@
 <!DOCTYPE html>
 
-<html lang="en"><head>
+<html class="light" lang="en"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Sustainable TreeAI - Tree Survey Form</title>
-<!-- Tailwind CSS -->
+<title>ArborSync Pro - Species Identification Database</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<!-- Material Symbols -->
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<!-- Google Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
-<!-- Tailwind Config from Guidelines -->
 <script id="tailwind-config">
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            "colors": {
-                    "surface-variant": "#e2e0fc",
-                    "surface-container": "#efecff",
-                    "inverse-on-surface": "#f2efff",
-                    "on-secondary-fixed": "#002204",
-                    "tertiary-fixed-dim": "#ebb2ff",
-                    "on-surface": "#1a1a2e",
-                    "surface-container-lowest": "#ffffff",
-                    "primary-container": "#0066b3",
-                    "error-container": "#ffdad6",
-                    "secondary-fixed": "#a3f69c",
-                    "background": "#fcf8ff",
-                    "on-secondary": "#ffffff",
-                    "primary-fixed": "#d3e4ff",
-                    "on-background": "#1a1a2e",
-                    "outline": "#717782",
-                    "secondary-fixed-dim": "#88d982",
-                    "on-primary-container": "#d2e3ff",
-                    "inverse-primary": "#a2c9ff",
-                    "tertiary-fixed": "#f8d8ff",
-                    "tertiary-container": "#933ab9",
-                    "outline-variant": "#c1c7d3",
-                    "primary": "#004e8b",
-                    "surface-bright": "#fcf8ff",
-                    "on-error": "#ffffff",
-                    "on-primary-fixed": "#001c38",
-                    "secondary-container": "#a0f399",
-                    "secondary": "#1b6d24",
-                    "surface-container-highest": "#e2e0fc",
-                    "surface-container-high": "#e8e5ff",
-                    "inverse-surface": "#2f2e43",
-                    "on-error-container": "#93000a",
-                    "primary-fixed-dim": "#a2c9ff",
-                    "on-secondary-container": "#217128",
-                    "on-primary": "#ffffff",
-                    "on-tertiary": "#ffffff",
-                    "on-tertiary-fixed": "#320047",
-                    "surface-dim": "#dad7f3",
-                    "surface-tint": "#0060a9",
-                    "on-primary-fixed-variant": "#004881",
-                    "on-tertiary-fixed-variant": "#721199",
-                    "on-surface-variant": "#414751",
-                    "tertiary": "#781b9f",
-                    "surface-container-low": "#f5f2ff",
-                    "error": "#ba1a1a",
-                    "on-secondary-fixed-variant": "#005312",
-                    "on-tertiary-container": "#f7d7ff",
-                    "surface": "#fcf8ff"
-            },
-            "borderRadius": {
-                    "DEFAULT": "0.25rem",
-                    "lg": "0.5rem",
-                    "xl": "0.75rem",
-                    "full": "9999px"
-            },
-            "spacing": {
-                    "stack-lg": "24px",
-                    "margin-screen": "20px",
-                    "touch-target-min": "48px",
-                    "stack-md": "16px",
-                    "stack-sm": "8px",
-                    "gutter-grid": "16px"
-            },
-            "fontFamily": {
-                    "display-lg": ["Plus Jakarta Sans"],
-                    "label-lg": ["Plus Jakarta Sans"],
-                    "body-md": ["Plus Jakarta Sans"],
-                    "display-md-mobile": ["Plus Jakarta Sans"],
-                    "label-md": ["Plus Jakarta Sans"],
-                    "headline-sm": ["Plus Jakarta Sans"],
-                    "display-md": ["Plus Jakarta Sans"],
-                    "display-lg-mobile": ["Plus Jakarta Sans"],
-                    "body-lg": ["Plus Jakarta Sans"]
-            },
-            "fontSize": {
-                    "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
-                    "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
-                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
-                    "display-md-mobile": ["22px", {"lineHeight": "30px", "fontWeight": "700"}],
-                    "label-md": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
-                    "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
-                    "display-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
-                    "display-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
-                    "body-lg": ["18px", {"lineHeight": "26px", "fontWeight": "400"}]
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-primary": "#a2c9ff",
+                        "error-container": "#ffdad6",
+                        "surface-container-lowest": "#ffffff",
+                        "background": "#fcf8ff",
+                        "outline-variant": "#c1c7d3",
+                        "surface": "#fcf8ff",
+                        "surface-tint": "#0060a9",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#320047",
+                        "on-surface": "#1a1a2e",
+                        "surface-dim": "#dad7f3",
+                        "outline": "#717782",
+                        "tertiary-fixed-dim": "#ebb2ff",
+                        "primary": "#004e8b",
+                        "secondary-fixed": "#a3f69c",
+                        "error": "#ba1a1a",
+                        "primary-fixed": "#d3e4ff",
+                        "inverse-on-surface": "#f2efff",
+                        "on-secondary-fixed": "#002204",
+                        "on-background": "#1a1a2e",
+                        "surface-variant": "#e2e0fc",
+                        "on-primary-container": "#d2e3ff",
+                        "surface-container-high": "#e8e5ff",
+                        "secondary-container": "#a0f399",
+                        "on-primary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "inverse-surface": "#2f2e43",
+                        "secondary-fixed-dim": "#88d982",
+                        "surface-bright": "#fcf8ff",
+                        "on-tertiary-container": "#f7d7ff",
+                        "on-secondary-fixed-variant": "#005312",
+                        "primary-container": "#0066b3",
+                        "surface-container-low": "#f5f2ff",
+                        "on-primary-fixed-variant": "#004881",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed": "#001c38",
+                        "secondary": "#1b6d24",
+                        "tertiary": "#781b9f",
+                        "primary-fixed-dim": "#a2c9ff",
+                        "on-secondary-container": "#217128",
+                        "on-secondary": "#ffffff",
+                        "on-surface-variant": "#414751",
+                        "tertiary-container": "#933ab9",
+                        "tertiary-fixed": "#f8d8ff",
+                        "surface-container-highest": "#e2e0fc",
+                        "surface-container": "#efecff",
+                        "on-tertiary-fixed-variant": "#721199"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "touch-target-min": "48px",
+                        "stack-md": "16px",
+                        "margin-screen": "20px",
+                        "stack-sm": "8px",
+                        "stack-lg": "24px",
+                        "gutter-grid": "16px"
+                    },
+                    "fontFamily": {
+                        "display-md": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "label-md": ["Plus Jakarta Sans"],
+                        "display-md-mobile": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "display-lg": ["Plus Jakarta Sans"],
+                        "display-lg-mobile": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "display-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "display-md-mobile": ["22px", { "lineHeight": "30px", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "display-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
             }
-          }
         }
-      }
     </script>
 <style>
-        /* Ensuring baseline styles for form inputs */
-        input[type="number"]::-webkit-inner-spin-button,
-        input[type="number"]::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
-        input[type="number"] {
-            -moz-appearance: textfield;
+        .material-symbols-outlined.filled {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
     </style>
 <style>
@@ -123,164 +116,223 @@
     }
   </style>
   </head>
-<body class="bg-surface text-on-surface antialiased min-h-screen pb-[100px] flex flex-col font-body-md">
-<!-- TopAppBar Component (from JSON guidelines) -->
-<!-- Suppressed BottomNavBar/SideNav as this is a linear, task-focused data entry form -->
-<header class="bg-surface flex justify-between items-center w-full px-margin-screen h-touch-target-min docked full-width top-0 sticky z-50 border-b border-outline-variant/20 backdrop-blur-md bg-surface/90">
-<div class="flex items-center gap-3">
-<button aria-label="Go Back" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant/50 transition-colors text-on-surface-variant">
-<span class="material-symbols-outlined">arrow_back</span>
+<body class="bg-surface text-on-surface min-h-screen flex flex-col font-body-md text-body-md antialiased pb-24 md:pb-0">
+<!-- Top App Bar -->
+<header class="bg-surface dark:bg-surface-dim text-primary dark:text-primary-fixed-dim font-headline-sm text-headline-sm-mobile w-full top-0 sticky bg-surface-container-low dark:bg-surface-container-high shadow-sm z-40">
+<div class="flex items-center justify-between px-margin-screen h-16">
+<button aria-label="Menu" class="hover:bg-surface-variant/50 transition-colors active:scale-95 duration-100 p-2 rounded-full flex items-center justify-center min-w-[48px] min-h-[48px] text-on-surface-variant dark:text-outline">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="font-display-md text-display-md-mobile text-primary dark:text-inverse-primary truncate">ArborSync Pro</h1>
+<button aria-label="Sync Status" class="hover:bg-surface-variant/50 transition-colors active:scale-95 duration-100 p-2 rounded-full flex items-center justify-center min-w-[48px] min-h-[48px] text-on-surface-variant dark:text-outline">
+<span class="material-symbols-outlined">cloud_sync</span>
 </button>
 </div>
-<h1 class="font-display-md-mobile text-display-md-mobile font-bold text-primary">Sustainable TreeAI</h1>
-<button aria-label="Settings" class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-surface-variant/50 transition-colors text-on-surface-variant">
-<span class="material-symbols-outlined text-[24px]">settings</span>
-</button>
 </header>
-<main class="flex-1 px-margin-screen flex flex-col gap-stack-lg pt-stack-md max-w-2xl mx-auto w-full">
-<!-- Form Context Header -->
-<div class="flex flex-col gap-1">
-<h2 class="font-headline-sm text-headline-sm text-on-surface">Integrated Tree Survey</h2>
-<p class="font-body-md text-body-md text-on-surface-variant">Record field measurements, status, and photographic evidence for carbon auditing.</p>
-</div>
-<!-- 1. Instrument Data (BLE) -->
-<section class="flex flex-col gap-stack-sm">
-<h3 class="font-label-lg text-label-lg text-primary flex items-center gap-2">
-<span class="material-symbols-outlined text-[18px]">bluetooth</span> Instrument Data (BLE Sync)
-            </h3>
-<div class="grid grid-cols-3 gap-3">
-<div class="bg-surface-container-low rounded-xl p-3 border border-outline-variant/30 flex flex-col justify-center items-center shadow-sm">
-<span class="font-label-md text-label-md text-on-surface-variant mb-1">Height</span>
-<div class="font-display-md-mobile text-display-md-mobile text-on-surface flex items-baseline">
-                        14.2<span class="font-label-md text-label-md text-on-surface-variant ml-1">m</span>
-</div>
-</div>
-<div class="bg-surface-container-low rounded-xl p-3 border border-outline-variant/30 flex flex-col justify-center items-center shadow-sm">
-<span class="font-label-md text-label-md text-on-surface-variant mb-1">Distance</span>
-<div class="font-display-md-mobile text-display-md-mobile text-on-surface flex items-baseline">
-                        8.5<span class="font-label-md text-label-md text-on-surface-variant ml-1">m</span>
-</div>
-</div>
-<div class="bg-surface-container-low rounded-xl p-3 border border-outline-variant/30 flex flex-col justify-center items-center shadow-sm">
-<span class="font-label-md text-label-md text-on-surface-variant mb-1">Azimuth</span>
-<div class="font-display-md-mobile text-display-md-mobile text-on-surface flex items-baseline">
-                        145<span class="font-label-md text-label-md text-on-surface-variant ml-1">°</span>
-</div>
-</div>
-</div>
-</section>
-<!-- 2. GPS Data -->
-<section class="flex flex-col gap-stack-sm">
-<div class="flex justify-between items-center">
-<h3 class="font-label-lg text-label-lg text-primary flex items-center gap-2">
-<span class="material-symbols-outlined text-[18px]">location_on</span> GPS Coordinates
-                </h3>
-<button class="flex items-center gap-1 text-primary font-label-md text-label-md h-8 px-3 rounded-full hover:bg-primary-fixed transition-colors">
-<span class="material-symbols-outlined text-[16px]">my_location</span> Re-measure
-                </button>
-</div>
-<div class="bg-surface-container-low rounded-xl p-4 border border-outline-variant/30 shadow-sm flex items-center gap-4">
-<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container shrink-0">
-<span class="material-symbols-outlined text-[20px]">satellite_alt</span>
-</div>
-<div class="flex flex-col flex-1">
-<div class="font-body-md text-body-md text-on-surface font-medium tracking-wide">23.9738° N, 120.9821° E</div>
-<div class="font-label-md text-label-md text-secondary flex items-center gap-1 mt-0.5">
-<span class="material-symbols-outlined text-[14px]">check_circle</span> Accuracy ± 2.4m (WGS84)
-                    </div>
-</div>
-</div>
-</section>
-<!-- 3. DBH Input -->
-<section class="flex flex-col gap-stack-sm">
-<h3 class="font-label-lg text-label-lg text-primary">Diameter at Breast Height (DBH)</h3>
-<div class="relative w-full">
-<input class="w-full bg-surface-container-lowest border-2 border-outline-variant focus:border-primary focus:ring-4 focus:ring-primary/10 rounded-xl h-[80px] px-6 font-display-lg-mobile text-display-lg-mobile text-center text-on-surface outline-none transition-all shadow-sm" placeholder="0.0" step="0.1" type="number" value="45.2"/>
-<span class="absolute right-6 top-1/2 -translate-y-1/2 font-label-lg text-label-lg text-on-surface-variant bg-surface-container-lowest px-2">cm</span>
-</div>
-</section>
-<!-- 4. Species Selection -->
-<section class="flex flex-col gap-stack-sm">
-<h3 class="font-label-lg text-label-lg text-primary">Species Identification</h3>
-<div class="flex gap-2 items-center w-full">
-<div class="relative flex-1">
-<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">search</span>
-<input class="w-full bg-surface-container-lowest border-2 border-outline-variant focus:border-primary focus:ring-4 focus:ring-primary/10 rounded-xl h-touch-target-min pl-12 pr-4 font-body-md text-body-md text-on-surface outline-none transition-all shadow-sm" placeholder="Search species database..." type="text" value="Taiwan Beech (Fagus hayatae)"/>
-</div>
-<button class="h-touch-target-min px-4 bg-tertiary text-on-tertiary rounded-xl flex items-center justify-center gap-2 font-label-lg text-label-lg hover:bg-tertiary/90 active:scale-95 transition-all shadow-md shrink-0">
-<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">eco</span> Photo ID
-                </button>
-</div>
-</section>
-<!-- 5. Status Choice Chips -->
-<section class="flex flex-col gap-stack-sm">
-<h3 class="font-label-lg text-label-lg text-primary">Tree Health Status</h3>
-<div class="flex flex-wrap gap-3">
-<!-- Selected State -->
-<button class="h-touch-target-min px-5 rounded-full bg-primary-container text-on-primary-container font-label-lg text-label-lg flex items-center gap-2 border border-primary-container shadow-sm transition-transform active:scale-95">
-<span class="material-symbols-outlined text-[18px]">check</span> Normal
-                </button>
-<!-- Unselected States -->
-<button class="h-touch-target-min px-5 rounded-full bg-surface border-2 border-outline text-on-surface-variant font-label-lg text-label-lg hover:bg-surface-variant/50 transition-all active:scale-95">Dead</button>
-<button class="h-touch-target-min px-5 rounded-full bg-surface border-2 border-outline text-on-surface-variant font-label-lg text-label-lg hover:bg-surface-variant/50 transition-all active:scale-95">Fallen</button>
-<button class="h-touch-target-min px-5 rounded-full bg-surface border-2 border-outline text-on-surface-variant font-label-lg text-label-lg hover:bg-surface-variant/50 transition-all active:scale-95">Removed</button>
-<button class="h-touch-target-min px-5 rounded-full bg-surface border-2 border-outline text-on-surface-variant font-label-lg text-label-lg hover:bg-surface-variant/50 transition-all active:scale-95">Pest</button>
-<button class="h-touch-target-min px-5 rounded-full bg-surface border-2 border-outline text-on-surface-variant font-label-lg text-label-lg hover:bg-surface-variant/50 transition-all active:scale-95">Tilted</button>
-</div>
-</section>
-<!-- 6. Photos Grid -->
-<section class="flex flex-col gap-stack-sm">
-<h3 class="font-label-lg text-label-lg text-primary flex items-center gap-2">
-<span class="material-symbols-outlined text-[18px]">photo_camera</span> Photographic Evidence
-            </h3>
-<div class="grid grid-cols-2 gap-4">
-<!-- Existing Photo Slot -->
-<div class="aspect-square bg-surface-container rounded-xl overflow-hidden relative border border-outline-variant/30 shadow-sm group">
-<img alt="Tree bark texture" class="w-full h-full object-cover" data-alt="A close-up, high-resolution photograph of rough, textured tree bark taken outdoors during daytime. The lighting is bright and natural, casting subtle shadows that emphasize the deep grooves and ridges of the wood. The image has a highly detailed, professional documentary style, suitable for scientific environmental analysis. The color palette focuses on natural earthy browns and greys, reflecting a realistic forest setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBStVCUq8xH_38vuank3HbBNB62oEgwRkLE4zLpp67jFKFCjzhfn9ofXB5hSoUEzkTusMDoblpqZJQ45008P9E_mS8hQ4JpTzHY9Uh3vtoBGL1ajfNQ7-KNOyhhesiH04OHwBtsTdURYtKO2teTkcbp0JdGoYTrAv7m1Ux3xlaz3ysJwjoUGNXNghDQcjRo5BOS1z_2imVBtTdPQna--mJRhTL8jMqWQbb0Scziu3egEu_be5rLtnwnyNdmY_0Ld8Z9kZTAunO8_g"/>
-<button class="absolute top-2 right-2 w-8 h-8 rounded-full bg-inverse-surface/70 flex items-center justify-center text-inverse-on-surface backdrop-blur-md opacity-90 hover:opacity-100 transition-opacity">
-<span class="material-symbols-outlined text-[16px]">close</span>
-</button>
-</div>
-<!-- Add Photo Slots -->
-<button class="aspect-square bg-surface-container-low rounded-xl border-2 border-dashed border-outline-variant flex flex-col items-center justify-center text-primary hover:bg-surface-variant/60 hover:border-primary/50 transition-all active:scale-[0.98]">
-<span class="material-symbols-outlined text-[32px] mb-2 text-primary/70">add_a_photo</span>
-<span class="font-label-md text-label-md">Add Crown</span>
-</button>
-<button class="aspect-square bg-surface-container-low rounded-xl border-2 border-dashed border-outline-variant flex flex-col items-center justify-center text-primary hover:bg-surface-variant/60 hover:border-primary/50 transition-all active:scale-[0.98]">
-<span class="material-symbols-outlined text-[32px] mb-2 text-primary/70">add_a_photo</span>
-<span class="font-label-md text-label-md">Add Leaves</span>
-</button>
-<button class="aspect-square bg-surface-container-low rounded-xl border-2 border-dashed border-outline-variant flex flex-col items-center justify-center text-primary hover:bg-surface-variant/60 hover:border-primary/50 transition-all active:scale-[0.98]">
-<span class="material-symbols-outlined text-[32px] mb-2 text-primary/70">add_a_photo</span>
-<span class="font-label-md text-label-md">Add Surroundings</span>
-</button>
-</div>
-</section>
-<!-- 7. Carbon Preview Badge -->
-<section class="mt-2 mb-4">
-<div class="bg-gradient-to-br from-secondary-container to-secondary-fixed-dim rounded-xl p-4 flex items-center justify-between shadow-sm border border-secondary/10">
-<div class="flex items-center gap-4">
-<div class="w-12 h-12 rounded-full bg-on-secondary-container/10 flex items-center justify-center">
-<span class="material-symbols-outlined text-[28px] text-on-secondary-container" style="font-variation-settings: 'FILL' 1;">eco</span>
+<div class="flex flex-1 overflow-hidden relative">
+<!-- Navigation Drawer (Desktop) -->
+<aside class="hidden md:flex flex-col h-full w-80 rounded-r-xl bg-surface-container-low border-r border-outline-variant dark:border-outline shadow-xl z-30 flex-shrink-0">
+<div class="flex flex-col h-full py-stack-lg">
+<!-- Profile Header -->
+<div class="px-6 mb-8 flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-display-md text-display-md overflow-hidden shrink-0">
+<img alt="Forester Profile" class="w-full h-full object-cover" data-alt="A professional headshot of a forester wearing outdoor gear, set against a blurred background of a lush green forest. The lighting is natural and bright, highlighting a rugged yet approachable demeanor. The overall aesthetic is clean, professional, and tied to nature, fitting a modern corporate environmental style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDz85CrKBJGBbJPR8jjMu7sxwquhOYOKTSYeh4jVojfxTEiHzyHQA-29JRLhaIvbMpYwGt_vdnzIQAJ9ccQa6YBdFGuLNX-0eRg1XJpmV8KUjYIRCl2g3JOQphh9Ttna-ZGLv2xjzgBFrBC1KgmHqtdPj-FWlgcBiEF3DfjH2mwM-KyyLcAiwBDIpcNa17jd_CLqTDXZSv_A5sTDP3y0QIer1vE8XeX0sBTFREaFQEmAP9WLqr_3yfBLOIHv6O1L5oJppLZy8WO4g"/>
 </div>
 <div>
-<div class="font-label-md text-label-md text-on-secondary-container/80 uppercase tracking-wide mb-0.5">Estimated Carbon</div>
-<div class="font-display-md-mobile text-display-md-mobile text-on-secondary-container">42.5 kg CO2e</div>
+<h2 class="font-label-lg text-label-lg text-on-surface">Lead Auditor</h2>
+<p class="font-body-md text-body-md text-on-surface-variant text-sm">North Sector Range</p>
+<p class="font-label-md text-label-md text-outline text-xs mt-1">v2.4.0-Stable</p>
 </div>
 </div>
-<div class="font-label-md text-label-md bg-surface-container-lowest/60 text-on-secondary-container px-3 py-1.5 rounded-full backdrop-blur-sm shadow-sm font-medium">
-                    依 DBH 試算
-                </div>
+<!-- Nav Links -->
+<nav class="flex-1 overflow-y-auto px-2 space-y-2">
+<a class="flex items-center gap-4 px-4 py-3 bg-secondary-container text-on-secondary-container rounded-full mx-2 transition-colors" href="#">
+<span class="material-symbols-outlined filled">database</span>
+<span class="font-label-lg text-label-lg">Species DB</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant/20 rounded-full mx-2 transition-colors" href="#">
+<span class="material-symbols-outlined">sync_alt</span>
+<span class="font-label-lg text-label-lg">Sync Status</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant/20 rounded-full mx-2 transition-colors" href="#">
+<span class="material-symbols-outlined">group</span>
+<span class="font-label-lg text-label-lg">Team Settings</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant/20 rounded-full mx-2 transition-colors" href="#">
+<span class="material-symbols-outlined">map</span>
+<span class="font-label-lg text-label-lg">Offline Maps</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant/20 rounded-full mx-2 transition-colors" href="#">
+<span class="material-symbols-outlined">potted_plant</span>
+<span class="font-label-lg text-label-lg">Carbon Reports</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant/20 rounded-full mx-2 transition-colors" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-label-lg text-label-lg">Support</span>
+</a>
+</nav>
 </div>
-</section>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 overflow-y-auto px-margin-screen py-stack-lg w-full max-w-7xl mx-auto">
+<!-- Page Header & Search -->
+<div class="mb-stack-lg space-y-stack-md">
+<div class="flex justify-between items-end">
+<div>
+<h2 class="font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface mb-2">Species Identification</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Search and identify tree species for carbon auditing.</p>
+</div>
+<!-- Floating Action Button - Contextual to "Identify" intent -->
+<button class="hidden md:flex items-center gap-2 bg-tertiary text-on-tertiary font-label-lg text-label-lg px-6 py-4 rounded-full shadow-[0_4px_8px_rgba(0,0,0,0.12)] hover:bg-tertiary/90 active:scale-95 transition-all min-h-[48px]">
+<span class="material-symbols-outlined filled">photo_camera</span>
+                        開啟相機辨識
+                    </button>
+</div>
+<!-- Search Bar -->
+<div class="relative w-full max-w-2xl">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline">search</span>
+</div>
+<input class="block w-full pl-12 pr-4 py-4 bg-surface-container-low border border-outline-variant rounded-xl font-body-lg text-body-lg text-on-surface placeholder-outline focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none min-h-[48px]" placeholder="Search by common or scientific name..." type="text"/>
+<div class="absolute inset-y-0 right-0 pr-2 flex items-center">
+<button aria-label="Filter options" class="p-2 text-outline hover:text-on-surface transition-colors rounded-full">
+<span class="material-symbols-outlined">tune</span>
+</button>
+</div>
+</div>
+<!-- Quick Filters (Chips) -->
+<div class="flex flex-wrap gap-2 pt-2">
+<button class="px-4 py-2 rounded-full bg-secondary-container text-on-secondary-container font-label-md text-label-md border border-transparent min-h-[48px] flex items-center justify-center transition-colors">All Species</button>
+<button class="px-4 py-2 rounded-full bg-surface text-on-surface border border-outline-variant hover:bg-surface-variant font-label-md text-label-md min-h-[48px] flex items-center justify-center transition-colors">Native</button>
+<button class="px-4 py-2 rounded-full bg-surface text-on-surface border border-outline-variant hover:bg-surface-variant font-label-md text-label-md min-h-[48px] flex items-center justify-center transition-colors">High Carbon Yield</button>
+<button class="px-4 py-2 rounded-full bg-surface text-on-surface border border-outline-variant hover:bg-surface-variant font-label-md text-label-md min-h-[48px] flex items-center justify-center transition-colors">Common</button>
+</div>
+</div>
+<!-- Species Grid -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-gutter-grid pb-24">
+<!-- Card 1 -->
+<article class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_4px_8px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_16px_rgba(0,0,0,0.1)] transition-shadow border border-surface-container-low group cursor-pointer flex flex-col h-full">
+<div class="relative h-48 w-full bg-surface-variant overflow-hidden">
+<img alt="Taiwan Cherry Tree" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A vibrant, close-up photograph of a Taiwan Cherry Tree in full bloom, featuring brilliant pink blossoms against a soft, blurred green background. The lighting is bright and natural, highlighting the delicate textures of the petals. The image conveys a sense of environmental vitality and precision, fitting a modern forestry application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCorrDM-ld3d2NsvodnoQklPpjx873dSQUdgwEWPkBJwV0S9tbO4ZHRa_eBNXIdcLK6ZIHt4oLEADhnHIgn03xU2QDmlhiOoh90QRLfzky09w-HC7QrfciIIF1phIa1uFd8wsWMZNAO5u3MpocZMjCbsFK5WKsJSbzVMe6RZFI2klTxrz3faQApu1fA4Yc9snFIsTBootjruW9KE4iY318lpEggfTn8Oky_x_T76zsVVOJi-Fvz4We3k96M3weAASE9EoAr9QWg7g"/>
+<div class="absolute top-3 right-3 flex gap-2">
+<span class="bg-secondary-container text-on-secondary-container font-label-md text-label-md px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] filled">verified</span>
+                                常用
+                            </span>
+</div>
+</div>
+<div class="p-4 flex flex-col flex-1">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-1">Taiwan Cherry</h3>
+<p class="font-body-md text-body-md text-outline italic mb-3">Prunus campanulata</p>
+<div class="mt-auto space-y-3">
+<div class="flex items-center justify-between text-sm">
+<span class="text-on-surface-variant font-label-md text-label-md">Carbon Seq. Rate</span>
+<span class="text-secondary font-label-lg text-label-lg">Medium</span>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-1.5">
+<div class="bg-secondary h-1.5 rounded-full" style="width: 60%"></div>
+</div>
+</div>
+</div>
+</article>
+<!-- Card 2 -->
+<article class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_4px_8px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_16px_rgba(0,0,0,0.1)] transition-shadow border border-surface-container-low group cursor-pointer flex flex-col h-full">
+<div class="relative h-48 w-full bg-surface-variant overflow-hidden">
+<img alt="Camphor Tree" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A majestic, wide-canopy Camphor Tree standing solitary in a bright, grassy field under a clear blue sky. The sunlight casts dappled shadows through its dense, lush green leaves, emphasizing its massive trunk and structural stability. The scene is crisp, professional, and indicative of robust environmental health, suitable for a forestry data interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYXXEzAyP-IkR0cucI7S-n71dL5PxPCVa9rrCFt6RqyfEee0j4-HfvOtjlpCL4RrfB48XhDHhhsSInpJ4AV5dcimE9I9tmpd_j1bQbVoQhWELD30xHhdAezlk7yQpObO6D_HVYSIb-L6OQjsMUDt5GLoQovg-CEvfcb6O48ZZDcJVcYe7ZWbT9C9NXizqDYkwPBptLeduq1cr0yUrOsGWqAGEcohSPBK_bZSiH_1rZFeebDzsUqXIBidM7heHieqK47fERg16iMg"/>
+<div class="absolute top-3 right-3 flex gap-2">
+<span class="bg-primary-container text-on-primary-container font-label-md text-label-md px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] filled">target</span>
+                                辨識度 98%
+                            </span>
+</div>
+</div>
+<div class="p-4 flex flex-col flex-1">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-1">Camphor Tree</h3>
+<p class="font-body-md text-body-md text-outline italic mb-3">Cinnamomum camphora</p>
+<div class="mt-auto space-y-3">
+<div class="flex items-center justify-between text-sm">
+<span class="text-on-surface-variant font-label-md text-label-md">Carbon Seq. Rate</span>
+<span class="text-secondary font-label-lg text-label-lg">High</span>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-1.5">
+<div class="bg-secondary h-1.5 rounded-full" style="width: 85%"></div>
+</div>
+</div>
+</div>
+</article>
+<!-- Card 3 -->
+<article class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_4px_8px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_16px_rgba(0,0,0,0.1)] transition-shadow border border-surface-container-low group cursor-pointer flex flex-col h-full">
+<div class="relative h-48 w-full bg-surface-variant overflow-hidden">
+<img alt="Formosan Ash" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A detailed shot of the intricate, deeply fissured bark and pale green pinnate leaves of a Formosan Ash tree. The lighting is sharp, creating high contrast and emphasizing the texture of the wood against a clean, out-of-focus forest background. The overall tone is clinical yet natural, fitting for a precise botanical identification database." src="https://lh3.googleusercontent.com/aida-public/AB6AXuABkT8u627b942n22jDO3v9pSDr4uPo5FvLCl3ErwfskCI39r6DzNva65HQ20XoQfizvvnnMysX4zbq4kbmbnCr4892HDjX-rHn6lBk3op1MMHsCPuWiY2xf7O53GiBHzcGScWCzI5L6sboCiqY8buQqilQYnTBeM5wHoJcaFifILnkQARQraLw6UFCIJeooHMTsDDX2lenedFPzQ3Vvv8huuhBFkNHUZNLOzFMKCiSJAAVHL6pbmocbjcW5iHh-YT9bgliXf0sJQ"/>
+<div class="absolute top-3 right-3 flex gap-2">
+<span class="bg-surface text-on-surface font-label-md text-label-md px-3 py-1 rounded-full shadow-sm flex items-center gap-1 border border-outline-variant">
+                                辨識度 82%
+                            </span>
+</div>
+</div>
+<div class="p-4 flex flex-col flex-1">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-1">Formosan Ash</h3>
+<p class="font-body-md text-body-md text-outline italic mb-3">Fraxinus griffithii</p>
+<div class="mt-auto space-y-3">
+<div class="flex items-center justify-between text-sm">
+<span class="text-on-surface-variant font-label-md text-label-md">Carbon Seq. Rate</span>
+<span class="text-secondary font-label-lg text-label-lg">Medium</span>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-1.5">
+<div class="bg-secondary h-1.5 rounded-full" style="width: 55%"></div>
+</div>
+</div>
+</div>
+</article>
+<!-- Card 4 -->
+<article class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_4px_8px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_16px_rgba(0,0,0,0.1)] transition-shadow border border-surface-container-low group cursor-pointer flex flex-col h-full">
+<div class="relative h-48 w-full bg-surface-variant overflow-hidden flex items-center justify-center">
+<span class="material-symbols-outlined text-[64px] text-outline-variant">forest</span>
+</div>
+<div class="p-4 flex flex-col flex-1">
+<h3 class="font-headline-sm text-headline-sm text-on-surface mb-1">Taiwan Acacia</h3>
+<p class="font-body-md text-body-md text-outline italic mb-3">Acacia confusa</p>
+<div class="mt-auto space-y-3">
+<div class="flex items-center justify-between text-sm">
+<span class="text-on-surface-variant font-label-md text-label-md">Carbon Seq. Rate</span>
+<span class="text-secondary font-label-lg text-label-lg">High</span>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-1.5">
+<div class="bg-secondary h-1.5 rounded-full" style="width: 90%"></div>
+</div>
+</div>
+</div>
+</article>
+</div>
 </main>
-<!-- Bottom: Sticky Submit Button -->
-<div class="fixed bottom-0 left-0 w-full bg-surface border-t border-outline-variant/20 p-4 pb-8 md:pb-4 z-40 shadow-[0_-8px_24px_rgba(0,0,0,0.04)] flex justify-center">
-<div class="w-full max-w-2xl px-margin-screen md:px-0">
-<button class="w-full h-14 bg-primary text-on-primary rounded-xl font-label-lg text-label-lg shadow-lg shadow-primary/20 hover:bg-primary/90 hover:shadow-xl active:scale-[0.98] transition-all flex justify-center items-center gap-2">
-<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">cloud_upload</span> 
-                Submit Survey Data
-            </button>
 </div>
+<!-- Mobile FAB for Camera -->
+<div class="fixed bottom-24 right-4 z-50 md:hidden">
+<button aria-label="開啟相機辨識" class="bg-tertiary text-on-tertiary rounded-2xl w-14 h-14 shadow-lg flex items-center justify-center hover:bg-tertiary/90 active:scale-90 transition-all">
+<span class="material-symbols-outlined filled">photo_camera</span>
+</button>
 </div>
+<!-- Bottom Nav Bar (Mobile) -->
+<nav class="md:hidden fixed bottom-0 left-0 right-0 mx-3 mb-3 rounded-[24px] bg-white dark:bg-inverse-surface text-primary dark:text-primary-fixed-dim font-label-md text-label-md shadow-[0_16px_32px_rgba(0,0,0,0.18)] z-50 flex justify-around items-center p-2">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200 min-w-[48px] min-h-[48px]" href="#">
+<span class="material-symbols-outlined mb-1">dashboard</span>
+<span>Dash</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200 min-w-[48px] min-h-[48px]" href="#">
+<span class="material-symbols-outlined filled mb-1">forest</span>
+<span>Trees</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200 min-w-[48px] min-h-[48px]" href="#">
+<span class="material-symbols-outlined mb-1">straighten</span>
+<span>Measure</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200 min-w-[48px] min-h-[48px]" href="#">
+<span class="material-symbols-outlined mb-1">account_tree</span>
+<span>Projects</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200 min-w-[48px] min-h-[48px]" href="#">
+<span class="material-symbols-outlined mb-1">analytics</span>
+<span>Analysis</span>
+</a>
+</nav>
 </body></html>

@@ -3,121 +3,112 @@
 <html lang="zh-TW"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>Zone Boundary Drawing - Forest Intelligence</title>
+<title>區邊界繪製 - Sustainable TreeAI</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script id="tailwind-config">
         tailwind.config = {
-          darkMode: "class",
-          theme: {
-            extend: {
-              "colors": {
-                      "primary-container": "#0066b3",
-                      "secondary": "#1b6d24",
-                      "on-secondary-fixed": "#002204",
-                      "on-background": "#1a1a2e",
-                      "error": "#ba1a1a",
-                      "background": "#fcf8ff",
-                      "tertiary-fixed": "#f8d8ff",
-                      "primary": "#004e8b",
-                      "on-primary-fixed-variant": "#004881",
-                      "on-primary-fixed": "#001c38",
-                      "tertiary": "#781b9f",
-                      "outline-variant": "#c1c7d3",
-                      "on-error": "#ffffff",
-                      "surface-container-highest": "#e2e0fc",
-                      "on-primary": "#ffffff",
-                      "primary-fixed": "#d3e4ff",
-                      "tertiary-fixed-dim": "#ebb2ff",
-                      "surface-bright": "#fcf8ff",
-                      "surface-dim": "#dad7f3",
-                      "on-tertiary-fixed": "#320047",
-                      "on-surface": "#1a1a2e",
-                      "on-tertiary": "#ffffff",
-                      "surface-variant": "#e2e0fc",
-                      "surface-container-low": "#f5f2ff",
-                      "surface": "#fcf8ff",
-                      "on-error-container": "#93000a",
-                      "surface-container-lowest": "#ffffff",
-                      "inverse-surface": "#2f2e43",
-                      "surface-tint": "#0060a9",
-                      "on-tertiary-fixed-variant": "#721199",
-                      "on-surface-variant": "#414751",
-                      "primary-fixed-dim": "#a2c9ff",
-                      "error-container": "#ffdad6",
-                      "surface-container-high": "#e8e5ff",
-                      "on-primary-container": "#d2e3ff",
-                      "tertiary-container": "#933ab9",
-                      "on-secondary-container": "#217128",
-                      "on-secondary": "#ffffff",
-                      "inverse-primary": "#a2c9ff",
-                      "secondary-fixed": "#a3f69c",
-                      "inverse-on-surface": "#f2efff",
-                      "surface-container": "#efecff",
-                      "outline": "#717782",
-                      "on-secondary-fixed-variant": "#005312",
-                      "on-tertiary-container": "#f7d7ff",
-                      "secondary-container": "#a0f399",
-                      "secondary-fixed-dim": "#88d982"
-              },
-              "borderRadius": {
-                      "DEFAULT": "0.25rem",
-                      "lg": "0.5rem",
-                      "xl": "0.75rem",
-                      "full": "9999px",
-                      "2xl": "1.5rem"
-              },
-              "spacing": {
-                      "stack-md": "16px",
-                      "stack-lg": "24px",
-                      "stack-sm": "8px",
-                      "touch-target-min": "48px",
-                      "margin-screen": "20px",
-                      "gutter-grid": "16px"
-              },
-              "fontFamily": {
-                      "display-lg": ["Plus Jakarta Sans"],
-                      "body-lg": ["Plus Jakarta Sans"],
-                      "label-lg": ["Plus Jakarta Sans"],
-                      "headline-sm": ["Plus Jakarta Sans"],
-                      "display-lg-mobile": ["Plus Jakarta Sans"],
-                      "display-md": ["Plus Jakarta Sans"],
-                      "label-md": ["Plus Jakarta Sans"],
-                      "display-md-mobile": ["Plus Jakarta Sans"],
-                      "body-md": ["Plus Jakarta Sans"]
-              },
-              "fontSize": {
-                      "display-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
-                      "body-lg": ["18px", {"lineHeight": "26px", "fontWeight": "400"}],
-                      "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
-                      "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "600"}],
-                      "display-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
-                      "display-md": ["24px", {"lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700"}],
-                      "label-md": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
-                      "display-md-mobile": ["22px", {"lineHeight": "30px", "fontWeight": "700"}],
-                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}]
-              }
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary": "#ffffff",
+                        "on-surface-variant": "#414751",
+                        "tertiary-fixed": "#f8d8ff",
+                        "on-primary-fixed-variant": "#004881",
+                        "on-primary": "#ffffff",
+                        "surface-variant": "#e2e0fc",
+                        "surface-bright": "#fcf8ff",
+                        "surface": "#fcf8ff",
+                        "on-secondary": "#ffffff",
+                        "inverse-surface": "#2f2e43",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#0066b3",
+                        "on-tertiary-fixed-variant": "#721199",
+                        "tertiary-container": "#933ab9",
+                        "primary-fixed": "#d3e4ff",
+                        "on-secondary-fixed-variant": "#005312",
+                        "error": "#ba1a1a",
+                        "inverse-primary": "#a2c9ff",
+                        "on-surface": "#1a1a2e",
+                        "surface-dim": "#dad7f3",
+                        "secondary-fixed-dim": "#88d982",
+                        "inverse-on-surface": "#f2efff",
+                        "error-container": "#ffdad6",
+                        "on-secondary-fixed": "#002204",
+                        "outline": "#717782",
+                        "surface-container": "#efecff",
+                        "secondary-fixed": "#a3f69c",
+                        "background": "#fcf8ff",
+                        "primary-fixed-dim": "#a2c9ff",
+                        "surface-container-highest": "#e2e0fc",
+                        "on-secondary-container": "#217128",
+                        "outline-variant": "#c1c7d3",
+                        "on-tertiary-container": "#f7d7ff",
+                        "on-error": "#ffffff",
+                        "secondary-container": "#a0f399",
+                        "secondary": "#1b6d24",
+                        "tertiary": "#781b9f",
+                        "on-primary-container": "#d2e3ff",
+                        "surface-container-high": "#e8e5ff",
+                        "primary": "#004e8b",
+                        "surface-tint": "#0060a9",
+                        "on-primary-fixed": "#001c38",
+                        "on-error-container": "#93000a",
+                        "surface-container-low": "#f5f2ff",
+                        "tertiary-fixed-dim": "#ebb2ff",
+                        "on-tertiary-fixed": "#320047",
+                        "on-background": "#1a1a2e"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px",
+                        "2xl": "1rem"
+                    },
+                    "spacing": {
+                        "gutter-grid": "16px",
+                        "stack-sm": "8px",
+                        "stack-md": "16px",
+                        "margin-screen": "20px",
+                        "touch-target-min": "48px",
+                        "stack-lg": "24px"
+                    },
+                    "fontFamily": {
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "display-lg-mobile": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "label-md": ["Plus Jakarta Sans"],
+                        "display-md-mobile": ["Plus Jakarta Sans"],
+                        "display-md": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "display-lg": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "display-md-mobile": ["22px", { "lineHeight": "30px", "fontWeight": "700" }],
+                        "display-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }]
+                    }
+                }
             }
-          }
         }
     </script>
 <style>
         .material-symbols-outlined {
-            font-family: 'Material Symbols Outlined';
-            font-weight: normal;
-            font-style: normal;
-            font-size: 24px;
-            line-height: 1;
-            letter-spacing: normal;
-            text-transform: none;
-            display: inline-block;
-            white-space: nowrap;
-            word-wrap: normal;
-            direction: ltr;
-            -webkit-font-feature-settings: 'liga';
-            -webkit-font-smoothing: antialiased;
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .fill-icon {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
     </style>
 <style>
@@ -126,84 +117,131 @@
     }
   </style>
   </head>
-<body class="bg-background font-body-md text-on-background antialiased h-screen w-full overflow-hidden relative selection:bg-primary-container selection:text-on-primary">
-<!-- Background Map Screen (Blur/Overlay applied) -->
-<div class="absolute inset-0 z-0">
-<img alt="Background Map" class="w-full h-full object-cover filter blur-[2px] brightness-75" data-alt="A highly detailed satellite map view of a dense, vibrant green forest area. The map shows topographical features, varying shades of forest canopy indicating different tree ages, and a faint blue polygonal outline superimposed, representing a digital surveyor's boundary tool. The lighting is bright and clear, simulating a high-tech modern forestry application interface. The overall aesthetic is clean, professional, and data-driven." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAOjMpNON2CRWoxIYEM9u0I2p4fwQM5-iG3H862Z2ml3HuyR8IhPeAOnoYu8NMbow8N5RyvzQOUYCT9jA-vbNVN4bsyjeycrnJqRE0iBky6Il6a_9reNLRUecSlKVHHmBl8UlzPNk2xxUt1YIWtrvyFqxdhKjskPOxWitlc4qNfkrTr3g16cxWCSgxqzIxSGcYU72kbAWhUAncdQ_T4EkEaKBC8jo2qKGv3vrgliUpi5a3WVKNZdqO7O8i9Pxt6tFHv3HXpsa77eQ"/>
-<!-- Top App Bar (Mock for background context) -->
-<header class="fixed top-0 left-0 right-0 z-10 flex justify-between items-center w-full px-margin-screen h-touch-target-min bg-surface/80 backdrop-blur-md shadow-sm">
-<button class="flex items-center justify-center w-touch-target-min h-touch-target-min text-on-surface-variant">
+<body class="bg-background text-on-background min-h-screen flex flex-col relative overflow-hidden">
+<!-- TopAppBar (Suppressed default layout, using transactional layout) -->
+<header class="bg-surface dark:bg-surface w-full px-margin-screen h-touch-target-min flex justify-between items-center z-50 absolute top-0 left-0 right-0 shadow-sm md:hidden">
+<div class="flex items-center">
+<button class="w-touch-target-min h-touch-target-min flex items-center justify-center text-on-surface-variant hover:bg-surface-variant/50 rounded-full transition-colors duration-200 active:scale-95">
 <span class="material-symbols-outlined">arrow_back</span>
 </button>
-<h1 class="font-headline-sm text-headline-sm-mobile text-primary">Edit Boundary</h1>
-<button class="flex items-center justify-center w-touch-target-min h-touch-target-min text-on-surface-variant">
+<h1 class="font-display-md-mobile text-display-md-mobile font-bold text-primary dark:text-primary-fixed-dim ml-2">區邊界繪製</h1>
+</div>
+<button class="font-label-lg text-label-lg text-primary hover:bg-primary/10 px-4 py-2 rounded-full transition-colors duration-200">
+            完成
+        </button>
+</header>
+<header class="bg-surface dark:bg-surface w-full px-margin-screen h-touch-target-min hidden md:flex justify-between items-center z-50 absolute top-0 left-0 right-0 shadow-sm">
+<div class="flex items-center">
+<button class="w-touch-target-min h-touch-target-min flex items-center justify-center text-on-surface-variant hover:bg-surface-variant/50 rounded-full transition-colors duration-200 active:scale-95">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-display-md text-display-md font-bold text-primary dark:text-primary-fixed-dim ml-4">區邊界繪製</h1>
+</div>
+<button class="font-label-lg text-label-lg text-on-primary bg-primary hover:bg-primary/90 px-6 py-2 rounded-full transition-colors duration-200 shadow-sm">
+            完成
+        </button>
+</header>
+<!-- Map Area -->
+<main class="flex-grow relative mt-touch-target-min md:mt-[64px]">
+<!-- Pseudo Map Image -->
+<div class="absolute inset-0 w-full h-full bg-surface-container-low" data-alt="An aerial, top-down satellite view of a lush, dense forest landscape intersected by a few dirt logging roads. The image is clear and high-resolution, suitable for use as a background map in a geographic information system UI. The lighting is bright and sunny, highlighting the varying shades of green in the tree canopy. The overall aesthetic is natural, professional, and consistent with an environmental auditing application." style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAG5aJf7QVFQZE_5f5RPsYwj6gXZopq9LCSp3GofZi9n9cyL-uh3NDmn0ky1X78RJWZfQ9aHOSCM8uSI5P-RsURKmENHmINFcenFDQC4u4jA9xst-3ak5shO_Nh16gCFc3B5OpCyxRPE8um9_Vz1aBdbiS059lD7etwWXIdMF-kNDYqxudB6qyMG3e-8xweP384AfUCqK48dnQDdl5wQkEex6YKsKRI8aRZCRo_FYUjadnwoaYCPQtjrwwnPZiYV--m_GUapcVqjw'); background-size: cover; background-position: center;">
+<!-- Map Overlay Gradient for readability -->
+<div class="absolute inset-0 bg-white/20"></div>
+<!-- Polygon Overlay -->
+<svg class="absolute inset-0 w-full h-full pointer-events-none" preserveaspectratio="xMidYMid slice" viewbox="0 0 1000 800">
+<polygon fill="rgba(0, 102, 179, 0.3)" points="300,200 600,150 800,400 500,600 200,500" stroke="#0066b3" stroke-linejoin="round" stroke-width="3"></polygon>
+<!-- Vertices -->
+<circle class="pointer-events-auto cursor-pointer hover:scale-125 transition-transform" cx="300" cy="200" fill="white" r="8" stroke="#0066b3" stroke-width="2"></circle>
+<circle class="pointer-events-auto cursor-pointer hover:scale-125 transition-transform" cx="600" cy="150" fill="white" r="8" stroke="#0066b3" stroke-width="2"></circle>
+<circle class="pointer-events-auto cursor-pointer hover:scale-125 transition-transform" cx="800" cy="400" fill="white" r="8" stroke="#0066b3" stroke-width="2"></circle>
+<circle class="pointer-events-auto cursor-pointer hover:scale-125 transition-transform" cx="500" cy="600" fill="white" r="8" stroke="#0066b3" stroke-width="2"></circle>
+<circle class="pointer-events-auto cursor-pointer hover:scale-125 transition-transform" cx="200" cy="500" fill="white" r="8" stroke="#0066b3" stroke-width="2"></circle>
+</svg>
+</div>
+<!-- Floating Action Buttons on Map -->
+<div class="absolute top-4 right-4 flex flex-col gap-4 z-40">
+<button aria-label="Layer Control" class="w-12 h-12 bg-surface rounded-full shadow-md flex items-center justify-center text-on-surface-variant hover:bg-surface-variant/50 transition-colors active:scale-95">
 <span class="material-symbols-outlined">layers</span>
 </button>
-</header>
-<!-- Bottom Action Bar (Mock for background context) -->
-<div class="fixed bottom-0 left-0 right-0 z-10 p-margin-screen bg-surface/90 backdrop-blur-md shadow-xl rounded-t-2xl">
-<div class="flex justify-between items-center gap-stack-md">
-<button class="flex-1 h-touch-target-min rounded-full border-2 border-primary text-primary font-label-lg flex items-center justify-center">
-                    Undo
-                </button>
-<button class="flex-1 h-touch-target-min rounded-full bg-primary-container text-on-primary font-label-lg flex items-center justify-center">
-                    Save
-                </button>
-</div>
-</div>
-</div>
-<!-- Overlay Scrim -->
-<div class="absolute inset-0 bg-on-background/40 z-40 transition-opacity duration-300"></div>
-<!-- Confirmation Dialog -->
-<div class="absolute inset-0 z-50 flex items-center justify-center p-margin-screen">
-<div class="bg-surface-container-lowest w-full max-w-md rounded-2xl shadow-xl flex flex-col overflow-hidden transform transition-all duration-300 scale-100 opacity-100">
-<!-- Dialog Header -->
-<div class="px-stack-lg pt-stack-lg pb-stack-md flex flex-col items-center text-center">
-<div class="w-12 h-12 rounded-full bg-error-container flex items-center justify-center mb-stack-md">
-<span class="material-symbols-outlined text-error" style="font-variation-settings: 'FILL' 1;">warning</span>
-</div>
-<h2 class="font-display-md-mobile text-display-md-mobile text-on-surface mb-stack-sm">界外樹木確認</h2>
-<p class="font-body-md text-body-md text-on-surface-variant">
-                    儲存此邊界將使 <span class="font-bold text-error">12</span> 棵樹木位於區域外。這些樹木可能不會被計入目前的碳匯計算中。
-                </p>
-</div>
-<!-- Affected Trees Summary Card -->
-<div class="px-stack-lg pb-stack-lg">
-<div class="bg-surface-container-low rounded-xl p-stack-md border border-outline-variant/30">
-<div class="flex items-center justify-between mb-stack-sm">
-<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-wider">受影響樹木摘要</span>
-<span class="bg-surface-container-high text-on-surface-variant px-2 py-1 rounded-full font-label-md text-label-md flex items-center gap-1">
-<span class="material-symbols-outlined text-[14px]">park</span>
-                            12 Trees
-                        </span>
-</div>
-<div class="space-y-2">
-<div class="flex justify-between items-center py-1 border-b border-outline-variant/20 last:border-0">
-<span class="font-body-md text-body-md text-on-surface">ID: T-8924</span>
-<span class="font-label-md text-label-md text-on-surface-variant">Zone Alpha Edge</span>
-</div>
-<div class="flex justify-between items-center py-1 border-b border-outline-variant/20 last:border-0">
-<span class="font-body-md text-body-md text-on-surface">ID: T-8925</span>
-<span class="font-label-md text-label-md text-on-surface-variant">Zone Alpha Edge</span>
-</div>
-<div class="flex justify-between items-center py-1 border-b border-outline-variant/20 last:border-0">
-<span class="font-body-md text-body-md text-on-surface text-on-surface-variant italic">+ 10 others</span>
-<button class="font-label-md text-label-md text-primary flex items-center">
-                                View List <span class="material-symbols-outlined text-[16px]">chevron_right</span>
+<div class="flex flex-col bg-surface rounded-full shadow-md overflow-hidden">
+<button aria-label="Zoom In" class="w-12 h-12 flex items-center justify-center text-on-surface-variant hover:bg-surface-variant/50 transition-colors active:scale-95 border-b border-surface-variant">
+<span class="material-symbols-outlined">add</span>
+</button>
+<button aria-label="Zoom Out" class="w-12 h-12 flex items-center justify-center text-on-surface-variant hover:bg-surface-variant/50 transition-colors active:scale-95">
+<span class="material-symbols-outlined">remove</span>
 </button>
 </div>
+<button aria-label="My Location" class="w-12 h-12 bg-surface rounded-full shadow-md flex items-center justify-center text-primary hover:bg-surface-variant/50 transition-colors active:scale-95 mt-4">
+<span class="material-symbols-outlined fill-icon">my_location</span>
+</button>
+</div>
+</main>
+<!-- Bottom Panel Overlay -->
+<div class="absolute bottom-0 left-0 right-0 bg-surface rounded-t-3xl shadow-[0px_-8px_24px_rgba(0,0,0,0.12)] z-50 flex flex-col max-h-[530px] md:max-h-[442px]">
+<!-- Drag Handle -->
+<div class="w-full flex justify-center py-3 cursor-grab">
+<div class="w-12 h-1.5 bg-outline-variant rounded-full"></div>
+</div>
+<div class="px-margin-screen pb-stack-lg overflow-y-auto flex-grow flex flex-col gap-stack-md">
+<!-- Warning Banner (Mock active) -->
+<div class="bg-error-container text-on-error-container rounded-lg p-3 flex items-start gap-3">
+<span class="material-symbols-outlined text-error mt-0.5">warning</span>
+<div>
+<p class="font-label-lg text-label-lg font-bold">注意：偵測到自相交線段</p>
+<p class="font-body-md text-body-md text-sm mt-1 opacity-90">請調整頂點以確保邊界是一個簡單的多邊形。</p>
 </div>
 </div>
+<!-- Tab Bar -->
+<div class="flex bg-surface-container-low rounded-lg p-1">
+<button class="flex-1 py-2 font-label-lg text-label-lg rounded-md bg-surface text-primary shadow-sm transition-all text-center">手動繪製</button>
+<button class="flex-1 py-2 font-label-lg text-label-lg rounded-md text-on-surface-variant hover:bg-surface-variant/50 transition-all text-center">貼上座標</button>
+<button class="flex-1 py-2 font-label-lg text-label-lg rounded-md text-on-surface-variant hover:bg-surface-variant/50 transition-all text-center">匯入檔案</button>
 </div>
-<!-- Dialog Actions -->
-<div class="p-stack-lg pt-0 flex flex-col gap-stack-md mt-auto">
-<button class="w-full h-touch-target-min bg-primary-container hover:bg-primary text-on-primary rounded-full font-label-lg text-label-lg flex items-center justify-center transition-colors shadow-sm">
-                    確認並儲存
+<!-- Analysis Info Cards -->
+<div class="grid grid-cols-3 gap-3">
+<div class="bg-surface-container rounded-xl p-3 flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-primary mb-1">area_chart</span>
+<span class="font-label-md text-label-md text-on-surface-variant">面積</span>
+<span class="font-headline-sm text-headline-sm text-on-surface mt-1">12.45<span class="text-sm font-normal ml-1">ha</span></span>
+</div>
+<div class="bg-surface-container rounded-xl p-3 flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-secondary mb-1">polyline</span>
+<span class="font-label-md text-label-md text-on-surface-variant">頂點</span>
+<span class="font-headline-sm text-headline-sm text-on-surface mt-1">5</span>
+</div>
+<div class="bg-surface-container rounded-xl p-3 flex flex-col items-center justify-center text-center">
+<span class="material-symbols-outlined text-tertiary mb-1">public</span>
+<span class="font-label-md text-label-md text-on-surface-variant">座標系統</span>
+<span class="font-body-md text-body-md font-semibold text-on-surface mt-1">WGS84</span>
+</div>
+</div>
+<!-- Import Options (Hidden in 'Manual' tab state, showing for layout context) -->
+<div class="flex gap-3 hidden">
+<button class="flex-1 py-3 border border-outline rounded-xl flex items-center justify-center gap-2 text-on-surface hover:bg-surface-variant/30 transition-colors">
+<span class="material-symbols-outlined">upload_file</span>
+<span class="font-label-lg text-label-lg">KML/KMZ</span>
+</button>
+<button class="flex-1 py-3 border border-outline rounded-xl flex items-center justify-center gap-2 text-on-surface hover:bg-surface-variant/30 transition-colors">
+<span class="material-symbols-outlined">data_object</span>
+<span class="font-label-lg text-label-lg">GeoJSON</span>
+</button>
+</div>
+<!-- Control Buttons -->
+<div class="flex gap-3 mt-2">
+<button class="flex-1 py-3 bg-surface-container-high rounded-xl text-primary font-label-lg text-label-lg flex items-center justify-center gap-2 hover:bg-surface-variant transition-colors active:scale-95">
+<span class="material-symbols-outlined">sort</span>
+                    自動重排
                 </button>
-<button class="w-full h-touch-target-min bg-transparent border-2 border-outline hover:bg-surface-variant text-on-surface-variant rounded-full font-label-lg text-label-lg flex items-center justify-center transition-colors">
-                    返回調整
+<button class="flex-1 py-3 border border-error text-error rounded-xl font-label-lg text-label-lg flex items-center justify-center gap-2 hover:bg-error-container transition-colors active:scale-95">
+<span class="material-symbols-outlined">delete</span>
+                    清除全部
                 </button>
 </div>
+<!-- Primary Action (Fixed at bottom of panel content) -->
+<button class="w-full py-4 mt-4 bg-primary text-on-primary rounded-full font-label-lg text-label-lg shadow-md hover:bg-primary/90 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">save</span>
+                儲存區邊界
+            </button>
 </div>
 </div>
 </body></html>

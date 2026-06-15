@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 
-<html class="light" lang="en"><head>
+<html class="light" lang="zh-TW"><head>
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-<title>ArborSync Pro - Species Identification Database</title>
+<title>ArborSync Pro - Sync Status</title>
 <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
 <script id="tailwind-config">
         tailwind.config = {
@@ -103,12 +103,15 @@
         }
     </script>
 <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
         .material-symbols-outlined {
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
-        .material-symbols-outlined.filled {
+        .icon-fill {
             font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
         }
+        /* Hide scrollbar for clean look */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
     </style>
 <style>
     body {
@@ -116,223 +119,201 @@
     }
   </style>
   </head>
-<body class="bg-surface text-on-surface min-h-screen flex flex-col font-body-md text-body-md antialiased pb-24 md:pb-0">
-<!-- Top App Bar -->
-<header class="bg-surface dark:bg-surface-dim text-primary dark:text-primary-fixed-dim font-headline-sm text-headline-sm-mobile w-full top-0 sticky bg-surface-container-low dark:bg-surface-container-high shadow-sm z-40">
+<body class="bg-background text-on-background min-h-screen flex flex-col antialiased">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky bg-surface dark:bg-surface-dim shadow-sm z-40 bg-surface-container-low dark:bg-surface-container-high">
 <div class="flex items-center justify-between px-margin-screen h-16">
-<button aria-label="Menu" class="hover:bg-surface-variant/50 transition-colors active:scale-95 duration-100 p-2 rounded-full flex items-center justify-center min-w-[48px] min-h-[48px] text-on-surface-variant dark:text-outline">
-<span class="material-symbols-outlined">menu</span>
+<button aria-label="Menu" class="h-touch-target-min w-touch-target-min flex items-center justify-center text-on-surface-variant hover:bg-surface-variant/50 transition-colors rounded-full active:scale-95 duration-100">
+<span class="material-symbols-outlined text-[24px]">menu</span>
 </button>
-<h1 class="font-display-md text-display-md-mobile text-primary dark:text-inverse-primary truncate">ArborSync Pro</h1>
-<button aria-label="Sync Status" class="hover:bg-surface-variant/50 transition-colors active:scale-95 duration-100 p-2 rounded-full flex items-center justify-center min-w-[48px] min-h-[48px] text-on-surface-variant dark:text-outline">
-<span class="material-symbols-outlined">cloud_sync</span>
+<h1 class="font-display-md text-display-md-mobile text-primary dark:text-inverse-primary tracking-tight">ArborSync Pro</h1>
+<button aria-label="Sync" class="h-touch-target-min w-touch-target-min flex items-center justify-center text-primary dark:text-primary-fixed-dim hover:bg-surface-variant/50 transition-colors rounded-full active:scale-95 duration-100">
+<span class="material-symbols-outlined text-[24px] icon-fill">cloud_sync</span>
 </button>
 </div>
 </header>
-<div class="flex flex-1 overflow-hidden relative">
-<!-- Navigation Drawer (Desktop) -->
-<aside class="hidden md:flex flex-col h-full w-80 rounded-r-xl bg-surface-container-low border-r border-outline-variant dark:border-outline shadow-xl z-30 flex-shrink-0">
-<div class="flex flex-col h-full py-stack-lg">
-<!-- Profile Header -->
-<div class="px-6 mb-8 flex items-center gap-4">
-<div class="w-12 h-12 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-display-md text-display-md overflow-hidden shrink-0">
-<img alt="Forester Profile" class="w-full h-full object-cover" data-alt="A professional headshot of a forester wearing outdoor gear, set against a blurred background of a lush green forest. The lighting is natural and bright, highlighting a rugged yet approachable demeanor. The overall aesthetic is clean, professional, and tied to nature, fitting a modern corporate environmental style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDz85CrKBJGBbJPR8jjMu7sxwquhOYOKTSYeh4jVojfxTEiHzyHQA-29JRLhaIvbMpYwGt_vdnzIQAJ9ccQa6YBdFGuLNX-0eRg1XJpmV8KUjYIRCl2g3JOQphh9Ttna-ZGLv2xjzgBFrBC1KgmHqtdPj-FWlgcBiEF3DfjH2mwM-KyyLcAiwBDIpcNa17jd_CLqTDXZSv_A5sTDP3y0QIer1vE8XeX0sBTFREaFQEmAP9WLqr_3yfBLOIHv6O1L5oJppLZy8WO4g"/>
-</div>
-<div>
-<h2 class="font-label-lg text-label-lg text-on-surface">Lead Auditor</h2>
-<p class="font-body-md text-body-md text-on-surface-variant text-sm">North Sector Range</p>
-<p class="font-label-md text-label-md text-outline text-xs mt-1">v2.4.0-Stable</p>
-</div>
-</div>
-<!-- Nav Links -->
-<nav class="flex-1 overflow-y-auto px-2 space-y-2">
-<a class="flex items-center gap-4 px-4 py-3 bg-secondary-container text-on-secondary-container rounded-full mx-2 transition-colors" href="#">
-<span class="material-symbols-outlined filled">database</span>
-<span class="font-label-lg text-label-lg">Species DB</span>
-</a>
-<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant/20 rounded-full mx-2 transition-colors" href="#">
-<span class="material-symbols-outlined">sync_alt</span>
-<span class="font-label-lg text-label-lg">Sync Status</span>
-</a>
-<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant/20 rounded-full mx-2 transition-colors" href="#">
-<span class="material-symbols-outlined">group</span>
-<span class="font-label-lg text-label-lg">Team Settings</span>
-</a>
-<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant/20 rounded-full mx-2 transition-colors" href="#">
-<span class="material-symbols-outlined">map</span>
-<span class="font-label-lg text-label-lg">Offline Maps</span>
-</a>
-<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant/20 rounded-full mx-2 transition-colors" href="#">
-<span class="material-symbols-outlined">potted_plant</span>
-<span class="font-label-lg text-label-lg">Carbon Reports</span>
-</a>
-<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant/20 rounded-full mx-2 transition-colors" href="#">
-<span class="material-symbols-outlined">help</span>
-<span class="font-label-lg text-label-lg">Support</span>
-</a>
-</nav>
-</div>
-</aside>
 <!-- Main Content Canvas -->
-<main class="flex-1 overflow-y-auto px-margin-screen py-stack-lg w-full max-w-7xl mx-auto">
-<!-- Page Header & Search -->
-<div class="mb-stack-lg space-y-stack-md">
-<div class="flex justify-between items-end">
+<main class="flex-grow px-margin-screen py-stack-lg pb-[100px] md:pb-stack-lg max-w-3xl mx-auto w-full space-y-stack-lg">
+<!-- Global Sync Status Indicator -->
+<section class="flex flex-col items-center justify-center py-stack-lg bg-surface-container-lowest rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.08)] border border-surface-container">
+<div class="relative w-32 h-32 mb-stack-sm flex items-center justify-center">
+<!-- Outer glowing ring -->
+<div class="absolute inset-0 rounded-full border-4 border-primary/20 animate-pulse"></div>
+<!-- Inner spinner -->
+<svg class="absolute inset-0 w-full h-full text-primary animate-spin" fill="none" viewbox="0 0 24 24">
+<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"></circle>
+<path class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor"></path>
+</svg>
+<!-- Center Icon -->
+<div class="bg-primary-container text-on-primary-container rounded-full w-20 h-20 flex items-center justify-center shadow-inner z-10">
+<span class="material-symbols-outlined text-[40px] icon-fill">sync</span>
+</div>
+</div>
+<h2 class="font-display-md text-display-md-mobile text-on-surface mb-2">資料同步中</h2>
+<p class="font-body-md text-body-md text-on-surface-variant text-center px-4">正在將 12 筆本地紀錄上傳至雲端伺服器...</p>
+<button class="mt-stack-md h-touch-target-min px-6 bg-primary-container text-on-primary-container rounded-full font-label-lg text-label-lg hover:bg-primary transition-colors flex items-center gap-2 active:scale-95 duration-200">
+<span class="material-symbols-outlined text-[20px]">sync</span>
+                手動同步
+            </button>
+</section>
+<!-- Pending Uploads List -->
+<section class="space-y-stack-sm">
+<h3 class="font-headline-sm text-headline-sm-mobile text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">cloud_upload</span>
+                待上傳紀錄
+            </h3>
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
+<!-- List Item 1: Syncing -->
+<div class="flex items-center p-4 border-b border-surface-container">
+<div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center mr-4 shrink-0">
+<span class="material-symbols-outlined animate-spin text-[20px]">sync</span>
+</div>
+<div class="flex-grow">
+<h4 class="font-body-md text-body-md font-medium text-on-surface">樣區 A - 植被調查</h4>
+<p class="font-label-md text-label-md text-outline">今天 14:30 • 4.2 MB</p>
+</div>
+<span class="font-label-md text-label-md text-primary bg-primary-fixed px-2 py-1 rounded-md">同步中</span>
+</div>
+<!-- List Item 2: Error -->
+<div class="flex items-center p-4 border-b border-surface-container">
+<div class="w-10 h-10 rounded-full bg-error-container text-on-error-container flex items-center justify-center mr-4 shrink-0">
+<span class="material-symbols-outlined text-[20px]">error</span>
+</div>
+<div class="flex-grow">
+<h4 class="font-body-md text-body-md font-medium text-on-surface">樣區 B - 碳排估算</h4>
+<p class="font-label-md text-label-md text-error">網路連線超時</p>
+</div>
+<button class="h-8 px-3 border border-outline rounded-md font-label-md text-label-md text-on-surface hover:bg-surface-variant transition-colors">重試</button>
+</div>
+<!-- List Item 3: Success -->
+<div class="flex items-center p-4">
+<div class="w-10 h-10 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center mr-4 shrink-0">
+<span class="material-symbols-outlined text-[20px] icon-fill">check_circle</span>
+</div>
+<div class="flex-grow">
+<h4 class="font-body-md text-body-md font-medium text-on-surface">樣區 C - 樹木清冊</h4>
+<p class="font-label-md text-label-md text-outline">今天 10:15 • 1.5 MB</p>
+</div>
+<span class="font-label-md text-label-md text-secondary bg-secondary-fixed-dim/30 px-2 py-1 rounded-md">已完成</span>
+</div>
+</div>
+</section>
+<!-- Offline Maps Download Section -->
+<section class="space-y-stack-sm">
+<h3 class="font-headline-sm text-headline-sm-mobile text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">map</span>
+                離線地圖下載
+            </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter-grid">
+<!-- Map Region 1 -->
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-surface-container">
+<div class="flex justify-between items-start mb-2">
 <div>
-<h2 class="font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface mb-2">Species Identification</h2>
-<p class="font-body-md text-body-md text-on-surface-variant">Search and identify tree species for carbon auditing.</p>
+<h4 class="font-body-md text-body-md font-medium text-on-surface">北部林區</h4>
+<p class="font-label-md text-label-md text-outline">540 MB • 更新於昨天</p>
 </div>
-<!-- Floating Action Button - Contextual to "Identify" intent -->
-<button class="hidden md:flex items-center gap-2 bg-tertiary text-on-tertiary font-label-lg text-label-lg px-6 py-4 rounded-full shadow-[0_4px_8px_rgba(0,0,0,0.12)] hover:bg-tertiary/90 active:scale-95 transition-all min-h-[48px]">
-<span class="material-symbols-outlined filled">photo_camera</span>
-                        開啟相機辨識
-                    </button>
+<span class="material-symbols-outlined text-secondary icon-fill">cloud_done</span>
 </div>
-<!-- Search Bar -->
-<div class="relative w-full max-w-2xl">
-<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-<span class="material-symbols-outlined text-outline">search</span>
+<div class="w-full bg-surface-variant rounded-full h-2 mt-4">
+<div class="bg-secondary h-2 rounded-full" style="width: 100%"></div>
 </div>
-<input class="block w-full pl-12 pr-4 py-4 bg-surface-container-low border border-outline-variant rounded-xl font-body-lg text-body-lg text-on-surface placeholder-outline focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all outline-none min-h-[48px]" placeholder="Search by common or scientific name..." type="text"/>
-<div class="absolute inset-y-0 right-0 pr-2 flex items-center">
-<button aria-label="Filter options" class="p-2 text-outline hover:text-on-surface transition-colors rounded-full">
-<span class="material-symbols-outlined">tune</span>
+</div>
+<!-- Map Region 2 -->
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-surface-container">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h4 class="font-body-md text-body-md font-medium text-on-surface">中部林區</h4>
+<p class="font-label-md text-label-md text-outline">820 MB • 下載中...</p>
+</div>
+<button class="text-on-surface-variant hover:text-error transition-colors p-1"><span class="material-symbols-outlined">cancel</span></button>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-2 mt-4">
+<div class="bg-primary h-2 rounded-full transition-all duration-1000" style="width: 45%"></div>
+</div>
+<p class="font-label-md text-label-md text-primary mt-1 text-right">45%</p>
+</div>
+<!-- Map Region 3 -->
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-surface-container">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h4 class="font-body-md text-body-md font-medium text-on-surface">南部林區</h4>
+<p class="font-label-md text-label-md text-outline">610 MB • 需更新</p>
+</div>
+<button class="h-8 w-8 rounded-full flex items-center justify-center bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-[18px]">download</span>
 </button>
 </div>
-</div>
-<!-- Quick Filters (Chips) -->
-<div class="flex flex-wrap gap-2 pt-2">
-<button class="px-4 py-2 rounded-full bg-secondary-container text-on-secondary-container font-label-md text-label-md border border-transparent min-h-[48px] flex items-center justify-center transition-colors">All Species</button>
-<button class="px-4 py-2 rounded-full bg-surface text-on-surface border border-outline-variant hover:bg-surface-variant font-label-md text-label-md min-h-[48px] flex items-center justify-center transition-colors">Native</button>
-<button class="px-4 py-2 rounded-full bg-surface text-on-surface border border-outline-variant hover:bg-surface-variant font-label-md text-label-md min-h-[48px] flex items-center justify-center transition-colors">High Carbon Yield</button>
-<button class="px-4 py-2 rounded-full bg-surface text-on-surface border border-outline-variant hover:bg-surface-variant font-label-md text-label-md min-h-[48px] flex items-center justify-center transition-colors">Common</button>
-</div>
-</div>
-<!-- Species Grid -->
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-gutter-grid pb-24">
-<!-- Card 1 -->
-<article class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_4px_8px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_16px_rgba(0,0,0,0.1)] transition-shadow border border-surface-container-low group cursor-pointer flex flex-col h-full">
-<div class="relative h-48 w-full bg-surface-variant overflow-hidden">
-<img alt="Taiwan Cherry Tree" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A vibrant, close-up photograph of a Taiwan Cherry Tree in full bloom, featuring brilliant pink blossoms against a soft, blurred green background. The lighting is bright and natural, highlighting the delicate textures of the petals. The image conveys a sense of environmental vitality and precision, fitting a modern forestry application." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCorrDM-ld3d2NsvodnoQklPpjx873dSQUdgwEWPkBJwV0S9tbO4ZHRa_eBNXIdcLK6ZIHt4oLEADhnHIgn03xU2QDmlhiOoh90QRLfzky09w-HC7QrfciIIF1phIa1uFd8wsWMZNAO5u3MpocZMjCbsFK5WKsJSbzVMe6RZFI2klTxrz3faQApu1fA4Yc9snFIsTBootjruW9KE4iY318lpEggfTn8Oky_x_T76zsVVOJi-Fvz4We3k96M3weAASE9EoAr9QWg7g"/>
-<div class="absolute top-3 right-3 flex gap-2">
-<span class="bg-secondary-container text-on-secondary-container font-label-md text-label-md px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
-<span class="material-symbols-outlined text-[16px] filled">verified</span>
-                                常用
-                            </span>
-</div>
-</div>
-<div class="p-4 flex flex-col flex-1">
-<h3 class="font-headline-sm text-headline-sm text-on-surface mb-1">Taiwan Cherry</h3>
-<p class="font-body-md text-body-md text-outline italic mb-3">Prunus campanulata</p>
-<div class="mt-auto space-y-3">
-<div class="flex items-center justify-between text-sm">
-<span class="text-on-surface-variant font-label-md text-label-md">Carbon Seq. Rate</span>
-<span class="text-secondary font-label-lg text-label-lg">Medium</span>
-</div>
-<div class="w-full bg-surface-variant rounded-full h-1.5">
-<div class="bg-secondary h-1.5 rounded-full" style="width: 60%"></div>
+<div class="w-full bg-surface-variant rounded-full h-2 mt-4">
+<div class="bg-outline-variant h-2 rounded-full" style="width: 0%"></div>
 </div>
 </div>
 </div>
-</article>
-<!-- Card 2 -->
-<article class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_4px_8px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_16px_rgba(0,0,0,0.1)] transition-shadow border border-surface-container-low group cursor-pointer flex flex-col h-full">
-<div class="relative h-48 w-full bg-surface-variant overflow-hidden">
-<img alt="Camphor Tree" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A majestic, wide-canopy Camphor Tree standing solitary in a bright, grassy field under a clear blue sky. The sunlight casts dappled shadows through its dense, lush green leaves, emphasizing its massive trunk and structural stability. The scene is crisp, professional, and indicative of robust environmental health, suitable for a forestry data interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYXXEzAyP-IkR0cucI7S-n71dL5PxPCVa9rrCFt6RqyfEee0j4-HfvOtjlpCL4RrfB48XhDHhhsSInpJ4AV5dcimE9I9tmpd_j1bQbVoQhWELD30xHhdAezlk7yQpObO6D_HVYSIb-L6OQjsMUDt5GLoQovg-CEvfcb6O48ZZDcJVcYe7ZWbT9C9NXizqDYkwPBptLeduq1cr0yUrOsGWqAGEcohSPBK_bZSiH_1rZFeebDzsUqXIBidM7heHieqK47fERg16iMg"/>
-<div class="absolute top-3 right-3 flex gap-2">
-<span class="bg-primary-container text-on-primary-container font-label-md text-label-md px-3 py-1 rounded-full shadow-sm flex items-center gap-1">
-<span class="material-symbols-outlined text-[16px] filled">target</span>
-                                辨識度 98%
-                            </span>
-</div>
-</div>
-<div class="p-4 flex flex-col flex-1">
-<h3 class="font-headline-sm text-headline-sm text-on-surface mb-1">Camphor Tree</h3>
-<p class="font-body-md text-body-md text-outline italic mb-3">Cinnamomum camphora</p>
-<div class="mt-auto space-y-3">
-<div class="flex items-center justify-between text-sm">
-<span class="text-on-surface-variant font-label-md text-label-md">Carbon Seq. Rate</span>
-<span class="text-secondary font-label-lg text-label-lg">High</span>
-</div>
-<div class="w-full bg-surface-variant rounded-full h-1.5">
-<div class="bg-secondary h-1.5 rounded-full" style="width: 85%"></div>
-</div>
-</div>
-</div>
-</article>
-<!-- Card 3 -->
-<article class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_4px_8px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_16px_rgba(0,0,0,0.1)] transition-shadow border border-surface-container-low group cursor-pointer flex flex-col h-full">
-<div class="relative h-48 w-full bg-surface-variant overflow-hidden">
-<img alt="Formosan Ash" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A detailed shot of the intricate, deeply fissured bark and pale green pinnate leaves of a Formosan Ash tree. The lighting is sharp, creating high contrast and emphasizing the texture of the wood against a clean, out-of-focus forest background. The overall tone is clinical yet natural, fitting for a precise botanical identification database." src="https://lh3.googleusercontent.com/aida-public/AB6AXuABkT8u627b942n22jDO3v9pSDr4uPo5FvLCl3ErwfskCI39r6DzNva65HQ20XoQfizvvnnMysX4zbq4kbmbnCr4892HDjX-rHn6lBk3op1MMHsCPuWiY2xf7O53GiBHzcGScWCzI5L6sboCiqY8buQqilQYnTBeM5wHoJcaFifILnkQARQraLw6UFCIJeooHMTsDDX2lenedFPzQ3Vvv8huuhBFkNHUZNLOzFMKCiSJAAVHL6pbmocbjcW5iHh-YT9bgliXf0sJQ"/>
-<div class="absolute top-3 right-3 flex gap-2">
-<span class="bg-surface text-on-surface font-label-md text-label-md px-3 py-1 rounded-full shadow-sm flex items-center gap-1 border border-outline-variant">
-                                辨識度 82%
-                            </span>
-</div>
-</div>
-<div class="p-4 flex flex-col flex-1">
-<h3 class="font-headline-sm text-headline-sm text-on-surface mb-1">Formosan Ash</h3>
-<p class="font-body-md text-body-md text-outline italic mb-3">Fraxinus griffithii</p>
-<div class="mt-auto space-y-3">
-<div class="flex items-center justify-between text-sm">
-<span class="text-on-surface-variant font-label-md text-label-md">Carbon Seq. Rate</span>
-<span class="text-secondary font-label-lg text-label-lg">Medium</span>
-</div>
-<div class="w-full bg-surface-variant rounded-full h-1.5">
-<div class="bg-secondary h-1.5 rounded-full" style="width: 55%"></div>
-</div>
-</div>
-</div>
-</article>
-<!-- Card 4 -->
-<article class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_4px_8px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_16px_rgba(0,0,0,0.1)] transition-shadow border border-surface-container-low group cursor-pointer flex flex-col h-full">
-<div class="relative h-48 w-full bg-surface-variant overflow-hidden flex items-center justify-center">
-<span class="material-symbols-outlined text-[64px] text-outline-variant">forest</span>
-</div>
-<div class="p-4 flex flex-col flex-1">
-<h3 class="font-headline-sm text-headline-sm text-on-surface mb-1">Taiwan Acacia</h3>
-<p class="font-body-md text-body-md text-outline italic mb-3">Acacia confusa</p>
-<div class="mt-auto space-y-3">
-<div class="flex items-center justify-between text-sm">
-<span class="text-on-surface-variant font-label-md text-label-md">Carbon Seq. Rate</span>
-<span class="text-secondary font-label-lg text-label-lg">High</span>
-</div>
-<div class="w-full bg-surface-variant rounded-full h-1.5">
-<div class="bg-secondary h-1.5 rounded-full" style="width: 90%"></div>
-</div>
-</div>
-</div>
-</article>
-</div>
+</section>
 </main>
-</div>
-<!-- Mobile FAB for Camera -->
-<div class="fixed bottom-24 right-4 z-50 md:hidden">
-<button aria-label="開啟相機辨識" class="bg-tertiary text-on-tertiary rounded-2xl w-14 h-14 shadow-lg flex items-center justify-center hover:bg-tertiary/90 active:scale-90 transition-all">
-<span class="material-symbols-outlined filled">photo_camera</span>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 flex justify-around items-center p-2 pb-4 bg-white dark:bg-inverse-surface fixed bottom-0 left-0 right-0 mx-3 mb-3 rounded-full bg-white dark:bg-inverse-surface shadow-lg shadow-[0_16px_32px_rgba(0,0,0,0.18)]">
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined text-[24px]">dashboard</span>
+<span class="font-label-md text-label-md mt-1">Dash</span>
 </button>
-</div>
-<!-- Bottom Nav Bar (Mobile) -->
-<nav class="md:hidden fixed bottom-0 left-0 right-0 mx-3 mb-3 rounded-[24px] bg-white dark:bg-inverse-surface text-primary dark:text-primary-fixed-dim font-label-md text-label-md shadow-[0_16px_32px_rgba(0,0,0,0.18)] z-50 flex justify-around items-center p-2">
-<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200 min-w-[48px] min-h-[48px]" href="#">
-<span class="material-symbols-outlined mb-1">dashboard</span>
-<span>Dash</span>
-</a>
-<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200 min-w-[48px] min-h-[48px]" href="#">
-<span class="material-symbols-outlined filled mb-1">forest</span>
-<span>Trees</span>
-</a>
-<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200 min-w-[48px] min-h-[48px]" href="#">
-<span class="material-symbols-outlined mb-1">straighten</span>
-<span>Measure</span>
-</a>
-<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200 min-w-[48px] min-h-[48px]" href="#">
-<span class="material-symbols-outlined mb-1">account_tree</span>
-<span>Projects</span>
-</a>
-<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200 min-w-[48px] min-h-[48px]" href="#">
-<span class="material-symbols-outlined mb-1">analytics</span>
-<span>Analysis</span>
-</a>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined text-[24px]">forest</span>
+<span class="font-label-md text-label-md mt-1">Trees</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined text-[24px] icon-fill">sync_alt</span>
+<span class="font-label-md text-label-md mt-1 font-medium">Sync</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined text-[24px]">account_tree</span>
+<span class="font-label-md text-label-md mt-1">Projects</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined text-[24px]">analytics</span>
+<span class="font-label-md text-label-md mt-1">Analysis</span>
+</button>
 </nav>
+<!-- Side Navigation (Web/Tablet Only - Hidden on Mobile) -->
+<aside class="hidden md:flex flex-col fixed left-0 top-16 bottom-0 w-80 bg-surface-container-low dark:bg-surface-container-lowest bg-surface-container-low border-r border-outline-variant dark:border-outline shadow-xl z-30 overflow-y-auto rounded-r-xl">
+<div class="p-stack-lg border-b border-surface-container">
+<div class="flex items-center gap-4 mb-4">
+<div class="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-display-md text-xl">
+                    LA
+                </div>
+<div>
+<h2 class="font-body-md text-body-md font-medium text-on-surface">Lead Auditor</h2>
+<p class="font-label-md text-label-md text-on-surface-variant">North Sector Range</p>
+</div>
+</div>
+<p class="font-label-md text-label-md text-outline">v2.4.0-Stable</p>
+</div>
+<nav class="flex-grow py-stack-md flex flex-col gap-2">
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant/20 active:opacity-80 transition-opacity mx-2 rounded-full font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">database</span>
+                Species DB
+            </a>
+<a class="flex items-center gap-4 px-4 py-3 bg-secondary-container text-on-secondary-container rounded-full mx-2 font-body-md text-body-md active:opacity-80 transition-opacity" href="#">
+<span class="material-symbols-outlined icon-fill">sync_alt</span>
+                Sync Status
+            </a>
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant/20 active:opacity-80 transition-opacity mx-2 rounded-full font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">group</span>
+                Team Settings
+            </a>
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant/20 active:opacity-80 transition-opacity mx-2 rounded-full font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">map</span>
+                Offline Maps
+            </a>
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant/20 active:opacity-80 transition-opacity mx-2 rounded-full font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">potted_plant</span>
+                Carbon Reports
+            </a>
+<div class="mt-auto pt-4">
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant/20 active:opacity-80 transition-opacity mx-2 rounded-full font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">help</span>
+                    Support
+                </a>
+</div>
+</nav>
+</aside>
 </body></html>

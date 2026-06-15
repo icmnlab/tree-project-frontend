@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+
+<html class="light" lang="zh-TW"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Field Team Management - Forest Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "error-container": "#ffdad6",
+                        "inverse-on-surface": "#f0f0f6",
+                        "secondary-fixed-dim": "#87d982",
+                        "surface-dim": "#d9dadf",
+                        "on-surface": "#191c20",
+                        "inverse-primary": "#a2c9ff",
+                        "error": "#ba1a1a",
+                        "primary-fixed": "#d3e4ff",
+                        "on-secondary-fixed-variant": "#005312",
+                        "tertiary-container": "#781b9f",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-container": "#004e8b",
+                        "on-tertiary-fixed-variant": "#721199",
+                        "inverse-surface": "#2e3035",
+                        "on-secondary": "#ffffff",
+                        "surface-variant": "#e1e2e8",
+                        "surface-bright": "#f8f9ff",
+                        "surface": "#f8f9ff",
+                        "on-primary": "#ffffff",
+                        "on-primary-fixed-variant": "#004881",
+                        "tertiary-fixed": "#f8d8ff",
+                        "on-tertiary": "#ffffff",
+                        "on-surface-variant": "#424750",
+                        "on-background": "#191c20",
+                        "tertiary-fixed-dim": "#ebb2ff",
+                        "on-tertiary-fixed": "#320047",
+                        "surface-container-low": "#f3f3f9",
+                        "on-error-container": "#93000a",
+                        "surface-tint": "#24609e",
+                        "on-primary-fixed": "#001c38",
+                        "primary": "#003765",
+                        "surface-container-high": "#e7e8ee",
+                        "tertiary": "#5a007c",
+                        "on-primary-container": "#91c0ff",
+                        "secondary": "#1b6d24",
+                        "secondary-container": "#a0f499",
+                        "outline-variant": "#c2c7d1",
+                        "on-tertiary-container": "#e7a5ff",
+                        "on-error": "#ffffff",
+                        "surface-container-highest": "#e1e2e8",
+                        "on-secondary-container": "#207128",
+                        "primary-fixed-dim": "#a2c9ff",
+                        "surface-container": "#ededf3",
+                        "secondary-fixed": "#a3f69c",
+                        "background": "#f8f9ff",
+                        "outline": "#727781",
+                        "on-secondary-fixed": "#002204"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "touch-target-min": "48px",
+                        "screen-margin": "20px",
+                        "stack-lg": "24px",
+                        "gutter": "16px",
+                        "stack-sm": "8px",
+                        "stack-md": "16px"
+                    },
+                    "fontFamily": {
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "headline-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "28px", "fontWeight": "400" }],
+                        "label-sm": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "headline-md": ["24px", { "lineHeight": "32px", "fontWeight": "700" }],
+                        "headline-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .material-symbols-outlined.fill { font-variation-settings: 'FILL' 1; }
+        .glass-panel { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid rgba(255,255,255,0.4); }
+        /* Hide scrollbar for clean industrial look */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #c2c7d1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #727781; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background antialiased min-h-screen flex flex-col md:flex-row">
+<!-- Status Chip (Global) -->
+<div class="fixed top-2 left-1/2 transform -translate-x-1/2 z-[60] bg-secondary-container text-on-secondary-container px-4 py-1 rounded-full text-label-sm font-label-sm shadow-sm flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+        已連線/同步中
+    </div>
+<!-- NavigationDrawer (Web) -->
+<aside class="hidden md:flex bg-surface dark:bg-surface h-screen w-80 rounded-r-xl shadow-lg flex-col py-stack-lg sticky top-0 z-40">
+<div class="px-screen-margin mb-8 flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined">person</span>
+</div>
+<div>
+<h2 class="text-headline-sm font-headline-sm font-bold text-primary dark:text-primary-fixed-dim">林務員使用者</h2>
+<p class="text-body-md font-body-md text-on-surface-variant">專業森林技師</p>
+<p class="text-label-sm font-label-sm text-secondary">已連線</p>
+</div>
+</div>
+<nav class="flex-1 px-2 space-y-2">
+<!-- Active State: Intended functionality maps closely to Tasks/Assignment management, highlighting "任務" equivalent if present. 
+                 Using semantic intent for 'Field Team Management' -> '權限管理' or '設定' might be close, but let's assume it's a primary operational view. 
+                 Wait, the requested JSON doesn't perfectly match "Team Management". We'll use '權限管理' as a proxy for admin features or just render the generic state based on JSON. Let's map it to '權限管理' as it's an admin view. -->
+<a class="flex items-center gap-4 text-on-surface-variant dark:text-on-surface-variant mx-2 px-4 py-3 hover:bg-surface-container-high dark:hover:bg-surface-container-high rounded-full transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">history_edu</span>
+<span class="text-body-md font-body-md">稽核紀錄</span>
+</a>
+<a class="flex items-center gap-4 bg-secondary-container dark:bg-secondary-container text-on-secondary-container dark:text-on-secondary-container rounded-full mx-2 px-4 py-3 Active: scale-[0.99] transition-transform shadow-sm" href="#">
+<span class="material-symbols-outlined fill">admin_panel_settings</span>
+<span class="text-body-md font-body-md font-semibold">權限管理</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant dark:text-on-surface-variant mx-2 px-4 py-3 hover:bg-surface-container-high dark:hover:bg-surface-container-high rounded-full transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">settings</span>
+<span class="text-body-md font-body-md">設定</span>
+</a>
+<a class="flex items-center gap-4 text-on-surface-variant dark:text-on-surface-variant mx-2 px-4 py-3 hover:bg-surface-container-high dark:hover:bg-surface-container-high rounded-full transition-colors group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary">upload_file</span>
+<span class="text-body-md font-body-md">匯入 CSV</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-h-screen pb-24 md:pb-0 w-full max-w-7xl mx-auto">
+<!-- TopAppBar -->
+<header class="bg-background dark:bg-background docked full-width top-0 flat no shadows flex justify-between items-center w-full px-screen-margin py-stack-sm sticky z-30">
+<button class="md:hidden w-touch-target-min h-touch-target-min flex items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors rounded-full">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="text-headline-sm font-headline-sm font-bold text-primary dark:text-primary-fixed-dim hidden md:block">Forest Intelligence</h1>
+<h1 class="text-headline-sm font-headline-sm font-bold text-primary dark:text-primary-fixed-dim md:hidden mx-auto">Forest Intelligence</h1>
+<button class="w-touch-target-min h-touch-target-min flex items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:bg-surface-container-high dark:hover:bg-surface-container-highest transition-colors rounded-full relative">
+<span class="material-symbols-outlined">sensors</span>
+<span class="absolute top-2 right-2 w-2 h-2 bg-error rounded-full"></span>
+</button>
+</header>
+<!-- Canvas -->
+<div class="px-screen-margin py-stack-lg flex-1 flex flex-col gap-stack-lg">
+<!-- Page Header & Actions -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h2 class="text-headline-lg-mobile md:text-headline-lg font-headline-lg-mobile md:font-headline-lg text-primary mb-2">Field Team Operations</h2>
+<p class="text-body-lg font-body-lg text-on-surface-variant">Manage active crews, monitor sector coverage, and deploy tasks in real-time.</p>
+</div>
+<button class="bg-primary text-on-primary h-touch-target-min px-6 rounded-full flex items-center justify-center gap-2 shadow-sm hover:opacity-90 transition-opacity whitespace-nowrap Active: scale-95 duration-150">
+<span class="material-symbols-outlined">send</span>
+<span class="text-label-lg font-label-lg">Dispatch New Task</span>
+</button>
+</div>
+<!-- Dashboard Grid (Bento Style) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<!-- Metrics Cards -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_8px_16px_rgba(0,0,0,0.12)] flex flex-col justify-between">
+<div class="flex justify-between items-start mb-4">
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined">group</span>
+</div>
+<span class="text-label-sm font-label-sm text-secondary bg-secondary-container px-2 py-1 rounded-md">Optimal</span>
+</div>
+<div>
+<h3 class="text-headline-lg font-headline-lg text-on-surface mb-1">12</h3>
+<p class="text-body-md font-body-md text-on-surface-variant">Active Crews</p>
+</div>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_8px_16px_rgba(0,0,0,0.12)] flex flex-col justify-between">
+<div class="flex justify-between items-start mb-4">
+<div class="w-10 h-10 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center">
+<span class="material-symbols-outlined">map</span>
+</div>
+<span class="text-label-sm font-label-sm text-on-surface-variant bg-surface-container-high px-2 py-1 rounded-md">Coverage</span>
+</div>
+<div>
+<h3 class="text-headline-lg font-headline-lg text-on-surface mb-1">8/15</h3>
+<p class="text-body-md font-body-md text-on-surface-variant">Sectors Surveyed</p>
+</div>
+</div>
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_8px_16px_rgba(0,0,0,0.12)] flex flex-col justify-between">
+<div class="flex justify-between items-start mb-4">
+<div class="w-10 h-10 rounded-full bg-error-container text-on-error-container flex items-center justify-center">
+<span class="material-symbols-outlined">warning</span>
+</div>
+<span class="text-label-sm font-label-sm text-error bg-error-container px-2 py-1 rounded-md">Requires Attention</span>
+</div>
+<div>
+<h3 class="text-headline-lg font-headline-lg text-on-surface mb-1">2</h3>
+<p class="text-body-md font-body-md text-on-surface-variant">Sync Anomalies</p>
+</div>
+</div>
+<!-- Active Teams List (Spans 2 columns on desktop) -->
+<div class="md:col-span-2 bg-surface-container-lowest rounded-xl shadow-[0_8px_16px_rgba(0,0,0,0.12)] overflow-hidden flex flex-col">
+<div class="p-4 border-b border-surface-variant flex justify-between items-center bg-surface-bright">
+<h3 class="text-headline-sm font-headline-sm text-on-surface">Active Field Units</h3>
+<div class="flex gap-2">
+<button class="w-touch-target-min h-touch-target-min rounded-full flex items-center justify-center text-on-surface-variant hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+</div>
+</div>
+<div class="p-4 space-y-gutter overflow-y-auto max-h-[400px]">
+<!-- Team Item 1 -->
+<div class="bg-surface border border-outline-variant rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-primary transition-colors cursor-pointer group">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-container-highest flex items-center justify-center text-on-surface-variant relative">
+<span class="material-symbols-outlined">hiking</span>
+<span class="absolute -bottom-1 -right-1 w-4 h-4 bg-secondary border-2 border-surface rounded-full"></span>
+</div>
+<div>
+<h4 class="text-body-lg font-body-lg font-semibold text-on-surface group-hover:text-primary transition-colors">Alpha Squad</h4>
+<p class="text-body-md font-body-md text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+                                        Sector A-12 (Northern Ridge)
+                                    </p>
+</div>
+</div>
+<div class="flex flex-row sm:flex-col items-center sm:items-end justify-between gap-2 sm:gap-1">
+<span class="text-label-sm font-label-sm text-secondary bg-secondary-container/50 px-2 py-1 rounded-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">sync</span> Last sync: Just now
+                                </span>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Task: Biomass Audit</span>
+</div>
+</div>
+<!-- Team Item 2 -->
+<div class="bg-surface border border-outline-variant rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-primary transition-colors cursor-pointer group">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-container-highest flex items-center justify-center text-on-surface-variant relative">
+<span class="material-symbols-outlined">directions_walk</span>
+<span class="absolute -bottom-1 -right-1 w-4 h-4 bg-error border-2 border-surface rounded-full"></span>
+</div>
+<div>
+<h4 class="text-body-lg font-body-lg font-semibold text-on-surface group-hover:text-primary transition-colors">Bravo Team</h4>
+<p class="text-body-md font-body-md text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+                                        Sector B-04 (Wetlands)
+                                    </p>
+</div>
+</div>
+<div class="flex flex-row sm:flex-col items-center sm:items-end justify-between gap-2 sm:gap-1">
+<span class="text-label-sm font-label-sm text-error bg-error-container/50 px-2 py-1 rounded-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">sync_problem</span> Last sync: 45m ago
+                                </span>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Task: Soil Sampling</span>
+</div>
+</div>
+<!-- Team Item 3 -->
+<div class="bg-surface border border-outline-variant rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-primary transition-colors cursor-pointer group">
+<div class="flex items-center gap-4">
+<div class="w-12 h-12 rounded-full bg-surface-container-highest flex items-center justify-center text-on-surface-variant relative">
+<span class="material-symbols-outlined">nature_people</span>
+<span class="absolute -bottom-1 -right-1 w-4 h-4 bg-secondary border-2 border-surface rounded-full"></span>
+</div>
+<div>
+<h4 class="text-body-lg font-body-lg font-semibold text-on-surface group-hover:text-primary transition-colors">Charlie Crew</h4>
+<p class="text-body-md font-body-md text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+                                        Sector C-09 (Deep Forest)
+                                    </p>
+</div>
+</div>
+<div class="flex flex-row sm:flex-col items-center sm:items-end justify-between gap-2 sm:gap-1">
+<span class="text-label-sm font-label-sm text-secondary bg-secondary-container/50 px-2 py-1 rounded-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">sync</span> Last sync: 5m ago
+                                </span>
+<span class="text-label-sm font-label-sm text-on-surface-variant">Task: Drone Survey</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Contextual Action Panel -->
+<div class="bg-surface-container-lowest rounded-xl p-6 shadow-[0_8px_16px_rgba(0,0,0,0.12)] flex flex-col gap-6">
+<h3 class="text-headline-sm font-headline-sm text-on-surface border-b border-surface-variant pb-2">Quick Dispatch</h3>
+<div class="space-y-4 flex-1">
+<div class="relative">
+<label class="absolute -top-2 left-3 bg-surface-container-lowest px-1 text-label-sm font-label-sm text-primary">Target Sector</label>
+<div class="border-2 border-outline rounded-lg h-[56px] px-4 flex items-center focus-within:border-primary transition-colors cursor-pointer hover:bg-surface-container-low">
+<span class="flex-1 text-body-md font-body-md text-on-surface">Select Sector...</span>
+<span class="material-symbols-outlined text-on-surface-variant">arrow_drop_down</span>
+</div>
+</div>
+<div class="relative">
+<label class="absolute -top-2 left-3 bg-surface-container-lowest px-1 text-label-sm font-label-sm text-primary">Task Type</label>
+<div class="border-2 border-outline rounded-lg h-[56px] px-4 flex items-center focus-within:border-primary transition-colors cursor-pointer hover:bg-surface-container-low">
+<span class="flex-1 text-body-md font-body-md text-on-surface">Select Task...</span>
+<span class="material-symbols-outlined text-on-surface-variant">arrow_drop_down</span>
+</div>
+</div>
+</div>
+<button class="w-full bg-secondary text-on-secondary h-[48px] rounded-lg flex items-center justify-center gap-2 font-label-lg shadow-sm hover:bg-secondary/90 transition-colors">
+<span class="material-symbols-outlined">rocket_launch</span>
+                        Priority Deployment
+                    </button>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile) -->
+<nav class="md:hidden bg-surface-container-highest/90 dark:bg-surface-container-highest/90 shadow-xl backdrop-blur-md fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 rounded-t-xl">
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:scale-110 transition-transform w-12 h-12" href="#">
+<span class="material-symbols-outlined">map</span>
+<span class="text-label-sm font-label-sm mt-1">地圖</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:scale-110 transition-transform w-12 h-12" href="#">
+<span class="material-symbols-outlined">smart_toy</span>
+<span class="text-label-sm font-label-sm mt-1">AI助手</span>
+</a>
+<!-- Assuming Field Team Management is best mapped to '任務' in the nav JSON, although '權限管理' is in the drawer. We map to 任務 for mobile operational focus -->
+<a class="flex flex-col items-center justify-center bg-primary dark:bg-primary-container text-on-primary dark:text-on-primary-container rounded-full w-14 h-14 Active: scale-95 transition-all duration-150 shadow-md transform -translate-y-2 border-4 border-background" href="#">
+<span class="material-symbols-outlined fill">assignment</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:scale-110 transition-transform w-12 h-12" href="#">
+<span class="material-symbols-outlined">photo_camera</span>
+<span class="text-label-sm font-label-sm mt-1">相機</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-on-surface-variant hover:scale-110 transition-transform w-12 h-12" href="#">
+<span class="material-symbols-outlined">straighten</span>
+<span class="text-label-sm font-label-sm mt-1">測量</span>
+</a>
+</nav>
+<script>
+        // Micro-interactions and simple state management
+        document.querySelectorAll('.group').forEach(item => {
+            item.addEventListener('mousedown', () => {
+                item.style.transform = 'scale(0.99)';
+            });
+            item.addEventListener('mouseup', () => {
+                item.style.transform = 'scale(1)';
+            });
+            item.addEventListener('mouseleave', () => {
+                item.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+</body></html>

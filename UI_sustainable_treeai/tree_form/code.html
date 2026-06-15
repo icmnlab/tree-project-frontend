@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+
+<html class="light" lang="zh-TW"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Tree Data Entry Form</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary-container": "#e7a5ff",
+                    "surface-container": "#ededf3",
+                    "inverse-on-surface": "#f0f0f6",
+                    "outline-variant": "#c2c7d1",
+                    "surface-container-highest": "#e1e2e8",
+                    "on-primary": "#ffffff",
+                    "outline": "#727781",
+                    "secondary-fixed-dim": "#87d982",
+                    "on-surface": "#191c20",
+                    "secondary": "#1b6d24",
+                    "on-primary-fixed-variant": "#004881",
+                    "on-primary-fixed": "#001c38",
+                    "on-background": "#191c20",
+                    "on-secondary-fixed": "#002204",
+                    "surface-container-high": "#e7e8ee",
+                    "inverse-primary": "#a2c9ff",
+                    "primary-container": "#004e8b",
+                    "error": "#ba1a1a",
+                    "background": "#f8f9ff",
+                    "surface-container-lowest": "#ffffff",
+                    "surface-tint": "#24609e",
+                    "on-tertiary-fixed": "#320047",
+                    "on-secondary-fixed-variant": "#005312",
+                    "surface-dim": "#d9dadf",
+                    "on-error": "#ffffff",
+                    "inverse-surface": "#2e3035",
+                    "primary-fixed": "#d3e4ff",
+                    "on-error-container": "#93000a",
+                    "surface-variant": "#e1e2e8",
+                    "tertiary-container": "#781b9f",
+                    "on-secondary-container": "#207128",
+                    "secondary-fixed": "#a3f69c",
+                    "secondary-container": "#a0f499",
+                    "error-container": "#ffdad6",
+                    "primary": "#003765",
+                    "surface-container-low": "#f3f3f9",
+                    "on-secondary": "#ffffff",
+                    "surface-bright": "#f8f9ff",
+                    "primary-fixed-dim": "#a2c9ff",
+                    "on-tertiary-fixed-variant": "#721199",
+                    "on-primary-container": "#91c0ff",
+                    "tertiary-fixed-dim": "#ebb2ff",
+                    "on-tertiary": "#ffffff",
+                    "on-surface-variant": "#424750",
+                    "surface": "#f8f9ff",
+                    "tertiary": "#5a007c",
+                    "tertiary-fixed": "#f8d8ff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "stack-md": "16px",
+                    "screen-margin": "20px",
+                    "touch-target-min": "48px",
+                    "stack-sm": "8px",
+                    "stack-lg": "24px",
+                    "gutter": "16px"
+            },
+            "fontFamily": {
+                    "body-md": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "label-sm": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "headline-sm": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "headline-lg": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "headline-lg-mobile": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "label-lg": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "headline-md": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "body-lg": [
+                            "Plus Jakarta Sans"
+                    ]
+            },
+            "fontSize": {
+                    "body-md": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "label-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "headline-sm": [
+                            "20px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-lg-mobile": [
+                            "28px",
+                            {
+                                    "lineHeight": "36px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "label-lg": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "body-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "400"
+                            }
+                    ]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        body {
+            background-color: #FCF8FF;
+        }
+        /* Custom input focus ring for Industrial Minimalism */
+        .input-industrial:focus {
+            outline: none;
+            border-color: #003765; /* Primary */
+            box-shadow: inset 0 0 0 1px #003765;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="font-body-md text-on-surface pb-32">
+<!-- Connectivity Status Chip (Persistent Top) -->
+<div class="fixed top-0 left-0 right-0 z-50 flex justify-center mt-2 pointer-events-none">
+<div class="bg-secondary-container text-on-secondary-container font-label-sm text-label-sm px-4 py-1.5 rounded-full shadow-sm flex items-center gap-1.5 pointer-events-auto">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+            已連線
+        </div>
+</div>
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-on-surface fixed top-0 w-full z-40 px-screen-margin py-stack-md flex justify-between items-center mt-8">
+<div class="flex items-center gap-3">
+<button class="text-primary dark:text-primary-fixed-dim hover:opacity-80 transition-opacity active:scale-95 transition-transform flex items-center justify-center h-touch-target-min w-touch-target-min -ml-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">arrow_back</span>
+</button>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary dark:text-primary-fixed-dim">Forest Intelligence</h1>
+</div>
+<button class="text-primary dark:text-primary-fixed-dim hover:opacity-80 transition-opacity active:scale-95 transition-transform font-label-lg text-label-lg px-3 py-2 rounded-lg">
+            離線
+        </button>
+</header>
+<!-- Main Content Canvas -->
+<main class="px-screen-margin pt-32 max-w-2xl mx-auto flex flex-col gap-stack-lg">
+<!-- Header Section -->
+<section class="flex flex-col gap-stack-sm">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">編輯樹木資料</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">請更新並確認 T-8924 的現場觀測數據。</p>
+</section>
+<!-- Form Section -->
+<form class="flex flex-col gap-stack-lg">
+<!-- Basic Info Card -->
+<div class="bg-surface-container-lowest rounded-xl p-stack-md shadow-[0px_8px_16px_rgba(0,0,0,0.12)] flex flex-col gap-stack-md">
+<h3 class="font-headline-sm text-headline-sm text-primary mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">info</span>
+                    基本資訊
+                </h3>
+<!-- Tree ID (Read-only styled) -->
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-on-surface-variant" for="tree-id">Tree ID</label>
+<input class="w-full h-touch-target-min rounded-lg border border-outline bg-surface-container-low text-on-surface px-4 font-body-md text-body-md cursor-not-allowed" id="tree-id" readonly="" type="text" value="T-8924"/>
+</div>
+<!-- Species Dropdown -->
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-on-surface-variant" for="species">樹種 (Species)</label>
+<div class="relative">
+<select class="input-industrial w-full h-touch-target-min rounded-lg border border-outline bg-surface-container-lowest text-on-surface px-4 appearance-none font-body-md text-body-md" id="species">
+<option value="taiwania">台灣杉 (Taiwania cryptomerioides)</option>
+<option selected="" value="cypress">紅檜 (Chamaecyparis formosensis)</option>
+<option value="pine">台灣二葉松 (Pinus taiwanensis)</option>
+<option value="other">其他 (Other)</option>
+</select>
+<div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-on-surface-variant">
+<span class="material-symbols-outlined">expand_more</span>
+</div>
+</div>
+</div>
+<!-- Status Chips -->
+<div class="flex flex-col gap-2">
+<span class="font-label-sm text-label-sm text-on-surface-variant">狀態 (Status)</span>
+<div class="flex flex-wrap gap-2">
+<label class="cursor-pointer">
+<input checked="" class="peer sr-only" name="status" type="radio" value="normal"/>
+<div class="px-4 h-touch-target-min flex items-center justify-center rounded-full border border-outline text-on-surface font-label-lg text-label-lg peer-checked:bg-primary-container peer-checked:text-on-primary-container peer-checked:border-primary-container transition-colors">
+                                正常 (Normal)
+                            </div>
+</label>
+<label class="cursor-pointer">
+<input class="peer sr-only" name="status" type="radio" value="leaning"/>
+<div class="px-4 h-touch-target-min flex items-center justify-center rounded-full border border-outline text-on-surface font-label-lg text-label-lg peer-checked:bg-error-container peer-checked:text-on-error-container peer-checked:border-error-container transition-colors">
+                                傾斜 (Leaning)
+                            </div>
+</label>
+<label class="cursor-pointer">
+<input class="peer sr-only" name="status" type="radio" value="retired"/>
+<div class="px-4 h-touch-target-min flex items-center justify-center rounded-full border border-outline text-on-surface font-label-lg text-label-lg peer-checked:bg-surface-variant peer-checked:text-on-surface-variant peer-checked:border-surface-variant transition-colors">
+                                枯死 (Retired)
+                            </div>
+</label>
+</div>
+</div>
+</div>
+<!-- Location Card -->
+<div class="bg-surface-container-lowest rounded-xl p-stack-md shadow-[0px_8px_16px_rgba(0,0,0,0.12)] flex flex-col gap-stack-md">
+<h3 class="font-headline-sm text-headline-sm text-primary mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">location_on</span>
+                    位置資訊
+                </h3>
+<div class="flex flex-col gap-1">
+<div class="flex justify-between items-end">
+<label class="font-label-sm text-label-sm text-on-surface-variant" for="gps">GPS Coordinates</label>
+<button class="text-secondary font-label-sm text-label-sm flex items-center gap-1 hover:opacity-80 p-2 -mr-2" type="button">
+<span class="material-symbols-outlined text-[16px]">my_location</span> 重新定位
+                        </button>
+</div>
+<input class="w-full h-touch-target-min rounded-lg border border-outline bg-surface-container-low text-on-surface px-4 font-body-md text-body-md cursor-not-allowed" id="gps" readonly="" type="text" value="23.4735° N, 120.9572° E"/>
+</div>
+</div>
+<!-- Measurement Card -->
+<div class="bg-surface-container-lowest rounded-xl p-stack-md shadow-[0px_8px_16px_rgba(0,0,0,0.12)] flex flex-col gap-stack-md">
+<h3 class="font-headline-sm text-headline-sm text-primary mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">straighten</span>
+                    測量數據
+                </h3>
+<div class="grid grid-cols-2 gap-gutter">
+<!-- DBH -->
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-on-surface-variant" for="dbh">胸高直徑 (DBH)</label>
+<div class="relative">
+<input class="input-industrial w-full h-touch-target-min rounded-lg border border-outline bg-surface-container-lowest text-on-surface px-4 pr-12 font-body-md text-body-md" id="dbh" step="0.1" type="number" value="124.5"/>
+<span class="absolute inset-y-0 right-4 flex items-center text-on-surface-variant font-label-sm text-label-sm">cm</span>
+</div>
+</div>
+<!-- Height -->
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-on-surface-variant" for="height">樹高 (Height)</label>
+<div class="relative">
+<input class="input-industrial w-full h-touch-target-min rounded-lg border border-outline bg-surface-container-lowest text-on-surface px-4 pr-10 font-body-md text-body-md" id="height" step="0.1" type="number" value="45.2"/>
+<span class="absolute inset-y-0 right-4 flex items-center text-on-surface-variant font-label-sm text-label-sm">m</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Assessment Card -->
+<div class="bg-surface-container-lowest rounded-xl p-stack-md shadow-[0px_8px_16px_rgba(0,0,0,0.12)] flex flex-col gap-stack-md">
+<h3 class="font-headline-sm text-headline-sm text-primary mb-2 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">health_and_safety</span>
+                    健康評估與照片
+                </h3>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm text-on-surface-variant" for="notes">觀察筆記 (Notes)</label>
+<textarea class="input-industrial w-full rounded-lg border border-outline bg-surface-container-lowest text-on-surface p-4 font-body-md text-body-md resize-none" id="notes" rows="3">樹冠生長良好，樹幹中段有輕微真菌附著痕跡，需持續追蹤。</textarea>
+</div>
+<!-- Photo Upload Slots -->
+<div class="flex flex-col gap-2 mt-2">
+<span class="font-label-sm text-label-sm text-on-surface-variant">現場照片 (Photos)</span>
+<div class="grid grid-cols-2 md:grid-cols-3 gap-gutter">
+<!-- Existing Photo 1 -->
+<div class="relative aspect-square rounded-lg overflow-hidden border border-outline-variant group">
+<img alt="Tree trunk close up" class="w-full h-full object-cover" data-alt="A highly detailed close-up shot of a majestic, ancient tree trunk with deep, textured bark in a lush, dense forest. The lighting is moody and natural, with soft, dappled sunlight filtering through the canopy above, highlighting the rugged surface of the wood. The color palette emphasizes rich, organic greens, deep browns, and subtle industrial blues, perfectly capturing the rugged, outdoor nature of forestry work. The mood is serene, authoritative, and focused on natural precision." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDUrrJjsgFHULEsLXvsiwOpGRqkmve4uI_aPEw4pobw97dOZ4LQjvsRHgmGAbiqdqRbP_IWXFHN8CZl5ekkkdd_XeAXPi4mJfKRTvixPDaIrdC1hyfd0sfe_RfMdLuDy2n8VUHOfP3nfqUj_BHze4boVAqDDDQ5P8eg6cnvEGbreFVCFeWNSwA4RoBA51ik1TMn6yj6Qf59GQu492WyQIxwHhZv8gs3lK0KRO4pOirpDhBf5aMXqjXU0DWogqGAUZ02rDtoBDd_FQ"/>
+<button class="absolute top-2 right-2 w-8 h-8 rounded-full bg-surface-container-lowest/80 text-error flex items-center justify-center opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity" type="button">
+<span class="material-symbols-outlined text-[18px]">close</span>
+</button>
+</div>
+<!-- Upload Slot -->
+<button class="aspect-square rounded-lg border-2 border-dashed border-primary/30 bg-surface-container-low hover:bg-surface-variant flex flex-col items-center justify-center gap-2 text-primary transition-colors h-full w-full active:scale-95" type="button">
+<span class="material-symbols-outlined text-[32px]">add_a_photo</span>
+<span class="font-label-sm text-label-sm">新增照片</span>
+</button>
+</div>
+</div>
+</div>
+</form>
+</main>
+<!-- Bottom Action Bar (Fixed) -->
+<div class="fixed bottom-0 left-0 right-0 p-screen-margin bg-surface-container-lowest/90 backdrop-blur-md border-t border-surface-variant z-40">
+<div class="max-w-2xl mx-auto flex gap-gutter">
+<button class="flex-1 h-touch-target-min rounded-full border-2 border-secondary text-secondary font-label-lg text-label-lg flex items-center justify-center hover:bg-secondary/10 active:scale-95 transition-all" type="button">
+                取消
+            </button>
+<button class="flex-[2] h-touch-target-min rounded-full bg-primary text-on-primary font-label-lg text-label-lg flex items-center justify-center hover:opacity-90 active:scale-95 transition-all shadow-md" type="button">
+                儲存變更
+            </button>
+</div>
+</div>
+</body></html>

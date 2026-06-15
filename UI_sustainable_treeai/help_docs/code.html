@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>System Help &amp; Documentation - ArborSync Pro</title>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS with custom configuration -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-secondary-fixed-variant": "#005312",
+                    "outline-variant": "#c2c7d1",
+                    "surface-container": "#ededf3",
+                    "on-primary-fixed": "#001c38",
+                    "on-primary-container": "#91c0ff",
+                    "on-tertiary-fixed": "#320047",
+                    "secondary-fixed-dim": "#87d982",
+                    "on-secondary-container": "#207128",
+                    "inverse-on-surface": "#f0f0f6",
+                    "surface-dim": "#d9dadf",
+                    "on-secondary": "#ffffff",
+                    "on-error": "#ffffff",
+                    "tertiary-container": "#781b9f",
+                    "on-surface-variant": "#424750",
+                    "on-secondary-fixed": "#002204",
+                    "surface-container-highest": "#e1e2e8",
+                    "on-error-container": "#93000a",
+                    "primary-container": "#004e8b",
+                    "inverse-primary": "#a2c9ff",
+                    "background": "#f8f9ff",
+                    "primary": "#003765",
+                    "tertiary-fixed-dim": "#ebb2ff",
+                    "on-tertiary": "#ffffff",
+                    "secondary": "#1b6d24",
+                    "surface-container-high": "#e7e8ee",
+                    "error": "#ba1a1a",
+                    "outline": "#727781",
+                    "primary-fixed-dim": "#a2c9ff",
+                    "surface-container-low": "#f3f3f9",
+                    "on-tertiary-fixed-variant": "#721199",
+                    "tertiary-fixed": "#f8d8ff",
+                    "surface": "#f8f9ff",
+                    "secondary-fixed": "#a3f69c",
+                    "on-primary": "#ffffff",
+                    "surface-bright": "#f8f9ff",
+                    "inverse-surface": "#2e3035",
+                    "primary-fixed": "#d3e4ff",
+                    "on-tertiary-container": "#e7a5ff",
+                    "on-surface": "#191c20",
+                    "tertiary": "#5a007c",
+                    "on-primary-fixed-variant": "#004881",
+                    "surface-tint": "#24609e",
+                    "on-background": "#191c20",
+                    "error-container": "#ffdad6",
+                    "secondary-container": "#a0f499",
+                    "surface-variant": "#e1e2e8",
+                    "surface-container-lowest": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "stack-lg": "24px",
+                    "stack-sm": "8px",
+                    "gutter": "16px",
+                    "touch-target-min": "48px",
+                    "screen-margin": "20px",
+                    "stack-md": "16px"
+            },
+            "fontFamily": {
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "headline-sm": ["Plus Jakarta Sans"],
+                    "headline-lg-mobile": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"],
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"],
+                    "label-sm": ["Plus Jakarta Sans"],
+                    "label-lg": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "700"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #f8f9ff; /* bg-background */
+        }
+        
+        /* Custom scrollbar for horizontal lists if needed */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        
+        .shadow-elevation-surface {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen flex flex-col relative pb-stack-lg">
+<!-- Status Chip (Persistent) -->
+<div class="w-full flex justify-center pt-2 absolute top-0 z-50 pointer-events-none">
+<div class="bg-secondary-container text-on-secondary-container font-label-sm text-label-sm px-4 py-1 rounded-full shadow-sm pointer-events-auto flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-secondary"></span>
+            已連線
+        </div>
+</div>
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky bg-surface flex items-center justify-between px-screen-margin h-16 shadow-sm z-40">
+<button aria-label="Menu" class="w-touch-target-min h-touch-target-min flex items-center justify-start text-primary active:scale-95 duration-100">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">menu</span>
+</button>
+<h1 class="font-headline-sm text-headline-sm text-primary font-bold tracking-tight">ArborSync Pro</h1>
+<button aria-label="Sync Status" class="w-touch-target-min h-touch-target-min flex items-center justify-end text-primary active:scale-95 duration-100">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">cloud_sync</span>
+</button>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 px-screen-margin py-stack-lg flex flex-col gap-stack-lg max-w-4xl mx-auto w-full">
+<!-- Header Section -->
+<section class="flex flex-col gap-stack-sm">
+<h2 class="font-headline-lg-mobile text-headline-lg-mobile text-primary">Help &amp; Documentation</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Find resources and troubleshooting guides for field operations.</p>
+</section>
+<!-- Search Bar -->
+<section class="relative">
+<div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline">search</span>
+</div>
+<input class="w-full h-[56px] pl-12 pr-4 bg-surface border border-outline rounded-xl font-body-md text-body-md text-on-surface placeholder:text-outline focus:outline-none focus:border-primary focus:border-2 focus:ring-0 transition-colors shadow-sm" placeholder="Search knowledge base..." type="text"/>
+</section>
+<!-- Categories (Bento Grid) -->
+<section>
+<h3 class="font-label-lg text-label-lg text-on-surface-variant mb-gutter uppercase tracking-wider">Categories</h3>
+<div class="grid grid-cols-2 gap-gutter md:grid-cols-4">
+<!-- Card 1 -->
+<button class="bg-surface rounded-xl p-stack-md flex flex-col items-start gap-stack-sm shadow-elevation-surface active:scale-95 transition-transform text-left border border-transparent hover:border-primary-container">
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center mb-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">straighten</span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface leading-tight">Measurement<br/>Protocol</span>
+</button>
+<!-- Card 2 -->
+<button class="bg-surface rounded-xl p-stack-md flex flex-col items-start gap-stack-sm shadow-elevation-surface active:scale-95 transition-transform text-left border border-transparent hover:border-primary-container">
+<div class="w-10 h-10 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center mb-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">build</span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface leading-tight">Hardware<br/>Troubleshooting</span>
+</button>
+<!-- Card 3 -->
+<button class="bg-surface rounded-xl p-stack-md flex flex-col items-start gap-stack-sm shadow-elevation-surface active:scale-95 transition-transform text-left border border-transparent hover:border-primary-container">
+<div class="w-10 h-10 rounded-full bg-tertiary-container text-on-tertiary-container flex items-center justify-center mb-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">health_and_safety</span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface leading-tight">Safety<br/>Guidelines</span>
+</button>
+<!-- Card 4 -->
+<button class="bg-surface rounded-xl p-stack-md flex flex-col items-start gap-stack-sm shadow-elevation-surface active:scale-95 transition-transform text-left border border-transparent hover:border-primary-container">
+<div class="w-10 h-10 rounded-full bg-surface-variant text-on-surface-variant flex items-center justify-center mb-2">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">school</span>
+</div>
+<span class="font-label-lg text-label-lg text-on-surface leading-tight">App<br/>Tutorials</span>
+</button>
+</div>
+</section>
+<!-- Popular Topics -->
+<section class="mt-4">
+<h3 class="font-label-lg text-label-lg text-on-surface-variant mb-gutter uppercase tracking-wider">Popular Articles</h3>
+<div class="flex flex-col gap-gutter">
+<!-- List Item 1 -->
+<div class="bg-surface rounded-xl p-stack-md shadow-sm border border-surface-variant flex items-center justify-between group cursor-pointer hover:bg-surface-container-low transition-colors min-h-[72px]">
+<div class="flex items-center gap-stack-md">
+<div class="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined">wifi_off</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg text-on-surface">Offline Data Sync Resolution</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Troubleshooting</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">chevron_right</span>
+</div>
+<!-- List Item 2 -->
+<div class="bg-surface rounded-xl p-stack-md shadow-sm border border-surface-variant flex items-center justify-between group cursor-pointer hover:bg-surface-container-low transition-colors min-h-[72px]">
+<div class="flex items-center gap-stack-md">
+<div class="w-12 h-12 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary shrink-0">
+<span class="material-symbols-outlined">forest</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg text-on-surface">Canopy Density Estimation</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Measurement Protocol</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">chevron_right</span>
+</div>
+<!-- List Item 3 -->
+<div class="bg-surface rounded-xl p-stack-md shadow-sm border border-surface-variant flex items-center justify-between group cursor-pointer hover:bg-surface-container-low transition-colors min-h-[72px]">
+<div class="flex items-center gap-stack-md">
+<div class="w-12 h-12 rounded-lg bg-tertiary/10 flex items-center justify-center text-tertiary shrink-0">
+<span class="material-symbols-outlined">battery_alert</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg text-on-surface">Laser Rangefinder Battery Care</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Hardware</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:text-primary transition-colors">chevron_right</span>
+</div>
+</div>
+</section>
+</main>
+<!-- FAB for direct contact / ticketing -->
+<button aria-label="Contact Support" class="fixed bottom-6 right-screen-margin w-14 h-14 bg-primary text-on-primary rounded-[16px] shadow-[0_16px_32px_rgba(0,0,0,0.18)] flex items-center justify-center hover:bg-primary/90 active:scale-90 transition-all z-50">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">support_agent</span>
+</button>
+</body></html>

@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+
+<html class="light" lang="zh-TW"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Carbon Sequestration Dashboard - Forest Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-low": "#f3f3f9",
+                        "tertiary": "#5a007c",
+                        "outline": "#727781",
+                        "surface-container-lowest": "#ffffff",
+                        "surface-dim": "#d9dadf",
+                        "primary": "#003765",
+                        "outline-variant": "#c2c7d1",
+                        "inverse-surface": "#2e3035",
+                        "secondary": "#1b6d24",
+                        "on-error": "#ffffff",
+                        "on-surface": "#191c20",
+                        "surface-container-high": "#e7e8ee",
+                        "tertiary-container": "#781b9f",
+                        "on-background": "#191c20",
+                        "surface-tint": "#24609e",
+                        "inverse-primary": "#a2c9ff",
+                        "primary-fixed": "#d3e4ff",
+                        "on-secondary": "#ffffff",
+                        "background": "#f8f9ff",
+                        "on-surface-variant": "#424750",
+                        "surface": "#f8f9ff",
+                        "secondary-fixed": "#a3f69c",
+                        "surface-variant": "#e1e2e8",
+                        "on-error-container": "#93000a",
+                        "primary-fixed-dim": "#a2c9ff",
+                        "on-primary-container": "#91c0ff",
+                        "error": "#ba1a1a",
+                        "on-tertiary-fixed-variant": "#721199",
+                        "on-primary-fixed": "#001c38",
+                        "inverse-on-surface": "#f0f0f6",
+                        "on-primary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "tertiary-fixed": "#f8d8ff",
+                        "on-tertiary-container": "#e7a5ff",
+                        "error-container": "#ffdad6",
+                        "secondary-container": "#a0f499",
+                        "on-primary-fixed-variant": "#004881",
+                        "surface-container": "#ededf3",
+                        "tertiary-fixed-dim": "#ebb2ff",
+                        "surface-bright": "#f8f9ff",
+                        "on-secondary-fixed": "#002204",
+                        "on-secondary-fixed-variant": "#005312",
+                        "on-secondary-container": "#207128",
+                        "secondary-fixed-dim": "#87d982",
+                        "surface-container-highest": "#e1e2e8",
+                        "on-tertiary-fixed": "#320047",
+                        "primary-container": "#004e8b"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-lg": "24px",
+                        "screen-margin": "20px",
+                        "stack-sm": "8px",
+                        "touch-target-min": "48px",
+                        "stack-md": "16px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "headline-md": ["Plus Jakarta Sans"],
+                        "label-sm": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "headline-lg": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-lg-mobile": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                        "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                        "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "700"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            background-color: #FCF8FF; /* From style guidance Base Layer */
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Hide scrollbar for clean look but keep functionality */
+        ::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+        
+        .card-shadow {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12); /* 12% shadow, 8px blur */
+        }
+        
+        .bento-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+        
+        @media (max-width: 768px) {
+            .bento-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-surface font-body-md min-h-screen flex flex-col antialiased">
+<!-- Status Chip (Top Persistent) -->
+<div class="fixed top-0 w-full z-[60] flex justify-center pt-2 pointer-events-none">
+<div class="bg-secondary text-on-secondary rounded-full px-4 py-1 flex items-center gap-2 shadow-sm pointer-events-auto">
+<span class="material-symbols-outlined text-[16px]">wifi</span>
+<span class="font-label-sm text-label-sm">已連線</span>
+</div>
+</div>
+<!-- TopAppBar -->
+<header class="w-full top-0 px-screen-margin pt-4 bg-surface flex justify-between items-center py-stack-md z-50 sticky transition-all duration-200">
+<button aria-label="Menu" class="w-touch-target-min h-touch-target-min flex items-center justify-center text-primary active:scale-95 transition-transform duration-200 rounded-full hover:bg-surface-variant/20">
+<span class="material-symbols-outlined text-[24px]">signal_cellular_alt</span>
+</button>
+<h1 class="font-headline-sm text-headline-sm text-primary tracking-tight">Forest Intelligence</h1>
+<button aria-label="Sync" class="w-touch-target-min h-touch-target-min flex items-center justify-center text-primary active:scale-95 transition-transform duration-200 rounded-full hover:bg-surface-variant/20">
+<span class="material-symbols-outlined text-[24px]">sync</span>
+</button>
+</header>
+<!-- Main Content -->
+<main class="flex-grow px-screen-margin pb-[100px] pt-stack-sm md:pb-stack-lg max-w-7xl mx-auto w-full">
+<!-- Page Header -->
+<div class="mb-stack-lg flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h2 class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface mb-2">數據儀表板</h2>
+<p class="text-on-surface-variant font-body-md text-body-md">即時監測碳吸存趨勢與林相分佈</p>
+</div>
+<div class="flex gap-2">
+<button class="h-touch-target-min px-4 rounded-lg border-2 border-secondary text-secondary font-label-lg text-label-lg flex items-center justify-center gap-2 hover:bg-secondary/10 transition-colors">
+<span class="material-symbols-outlined text-[20px]">download</span>
+                    匯出報告
+                </button>
+</div>
+</div>
+<!-- Bento Grid Layout -->
+<div class="bento-grid">
+<!-- Key Metric 1: Total Carbon -->
+<div class="bg-surface-container-lowest rounded-xl p-6 card-shadow col-span-1 md:col-span-2 flex flex-col justify-between h-full relative overflow-hidden">
+<!-- Decorative background element -->
+<div class="absolute -right-8 -top-8 w-32 h-32 bg-primary/5 rounded-full blur-2xl"></div>
+<div class="flex items-center justify-between mb-4 relative z-10">
+<div class="flex items-center gap-2 text-primary">
+<span class="material-symbols-outlined">co2</span>
+<h3 class="font-label-lg text-label-lg">累計碳吸存量</h3>
+</div>
+<span class="bg-secondary-container text-on-secondary-container px-2 py-1 rounded-full font-label-sm text-label-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">arrow_upward</span>
+                        12.5%
+                    </span>
+</div>
+<div class="relative z-10">
+<div class="flex items-baseline gap-2">
+<span class="font-headline-lg-mobile md:font-headline-lg text-headline-lg-mobile md:text-headline-lg text-on-surface">42,580</span>
+<span class="font-body-md text-body-md text-on-surface-variant">tCO₂e</span>
+</div>
+<p class="font-label-sm text-label-sm text-outline mt-1">更新於: 2小時前</p>
+</div>
+</div>
+<!-- Key Metric 2: Area Covered -->
+<div class="bg-surface-container-lowest rounded-xl p-6 card-shadow col-span-1 flex flex-col justify-between h-full relative overflow-hidden">
+<div class="flex items-center gap-2 text-primary mb-4 relative z-10">
+<span class="material-symbols-outlined">landscape</span>
+<h3 class="font-label-lg text-label-lg">監測總面積</h3>
+</div>
+<div class="relative z-10">
+<div class="flex items-baseline gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface">1,250</span>
+<span class="font-body-md text-body-md text-on-surface-variant">公頃</span>
+</div>
+<p class="font-label-sm text-label-sm text-outline mt-1">共 15 個樣區</p>
+</div>
+</div>
+<!-- Key Metric 3: Active Trees -->
+<div class="bg-surface-container-lowest rounded-xl p-6 card-shadow col-span-1 flex flex-col justify-between h-full relative overflow-hidden">
+<div class="flex items-center gap-2 text-primary mb-4 relative z-10">
+<span class="material-symbols-outlined">forest</span>
+<h3 class="font-label-lg text-label-lg">記錄樹木數</h3>
+</div>
+<div class="relative z-10">
+<div class="flex items-baseline gap-2">
+<span class="font-headline-sm text-headline-sm text-on-surface">85,420</span>
+<span class="font-body-md text-body-md text-on-surface-variant">株</span>
+</div>
+<div class="w-full bg-surface-variant h-1.5 rounded-full mt-3 overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 78%"></div>
+</div>
+</div>
+</div>
+<!-- Main Chart: Carbon Trend -->
+<div class="bg-surface-container-lowest rounded-xl p-6 card-shadow col-span-1 md:col-span-4 h-96 flex flex-col">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">trending_up</span>
+                        碳吸存趨勢
+                    </h3>
+<select class="h-touch-target-min bg-surface border border-outline rounded-lg px-4 font-label-lg text-label-lg text-on-surface focus:border-primary focus:ring-0 cursor-pointer">
+<option>本年度</option>
+<option>過去半年</option>
+<option>全部歷史</option>
+</select>
+</div>
+<div class="flex-grow relative w-full">
+<canvas id="carbonTrendChart"></canvas>
+</div>
+</div>
+<!-- Secondary Chart: Species Distribution -->
+<div class="bg-surface-container-lowest rounded-xl p-6 card-shadow col-span-1 md:col-span-2 h-80 flex flex-col">
+<h3 class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-primary">pie_chart</span>
+                    樹種分佈
+                </h3>
+<div class="flex-grow relative flex items-center justify-center">
+<div class="w-full h-full max-w-[250px] relative">
+<canvas id="speciesChart"></canvas>
+</div>
+</div>
+</div>
+<!-- Audit Progress List -->
+<div class="bg-surface-container-lowest rounded-xl p-6 card-shadow col-span-1 md:col-span-2 h-80 flex flex-col">
+<div class="flex justify-between items-center mb-4">
+<h3 class="font-headline-sm text-headline-sm text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">fact_check</span>
+                        稽核進度
+                    </h3>
+<button class="text-primary font-label-lg text-label-lg hover:underline">查看全部</button>
+</div>
+<div class="flex-grow overflow-y-auto pr-2 space-y-4">
+<!-- List Item 1 -->
+<div class="bg-surface rounded-lg p-4 flex items-center justify-between border border-surface-variant">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container">
+<span class="material-symbols-outlined">check_circle</span>
+</div>
+<div>
+<h4 class="font-label-lg text-label-lg text-on-surface">北區實驗林</h4>
+<p class="font-label-sm text-label-sm text-outline">已完成 • 2023/10/15</p>
+</div>
+</div>
+<span class="font-body-md text-body-md text-on-surface font-semibold">100%</span>
+</div>
+<!-- List Item 2 -->
+<div class="bg-surface rounded-lg p-4 flex items-center justify-between border-2 border-primary">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container">
+<span class="material-symbols-outlined">pending_actions</span>
+</div>
+<div>
+<h4 class="font-label-lg text-label-lg text-on-surface">中區示範區</h4>
+<p class="font-label-sm text-label-sm text-outline">進行中 • 預計 11/01 完成</p>
+</div>
+</div>
+<span class="font-body-md text-body-md text-primary font-semibold">65%</span>
+</div>
+<!-- List Item 3 -->
+<div class="bg-surface rounded-lg p-4 flex items-center justify-between border border-surface-variant opacity-70">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-variant flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">schedule</span>
+</div>
+<div>
+<h4 class="font-label-lg text-label-lg text-on-surface">南區復育林</h4>
+<p class="font-label-sm text-label-sm text-outline">未開始 • 預計 12/01</p>
+</div>
+</div>
+<span class="font-body-md text-body-md text-on-surface-variant font-semibold">0%</span>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 px-screen-margin pb-4 pointer-events-none">
+<div class="bg-surface-container-lowest rounded-full mx-auto h-16 shadow-[0_16px_32px_-8px_rgba(0,0,0,0.18)] flex justify-between items-center px-2 pointer-events-auto max-w-sm">
+<!-- Inactive: Map -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 w-touch-target-min h-touch-target-min active:scale-90 transition-all duration-150 hover:bg-surface-variant/10 rounded-full" href="#">
+<span class="material-symbols-outlined text-[24px]">map</span>
+<span class="font-label-sm text-label-sm mt-1">地圖</span>
+</a>
+<!-- Inactive: Measure -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 w-touch-target-min h-touch-target-min active:scale-90 transition-all duration-150 hover:bg-surface-variant/10 rounded-full" href="#">
+<span class="material-symbols-outlined text-[24px]">photo_camera</span>
+<span class="font-label-sm text-label-sm mt-1">測量</span>
+</a>
+<!-- Active: Records (Dashboard intent maps best here) -->
+<a class="flex flex-col items-center justify-center bg-primary text-on-primary rounded-full px-6 py-2 w-auto h-touch-target-min active:scale-90 transition-all duration-150" href="#">
+<span class="material-symbols-outlined text-[24px]">database</span>
+<span class="font-label-sm text-label-sm mt-1">紀錄</span>
+</a>
+<!-- Inactive: Settings -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-4 w-touch-target-min h-touch-target-min active:scale-90 transition-all duration-150 hover:bg-surface-variant/10 rounded-full" href="#">
+<span class="material-symbols-outlined text-[24px]">settings</span>
+<span class="font-label-sm text-label-sm mt-1">設定</span>
+</a>
+</div>
+</nav>
+<!-- Desktop SideNav/TopNav Items (Hidden on mobile, showing intent for responsive design) -->
+<div class="hidden md:flex fixed top-0 right-screen-margin h-20 items-center gap-6 z-[60]">
+<a class="text-on-surface-variant font-label-lg text-label-lg hover:text-primary transition-colors flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-[20px]">map</span> 地圖
+        </a>
+<a class="text-on-surface-variant font-label-lg text-label-lg hover:text-primary transition-colors flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-[20px]">photo_camera</span> 測量
+        </a>
+<a class="text-secondary font-bold font-label-lg text-label-lg border-b-2 border-secondary pb-1 flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-[20px]">database</span> 紀錄
+        </a>
+<a class="text-on-surface-variant font-label-lg text-label-lg hover:text-primary transition-colors flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-[20px]">settings</span> 設定
+        </a>
+</div>
+<!-- Chart Initialization Scripts -->
+<script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Setup Chart.js defaults to match theme
+            Chart.defaults.font.family = "'Plus Jakarta Sans', sans-serif";
+            Chart.defaults.color = '#727781'; // outline color
+            
+            // Carbon Trend Chart (Line)
+            const ctxTrend = document.getElementById('carbonTrendChart').getContext('2d');
+            
+            // Create gradient for line chart
+            const gradientFill = ctxTrend.createLinearGradient(0, 0, 0, 400);
+            gradientFill.addColorStop(0, 'rgba(0, 55, 101, 0.2)'); // primary color with opacity
+            gradientFill.addColorStop(1, 'rgba(0, 55, 101, 0)');
+            
+            new Chart(ctxTrend, {
+                type: 'line',
+                data: {
+                    labels: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月'],
+                    datasets: [{
+                        label: '碳吸存量 (tCO₂e)',
+                        data: [32000, 33500, 34800, 35900, 37200, 38100, 39500, 40800, 41500, 42580],
+                        borderColor: '#003765', // primary
+                        backgroundColor: gradientFill,
+                        borderWidth: 3,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#003765',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#2e3035', // inverse-surface
+                            titleFont: { size: 14, family: "'Plus Jakarta Sans'" },
+                            bodyFont: { size: 14, family: "'Plus Jakarta Sans'" },
+                            padding: 12,
+                            cornerRadius: 8,
+                            displayColors: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { display: false, drawBorder: false }
+                        },
+                        y: {
+                            grid: {
+                                color: '#e1e2e8', // surface-variant
+                                drawBorder: false,
+                                borderDash: [5, 5]
+                            },
+                            beginAtZero: false,
+                            min: 30000
+                        }
+                    },
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    }
+                }
+            });
+
+            // Species Distribution Chart (Doughnut)
+            const ctxSpecies = document.getElementById('speciesChart').getContext('2d');
+            new Chart(ctxSpecies, {
+                type: 'doughnut',
+                data: {
+                    labels: ['柳杉', '台灣杉', '相思樹', '其他闊葉樹'],
+                    datasets: [{
+                        data: [45, 25, 20, 10],
+                        backgroundColor: [
+                            '#003765', // primary
+                            '#1b6d24', // secondary
+                            '#24609e', // surface-tint
+                            '#727781'  // outline
+                        ],
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '70%',
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                                font: {
+                                    size: 12,
+                                    family: "'Plus Jakarta Sans'"
+                                }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: '#2e3035',
+                            padding: 12,
+                            cornerRadius: 8
+                        }
+                    }
+                }
+            });
+        });
+    </script>
+</body></html>

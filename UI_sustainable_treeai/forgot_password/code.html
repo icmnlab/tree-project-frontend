@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+
+<html lang="zh-TW"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>忘記密碼 - 帳號管理</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-tertiary": "#ffffff",
+                    "on-tertiary-fixed": "#320047",
+                    "outline": "#727781",
+                    "surface-dim": "#d9dadf",
+                    "on-surface": "#191c20",
+                    "error": "#ba1a1a",
+                    "secondary-fixed": "#a3f69c",
+                    "primary": "#003765",
+                    "tertiary-fixed-dim": "#ebb2ff",
+                    "surface-container-lowest": "#ffffff",
+                    "error-container": "#ffdad6",
+                    "inverse-primary": "#a2c9ff",
+                    "background": "#f8f9ff",
+                    "outline-variant": "#c2c7d1",
+                    "surface-tint": "#24609e",
+                    "surface": "#f8f9ff",
+                    "secondary": "#1b6d24",
+                    "on-primary-fixed": "#001c38",
+                    "on-primary-fixed-variant": "#004881",
+                    "on-error": "#ffffff",
+                    "surface-container-low": "#f3f3f9",
+                    "primary-container": "#004e8b",
+                    "tertiary-container": "#781b9f",
+                    "on-surface-variant": "#424750",
+                    "on-secondary-container": "#207128",
+                    "on-secondary": "#ffffff",
+                    "tertiary": "#5a007c",
+                    "primary-fixed-dim": "#a2c9ff",
+                    "surface-container-highest": "#e1e2e8",
+                    "tertiary-fixed": "#f8d8ff",
+                    "on-tertiary-fixed-variant": "#721199",
+                    "surface-container": "#ededf3",
+                    "on-secondary-fixed": "#002204",
+                    "on-background": "#191c20",
+                    "inverse-on-surface": "#f0f0f6",
+                    "primary-fixed": "#d3e4ff",
+                    "secondary-container": "#a0f499",
+                    "on-primary": "#ffffff",
+                    "surface-container-high": "#e7e8ee",
+                    "on-primary-container": "#91c0ff",
+                    "surface-variant": "#e1e2e8",
+                    "secondary-fixed-dim": "#87d982",
+                    "inverse-surface": "#2e3035",
+                    "on-error-container": "#93000a",
+                    "surface-bright": "#f8f9ff",
+                    "on-tertiary-container": "#e7a5ff",
+                    "on-secondary-fixed-variant": "#005312"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "gutter": "16px",
+                    "stack-md": "16px",
+                    "screen-margin": "20px",
+                    "touch-target-min": "48px",
+                    "stack-sm": "8px",
+                    "stack-lg": "24px"
+            },
+            "fontFamily": {
+                    "label-lg": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "headline-md": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "headline-sm": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "body-lg": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "label-sm": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "body-md": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "headline-lg-mobile": [
+                            "Plus Jakarta Sans"
+                    ],
+                    "headline-lg": [
+                            "Plus Jakarta Sans"
+                    ]
+            },
+            "fontSize": {
+                    "label-lg": [
+                            "14px",
+                            {
+                                    "lineHeight": "20px",
+                                    "letterSpacing": "0.05em",
+                                    "fontWeight": "600"
+                            }
+                    ],
+                    "headline-md": [
+                            "24px",
+                            {
+                                    "lineHeight": "32px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-sm": [
+                            "20px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "body-lg": [
+                            "18px",
+                            {
+                                    "lineHeight": "28px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "label-sm": [
+                            "12px",
+                            {
+                                    "lineHeight": "16px",
+                                    "fontWeight": "500"
+                            }
+                    ],
+                    "body-md": [
+                            "16px",
+                            {
+                                    "lineHeight": "24px",
+                                    "fontWeight": "400"
+                            }
+                    ],
+                    "headline-lg-mobile": [
+                            "28px",
+                            {
+                                    "lineHeight": "36px",
+                                    "fontWeight": "700"
+                            }
+                    ],
+                    "headline-lg": [
+                            "32px",
+                            {
+                                    "lineHeight": "40px",
+                                    "letterSpacing": "-0.02em",
+                                    "fontWeight": "700"
+                            }
+                    ]
+            }
+    },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-family: 'Material Symbols Outlined';
+            font-weight: normal;
+            font-style: normal;
+            font-size: 24px;
+            line-height: 1;
+            letter-spacing: normal;
+            text-transform: none;
+            display: inline-block;
+            white-space: nowrap;
+            word-wrap: normal;
+            direction: ltr;
+            -webkit-font-feature-settings: 'liga';
+            -webkit-font-smoothing: antialiased;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background min-h-screen flex items-center justify-center font-body-md text-on-background antialiased selection:bg-primary-container selection:text-on-primary-container p-screen-margin">
+<!-- Background Pattern / Decoration -->
+<div class="fixed inset-0 pointer-events-none overflow-hidden z-0 flex items-center justify-center opacity-30">
+<div class="absolute w-[800px] h-[800px] bg-primary-fixed rounded-full blur-3xl opacity-20 -top-1/4 -right-1/4"></div>
+<div class="absolute w-[600px] h-[600px] bg-secondary-container rounded-full blur-3xl opacity-20 -bottom-1/4 -left-1/4"></div>
+</div>
+<!-- Main Card Container -->
+<main class="relative z-10 w-full max-w-md bg-surface-container-lowest rounded-xl shadow-[0_8px_24px_-8px_rgba(0,0,0,0.12)] p-8 sm:p-12 overflow-hidden border border-surface-variant">
+<!-- Header Section -->
+<div class="text-center mb-stack-lg">
+<div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary-container mb-stack-md text-on-primary-container">
+<span class="material-symbols-outlined" data-icon="lock_reset" style="font-size: 32px; font-variation-settings: 'FILL' 1;">lock_reset</span>
+</div>
+<h1 class="text-headline-md font-headline-md text-on-surface mb-stack-sm">忘記密碼</h1>
+<p class="text-body-md font-body-md text-on-surface-variant">請輸入您註冊時使用的電子郵件地址，我們將發送密碼重設連結給您。</p>
+</div>
+<!-- Initial State Form -->
+<form class="space-y-stack-md transition-all duration-300" id="resetForm">
+<!-- Email Input Group -->
+<div>
+<label class="block text-label-sm font-label-sm text-on-surface mb-2" for="email">電子郵件</label>
+<div class="relative">
+<div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-on-surface-variant">
+<span class="material-symbols-outlined" data-icon="mail" style="font-size: 20px;">mail</span>
+</div>
+<input class="block w-full pl-10 pr-3 py-3 border border-outline rounded-DEFAULT bg-surface-bright text-on-surface text-body-md font-body-md placeholder:text-on-surface-variant/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-shadow min-h-touch-target-min" id="email" name="email" placeholder="forester@example.com" required="" type="email"/>
+</div>
+</div>
+<!-- Submit Button -->
+<div class="pt-stack-sm">
+<button class="w-full inline-flex items-center justify-center px-6 py-3 border border-transparent rounded-full shadow-sm text-label-lg font-label-lg text-on-primary bg-[#0066B3] hover:bg-primary-container focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors min-h-touch-target-min relative overflow-hidden group" id="submitBtn" type="submit">
+<span id="btnText">發送重設連結</span>
+<!-- Loading Spinner (Hidden by default) -->
+<svg class="animate-spin hidden h-5 w-5 text-white absolute" fill="none" id="loadingSpinner" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+<path class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor"></path>
+</svg>
+</button>
+</div>
+<!-- Back to Login Link -->
+<div class="text-center mt-stack-md">
+<a class="inline-flex items-center text-label-lg font-label-lg text-primary hover:text-on-primary-fixed-variant transition-colors" href="#">
+<span class="material-symbols-outlined mr-1" data-icon="arrow_back" style="font-size: 18px;">arrow_back</span>
+                    返回登入
+                </a>
+</div>
+</form>
+<!-- Success State (Hidden by default) -->
+<div class="hidden flex-col items-center text-center space-y-stack-md transition-all duration-300 opacity-0 translate-y-4" id="successState">
+<div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-secondary-container text-on-secondary-container mb-stack-sm">
+<span class="material-symbols-outlined" data-icon="mark_email_read" style="font-size: 32px; font-variation-settings: 'FILL' 1;">mark_email_read</span>
+</div>
+<h2 class="text-headline-sm font-headline-sm text-on-surface">已發送重設連結</h2>
+<p class="text-body-md font-body-md text-on-surface-variant">
+                我們已經將密碼重設指示發送至 <br/>
+<strong class="text-on-surface font-medium mt-2 block" id="displayEmail"></strong>
+</p>
+<div class="bg-surface-container rounded-lg p-4 mt-stack-md w-full border border-surface-variant text-left">
+<p class="text-label-sm font-label-sm text-on-surface-variant flex items-start">
+<span class="material-symbols-outlined mr-2 text-on-surface-variant" data-icon="info" style="font-size: 16px;">info</span>
+                    如果您沒有在幾分鐘內收到電子郵件，請檢查您的垃圾郵件文件夾。
+                </p>
+</div>
+<div class="pt-stack-md w-full">
+<button class="w-full inline-flex items-center justify-center px-6 py-3 border border-outline rounded-full text-label-lg font-label-lg text-on-surface hover:bg-surface-container focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors min-h-touch-target-min" onclick="resetView()">
+                    重新輸入電子郵件
+                </button>
+</div>
+<div class="text-center mt-stack-sm">
+<a class="inline-flex items-center text-label-lg font-label-lg text-primary hover:text-on-primary-fixed-variant transition-colors" href="#">
+                    返回登入
+                </a>
+</div>
+</div>
+</main>
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('resetForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const btnText = document.getElementById('btnText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const successState = document.getElementById('successState');
+            const displayEmail = document.getElementById('displayEmail');
+            const emailInput = document.getElementById('email');
+
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const emailValue = emailInput.value;
+                if (!emailValue) return;
+
+                // Simulate processing state
+                btnText.classList.add('invisible');
+                loadingSpinner.classList.remove('hidden');
+                submitBtn.disabled = true;
+                emailInput.disabled = true;
+                submitBtn.classList.add('opacity-80', 'cursor-not-allowed');
+
+                // Simulate API call delay
+                setTimeout(() => {
+                    // Transition to success state
+                    form.classList.add('hidden', 'opacity-0', '-translate-y-4');
+                    
+                    displayEmail.textContent = emailValue;
+                    
+                    successState.classList.remove('hidden');
+                    // Small delay to allow display:block to apply before animating opacity
+                    setTimeout(() => {
+                        successState.classList.remove('opacity-0', 'translate-y-4');
+                        successState.classList.add('opacity-100', 'translate-y-0');
+                    }, 50);
+
+                    // Reset button state for future use
+                    btnText.classList.remove('invisible');
+                    loadingSpinner.classList.add('hidden');
+                    submitBtn.disabled = false;
+                    emailInput.disabled = false;
+                    submitBtn.classList.remove('opacity-80', 'cursor-not-allowed');
+                }, 1500);
+            });
+        });
+
+        function resetView() {
+            const form = document.getElementById('resetForm');
+            const successState = document.getElementById('successState');
+            const emailInput = document.getElementById('email');
+
+            successState.classList.add('opacity-0', 'translate-y-4');
+            successState.classList.remove('opacity-100', 'translate-y-0');
+            
+            setTimeout(() => {
+                successState.classList.add('hidden');
+                form.classList.remove('hidden');
+                
+                setTimeout(() => {
+                    form.classList.remove('opacity-0', '-translate-y-4');
+                    emailInput.value = '';
+                    emailInput.focus();
+                }, 50);
+            }, 300);
+        }
+    </script>
+</body></html>

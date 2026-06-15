@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Advanced Map Settings - Forest Intelligence</title>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface": "#f8f9ff",
+                    "outline-variant": "#c2c7d1",
+                    "on-surface-variant": "#424750",
+                    "surface-bright": "#f8f9ff",
+                    "surface-container-highest": "#e1e2e8",
+                    "surface-container-high": "#e7e8ee",
+                    "secondary-fixed-dim": "#87d982",
+                    "inverse-primary": "#a2c9ff",
+                    "background": "#f8f9ff",
+                    "primary-fixed": "#d3e4ff",
+                    "on-tertiary-fixed-variant": "#721199",
+                    "primary-fixed-dim": "#a2c9ff",
+                    "on-secondary-fixed": "#002204",
+                    "tertiary-fixed": "#f8d8ff",
+                    "on-tertiary-fixed": "#320047",
+                    "error": "#ba1a1a",
+                    "tertiary-container": "#781b9f",
+                    "on-primary-fixed": "#001c38",
+                    "inverse-surface": "#2e3035",
+                    "on-background": "#191c20",
+                    "on-primary-fixed-variant": "#004881",
+                    "inverse-on-surface": "#f0f0f6",
+                    "secondary": "#1b6d24",
+                    "surface-tint": "#24609e",
+                    "primary": "#003765",
+                    "surface-container-lowest": "#ffffff",
+                    "on-primary": "#ffffff",
+                    "outline": "#727781",
+                    "tertiary-fixed-dim": "#ebb2ff",
+                    "on-tertiary-container": "#e7a5ff",
+                    "on-primary-container": "#91c0ff",
+                    "on-surface": "#191c20",
+                    "secondary-fixed": "#a3f69c",
+                    "surface-variant": "#e1e2e8",
+                    "secondary-container": "#a0f499",
+                    "on-error": "#ffffff",
+                    "surface-container": "#ededf3",
+                    "on-secondary-fixed-variant": "#005312",
+                    "on-secondary-container": "#207128",
+                    "primary-container": "#004e8b",
+                    "error-container": "#ffdad6",
+                    "surface-dim": "#d9dadf",
+                    "surface-container-low": "#f3f3f9",
+                    "on-error-container": "#93000a",
+                    "on-secondary": "#ffffff",
+                    "tertiary": "#5a007c",
+                    "on-tertiary": "#ffffff"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "touch-target-min": "48px",
+                    "stack-md": "16px",
+                    "screen-margin": "20px",
+                    "stack-lg": "24px",
+                    "stack-sm": "8px",
+                    "gutter": "16px"
+            },
+            "fontFamily": {
+                    "headline-sm": ["Plus Jakarta Sans"],
+                    "headline-md": ["Plus Jakarta Sans"],
+                    "label-sm": ["Plus Jakarta Sans"],
+                    "headline-lg-mobile": ["Plus Jakarta Sans"],
+                    "body-md": ["Plus Jakarta Sans"],
+                    "body-lg": ["Plus Jakarta Sans"],
+                    "label-lg": ["Plus Jakarta Sans"],
+                    "headline-lg": ["Plus Jakarta Sans"]
+            },
+            "fontSize": {
+                    "headline-sm": ["20px", {"lineHeight": "28px", "fontWeight": "700"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "700"}],
+                    "label-sm": ["12px", {"lineHeight": "16px", "fontWeight": "500"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "700"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "label-lg": ["14px", {"lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700"}]
+            }
+          }
+        }
+      }
+    </script>
+<style>
+        /* Custom Toggle Switch */
+        .toggle-checkbox:checked {
+            right: 0;
+            border-color: #003765; /* primary */
+        }
+        .toggle-checkbox:checked + .toggle-label {
+            background-color: #003765; /* primary */
+        }
+        .toggle-checkbox:checked + .toggle-label:after {
+            transform: translateX(100%);
+            border-color: white;
+        }
+        .toggle-label {
+            width: 48px;
+            height: 24px;
+            background-color: #e1e2e8; /* surface-variant */
+            border-radius: 9999px;
+            position: relative;
+            cursor: pointer;
+            transition: background-color 0.2s ease-in-out;
+        }
+        .toggle-label:after {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background-color: white;
+            border-radius: 50%;
+            transition: transform 0.2s ease-in-out;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        /* Custom Range Slider */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 24px;
+            width: 24px;
+            border-radius: 50%;
+            background: #003765; /* primary */
+            cursor: pointer;
+            margin-top: -10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            border: 2px solid white;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #c2c7d1; /* outline-variant */
+            border-radius: 2px;
+        }
+        input[type=range]:focus {
+            outline: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body-md antialiased min-h-screen selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-surface dark:bg-on-surface flex justify-between items-center px-screen-margin py-stack-md">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary dark:text-primary-fixed-dim" style="font-variation-settings: 'FILL' 1;">forest</span>
+<h1 class="font-headline-sm text-headline-sm font-bold text-primary dark:text-primary-fixed-dim">Forest Intelligence</h1>
+</div>
+<button class="text-primary dark:text-primary-fixed-dim font-label-lg text-label-lg hover:opacity-80 transition-opacity active:scale-95 transition-transform">
+            離線
+        </button>
+</header>
+<!-- Main Content Canvas -->
+<main class="pt-[80px] pb-[120px] px-screen-margin max-w-md mx-auto flex flex-col gap-stack-lg">
+<!-- Persistent Status Chip -->
+<div class="flex justify-center mt-2 mb-2">
+<div class="bg-secondary-container text-on-secondary-container px-4 py-1.5 rounded-full font-label-sm text-label-sm flex items-center gap-2 border border-secondary/20 shadow-sm">
+<span class="material-symbols-outlined text-[16px]">cell_tower</span>
+<span>Active Sync - High Accuracy</span>
+</div>
+</div>
+<div class="flex flex-col gap-2">
+<h2 class="font-headline-md text-headline-md text-primary">Advanced Layers</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Configure geospatial data visibility for field operations.</p>
+</div>
+<!-- Bento Grid Layout -->
+<div class="grid grid-cols-2 gap-gutter">
+<!-- High-Res Satellite Imagery (Full Width) -->
+<div class="col-span-2 bg-surface-container-lowest rounded-xl p-4 border border-outline-variant shadow-sm flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">satellite_alt</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-lg text-label-lg text-on-surface">High-Res Satellite</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">0.5m/px imagery</span>
+</div>
+</div>
+<!-- Toggle -->
+<div class="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 opacity-0" id="toggle-satellite" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer" for="toggle-satellite"></label>
+</div>
+</div>
+<!-- Topographic Contours (Half Width) -->
+<div class="col-span-1 bg-surface-container-lowest rounded-xl p-4 border border-outline-variant shadow-sm flex flex-col justify-between h-[140px]">
+<div class="flex justify-between items-start">
+<div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">terrain</span>
+</div>
+<!-- Toggle -->
+<div class="relative inline-block w-12 align-middle select-none">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 opacity-0" id="toggle-topo" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer" for="toggle-topo"></label>
+</div>
+</div>
+<div class="flex flex-col mt-2">
+<span class="font-label-lg text-label-lg text-on-surface leading-tight">Topo Contours</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-1">10m intervals</span>
+</div>
+</div>
+<!-- Sector Boundaries (Half Width) -->
+<div class="col-span-1 bg-surface-container-lowest rounded-xl p-4 border border-outline-variant shadow-sm flex flex-col justify-between h-[140px]">
+<div class="flex justify-between items-start">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant">
+<span class="material-symbols-outlined">polyline</span>
+</div>
+<!-- Toggle -->
+<div class="relative inline-block w-12 align-middle select-none">
+<input class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 opacity-0" id="toggle-sectors" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer" for="toggle-sectors"></label>
+</div>
+</div>
+<div class="flex flex-col mt-2">
+<span class="font-label-lg text-label-lg text-on-surface leading-tight">Sector Bounds</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-1">Audit blocks</span>
+</div>
+</div>
+<!-- Carbon Density Heatmap (Full Width) -->
+<div class="col-span-2 bg-surface-container-lowest rounded-xl p-4 border border-outline-variant shadow-sm flex flex-col gap-4">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary">local_fire_department</span>
+<span class="font-label-lg text-label-lg text-on-surface">Carbon Density Heatmap</span>
+</div>
+<div class="relative inline-block w-12 mr-2 align-middle select-none">
+<input checked="" class="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer z-10 opacity-0" id="toggle-heatmap" name="toggle" type="checkbox"/>
+<label class="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer" for="toggle-heatmap"></label>
+</div>
+</div>
+<!-- Heatmap Legend/Visual -->
+<div class="h-2 w-full rounded-full bg-gradient-to-r from-secondary-fixed-dim via-secondary to-primary-container"></div>
+<div class="flex justify-between font-label-sm text-label-sm text-on-surface-variant">
+<span>Low (0 t/ha)</span>
+<span>High (&gt;300 t/ha)</span>
+</div>
+</div>
+<!-- Layer Opacity Slider (Full Width) -->
+<div class="col-span-2 bg-surface-container-lowest rounded-xl p-4 border border-outline-variant shadow-sm flex flex-col gap-4">
+<div class="flex justify-between items-center">
+<span class="font-label-lg text-label-lg text-on-surface">Global Layer Opacity</span>
+<span class="font-label-sm text-label-sm text-primary font-bold">85%</span>
+</div>
+<div class="pt-2 pb-1">
+<input class="w-full" max="100" min="0" type="range" value="85"/>
+</div>
+</div>
+<!-- Download Action (Full Width) -->
+<div class="col-span-2 mt-4">
+<button class="w-full h-touch-target-min bg-primary text-on-primary rounded-lg font-label-lg text-label-lg flex justify-center items-center gap-2 shadow-[0px_4px_8px_rgba(0,0,0,0.12)] hover:opacity-90 active:scale-[0.98] transition-all">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">download_for_offline</span>
+                    Download Area for Offline Use
+                </button>
+<p class="text-center font-label-sm text-label-sm text-on-surface-variant mt-2">Estimated size: ~145 MB</p>
+</div>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-3 left-3 right-3 rounded-full z-50 bg-surface-container-lowest dark:bg-inverse-surface shadow-[0px_16px_32px_rgba(0,0,0,0.18)] flex justify-around items-center h-touch-target-min max-w-md mx-auto px-2">
+<!-- Inactive Tab: 地圖 -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-4 py-2 hover:bg-surface-variant dark:hover:bg-on-surface-variant rounded-full transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">map</span>
+<span class="font-label-sm text-label-sm mt-0.5">地圖</span>
+</a>
+<!-- Inactive Tab: 採樣 -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-4 py-2 hover:bg-surface-variant dark:hover:bg-on-surface-variant rounded-full transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">analytics</span>
+<span class="font-label-sm text-label-sm mt-0.5">採樣</span>
+</a>
+<!-- Inactive Tab: 同步 -->
+<a class="flex flex-col items-center justify-center text-on-surface-variant dark:text-surface-variant px-4 py-2 hover:bg-surface-variant dark:hover:bg-on-surface-variant rounded-full transition-colors" href="#">
+<span class="material-symbols-outlined text-[24px]">sync</span>
+<span class="font-label-sm text-label-sm mt-0.5">同步</span>
+</a>
+<!-- Active Tab: 設定 -->
+<a class="flex flex-col items-center justify-center bg-primary dark:bg-primary-container text-on-primary dark:text-on-primary-container rounded-full px-5 py-2 shadow-sm" href="#">
+<span class="material-symbols-outlined text-[24px]" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-label-sm text-label-sm mt-0.5 font-bold">設定</span>
+</a>
+</nav>
+<!-- Map Preview Background (Decorative) -->
+<div class="fixed top-0 left-0 w-full h-[300px] -z-10 opacity-[0.03] pointer-events-none mix-blend-multiply" style="background-image: repeating-linear-gradient(45deg, #003765 0, #003765 1px, transparent 1px, transparent 10px);"></div>
+</body></html>
