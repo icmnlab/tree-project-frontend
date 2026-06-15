@@ -38,7 +38,7 @@ class CitiesPage extends StatelessWidget {
       appBar: AppBar(
         title: Text(context.tr('cities_title')),
         flexibleSpace: Container(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             gradient: LinearGradient(
               colors: [AppColors.forestGreen, AppColors.leafGreen],
               begin: Alignment.topLeft,
@@ -49,7 +49,7 @@ class CitiesPage extends StatelessWidget {
         elevation: 4,
       ),
       body: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           gradient: LinearGradient(
             colors: [AppColors.surfaceLight, Colors.white],
             begin: Alignment.topCenter,
@@ -62,7 +62,7 @@ class CitiesPage extends StatelessWidget {
             Container(
               margin: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
+                gradient: const LinearGradient(
                   colors: [AppColors.portBlueLight, AppColors.portBlue],
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,

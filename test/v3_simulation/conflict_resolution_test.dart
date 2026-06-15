@@ -9,7 +9,6 @@
 // - 資料一致性驗證
 // ============================================================================
 
-import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter_test/flutter_test.dart';
 

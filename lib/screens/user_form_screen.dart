@@ -473,7 +473,7 @@ class _UserFormScreenState extends State<UserFormScreen> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: _selectedRole,
+                      initialValue: _selectedRole,
                       decoration: const InputDecoration(
                         labelText: '角色',
                         border: OutlineInputBorder(),

@@ -100,7 +100,7 @@ class ProjectBoundaryCoordinator {
             message: validation.message,
           );
         case BoundaryEnforcement.requireInsideWhenBoundaryExists:
-          return BoundaryDecision(
+          return const BoundaryDecision(
             canProceed: true,
             hasBoundary: false,
             isInside: true,

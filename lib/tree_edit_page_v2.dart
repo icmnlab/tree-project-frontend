@@ -591,7 +591,7 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    CircularProgressIndicator(
+                    const CircularProgressIndicator(
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.teal),
                     ),
                     const SizedBox(height: 16),
@@ -958,9 +958,9 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
                   children: [
                     TextField(
                       controller: searchController,
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         hintText: '輸入樹種名稱關鍵字',
-                        prefixIcon: const Icon(Icons.search),
+                        prefixIcon: Icon(Icons.search),
                       ),
                       onChanged: filterSpecies,
                     ),
@@ -1151,7 +1151,7 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
       final position = await getHighAccuracyPosition();
       final requestData = {
         'area_name': areaName,
-        'description': areaName + '專案區位',
+        'description': '$areaName專案區位',
         'isSubmit': true,
         if (position != null) 'xCoord': position.longitude,
         if (position != null) 'yCoord': position.latitude,
@@ -1350,7 +1350,7 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
                   if (value) _updateCarbonCalculations();
                 });
               },
-              activeColor: Colors.teal[700],
+              activeThumbColor: Colors.teal[700],
             ),
             Text(_autoCalculateEnabled ? '自動' : '手動'),
           ],

@@ -24,6 +24,6 @@ void main() {
 
   test('QA-FIXTURE marker is stable for cleanup', () {
     const marker = '[QA-FIXTURE:field-test]';
-    expect('${marker} HIST-1'.contains(marker), isTrue);
+    expect('$marker HIST-1'.contains(marker), isTrue);
   });
 }

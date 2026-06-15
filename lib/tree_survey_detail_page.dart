@@ -755,7 +755,7 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
                     color: AppColors.forestGreen.withValues(alpha:0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(Icons.photo_library_rounded, color: AppColors.forestGreen, size: 22),
+                  child: const Icon(Icons.photo_library_rounded, color: AppColors.forestGreen, size: 22),
                 ),
                 const SizedBox(width: 14),
                 Text('樹木照片 (${_treeImages.length})',

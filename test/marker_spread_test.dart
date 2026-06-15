@@ -29,7 +29,7 @@ void main() {
     });
 
     test('第 2~9 棵展開在第一環（約 1.5m）', () {
-      final origin = const SpreadPoint(lat, lng);
+      const origin = SpreadPoint(lat, lng);
       for (var i = 1; i <= 8; i++) {
         final p = spreadStackedPoint(lat, lng, i);
         final d = distM(origin, p);
@@ -39,7 +39,7 @@ void main() {
     });
 
     test('第 10 棵起進第二環（約 3m）', () {
-      final origin = const SpreadPoint(lat, lng);
+      const origin = SpreadPoint(lat, lng);
       final p = spreadStackedPoint(lat, lng, 9);
       final d = distM(origin, p);
       expect(d, greaterThan(2.5));
@@ -66,7 +66,7 @@ void main() {
     });
 
     test('位移幅度不影響縣市歸屬（<5m，遠小於行政邊界精度）', () {
-      final origin = const SpreadPoint(lat, lng);
+      const origin = SpreadPoint(lat, lng);
       for (var i = 0; i <= 20; i++) {
         final p = spreadStackedPoint(lat, lng, i);
         expect(distM(origin, p), lessThan(5.0));

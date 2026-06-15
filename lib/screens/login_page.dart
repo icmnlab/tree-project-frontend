@@ -509,7 +509,7 @@ class _LoginPageState extends State<LoginPage>
                   const SizedBox(width: 10),
                   Text(
                     context.tr('login_submit'),
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: Colors.white,
                       fontSize: 17,
                       fontWeight: FontWeight.bold,

@@ -127,7 +127,9 @@ class _AdminResearchDatasetPageState extends State<AdminResearchDatasetPage> {
         perm = await Geolocator.requestPermission();
       }
       if (perm == LocationPermission.denied ||
-          perm == LocationPermission.deniedForever) return;
+          perm == LocationPermission.deniedForever) {
+        return;
+      }
       final pos = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
         timeLimit: const Duration(seconds: 10),
@@ -482,11 +484,11 @@ class _AdminResearchDatasetPageState extends State<AdminResearchDatasetPage> {
   Widget _buildIntro() {
     return Card(
       color: Colors.amber.shade50,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
+      child: const Padding(
+        padding: EdgeInsets.all(12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: const [
+          children: [
             Text('採集流程',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             SizedBox(height: 6),

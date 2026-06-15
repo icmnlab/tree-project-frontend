@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../config/app_config.dart';
 import '../services/locale_service.dart';
@@ -382,7 +382,7 @@ class _V3ServicesPageState extends State<V3ServicesPage> {
           children: [
             Icon(Icons.psychology, color: Colors.purple),
             SizedBox(width: 8),
-            const Text('修正紀錄上傳'),
+            Text('修正紀錄上傳'),
           ],
         ),
         content: Column(

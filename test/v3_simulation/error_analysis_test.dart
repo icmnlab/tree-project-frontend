@@ -31,8 +31,8 @@ Future<void> analyzeCalculationError() async {
     {'distance': 50.0, 'azimuth': 315.0, 'label': '最遠距離 50m'},
   ];
   
-  final double baseLat = 23.8960000;
-  final double baseLon = 121.5480000;
+  const double baseLat = 23.8960000;
+  const double baseLon = 121.5480000;
   
   print('基準位置: ($baseLat, $baseLon)\n');
   print('| 距離 | 方位角 | 計算誤差 | 說明 |');
@@ -66,7 +66,7 @@ Future<void> analyzeCalculationError() async {
     // 計算誤差
     final double errorM = calculateDistance(baseLat, baseLon, stationLat, stationLon);
     
-    print('| ${distance}m | ${azimuth}° | ${errorM.toStringAsExponential(2)}m | ${tc['label']} |');
+    print('| ${distance}m | $azimuth° | ${errorM.toStringAsExponential(2)}m | ${tc['label']} |');
   }
   
   print('\n結論: 計算誤差極小 (< 1e-10 公尺)，可忽略不計\n');
@@ -91,8 +91,8 @@ Future<void> analyzeRealWorldError() async {
   print('\n誤差傳播分析：\n');
   
   // 方位角誤差對測站位置的影響
-  final double distance = 15.0;
-  final double azimuthError = 1.0;  // 1 度誤差
+  const double distance = 15.0;
+  const double azimuthError = 1.0;  // 1 度誤差
   
   // 在 15m 距離，1 度方位角誤差導致的橫向偏移
   final double lateralError = distance * sin(azimuthError * pi / 180);

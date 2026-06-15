@@ -135,7 +135,7 @@ class AppTheme {
     brightness: Brightness.light,
 
     // 色彩配置
-    colorScheme: ColorScheme.light(
+    colorScheme: const ColorScheme.light(
       primary: AppColors.primary,
       primaryContainer: AppColors.primarySurface,
       secondary: AppColors.accent,
@@ -317,7 +317,7 @@ class AppTheme {
     ),
 
     // TabBar 主題
-    tabBarTheme: TabBarThemeData(
+    tabBarTheme: const TabBarThemeData(
       labelColor: AppColors.primary,
       unselectedLabelColor: AppColors.neutral500,
       indicatorColor: AppColors.primary,
@@ -394,14 +394,14 @@ class AppTheme {
     useMaterial3: true,
     brightness: Brightness.dark,
 
-    colorScheme: ColorScheme.dark(
+    colorScheme: const ColorScheme.dark(
       primary: AppColors.primaryLight,
       primaryContainer: AppColors.primaryDark,
       secondary: AppColors.accentLight,
       secondaryContainer: AppColors.accentDark,
       tertiary: AppColors.tipcTeal,
       surface: AppColors.darkSurface,
-      error: const Color(0xFFEF5350),
+      error: Color(0xFFEF5350),
       onPrimary: AppColors.white,
       onSecondary: AppColors.white,
       onSurface: AppColors.darkTextPrimary,
@@ -565,7 +565,7 @@ class AppTheme {
       labelMedium: labelMedium.copyWith(color: AppColors.darkTextSecondary),
     ),
 
-    tabBarTheme: TabBarThemeData(
+    tabBarTheme: const TabBarThemeData(
       labelColor: AppColors.primaryLight,
       unselectedLabelColor: AppColors.darkTextTertiary,
       indicatorColor: AppColors.primaryLight,
@@ -832,7 +832,7 @@ class StatCard extends StatelessWidget {
               ),
               const Spacer(),
               if (onTap != null)
-                Icon(
+                const Icon(
                   Icons.arrow_forward_ios_rounded,
                   size: 14,
                   color: AppColors.neutral500,
@@ -988,7 +988,7 @@ class EmptyState extends StatelessWidget {
           children: [
             Container(
               padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.neutral100,
                 shape: BoxShape.circle,
               ),

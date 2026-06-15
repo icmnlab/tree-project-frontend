@@ -219,7 +219,7 @@ class _ApiKeyManagementScreenState extends State<ApiKeyManagementScreen> {
           children: [
             Row(
               children: [
-                Icon(Icons.key, color: AppColors.forestGreen),
+                const Icon(Icons.key, color: AppColors.forestGreen),
                 const SizedBox(width: 8),
                 Text(
                   '新建的 API 密鑰',

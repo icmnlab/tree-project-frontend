@@ -799,7 +799,7 @@ class _TreeListPageState extends State<TreeListPage> {
                               height: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : Icon(Icons.table_chart_rounded, color: AppColors.forestGreen),
+                          : const Icon(Icons.table_chart_rounded, color: AppColors.forestGreen),
                       const SizedBox(width: 12),
                       Text(_isExportingExcel ? context.tr('tree_list_export_excel_loading') : context.tr('tree_list_export_excel')),
                     ],
@@ -816,7 +816,7 @@ class _TreeListPageState extends State<TreeListPage> {
                               height: 20,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : Icon(Icons.picture_as_pdf_rounded, color: AppColors.tipcRed),
+                          : const Icon(Icons.picture_as_pdf_rounded, color: AppColors.tipcRed),
                       const SizedBox(width: 12),
                       Text(_isExportingPdf ? context.tr('tree_list_export_pdf_loading') : context.tr('tree_list_export_pdf')),
                     ],
@@ -826,7 +826,7 @@ class _TreeListPageState extends State<TreeListPage> {
                   value: 'import',
                   child: Row(
                     children: [
-                      Icon(Icons.upload_file_rounded, color: AppColors.portBlue),
+                      const Icon(Icons.upload_file_rounded, color: AppColors.portBlue),
                       const SizedBox(width: 12),
                       Text(context.tr('tree_list_import_excel')),
                     ],
@@ -872,7 +872,7 @@ class _TreeListPageState extends State<TreeListPage> {
                             decoration: InputDecoration(
                               hintText: context.tr('tree_list_search_hint'),
                               hintStyle: TextStyle(color: textTertiary, fontSize: 14),
-                              prefixIcon: Icon(Icons.search_rounded, color: AppColors.portBlue),
+                              prefixIcon: const Icon(Icons.search_rounded, color: AppColors.portBlue),
                               border: OutlineInputBorder(
                                 borderRadius: BorderRadius.circular(16),
                                 borderSide: BorderSide.none,
@@ -904,7 +904,7 @@ class _TreeListPageState extends State<TreeListPage> {
                             value: _projects.contains(_selectedProject)
                                 ? _selectedProject
                                 : '全部',
-                            icon: Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.portBlue),
+                            icon: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.portBlue),
                             items: _projects.map((String project) {
                               return DropdownMenuItem<String>(
                                 value: project,
@@ -948,11 +948,11 @@ class _TreeListPageState extends State<TreeListPage> {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.sort_rounded, size: 16, color: AppColors.portBlue),
+                            const Icon(Icons.sort_rounded, size: 16, color: AppColors.portBlue),
                             const SizedBox(width: 8),
                             Text(
                               '${_sortLabel(_sortBy)} (${_isAscending ? '↑' : '↓'})',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 color: AppColors.portBlue,
                                 fontWeight: FontWeight.w600,
                                 fontSize: 12,
@@ -977,7 +977,7 @@ class _TreeListPageState extends State<TreeListPage> {
                               : context.trParams('tree_list_total', {
                                   'n': '$_totalCount',
                                 }),
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: AppColors.forestGreen,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
@@ -1007,7 +1007,7 @@ class _TreeListPageState extends State<TreeListPage> {
                                     ),
                                   ],
                                 ),
-                                child: CircularProgressIndicator(
+                                child: const CircularProgressIndicator(
                                   valueColor: AlwaysStoppedAnimation<Color>(AppColors.portBlue),
                                   strokeWidth: 3,
                                 ),
@@ -1045,7 +1045,7 @@ class _TreeListPageState extends State<TreeListPage> {
                                         color: AppColors.error.withValues(alpha: 0.1),
                                         shape: BoxShape.circle,
                                       ),
-                                      child: Icon(
+                                      child: const Icon(
                                         Icons.error_outline_rounded,
                                         color: AppColors.error,
                                         size: 48,
@@ -1099,7 +1099,7 @@ class _TreeListPageState extends State<TreeListPage> {
                                             color: AppColors.forestGreen.withValues(alpha: 0.1),
                                             shape: BoxShape.circle,
                                           ),
-                                          child: Icon(Icons.park_outlined, size: 48, color: AppColors.forestGreen),
+                                          child: const Icon(Icons.park_outlined, size: 48, color: AppColors.forestGreen),
                                         ),
                                         const SizedBox(height: 20),
                                         Text(
@@ -1178,7 +1178,7 @@ class _TreeListPageState extends State<TreeListPage> {
                                                       width: 52,
                                                       height: 52,
                                                       decoration: BoxDecoration(
-                                                        gradient: LinearGradient(
+                                                        gradient: const LinearGradient(
                                                           colors: [AppColors.leafGreen, AppColors.forestGreen],
                                                           begin: Alignment.topLeft,
                                                           end: Alignment.bottomRight,
@@ -1279,7 +1279,7 @@ class _TreeListPageState extends State<TreeListPage> {
                                                               _sortBy == '胸徑（公分）' ? '胸徑: ${tree['胸徑（公分）']}cm' :
                                                               _sortBy == '碳儲存量' ? '碳儲存量: ${tree['碳儲存量']}' :
                                                               '年碳吸存量: ${tree['推估年碳吸存量']}',
-                                                              style: TextStyle(color: AppColors.portBlue, fontSize: 12, fontWeight: FontWeight.w500),
+                                                              style: const TextStyle(color: AppColors.portBlue, fontSize: 12, fontWeight: FontWeight.w500),
                                                             ),
                                                           ),
                                                         ],
@@ -1290,11 +1290,11 @@ class _TreeListPageState extends State<TreeListPage> {
                                                   if (!_isSelectionMode)
                                                     Container(
                                                       padding: const EdgeInsets.all(8),
-                                                      decoration: BoxDecoration(
+                                                      decoration: const BoxDecoration(
                                                         color: AppColors.surfaceLight,
                                                         shape: BoxShape.circle,
                                                       ),
-                                                      child: Icon(
+                                                      child: const Icon(
                                                         Icons.chevron_right_rounded,
                                                         color: AppColors.neutral500,
                                                         size: 20,

@@ -215,15 +215,15 @@ void testFormulaSymmetry() {
   print('--- 測試 1: 公式對稱性驗證 ---\n');
   
   // 假設測站位置
-  final double stationLat = 23.8960000;
-  final double stationLon = 121.5480000;
+  const double stationLat = 23.8960000;
+  const double stationLon = 121.5480000;
   
   // 測量參數
-  final double distance = 15.0;  // 15 公尺
-  final double azimuth = 45.0;   // 東北方向
+  const double distance = 15.0;  // 15 公尺
+  const double azimuth = 45.0;   // 東北方向
   
   // 正向計算：從測站計算樹木位置
-  final double azimuthRad = azimuth * pi / 180.0;
+  const double azimuthRad = azimuth * pi / 180.0;
   const double metersPerDegreeLat = 111320.0;
   final double metersPerDegreeLon = metersPerDegreeLat * cos(stationLat * pi / 180.0);
   
@@ -266,9 +266,9 @@ void testFormulaSymmetry() {
 void testSpecialAngles() {
   print('--- 測試 2: 特殊角度驗證 ---\n');
   
-  final double treeLat = 23.8960000;
-  final double treeLon = 121.5480000;
-  final double distance = 10.0;
+  const double treeLat = 23.8960000;
+  const double treeLon = 121.5480000;
+  const double distance = 10.0;
   
   final testCases = [
     {'azimuth': 0.0, 'expected': '測站在樹木正南方'},
@@ -316,7 +316,7 @@ Future<void> testWithRealData() async {
   print('--- 測試 3: 實際 VLGEO2 數據驗證 ---\n');
   
   // 讀取 CSV 檔案
-  final String csvPath = '../fixtures/vlgeo2/DATA_2.CSV';
+  const String csvPath = '../fixtures/vlgeo2/DATA_2.CSV';
   final File file = File(csvPath);
   
   if (!await file.exists()) {

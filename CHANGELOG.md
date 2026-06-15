@@ -4,6 +4,14 @@
 
 ---
 
+## v18.10.0 (2026-06-15) — 程式碼品質批次清理 + Forest Intelligence 主題（可選用）
+
+- **`dart fix --apply`（38 檔、149 項）**：批次套用安全自動修正（`prefer_const_*`、`unnecessary_import`、`unnecessary_string_interpolations`、`deprecated_member_use` 等），降低 `flutter analyze` 噪音；無錯誤產生。
+- **移除既有 dead code**：刪除未被引用的 `map_page._extractCitiesFromData` 與 `ble_live_session_page._gpsDialogOpen`（唯寫旗標，連同無作用的 try/finally 一併收斂），清除 2 個 `warning`。
+- **新增 `themes/forest_intelligence_theme.dart`（可選用）**：將設計交付物 `UI_sustainable_treeai/forest_intelligence/DESIGN.md` 的設計 token（Material 3 色彩/字體/圓角/間距）抽成完整 `ThemeData` 與常數。**目前為 opt-in，未掛上 `MaterialApp`**（現行仍用 `AppTheme`），交接者於 `main.dart` 一行切換即可全域採用，避免交接前一次改動所有畫面。字體 `Plus Jakarta Sans` 未打包，未提供時自動退回系統字體。
+
+---
+
 ## v18.9.1 (2026-06-15) — 程式碼品質：移除 `print`、去個人化註解
 
 - **`avoid_print` 清理**：將 `services/api_service.dart`、`statistics_page.dart`、`screens/ai_sustainability_report_screen.dart`、`screens/ble_import_page.dart`、`screens/manual_input_page_v2.dart` 中殘留的 `print()` 改為 `debugPrint()`，符合 `flutter_lints`（`field_log.dart`、`debug/app_verification_harness.dart` 之 `print` 為刻意設計，已附 `// ignore: avoid_print` 與理由，保留）。

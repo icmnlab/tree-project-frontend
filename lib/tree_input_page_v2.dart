@@ -71,7 +71,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
   List<Map<String, dynamic>> _speciesList = [];
   bool _loadingSpecies = false;
   // ignore: unused_field
-  List<Map<String, dynamic>> _projectList = []; // Reserved for project list caching
+  final List<Map<String, dynamic>> _projectList = []; // Reserved for project list caching
   List<Map<String, dynamic>> _projectAreas = [];
   bool _loadingAreas = false;
   List<Map<String, dynamic>> _filteredProjects = [];
@@ -948,7 +948,6 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
               onPressed: () => Navigator.of(context).pop(),
             ),
             ElevatedButton(
-              child: const Text('新增'),
               style: ElevatedButton.styleFrom(backgroundColor: Colors.teal),
               onPressed: () async {
                 if (nameController.text.isNotEmpty) {
@@ -956,6 +955,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
                   await _addSpecies(nameController.text);
                 }
               },
+              child: const Text('新增'),
             ),
           ],
         );
@@ -1056,9 +1056,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
         position = await Geolocator.getLastKnownPosition();
         
         // 如果沒有最後位置，則嘗試獲取當前位置，但設定超時
-        if (position == null) {
-          position = await getHighAccuracyPosition(timeout: const Duration(seconds: 3));
-        }
+        position ??= await getHighAccuracyPosition(timeout: const Duration(seconds: 3));
       } catch (e) {
         logDebug('獲取位置失敗 (非致命): $e');
         // 位置獲取失敗不應阻止新增區位
@@ -1066,7 +1064,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
 
       final requestData = {
         'area_name': areaName,
-        'description': areaName + '專案區位',
+        'description': '$areaName專案區位',
         'isSubmit': true,
         if (position != null) 'xCoord': position.longitude,
         if (position != null) 'yCoord': position.latitude,
@@ -1499,7 +1497,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
                   }
                 });
               },
-              activeColor: Colors.teal[700],
+              activeThumbColor: Colors.teal[700],
             ),
             Text(_autoCalculateEnabled ? '自動' : '手動',
                 style: TextStyle(color: Colors.grey[700])),
@@ -1676,7 +1674,7 @@ class _TreeInputPageV2State extends State<TreeInputPageV2> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    CircularProgressIndicator(
+                    const CircularProgressIndicator(
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.teal),
                     ),
                     const SizedBox(height: 16),

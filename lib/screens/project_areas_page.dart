@@ -302,7 +302,7 @@ class _ProjectsByAreaPage extends StatelessWidget {
         itemCount: projects.length,
         itemBuilder: (context, index) {
           final project = projects[index];
-          final projectColor = Colors.teal;
+          const projectColor = Colors.teal;
           return Card(
             margin: const EdgeInsets.symmetric(
               horizontal: 4,
@@ -358,7 +358,7 @@ class _ProjectsByAreaPage extends StatelessWidget {
                     color: projectColor.withValues(alpha:0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.arrow_forward_ios,
                     size: 16,
                     color: projectColor,
@@ -381,7 +381,7 @@ class _ProjectsByAreaPage extends StatelessWidget {
       ),
       floatingActionButton: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
+          gradient: const LinearGradient(
             colors: [AppColors.leafGreen, AppColors.forestGreen],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,

@@ -928,7 +928,7 @@ class _PendingMeasurementTaskPageState extends State<PendingMeasurementTaskPage>
                         labelText: '區',
                         border: OutlineInputBorder(),
                       ),
-                      value: selectedCode,
+                      initialValue: selectedCode,
                       items: projects.map((p) {
                         final code = p['code']?.toString() ?? '';
                         final name = p['name']?.toString() ?? code;

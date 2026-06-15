@@ -2259,8 +2259,8 @@ class _BleImportPageState extends State<BleImportPage> {
     await showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Row(
-          children: const [
+        title: const Row(
+          children: [
             Icon(Icons.location_off, color: Colors.deepOrange),
             SizedBox(width: 8),
             Text('已移除缺 GPS 記錄'),

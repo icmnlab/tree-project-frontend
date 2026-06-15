@@ -297,7 +297,6 @@ class _AdminPageState extends State<AdminPage> {
                 TextButton(
                   style: TextButton.styleFrom(
                       foregroundColor: Theme.of(context).colorScheme.error),
-                  child: const Text('清除全部'),
                   onPressed: _projectsForExport.isEmpty // 如果沒有專案，禁用此按鈕
                       ? null
                       : () {
@@ -305,6 +304,7 @@ class _AdminPageState extends State<AdminPage> {
                             tempSelectedCodes.clear();
                           });
                         },
+                  child: const Text('清除全部'),
                 ),
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -523,7 +523,7 @@ class _AdminPageState extends State<AdminPage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => UserFormScreen(),
+        builder: (context) => const UserFormScreen(),
       ),
     ).then((result) {
       if (result == true) {

@@ -88,7 +88,7 @@ class AddTreeSelectionDialog extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
+                  const Text(
                     '請選擇適合您的輸入方式',
                     style: TextStyle(
                       fontSize: 14,
@@ -157,7 +157,7 @@ class AddTreeSelectionDialog extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: Text(
+                child: const Text(
                   '取消',
                   style: TextStyle(
                     fontSize: 15,
@@ -296,7 +296,7 @@ class _ModeOptionCardState extends State<_ModeOptionCard> {
                   const SizedBox(height: 4),
                   Text(
                     widget.subtitle,
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w400,
                       color: AppColors.neutral600,
@@ -305,7 +305,7 @@ class _ModeOptionCardState extends State<_ModeOptionCard> {
                 ],
               ),
             ),
-            Icon(
+            const Icon(
               Icons.arrow_forward_ios_rounded,
               size: 16,
               color: AppColors.neutral400,

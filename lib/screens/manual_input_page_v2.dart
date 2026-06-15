@@ -311,7 +311,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
           ),
           const SizedBox(height: 24),
           DropdownButtonFormField<String>(
-            value: _defaultArea,
+            initialValue: _defaultArea,
             decoration: const InputDecoration(
               labelText: '預設專案',
               border: OutlineInputBorder(),
@@ -346,7 +346,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
-            value: _defaultProject,
+            initialValue: _defaultProject,
             decoration: const InputDecoration(
               labelText: '預設區名稱',
               border: OutlineInputBorder(),
@@ -385,8 +385,9 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
                 ? () {
                     // Apply defaults to all rows initially
                     for (var item in _editableData) {
-                      if (item['project_area'] == null)
+                      if (item['project_area'] == null) {
                         item['project_area'] = _defaultArea;
+                      }
                       if (item['project_name'] == null) {
                         item['project_name'] = _defaultProject;
                         item['project_code'] = _defaultProjectCode;
@@ -530,13 +531,13 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
         // Batch Actions
         Container(
           padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             color: Colors.white,
             boxShadow: [
               BoxShadow(
                   color: Colors.black12,
                   blurRadius: 4,
-                  offset: const Offset(0, -2))
+                  offset: Offset(0, -2))
             ],
           ),
           child: Column(
@@ -808,7 +809,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 DropdownButtonFormField<String>(
-                  value: tempArea,
+                  initialValue: tempArea,
                   items: [
                     ..._projectAreas
                         .map((area) => DropdownMenuItem(
@@ -982,14 +983,16 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
         final newSpecies =
             _speciesList.firstWhere((s) => s['name'] == name, orElse: () => {});
         if (newSpecies.isNotEmpty) _batchUpdateField('species', newSpecies);
-        if (mounted)
+        if (mounted) {
           ScaffoldMessenger.of(context)
               .showSnackBar(const SnackBar(content: Text('樹種新增成功')));
+        }
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('新增失敗: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -1273,7 +1276,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
 
       final requestData = {
         'area_name': areaName,
-        'description': areaName + '專案區位',
+        'description': '$areaName專案區位',
         'isSubmit': true,
         if (position != null) 'xCoord': position.longitude,
         if (position != null) 'yCoord': position.latitude,
@@ -1292,7 +1295,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
           }
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('專案新增成功。請繼續新增區。')),
+              const SnackBar(content: Text('專案新增成功。請繼續新增區。')),
             );
             Future.delayed(const Duration(milliseconds: 500), () {
               if (mounted) _showAddProjectDialog(overrideArea: areaName);
@@ -1307,15 +1310,17 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
             _projects = [];
           });
           await _loadProjects(areaName);
-          if (mounted)
+          if (mounted) {
             ScaffoldMessenger.of(context)
                 .showSnackBar(const SnackBar(content: Text('新增成功')));
+          }
         }
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('失敗: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -1388,14 +1393,16 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
           });
         }
 
-        if (mounted && _currentStep == 0)
+        if (mounted && _currentStep == 0) {
           ScaffoldMessenger.of(context)
               .showSnackBar(const SnackBar(content: Text('新增成功')));
+        }
       }
     } catch (e) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text('失敗: $e')));
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

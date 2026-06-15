@@ -509,7 +509,7 @@ void main() {
       
       // 等待連線狀態事件
       await completer.future.timeout(
-        Duration(seconds: 2),
+        const Duration(seconds: 2),
         onTimeout: () {},
       );
       
@@ -528,7 +528,7 @@ void main() {
       final result = await service.connect('test_laser_01', successRate: 0.0);
       
       // 等待錯誤事件
-      await Future.delayed(Duration(milliseconds: 100));
+      await Future.delayed(const Duration(milliseconds: 100));
       
       expect(result, false);
       expect(service.connectedDevice, isNull);

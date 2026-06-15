@@ -515,7 +515,7 @@ void main() {
     
     test('圓形邊緣點計算直徑', () {
       final now = DateTime.now();
-      final radius = 0.25; // 25cm 半徑
+      const radius = 0.25; // 25cm 半徑
       final points = <TestARMeasurementPoint>[];
       
       // 產生圓形上的點

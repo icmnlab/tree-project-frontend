@@ -59,9 +59,11 @@ class _TreeMeasurementHistoryPanelState
         if (url == null || !url.startsWith('http')) continue;
         (map[id] ??= []).add(url);
       }
-      if (mounted) setState(() => _imagesByMeasurement
+      if (mounted) {
+        setState(() => _imagesByMeasurement
         ..clear()
         ..addAll(map));
+      }
     } catch (_) {}
   }
 
@@ -334,7 +336,7 @@ class _TreeMeasurementHistoryPanelState
     if (_loading) {
       return Padding(
         padding: EdgeInsets.symmetric(vertical: widget.compact ? 8 : 12),
-        child: Center(
+        child: const Center(
           child: SizedBox(
             width: 24,
             height: 24,

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:ui';
 import 'package:fl_chart/fl_chart.dart';
 import 'services/carbon_calculation_service.dart';
 import 'services/api_service.dart';
@@ -331,7 +330,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
                 barRods: [
                   BarChartRodData(
                     toY: (int.tryParse(topSpecies[index]['count'].toString()) ?? 0).toDouble(),
-                    gradient: LinearGradient(
+                    gradient: const LinearGradient(
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                       colors: [AppColors.forestGreen, AppColors.leafGreen],
@@ -466,7 +465,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
                 barRods: [
                   BarChartRodData(
                     toY: (int.tryParse(topProjects[index]['count'].toString()) ?? 0).toDouble(),
-                    gradient: LinearGradient(
+                    gradient: const LinearGradient(
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                       colors: [AppColors.portBlue, AppColors.oceanCyan],
@@ -581,7 +580,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
                 barRods: [
                   BarChartRodData(
                     toY: (int.tryParse(topAreas[index]['count'].toString()) ?? 0).toDouble(),
-                    gradient: LinearGradient(
+                    gradient: const LinearGradient(
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                       colors: [AppColors.warmOrange, AppColors.sunYellow],
@@ -654,7 +653,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
                 const SizedBox(width: 16),
                 Text(
                   LocaleService.instance.t('stats_size_title'),
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: AppColors.creativePurple,
@@ -742,7 +741,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
                 const SizedBox(width: 16),
                 Text(
                   LocaleService.instance.t('stats_carbon_title'),
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: AppColors.forestGreen,
@@ -867,7 +866,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
                   child: _buildCarbonMetricCard(
                     icon: Icons.trending_up,
                     label: LocaleService.instance.t('stats_annual_seq_label'),
-                    value: '${_totalAnnualSequestration.toStringAsFixed(1)}',
+                    value: _totalAnnualSequestration.toStringAsFixed(1),
                     unit: 'kg CO₂',
                   ),
                 ),
@@ -876,7 +875,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
                   child: _buildCarbonMetricCard(
                     icon: Icons.inventory_2,
                     label: LocaleService.instance.t('stats_total_storage_label'),
-                    value: '${_totalCarbonStorage.toStringAsFixed(1)}',
+                    value: _totalCarbonStorage.toStringAsFixed(1),
                     unit: 'kg CO₂',
                   ),
                 ),
@@ -981,7 +980,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CircularProgressIndicator(
+                  const CircularProgressIndicator(
                     valueColor: AlwaysStoppedAnimation<Color>(AppColors.portBlue),
                     strokeWidth: 3,
                   ),

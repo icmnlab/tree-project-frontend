@@ -65,7 +65,6 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   bool _reconnecting = false;
   bool _reconnectAfterProcessing = false;
   bool _formOpen = false;
-  bool _gpsDialogOpen = false;
   int _reconnectAttempt = 0;
   int _processGen = 0;
   static const _maxReconnectAttempts = 5;
@@ -989,44 +988,39 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   /// 每次 SEND 皆於樹旁手動取得手機 GPS（2026-05-28 會議：固定樹木位置）
   /// 維護重測：先問是否更新樹位；若要才定位，否則沿用原座標。
   Future<FieldGpsCaptureResult?> _resolveGpsForLiveMeasurement(int seq) async {
-    _gpsDialogOpen = true;
-    try {
-      final maint = widget.maintenanceTarget;
-      if (maint != null) {
-        final label = TreeIdDisplay.fieldListLabel(
-          projectTreeId: maint.projectTreeId,
-          systemTreeId: maint.systemTreeId,
-        );
-        final decision = await showMaintenanceRemeasureGpsFlow(
-          context,
-          treeLabel: label,
-        );
-        if (decision == null) return null;
-        _pendingUpdateTreeLocation = decision.updateTreeLocation;
-        final gps = resolveMaintenancePendingGps(
-          decision: decision,
-          existingLat: maint.treeLatitude,
-          existingLon: maint.treeLongitude,
-        );
-        if (gps == null && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('此樹尚無座標，請選擇「更新 GPS」'),
-              backgroundColor: Colors.orange,
-            ),
-          );
-        }
-        return gps;
-      }
-      _pendingUpdateTreeLocation = false;
-      return await showFieldGpsCaptureDialog(
-        context,
-        mode: 'tree',
-        title: '第 $seq 棵 · 樹旁 GPS',
+    final maint = widget.maintenanceTarget;
+    if (maint != null) {
+      final label = TreeIdDisplay.fieldListLabel(
+        projectTreeId: maint.projectTreeId,
+        systemTreeId: maint.systemTreeId,
       );
-    } finally {
-      _gpsDialogOpen = false;
+      final decision = await showMaintenanceRemeasureGpsFlow(
+        context,
+        treeLabel: label,
+      );
+      if (decision == null) return null;
+      _pendingUpdateTreeLocation = decision.updateTreeLocation;
+      final gps = resolveMaintenancePendingGps(
+        decision: decision,
+        existingLat: maint.treeLatitude,
+        existingLon: maint.treeLongitude,
+      );
+      if (gps == null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('此樹尚無座標，請選擇「更新 GPS」'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return gps;
     }
+    _pendingUpdateTreeLocation = false;
+    return await showFieldGpsCaptureDialog(
+      context,
+      mode: 'tree',
+      title: '第 $seq 棵 · 樹旁 GPS',
+    );
   }
 
   int? _treeSurveyIdFromTransfer(Map<String, dynamic>? tr) =>

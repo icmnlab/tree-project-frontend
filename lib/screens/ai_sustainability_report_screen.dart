@@ -472,7 +472,7 @@ class _AISustainabilityReportScreenState
           children: [
             Row(
               children: [
-                Icon(Icons.analytics, color: AppColors.forestGreen),
+                const Icon(Icons.analytics, color: AppColors.forestGreen),
                 const SizedBox(width: 8),
                 Text('AI 永續發展分析',
                     style: Theme.of(context).textTheme.titleLarge),
@@ -499,8 +499,9 @@ class _AISustainabilityReportScreenState
   }
 
   Widget _buildBasicStats() {
-    if (_reportData == null || _reportData!['basicStats'] == null)
+    if (_reportData == null || _reportData!['basicStats'] == null) {
       return Container();
+    }
     final stats = _reportData!['basicStats'];
 
     // Helper function to safely format numbers, handling nulls

@@ -286,10 +286,10 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 18),
             child: _isLoading
-                ? Row(
+                ? const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const SizedBox(
+                      SizedBox(
                         width: 22,
                         height: 22,
                         child: CircularProgressIndicator(
@@ -297,8 +297,8 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
                           color: Colors.white,
                         ),
                       ),
-                      const SizedBox(width: 14),
-                      const Text(
+                      SizedBox(width: 14),
+                      Text(
                         '智慧辨識中...',
                         style: TextStyle(
                           color: Colors.white,
@@ -468,9 +468,9 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
           // 標題區
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.forestGreen,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(19)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(19)),
             ),
             child: Row(
               children: [
@@ -532,7 +532,7 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
                 // 學名
                 Text(
                   scientificName,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                     fontStyle: FontStyle.italic,
@@ -564,11 +564,11 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.category_outlined, size: 14, color: AppColors.forestGreen),
+                        const Icon(Icons.category_outlined, size: 14, color: AppColors.forestGreen),
                         const SizedBox(width: 6),
                         Text(
                           family,
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: AppColors.forestGreen,
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
@@ -659,10 +659,10 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
                     color: AppColors.portBlueLight.withValues(alpha:0.2),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.eco, color: AppColors.portBlue, size: 18),
+                  child: const Icon(Icons.eco, color: AppColors.portBlue, size: 18),
                 ),
                 const SizedBox(width: 10),
-                Text(
+                const Text(
                   '系統樹種庫匹配',
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
@@ -722,22 +722,22 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
         children: [
           Container(
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
+            decoration: const BoxDecoration(
               color: AppColors.surfaceLight,
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(15)),
+              borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
             ),
             child: Row(
               children: [
                 Container(
                   padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: AppColors.surfaceLight,
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(Icons.verified_outlined, color: AppColors.forestGreen, size: 18),
+                  child: const Icon(Icons.verified_outlined, color: AppColors.forestGreen, size: 18),
                 ),
                 const SizedBox(width: 10),
-                Expanded(
+                const Expanded(
                   child: Text(
                     'GBIF 學術驗證',
                     style: TextStyle(
@@ -786,8 +786,8 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
                           await launchUrl(url, mode: LaunchMode.externalApplication);
                         }
                       },
-                      icon: Icon(Icons.open_in_new, size: 16, color: AppColors.forestGreen),
-                      label: Text(
+                      icon: const Icon(Icons.open_in_new, size: 16, color: AppColors.forestGreen),
+                      label: const Text(
                         '在 GBIF 查看更多',
                         style: TextStyle(color: AppColors.forestGreen),
                       ),
@@ -925,11 +925,11 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
                   ListTile(
                     leading: Container(
                       padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
+                      decoration: const BoxDecoration(
                         color: AppColors.surfaceLight,
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(Icons.camera_alt, color: AppColors.forestGreen),
+                      child: const Icon(Icons.camera_alt, color: AppColors.forestGreen),
                     ),
                     title: const Text('拍攝新照片'),
                     subtitle: const Text('使用相機即時拍攝', style: TextStyle(fontSize: 12)),
@@ -981,11 +981,11 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
                 children: [
                   Container(
                     padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
+                    decoration: const BoxDecoration(
                       color: AppColors.surfaceLight,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(Icons.eco, color: AppColors.forestGreen, size: 24),
+                    child: const Icon(Icons.eco, color: AppColors.forestGreen, size: 24),
                   ),
                   const SizedBox(width: 12),
                   const Expanded(
@@ -1032,11 +1032,11 @@ class _SpeciesIdentificationPageState extends State<SpeciesIdentificationPage> {
                   color: AppColors.surfaceLight,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Row(
+                child: const Row(
                   children: [
                     Icon(Icons.card_giftcard, color: AppColors.forestGreen),
-                    const SizedBox(width: 10),
-                    const Expanded(
+                    SizedBox(width: 10),
+                    Expanded(
                       child: Text(
                         '每日免費辨識 500 次',
                         style: TextStyle(fontWeight: FontWeight.w500),

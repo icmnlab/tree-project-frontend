@@ -85,7 +85,7 @@ class TestProjectBoundary {
     // 轉換為平方公尺（近似值）
     // 1度緯度 ≈ 111,320 公尺, 1度經度 ≈ 111,320 * cos(lat) 公尺
     final centerLat = coordinates.map((c) => c.lat).reduce((a, b) => a + b) / coordinates.length;
-    final meterPerDegreeLat = 111320.0;
+    const meterPerDegreeLat = 111320.0;
     final meterPerDegreeLon = 111320.0 * math.cos(centerLat * math.pi / 180);
     
     return (sum.abs() / 2) * meterPerDegreeLat * meterPerDegreeLon;

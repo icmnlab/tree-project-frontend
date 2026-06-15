@@ -130,8 +130,8 @@ class TestNormalizationValidator {
         
         if (dependsOnPartialKey) {
           issues.add(
-            '欄位 "${column.name}" 只依賴於部分主鍵 ${deps}，違反 2NF。'
-            '建議將其移至以 ${deps} 為主鍵的獨立表格。'
+            '欄位 "${column.name}" 只依賴於部分主鍵 $deps，違反 2NF。'
+            '建議將其移至以 $deps 為主鍵的獨立表格。'
           );
         }
       }
@@ -717,7 +717,7 @@ void main() {
   
   group('資料庫正規化驗證', () {
     test('tree_survey 表格正規化分析', () {
-      final treeSurveyTable = TestDBTable(
+      const treeSurveyTable = TestDBTable(
         name: 'tree_survey',
         primaryKey: ['id'],
         columns: [
@@ -755,7 +755,7 @@ void main() {
     });
     
     test('pending_tree_measurements 表格正規化分析', () {
-      final pendingTable = TestDBTable(
+      const pendingTable = TestDBTable(
         name: 'pending_tree_measurements',
         primaryKey: ['id'],
         columns: [
@@ -789,7 +789,7 @@ void main() {
     
     test('理想的正規化設計', () {
       // 展示一個完全符合 3NF 的設計
-      final projectTable = TestDBTable(
+      const projectTable = TestDBTable(
         name: 'projects',
         primaryKey: ['id'],
         columns: [
@@ -816,7 +816,7 @@ void main() {
   
   group('索引優化驗證', () {
     test('查詢模式分析與索引建議', () {
-      final table = TestDBTable(
+      const table = TestDBTable(
         name: 'tree_survey',
         primaryKey: ['id'],
         columns: [
@@ -832,22 +832,22 @@ void main() {
       );
       
       final queries = [
-        QueryPattern(
+        const QueryPattern(
           description: '按專案列出樹木',
           whereColumns: ['project_code'],
           frequency: 500,
         ),
-        QueryPattern(
+        const QueryPattern(
           description: '按樹種統計',
           whereColumns: ['species_name'],
           frequency: 200,
         ),
-        QueryPattern(
+        const QueryPattern(
           description: '專案內按樹種查詢',
           whereColumns: ['project_code', 'species_name'],
           frequency: 150,
         ),
-        QueryPattern(
+        const QueryPattern(
           description: '按狀態過濾',
           whereColumns: ['status'],
           frequency: 300,
@@ -869,7 +869,7 @@ void main() {
     });
     
     test('外鍵索引檢查', () {
-      final table = TestDBTable(
+      const table = TestDBTable(
         name: 'tree_survey',
         primaryKey: ['id'],
         columns: [
@@ -1089,7 +1089,7 @@ void main() {
   
   group('版本兼容性驗證', () {
     test('安全的資料庫遷移', () {
-      final oldSchema = TestDBTable(
+      const oldSchema = TestDBTable(
         name: 'tree_survey',
         primaryKey: ['id'],
         columns: [
@@ -1100,7 +1100,7 @@ void main() {
         indexes: [],
       );
       
-      final newSchema = TestDBTable(
+      const newSchema = TestDBTable(
         name: 'tree_survey',
         primaryKey: ['id'],
         columns: [
@@ -1119,7 +1119,7 @@ void main() {
     });
     
     test('不安全的資料庫遷移應該報警', () {
-      final oldSchema = TestDBTable(
+      const oldSchema = TestDBTable(
         name: 'tree_survey',
         primaryKey: ['id'],
         columns: [
@@ -1129,7 +1129,7 @@ void main() {
         indexes: [],
       );
       
-      final newSchema = TestDBTable(
+      const newSchema = TestDBTable(
         name: 'tree_survey',
         primaryKey: ['id'],
         columns: [

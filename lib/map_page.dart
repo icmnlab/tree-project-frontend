@@ -714,7 +714,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
     final candidates = <String>{norm(selected)};
     final base = selected.replaceAll(RegExp(r'[市縣]$'), '');
     if (base.isNotEmpty) {
-      candidates.addAll([norm('${base}市'), norm('${base}縣')]);
+      candidates.addAll([norm('$base市'), norm('$base縣')]);
     }
     return candidates.contains(d);
   }
@@ -982,29 +982,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
     });
   }
 
-  // [Stage 1] 縣市下拉選單：列出資料中出現過的 _city + 完整台灣 22 縣市。
-  // 之前需要自行解析區位名稱，現在直接讀伺服器標註的 _city 欄位即可。
-  List<String> _extractCitiesFromData(List<dynamic> data) {
-    final Set<String> cities = {};
-
-    for (var tree in data) {
-      final c = tree['_city'];
-      if (c != null && c is String && c.isNotEmpty) {
-        cities.add(c);
-      }
-    }
-
-    cities.addAll([
-      '臺北市', '新北市', '桃園市', '臺中市', '臺南市', '高雄市',
-      '基隆市', '新竹市', '新竹縣', '苗栗縣', '彰化縣', '南投縣',
-      '雲林縣', '嘉義市', '嘉義縣', '屏東縣', '宜蘭縣', '花蓮縣',
-      '臺東縣', '澎湖縣', '金門縣', '連江縣',
-    ]);
-
-    return cities.toList()..sort();
-  }
-
-  // [Stage 1] _extractCityFromArea / _isCoordinateInCity 已移除
+  // [Stage 1] _extractCitiesFromData / _extractCityFromArea / _isCoordinateInCity 已移除
   // 縣市判斷統一在後端 utils/county.resolveAreaCity (座標優先 + areaName fallback)，
   // 透過 /tree_survey/map 回應的 _city 欄位帶到前端，不再有兩套不一致的邏輯。
 
@@ -1642,7 +1620,7 @@ class _MapPageState extends State<MapPage> with RouteAware {
                         Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.park_outlined, size: 16, color: AppColors.leafGreen),
+                            const Icon(Icons.park_outlined, size: 16, color: AppColors.leafGreen),
                             const SizedBox(width: 6),
                             Text(
                               '正在取得樹木位置',

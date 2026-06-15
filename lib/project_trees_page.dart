@@ -295,7 +295,7 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
                               ),
                               child: Row(
                                 children: [
-                                  Icon(Icons.forest, color: AppColors.forestGreen),
+                                  const Icon(Icons.forest, color: AppColors.forestGreen),
                                   const SizedBox(width: 8),
                                   Text(
                                     '最近添加的樹木',
@@ -333,7 +333,7 @@ class _ProjectTreesPageState extends State<ProjectTreesPage> {
                                         width: 48,
                                         height: 48,
                                         decoration: BoxDecoration(
-                                          gradient: LinearGradient(
+                                          gradient: const LinearGradient(
                                             colors: [AppColors.leafGreen, AppColors.forestGreen],
                                             begin: Alignment.topLeft,
                                             end: Alignment.bottomRight,

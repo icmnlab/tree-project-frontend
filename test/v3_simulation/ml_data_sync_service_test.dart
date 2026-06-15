@@ -9,7 +9,6 @@
 // - 同步結果追蹤
 // ============================================================================
 
-import 'dart:async';
 // dart:convert import removed - unused
 import 'dart:math' as math;
 import 'package:flutter_test/flutter_test.dart';

@@ -75,7 +75,7 @@ class BleDataProcessor {
           // 若符合 VLGEO 模式，自動補上 '$'
           if (['1P', '3P', '3D', 'DME', ''].contains(typeField) &&
               idClean.isNotEmpty) {
-            line = '\$' + line;
+            line = '\$$line';
             debugPrint('[STRUCTURAL RECOVERY] 恢復 ID=$idClean');
           } else {
             // 不符合模式，跳過
@@ -479,7 +479,7 @@ class BleDataProcessor {
         }).toList();
         last['metadata'] = lastMeta;
 
-        debugPrint('[SEQ MERGE] ${type} ID=${entry.key}: '
+        debugPrint('[SEQ MERGE] $type ID=${entry.key}: '
             '${group.length} SEQ, keep last SEQ=${last['seq']} (all SEQ preserved in metadata)');
         merged.add(last);
       }
