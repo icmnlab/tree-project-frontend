@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+
+<html lang="zh-TW"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>樹木清單 - Forest Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#0060a9",
+                        "surface-container-lowest": "#ffffff",
+                        "surface": "#fcf8ff",
+                        "on-tertiary-container": "#f7d7ff",
+                        "on-error": "#ffffff",
+                        "surface-dim": "#dad7f3",
+                        "surface-container": "#efecff",
+                        "secondary-container": "#a0f399",
+                        "on-primary-fixed-variant": "#004881",
+                        "tertiary-container": "#933ab9",
+                        "on-primary": "#ffffff",
+                        "on-secondary-fixed-variant": "#005312",
+                        "on-tertiary-fixed-variant": "#721199",
+                        "inverse-surface": "#2f2e43",
+                        "outline-variant": "#c1c7d3",
+                        "outline": "#717782",
+                        "on-primary-container": "#d2e3ff",
+                        "secondary-fixed-dim": "#88d982",
+                        "secondary-fixed": "#a3f69c",
+                        "surface-container-low": "#f5f2ff",
+                        "inverse-on-surface": "#f2efff",
+                        "on-tertiary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "on-surface-variant": "#414751",
+                        "on-primary-fixed": "#001c38",
+                        "tertiary-fixed-dim": "#ebb2ff",
+                        "surface-container-highest": "#e2e0fc",
+                        "on-secondary-container": "#217128",
+                        "tertiary-fixed": "#f8d8ff",
+                        "surface-bright": "#fcf8ff",
+                        "primary-fixed": "#d3e4ff",
+                        "surface-container-high": "#e8e5ff",
+                        "on-tertiary-fixed": "#320047",
+                        "error-container": "#ffdad6",
+                        "primary-fixed-dim": "#a2c9ff",
+                        "on-surface": "#1a1a2e",
+                        "primary": "#004e8b",
+                        "tertiary": "#781b9f",
+                        "on-secondary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "inverse-primary": "#a2c9ff",
+                        "background": "#fcf8ff",
+                        "on-background": "#1a1a2e",
+                        "secondary": "#1b6d24",
+                        "primary-container": "#0066b3",
+                        "on-secondary-fixed": "#002204",
+                        "surface-variant": "#e2e0fc"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px",
+                        "2xl": "1.5rem"
+                    },
+                    "spacing": {
+                        "margin-screen": "20px",
+                        "gutter-grid": "16px",
+                        "stack-sm": "8px",
+                        "stack-lg": "24px",
+                        "touch-target-min": "48px",
+                        "stack-md": "16px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Plus Jakarta Sans", "sans-serif"],
+                        "body-lg": ["Plus Jakarta Sans", "sans-serif"],
+                        "label-lg": ["Plus Jakarta Sans", "sans-serif"],
+                        "body-md": ["Plus Jakarta Sans", "sans-serif"],
+                        "headline-sm": ["Plus Jakarta Sans", "sans-serif"],
+                        "display-lg": ["Plus Jakarta Sans", "sans-serif"],
+                        "display-lg-mobile": ["Plus Jakarta Sans", "sans-serif"],
+                        "display-md": ["Plus Jakarta Sans", "sans-serif"],
+                        "display-md-mobile": ["Plus Jakarta Sans", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "display-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "display-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "display-md-mobile": ["22px", { "lineHeight": "30px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body {
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Custom scrollbar for better outdoor visibility if needed */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c1c7d3;
+            border-radius: 4px;
+        }
+        /* Ambient shadow for level 1 */
+        .shadow-level-1 {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.12);
+        }
+        /* Ambient shadow for level 2 */
+        .shadow-level-2 {
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.18);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen flex flex-col pb-24 font-body-md text-body-md">
+<!-- TopAppBar (Small) -->
+<header class="bg-surface docked full-width top-0 sticky z-40 shadow-sm flex justify-between items-center w-full px-margin-screen h-touch-target-min">
+<button aria-label="Menu" class="h-touch-target-min w-touch-target-min flex items-center justify-start text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200 ease-in-out rounded-full">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h1 class="font-display-md-mobile text-display-md-mobile md:font-display-md md:text-display-md text-primary">Forest Intelligence</h1>
+<button aria-label="Sync Status: Online" class="h-touch-target-min w-touch-target-min flex items-center justify-end text-on-surface-variant hover:bg-surface-container-low transition-colors duration-200 ease-in-out rounded-full">
+<span class="material-symbols-outlined text-secondary" data-icon="cloud_done">cloud_done</span>
+</button>
+</header>
+<!-- Search and Filter Section (Sticky for quick access) -->
+<section class="sticky top-[48px] z-30 bg-background px-margin-screen py-stack-md flex flex-col gap-stack-sm shadow-sm">
+<div class="relative w-full h-touch-target-min flex items-center">
+<span class="material-symbols-outlined absolute left-4 text-outline" data-icon="search">search</span>
+<input class="w-full h-full pl-12 pr-4 bg-surface-container-lowest border-2 border-outline-variant focus:border-primary rounded-lg font-body-lg text-body-lg text-on-surface placeholder-outline focus:outline-none transition-colors shadow-level-1" placeholder="搜尋樹木 ID 或物種..." type="text"/>
+</div>
+<div class="flex gap-gutter-grid overflow-x-auto pb-2 -mx-margin-screen px-margin-screen snap-x" style="scrollbar-width: none;">
+<button class="flex-shrink-0 flex items-center gap-2 bg-primary-container text-on-primary-container px-4 py-2 rounded-full font-label-lg text-label-lg h-[40px] snap-start">
+                全部專案
+                <span class="material-symbols-outlined text-[18px]" data-icon="arrow_drop_down">arrow_drop_down</span>
+</button>
+<button class="flex-shrink-0 flex items-center gap-2 bg-surface-container-highest text-on-surface-variant border border-outline-variant px-4 py-2 rounded-full font-label-lg text-label-lg h-[40px] snap-start">
+                狀態: 全部
+                <span class="material-symbols-outlined text-[18px]" data-icon="filter_list">filter_list</span>
+</button>
+<button class="flex-shrink-0 flex items-center gap-2 bg-surface-container-highest text-on-surface-variant border border-outline-variant px-4 py-2 rounded-full font-label-lg text-label-lg h-[40px] snap-start">
+                區域: 北區
+            </button>
+</div>
+</section>
+<!-- Main Content: Tree List -->
+<main class="flex-grow px-margin-screen py-stack-lg flex flex-col gap-stack-md">
+<!-- List Header -->
+<div class="flex justify-between items-end mb-2">
+<h2 class="font-headline-sm text-headline-sm text-on-surface">樹木清單</h2>
+<span class="font-label-md text-label-md text-outline">共 1,024 棵</span>
+</div>
+<!-- Tree Item 1 -->
+<article class="bg-surface-container-lowest rounded-xl p-4 flex gap-4 shadow-level-1 relative overflow-hidden active:bg-surface-container-low transition-colors">
+<div class="w-16 h-16 rounded-lg bg-primary-container flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-on-primary-container text-[32px]" data-icon="forest" style="font-variation-settings: 'FILL' 1;">forest</span>
+</div>
+<div class="flex-grow flex flex-col justify-center">
+<div class="flex justify-between items-start">
+<h3 class="font-label-lg text-label-lg text-on-surface">T-1024 · 台灣櫻花</h3>
+<span class="bg-secondary-container text-on-secondary-container font-label-md text-label-md px-2 py-1 rounded-full whitespace-nowrap">正常</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">北區 / 陽明山復育計畫</p>
+<div class="flex gap-2 mt-2">
+<span class="font-label-md text-label-md text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="calendar_today">calendar_today</span>
+                        2023-10-24
+                    </span>
+</div>
+</div>
+</article>
+<!-- Tree Item 2 -->
+<article class="bg-surface-container-lowest rounded-xl p-4 flex gap-4 shadow-level-1 relative overflow-hidden active:bg-surface-container-low transition-colors">
+<!-- Subtly tinted background for warning state -->
+<div class="absolute inset-0 bg-error-container opacity-10 pointer-events-none"></div>
+<div class="w-16 h-16 rounded-lg bg-error-container flex items-center justify-center flex-shrink-0 z-10">
+<span class="material-symbols-outlined text-on-error-container text-[32px]" data-icon="warning" style="font-variation-settings: 'FILL' 1;">warning</span>
+</div>
+<div class="flex-grow flex flex-col justify-center z-10">
+<div class="flex justify-between items-start">
+<h3 class="font-label-lg text-label-lg text-on-surface">T-0892 · 樟樹</h3>
+<span class="bg-error-container text-on-error-container font-label-md text-label-md px-2 py-1 rounded-full whitespace-nowrap">傾倒風險</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">東區 / 大安森林公園</p>
+<div class="flex gap-2 mt-2">
+<span class="font-label-md text-label-md text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="calendar_today">calendar_today</span>
+                        2023-10-23
+                    </span>
+</div>
+</div>
+</article>
+<!-- Tree Item 3 -->
+<article class="bg-surface-container-lowest rounded-xl p-4 flex gap-4 shadow-level-1 relative overflow-hidden active:bg-surface-container-low transition-colors">
+<div class="w-16 h-16 rounded-lg bg-surface-container-highest flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-on-surface-variant text-[32px]" data-icon="park" style="font-variation-settings: 'FILL' 1;">park</span>
+</div>
+<div class="flex-grow flex flex-col justify-center">
+<div class="flex justify-between items-start">
+<h3 class="font-label-lg text-label-lg text-on-surface">T-0451 · 榕樹</h3>
+<span class="bg-surface-variant text-on-surface-variant font-label-md text-label-md px-2 py-1 rounded-full whitespace-nowrap">未調查</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">南區 / 成功大學校區</p>
+<div class="flex gap-2 mt-2">
+<span class="font-label-md text-label-md text-outline flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="calendar_today">calendar_today</span>
+                        2023-09-15
+                    </span>
+</div>
+</div>
+</article>
+<!-- Loading Indicator for Infinite Scroll -->
+<div class="py-4 flex justify-center items-center gap-2 text-outline">
+<span class="material-symbols-outlined animate-spin" data-icon="progress_activity">progress_activity</span>
+<span class="font-label-md text-label-md">載入更多...</span>
+</div>
+</main>
+<!-- Floating Action Button (Add Tree) -->
+<!-- Positioned above bottom nav, on the right. Large touch target. -->
+<button aria-label="新增樹木" class="fixed bottom-[100px] right-margin-screen w-14 h-14 bg-primary text-on-primary rounded-2xl shadow-level-2 flex items-center justify-center hover:bg-surface-tint transition-colors active:scale-95 z-40">
+<span class="material-symbols-outlined text-[28px]" data-icon="add">add</span>
+</button>
+<!-- BottomNavBar -->
+<nav class="bg-surface/90 backdrop-blur-md shadow-xl fixed bottom-0 left-0 right-0 mb-3 mx-3 rounded-full overflow-hidden z-50 md:hidden flex justify-around items-center p-2 pb-4">
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-5 py-2 hover:bg-surface-container-high scale-95 active:scale-90 transition-transform duration-150 rounded-full h-touch-target-min min-w-[64px]" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md mt-1">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-5 py-2 hover:bg-surface-container-high scale-95 active:scale-90 transition-transform duration-150 rounded-full h-touch-target-min min-w-[64px]" href="#">
+<span class="material-symbols-outlined" data-icon="map">map</span>
+<span class="font-label-md text-label-md mt-1">Zones</span>
+</a>
+<!-- Active state for something akin to tree list (maybe zones or dashboard, but we'll leave inactive as there isn't a direct match in the given JSON labels "Dashboard", "Zones", "AI Scan", "Profile", assuming this is accessed via Zones or Dashboard. Let's make Zones active as it's a list in a zone) -->
+<a class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-5 py-2 hover:bg-surface-container-high scale-95 active:scale-90 transition-transform duration-150 h-touch-target-min min-w-[64px]" href="#">
+<span class="material-symbols-outlined" data-icon="map" style="font-variation-settings: 'FILL' 1;">map</span>
+<span class="font-label-md text-label-md mt-1">Zones</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-5 py-2 hover:bg-surface-container-high scale-95 active:scale-90 transition-transform duration-150 rounded-full h-touch-target-min min-w-[64px]" href="#">
+<span class="material-symbols-outlined" data-icon="Detection_reslan">detection_and_zone</span>
+<span class="font-label-md text-label-md mt-1">AI Scan</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant px-5 py-2 hover:bg-surface-container-high scale-95 active:scale-90 transition-transform duration-150 rounded-full h-touch-target-min min-w-[64px]" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-md text-label-md mt-1">Profile</span>
+</a>
+</nav>
+<!-- Web Navigation (Hidden on mobile) -->
+<nav class="hidden md:flex bg-surface-container-lowest border-t border-outline-variant/20 p-4 justify-center fixed bottom-0 w-full z-50 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+<div class="flex gap-8 max-w-4xl w-full justify-around">
+<a class="flex flex-col items-center text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span class="font-label-md text-label-md mt-1">Dashboard</span>
+</a>
+<a class="flex flex-col items-center text-primary font-bold" href="#">
+<span class="material-symbols-outlined" data-icon="map" style="font-variation-settings: 'FILL' 1;">map</span>
+<span class="font-label-md text-label-md mt-1">Zones</span>
+</a>
+<a class="flex flex-col items-center text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="Detection_reslan">detection_and_zone</span>
+<span class="font-label-md text-label-md mt-1">AI Scan</span>
+</a>
+<a class="flex flex-col items-center text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="font-label-md text-label-md mt-1">Profile</span>
+</a>
+</div>
+</nav>
+</body></html>

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+
+<html class="light" lang="zh-TW"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ArborSync Pro - Sync Status</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-primary": "#a2c9ff",
+                        "error-container": "#ffdad6",
+                        "surface-container-lowest": "#ffffff",
+                        "background": "#fcf8ff",
+                        "outline-variant": "#c1c7d3",
+                        "surface": "#fcf8ff",
+                        "surface-tint": "#0060a9",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#320047",
+                        "on-surface": "#1a1a2e",
+                        "surface-dim": "#dad7f3",
+                        "outline": "#717782",
+                        "tertiary-fixed-dim": "#ebb2ff",
+                        "primary": "#004e8b",
+                        "secondary-fixed": "#a3f69c",
+                        "error": "#ba1a1a",
+                        "primary-fixed": "#d3e4ff",
+                        "inverse-on-surface": "#f2efff",
+                        "on-secondary-fixed": "#002204",
+                        "on-background": "#1a1a2e",
+                        "surface-variant": "#e2e0fc",
+                        "on-primary-container": "#d2e3ff",
+                        "surface-container-high": "#e8e5ff",
+                        "secondary-container": "#a0f399",
+                        "on-primary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "inverse-surface": "#2f2e43",
+                        "secondary-fixed-dim": "#88d982",
+                        "surface-bright": "#fcf8ff",
+                        "on-tertiary-container": "#f7d7ff",
+                        "on-secondary-fixed-variant": "#005312",
+                        "primary-container": "#0066b3",
+                        "surface-container-low": "#f5f2ff",
+                        "on-primary-fixed-variant": "#004881",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed": "#001c38",
+                        "secondary": "#1b6d24",
+                        "tertiary": "#781b9f",
+                        "primary-fixed-dim": "#a2c9ff",
+                        "on-secondary-container": "#217128",
+                        "on-secondary": "#ffffff",
+                        "on-surface-variant": "#414751",
+                        "tertiary-container": "#933ab9",
+                        "tertiary-fixed": "#f8d8ff",
+                        "surface-container-highest": "#e2e0fc",
+                        "surface-container": "#efecff",
+                        "on-tertiary-fixed-variant": "#721199"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "touch-target-min": "48px",
+                        "stack-md": "16px",
+                        "margin-screen": "20px",
+                        "stack-sm": "8px",
+                        "stack-lg": "24px",
+                        "gutter-grid": "16px"
+                    },
+                    "fontFamily": {
+                        "display-md": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "label-md": ["Plus Jakarta Sans"],
+                        "display-md-mobile": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "display-lg": ["Plus Jakarta Sans"],
+                        "display-lg-mobile": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "display-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "display-md-mobile": ["22px", { "lineHeight": "30px", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "display-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .icon-fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Hide scrollbar for clean look */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen flex flex-col antialiased">
+<!-- TopAppBar -->
+<header class="w-full top-0 sticky bg-surface dark:bg-surface-dim shadow-sm z-40 bg-surface-container-low dark:bg-surface-container-high">
+<div class="flex items-center justify-between px-margin-screen h-16">
+<button aria-label="Menu" class="h-touch-target-min w-touch-target-min flex items-center justify-center text-on-surface-variant hover:bg-surface-variant/50 transition-colors rounded-full active:scale-95 duration-100">
+<span class="material-symbols-outlined text-[24px]">menu</span>
+</button>
+<h1 class="font-display-md text-display-md-mobile text-primary dark:text-inverse-primary tracking-tight">ArborSync Pro</h1>
+<button aria-label="Sync" class="h-touch-target-min w-touch-target-min flex items-center justify-center text-primary dark:text-primary-fixed-dim hover:bg-surface-variant/50 transition-colors rounded-full active:scale-95 duration-100">
+<span class="material-symbols-outlined text-[24px] icon-fill">cloud_sync</span>
+</button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow px-margin-screen py-stack-lg pb-[100px] md:pb-stack-lg max-w-3xl mx-auto w-full space-y-stack-lg">
+<!-- Global Sync Status Indicator -->
+<section class="flex flex-col items-center justify-center py-stack-lg bg-surface-container-lowest rounded-2xl shadow-[0_4px_16px_rgba(0,0,0,0.08)] border border-surface-container">
+<div class="relative w-32 h-32 mb-stack-sm flex items-center justify-center">
+<!-- Outer glowing ring -->
+<div class="absolute inset-0 rounded-full border-4 border-primary/20 animate-pulse"></div>
+<!-- Inner spinner -->
+<svg class="absolute inset-0 w-full h-full text-primary animate-spin" fill="none" viewbox="0 0 24 24">
+<circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"></circle>
+<path class="opacity-75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" fill="currentColor"></path>
+</svg>
+<!-- Center Icon -->
+<div class="bg-primary-container text-on-primary-container rounded-full w-20 h-20 flex items-center justify-center shadow-inner z-10">
+<span class="material-symbols-outlined text-[40px] icon-fill">sync</span>
+</div>
+</div>
+<h2 class="font-display-md text-display-md-mobile text-on-surface mb-2">資料同步中</h2>
+<p class="font-body-md text-body-md text-on-surface-variant text-center px-4">正在將 12 筆本地紀錄上傳至雲端伺服器...</p>
+<button class="mt-stack-md h-touch-target-min px-6 bg-primary-container text-on-primary-container rounded-full font-label-lg text-label-lg hover:bg-primary transition-colors flex items-center gap-2 active:scale-95 duration-200">
+<span class="material-symbols-outlined text-[20px]">sync</span>
+                手動同步
+            </button>
+</section>
+<!-- Pending Uploads List -->
+<section class="space-y-stack-sm">
+<h3 class="font-headline-sm text-headline-sm-mobile text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">cloud_upload</span>
+                待上傳紀錄
+            </h3>
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] overflow-hidden">
+<!-- List Item 1: Syncing -->
+<div class="flex items-center p-4 border-b border-surface-container">
+<div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center mr-4 shrink-0">
+<span class="material-symbols-outlined animate-spin text-[20px]">sync</span>
+</div>
+<div class="flex-grow">
+<h4 class="font-body-md text-body-md font-medium text-on-surface">樣區 A - 植被調查</h4>
+<p class="font-label-md text-label-md text-outline">今天 14:30 • 4.2 MB</p>
+</div>
+<span class="font-label-md text-label-md text-primary bg-primary-fixed px-2 py-1 rounded-md">同步中</span>
+</div>
+<!-- List Item 2: Error -->
+<div class="flex items-center p-4 border-b border-surface-container">
+<div class="w-10 h-10 rounded-full bg-error-container text-on-error-container flex items-center justify-center mr-4 shrink-0">
+<span class="material-symbols-outlined text-[20px]">error</span>
+</div>
+<div class="flex-grow">
+<h4 class="font-body-md text-body-md font-medium text-on-surface">樣區 B - 碳排估算</h4>
+<p class="font-label-md text-label-md text-error">網路連線超時</p>
+</div>
+<button class="h-8 px-3 border border-outline rounded-md font-label-md text-label-md text-on-surface hover:bg-surface-variant transition-colors">重試</button>
+</div>
+<!-- List Item 3: Success -->
+<div class="flex items-center p-4">
+<div class="w-10 h-10 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center mr-4 shrink-0">
+<span class="material-symbols-outlined text-[20px] icon-fill">check_circle</span>
+</div>
+<div class="flex-grow">
+<h4 class="font-body-md text-body-md font-medium text-on-surface">樣區 C - 樹木清冊</h4>
+<p class="font-label-md text-label-md text-outline">今天 10:15 • 1.5 MB</p>
+</div>
+<span class="font-label-md text-label-md text-secondary bg-secondary-fixed-dim/30 px-2 py-1 rounded-md">已完成</span>
+</div>
+</div>
+</section>
+<!-- Offline Maps Download Section -->
+<section class="space-y-stack-sm">
+<h3 class="font-headline-sm text-headline-sm-mobile text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">map</span>
+                離線地圖下載
+            </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-gutter-grid">
+<!-- Map Region 1 -->
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-surface-container">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h4 class="font-body-md text-body-md font-medium text-on-surface">北部林區</h4>
+<p class="font-label-md text-label-md text-outline">540 MB • 更新於昨天</p>
+</div>
+<span class="material-symbols-outlined text-secondary icon-fill">cloud_done</span>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-2 mt-4">
+<div class="bg-secondary h-2 rounded-full" style="width: 100%"></div>
+</div>
+</div>
+<!-- Map Region 2 -->
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-surface-container">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h4 class="font-body-md text-body-md font-medium text-on-surface">中部林區</h4>
+<p class="font-label-md text-label-md text-outline">820 MB • 下載中...</p>
+</div>
+<button class="text-on-surface-variant hover:text-error transition-colors p-1"><span class="material-symbols-outlined">cancel</span></button>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-2 mt-4">
+<div class="bg-primary h-2 rounded-full transition-all duration-1000" style="width: 45%"></div>
+</div>
+<p class="font-label-md text-label-md text-primary mt-1 text-right">45%</p>
+</div>
+<!-- Map Region 3 -->
+<div class="bg-surface-container-lowest p-4 rounded-xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border border-surface-container">
+<div class="flex justify-between items-start mb-2">
+<div>
+<h4 class="font-body-md text-body-md font-medium text-on-surface">南部林區</h4>
+<p class="font-label-md text-label-md text-outline">610 MB • 需更新</p>
+</div>
+<button class="h-8 w-8 rounded-full flex items-center justify-center bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
+<span class="material-symbols-outlined text-[18px]">download</span>
+</button>
+</div>
+<div class="w-full bg-surface-variant rounded-full h-2 mt-4">
+<div class="bg-outline-variant h-2 rounded-full" style="width: 0%"></div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 w-full z-50 flex justify-around items-center p-2 pb-4 bg-white dark:bg-inverse-surface fixed bottom-0 left-0 right-0 mx-3 mb-3 rounded-full bg-white dark:bg-inverse-surface shadow-lg shadow-[0_16px_32px_rgba(0,0,0,0.18)]">
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined text-[24px]">dashboard</span>
+<span class="font-label-md text-label-md mt-1">Dash</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined text-[24px]">forest</span>
+<span class="font-label-md text-label-md mt-1">Trees</span>
+</button>
+<button class="flex flex-col items-center justify-center bg-primary-container text-on-primary-container rounded-full px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined text-[24px] icon-fill">sync_alt</span>
+<span class="font-label-md text-label-md mt-1 font-medium">Sync</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined text-[24px]">account_tree</span>
+<span class="font-label-md text-label-md mt-1">Projects</span>
+</button>
+<button class="flex flex-col items-center justify-center text-on-surface-variant dark:text-outline-variant px-5 py-2 hover:bg-surface-container-high dark:hover:bg-surface-variant active:scale-90 transition-transform duration-200">
+<span class="material-symbols-outlined text-[24px]">analytics</span>
+<span class="font-label-md text-label-md mt-1">Analysis</span>
+</button>
+</nav>
+<!-- Side Navigation (Web/Tablet Only - Hidden on Mobile) -->
+<aside class="hidden md:flex flex-col fixed left-0 top-16 bottom-0 w-80 bg-surface-container-low dark:bg-surface-container-lowest bg-surface-container-low border-r border-outline-variant dark:border-outline shadow-xl z-30 overflow-y-auto rounded-r-xl">
+<div class="p-stack-lg border-b border-surface-container">
+<div class="flex items-center gap-4 mb-4">
+<div class="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center text-primary font-display-md text-xl">
+                    LA
+                </div>
+<div>
+<h2 class="font-body-md text-body-md font-medium text-on-surface">Lead Auditor</h2>
+<p class="font-label-md text-label-md text-on-surface-variant">North Sector Range</p>
+</div>
+</div>
+<p class="font-label-md text-label-md text-outline">v2.4.0-Stable</p>
+</div>
+<nav class="flex-grow py-stack-md flex flex-col gap-2">
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant/20 active:opacity-80 transition-opacity mx-2 rounded-full font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">database</span>
+                Species DB
+            </a>
+<a class="flex items-center gap-4 px-4 py-3 bg-secondary-container text-on-secondary-container rounded-full mx-2 font-body-md text-body-md active:opacity-80 transition-opacity" href="#">
+<span class="material-symbols-outlined icon-fill">sync_alt</span>
+                Sync Status
+            </a>
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant/20 active:opacity-80 transition-opacity mx-2 rounded-full font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">group</span>
+                Team Settings
+            </a>
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant/20 active:opacity-80 transition-opacity mx-2 rounded-full font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">map</span>
+                Offline Maps
+            </a>
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant/20 active:opacity-80 transition-opacity mx-2 rounded-full font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">potted_plant</span>
+                Carbon Reports
+            </a>
+<div class="mt-auto pt-4">
+<a class="flex items-center gap-4 px-4 py-3 text-on-surface-variant dark:text-outline-variant hover:bg-surface-variant dark:hover:bg-on-surface-variant/20 active:opacity-80 transition-opacity mx-2 rounded-full font-body-md text-body-md" href="#">
+<span class="material-symbols-outlined">help</span>
+                    Support
+                </a>
+</div>
+</nav>
+</aside>
+</body></html>

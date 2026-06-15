@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+
+<html class="light" lang="zh-TW"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>維護測量 - Forest Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-tint": "#0060a9",
+                        "surface-container-lowest": "#ffffff",
+                        "surface": "#fcf8ff",
+                        "on-tertiary-container": "#f7d7ff",
+                        "on-error": "#ffffff",
+                        "surface-dim": "#dad7f3",
+                        "surface-container": "#efecff",
+                        "secondary-container": "#a0f399",
+                        "on-primary-fixed-variant": "#004881",
+                        "tertiary-container": "#933ab9",
+                        "on-primary": "#ffffff",
+                        "on-secondary-fixed-variant": "#005312",
+                        "on-tertiary-fixed-variant": "#721199",
+                        "inverse-surface": "#2f2e43",
+                        "outline-variant": "#c1c7d3",
+                        "outline": "#717782",
+                        "on-primary-container": "#d2e3ff",
+                        "secondary-fixed-dim": "#88d982",
+                        "secondary-fixed": "#a3f69c",
+                        "surface-container-low": "#f5f2ff",
+                        "inverse-on-surface": "#f2efff",
+                        "on-tertiary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "on-surface-variant": "#414751",
+                        "on-primary-fixed": "#001c38",
+                        "tertiary-fixed-dim": "#ebb2ff",
+                        "surface-container-highest": "#e2e0fc",
+                        "on-secondary-container": "#217128",
+                        "tertiary-fixed": "#f8d8ff",
+                        "surface-bright": "#fcf8ff",
+                        "primary-fixed": "#d3e4ff",
+                        "surface-container-high": "#e8e5ff",
+                        "on-tertiary-fixed": "#320047",
+                        "error-container": "#ffdad6",
+                        "primary-fixed-dim": "#a2c9ff",
+                        "on-surface": "#1a1a2e",
+                        "primary": "#004e8b",
+                        "tertiary": "#781b9f",
+                        "on-secondary": "#ffffff",
+                        "error": "#ba1a1a",
+                        "inverse-primary": "#a2c9ff",
+                        "background": "#fcf8ff",
+                        "on-background": "#1a1a2e",
+                        "secondary": "#1b6d24",
+                        "primary-container": "#0066b3",
+                        "on-secondary-fixed": "#002204",
+                        "surface-variant": "#e2e0fc"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "margin-screen": "20px",
+                        "gutter-grid": "16px",
+                        "stack-sm": "8px",
+                        "stack-lg": "24px",
+                        "touch-target-min": "48px",
+                        "stack-md": "16px"
+                    },
+                    "fontFamily": {
+                        "label-md": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "display-lg": ["Plus Jakarta Sans"],
+                        "display-lg-mobile": ["Plus Jakarta Sans"],
+                        "display-md": ["Plus Jakarta Sans"],
+                        "display-md-mobile": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "body-lg": ["18px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "display-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "display-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "display-md-mobile": ["22px", { "lineHeight": "30px", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .material-symbols-outlined.fill { font-variation-settings: 'FILL' 1; }
+        
+        /* Custom scrollbar for web */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #c1c7d3; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #717782; }
+
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen flex flex-col antialiased">
+<!-- Top App Bar -->
+<header class="bg-surface text-primary font-headline-sm text-headline-sm-mobile md:text-headline-sm docked full-width top-0 shadow-sm transition-colors duration-200 ease-in-out flex justify-between items-center w-full px-margin-screen h-touch-target-min z-40 relative">
+<button class="h-touch-target-min w-touch-target-min flex items-center justify-center -ml-3 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-display-md text-display-md-mobile text-primary tracking-tight">維護測量</h1>
+<button class="h-touch-target-min w-touch-target-min flex items-center justify-center -mr-3 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors">
+<span class="material-symbols-outlined">filter_list</span>
+</button>
+</header>
+<!-- Context / Step Indicator -->
+<div class="bg-surface px-margin-screen py-3 border-b border-outline-variant/30 flex items-center justify-between z-30 relative">
+<div class="flex items-center space-x-2">
+<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-secondary text-on-secondary font-label-md text-label-md">1</span>
+<span class="font-body-md text-body-md text-on-surface-variant">選擇目標</span>
+<span class="material-symbols-outlined text-outline text-sm mx-1">chevron_right</span>
+<span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-surface-container-high text-on-surface-variant font-label-md text-label-md">2</span>
+<span class="font-body-md text-body-md text-outline">BLE 測量</span>
+</div>
+<div class="flex items-center space-x-1 text-secondary">
+<span class="material-symbols-outlined fill text-[18px]">bluetooth_connected</span>
+<span class="font-label-md text-label-md">已連線</span>
+</div>
+</div>
+<!-- View Toggle (List / Map) -->
+<div class="px-margin-screen py-4 z-20 relative">
+<div class="flex p-1 bg-surface-container rounded-lg relative isolate">
+<div class="absolute inset-y-1 left-1 w-[calc(50%-4px)] bg-surface-container-lowest rounded-md shadow-sm transition-transform duration-300 ease-in-out z-0" id="tab-indicator"></div>
+<button class="flex-1 py-2 flex items-center justify-center space-x-2 relative z-10 text-primary font-label-lg text-label-lg transition-colors" id="btn-list" onclick="switchTab('list')">
+<span class="material-symbols-outlined text-[20px]">view_list</span>
+<span>列表視圖</span>
+</button>
+<button class="flex-1 py-2 flex items-center justify-center space-x-2 relative z-10 text-on-surface-variant font-label-lg text-label-lg transition-colors" id="btn-map" onclick="switchTab('map')">
+<span class="material-symbols-outlined text-[20px]">map</span>
+<span>地圖視圖</span>
+</button>
+</div>
+</div>
+<!-- Main Content Area -->
+<main class="flex-1 relative overflow-hidden flex flex-col pb-24">
+<!-- List View -->
+<div class="flex-1 overflow-y-auto px-margin-screen pb-6 space-y-4 transition-opacity duration-300" id="view-list">
+<div class="flex justify-between items-end mb-2">
+<h2 class="font-body-lg text-body-lg text-on-surface font-semibold">待測量樹木 (12)</h2>
+<div class="flex items-center space-x-1 text-on-surface-variant font-label-md text-label-md">
+<span class="material-symbols-outlined text-[16px]">sort</span>
+<span>按距離排序</span>
+</div>
+</div>
+<!-- List Item 1: Near, Available -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-[0_4px_8px_rgba(0,0,0,0.04)] border border-outline-variant/20 flex flex-col space-y-3 cursor-pointer hover:shadow-[0_8px_16px_rgba(0,0,0,0.08)] transition-shadow">
+<div class="flex justify-between items-start">
+<div class="flex items-center space-x-3">
+<div class="w-12 h-12 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined fill">forest</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm-mobile text-on-surface">ID: T-4921</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">台灣杉 (Taiwania cryptomerioides)</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-label-lg text-label-lg text-primary bg-primary-fixed px-2 py-1 rounded-md">12m</span>
+</div>
+</div>
+<div class="flex justify-between items-center pt-2 border-t border-outline-variant/30">
+<div class="flex space-x-4 text-outline font-label-md text-label-md">
+<span class="flex items-center"><span class="material-symbols-outlined text-[14px] mr-1">straighten</span> 需更新 DBH</span>
+<span class="flex items-center"><span class="material-symbols-outlined text-[14px] mr-1">history</span> 上次測量: 2年前</span>
+</div>
+<div class="w-6 h-6 rounded-full border-2 border-outline flex items-center justify-center">
+<!-- Empty checkbox circle -->
+</div>
+</div>
+</div>
+<!-- List Item 2: Selected -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-[0_4px_8px_rgba(0,0,0,0.04)] border-2 border-primary flex flex-col space-y-3 cursor-pointer relative overflow-hidden">
+<div class="absolute top-0 right-0 w-0 h-0 border-t-[30px] border-r-[30px] border-t-primary border-r-transparent"></div>
+<span class="material-symbols-outlined absolute top-[2px] right-[2px] text-[14px] text-on-primary z-10 font-bold">check</span>
+<div class="flex justify-between items-start">
+<div class="flex items-center space-x-3">
+<div class="w-12 h-12 rounded-full bg-primary text-on-primary flex items-center justify-center">
+<span class="material-symbols-outlined fill">forest</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm-mobile text-on-surface">ID: T-4922</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">台灣扁柏 (Chamaecyparis obtusa)</p>
+</div>
+</div>
+<div class="flex flex-col items-end mr-2">
+<span class="font-label-lg text-label-lg text-primary bg-primary-fixed px-2 py-1 rounded-md">18m</span>
+</div>
+</div>
+<div class="flex justify-between items-center pt-2 border-t border-outline-variant/30">
+<div class="flex space-x-4 text-outline font-label-md text-label-md">
+<span class="flex items-center text-primary"><span class="material-symbols-outlined text-[14px] mr-1">straighten</span> 需更新 高度</span>
+</div>
+<div class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px] font-bold">check</span>
+</div>
+</div>
+</div>
+<!-- List Item 3: Locked (Someone else editing) -->
+<div class="bg-surface-container-highest opacity-70 rounded-xl p-4 border border-outline-variant/20 flex flex-col space-y-3 cursor-not-allowed">
+<div class="flex justify-between items-start">
+<div class="flex items-center space-x-3">
+<div class="w-12 h-12 rounded-full bg-surface-dim text-outline flex items-center justify-center">
+<span class="material-symbols-outlined">forest</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm-mobile text-on-surface flex items-center">
+                                ID: T-4925
+                                <span class="material-symbols-outlined text-[16px] ml-2 text-error">lock</span>
+</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">紅檜 (Chamaecyparis formosensis)</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-label-lg text-label-lg text-outline bg-surface-dim px-2 py-1 rounded-md">45m</span>
+</div>
+</div>
+<div class="flex justify-between items-center pt-2 border-t border-outline-variant/30">
+<div class="flex space-x-4 text-outline font-label-md text-label-md">
+<span class="flex items-center text-error"><span class="material-symbols-outlined text-[14px] mr-1">person</span> 林技師 正在編輯</span>
+</div>
+</div>
+</div>
+<!-- List Item 4: Far -->
+<div class="bg-surface-container-lowest rounded-xl p-4 shadow-[0_4px_8px_rgba(0,0,0,0.04)] border border-outline-variant/20 flex flex-col space-y-3 cursor-pointer hover:shadow-[0_8px_16px_rgba(0,0,0,0.08)] transition-shadow">
+<div class="flex justify-between items-start">
+<div class="flex items-center space-x-3">
+<div class="w-12 h-12 rounded-full bg-surface-container-highest text-on-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined">forest</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm-mobile text-on-surface">ID: T-4930</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">台灣杉 (Taiwania cryptomerioides)</p>
+</div>
+</div>
+<div class="flex flex-col items-end">
+<span class="font-label-lg text-label-lg text-on-surface-variant bg-surface-container px-2 py-1 rounded-md">120m</span>
+</div>
+</div>
+<div class="flex justify-between items-center pt-2 border-t border-outline-variant/30">
+<div class="flex space-x-4 text-outline font-label-md text-label-md">
+<span class="flex items-center"><span class="material-symbols-outlined text-[14px] mr-1">straighten</span> 需更新 DBH</span>
+</div>
+<div class="w-6 h-6 rounded-full border-2 border-outline flex items-center justify-center"></div>
+</div>
+</div>
+</div>
+<!-- Map View (Hidden by default) -->
+<div class="hidden flex-1 relative bg-[#e5e3df] w-full h-full" id="view-map">
+<!-- Simulated Map Background -->
+<img alt="Map View" class="absolute inset-0 w-full h-full object-cover opacity-60 mix-blend-multiply" data-alt="A stylized, clean topographic map view showing terrain contours, subtle paths, and green zones suitable for a forestry application. The map is viewed from top-down with a light mode aesthetic, featuring soft greens and beige tones to represent forest topography without clutter." data-location="Alishan" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_-ecSz-p1YxdBRzvkPIN3K0mgdnxwvxWE-N_ooowqrEjlIRfJtIkZTQf_E3hrmpXXRiduEK-D44Wox7QkwByZwB3E8ou2sQBGmiyE3ZHrQa2X9y2KDjZcLPy0IK3ohRCiBVe73jy3C5WpIyk9oFUSokyoMsaI7C0jX22ykKirngxhGq_RXO0Wsga7nom3LpRKaiKddkxpYi5uo91rFHugC8q9r1LypFgtBL0ByjgXSHVfIEy3Mmphr8f-UQNlRuidB0UhWBfunw"/>
+<!-- Map Overlay Controls -->
+<div class="absolute top-4 right-4 flex flex-col space-y-2 z-10">
+<button class="w-10 h-10 bg-surface-container-lowest rounded-full shadow-md flex items-center justify-center text-on-surface-variant hover:text-primary">
+<span class="material-symbols-outlined">my_location</span>
+</button>
+<button class="w-10 h-10 bg-surface-container-lowest rounded-full shadow-md flex items-center justify-center text-on-surface-variant hover:text-primary">
+<span class="material-symbols-outlined">layers</span>
+</button>
+</div>
+<!-- Current Location Marker -->
+<div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10">
+<div class="w-4 h-4 bg-primary rounded-full border-2 border-white shadow-lg relative">
+<div class="absolute inset-0 rounded-full bg-primary animate-ping opacity-75"></div>
+</div>
+</div>
+<!-- Tree Markers -->
+<!-- Marker 1: Selected -->
+<div class="absolute top-[40%] left-[60%] transform -translate-x-1/2 -translate-y-full z-10 cursor-pointer">
+<div class="flex flex-col items-center group">
+<div class="bg-primary text-white font-label-md text-label-md px-2 py-1 rounded shadow-md mb-1 whitespace-nowrap">
+                        T-4922
+                    </div>
+<div class="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-white border-2 border-white shadow-md relative">
+<span class="material-symbols-outlined text-[16px] font-bold">check</span>
+<div class="absolute -bottom-2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[8px] border-t-primary"></div>
+</div>
+</div>
+</div>
+<!-- Marker 2: Unselected, Near -->
+<div class="absolute top-[45%] left-[45%] transform -translate-x-1/2 -translate-y-full z-10 cursor-pointer">
+<div class="flex flex-col items-center">
+<div class="w-6 h-6 bg-secondary rounded-full flex items-center justify-center text-white border-2 border-white shadow-md relative">
+<span class="material-symbols-outlined text-[14px]">forest</span>
+<div class="absolute -bottom-[6px] w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[6px] border-t-secondary"></div>
+</div>
+</div>
+</div>
+<!-- Marker 3: Locked -->
+<div class="absolute top-[60%] left-[30%] transform -translate-x-1/2 -translate-y-full z-10 cursor-not-allowed">
+<div class="flex flex-col items-center opacity-70">
+<div class="w-6 h-6 bg-error rounded-full flex items-center justify-center text-white border-2 border-white shadow-md relative">
+<span class="material-symbols-outlined text-[14px]">lock</span>
+<div class="absolute -bottom-[6px] w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-t-[6px] border-t-error"></div>
+</div>
+</div>
+</div>
+<!-- Selected Tree Info Card (Floating on Map) -->
+<div class="absolute bottom-6 left-margin-screen right-margin-screen bg-surface-container-lowest rounded-xl p-4 shadow-lg border border-outline-variant/20 z-20 flex justify-between items-center">
+<div class="flex items-center space-x-3">
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined fill">forest</span>
+</div>
+<div>
+<h3 class="font-headline-sm text-headline-sm-mobile text-on-surface">ID: T-4922</h3>
+<p class="font-label-md text-label-md text-primary">距離: 18m</p>
+</div>
+</div>
+<button class="w-10 h-10 rounded-full border border-outline text-on-surface-variant flex items-center justify-center">
+<span class="material-symbols-outlined">info</span>
+</button>
+</div>
+</div>
+</main>
+<!-- Floating Action Area (Bottom) -->
+<div class="fixed bottom-0 left-0 right-0 p-margin-screen bg-gradient-to-t from-surface via-surface to-transparent z-50">
+<button class="w-full h-[56px] bg-primary text-on-primary rounded-full shadow-lg flex items-center justify-center space-x-2 font-label-lg text-label-lg hover:bg-primary/90 transition-colors active:scale-[0.98]">
+<span class="material-symbols-outlined fill text-[20px]">sensors</span>
+<span>開始 BLE 重新測量 (1)</span>
+</button>
+</div>
+<!-- Main Global Nav (Suppressed as per rules: Task-focused flow with back button) -->
+<!-- Navigation shell excluded to prioritize the focused journey and canvas -->
+<script>
+        function switchTab(tab) {
+            const listBtn = document.getElementById('btn-list');
+            const mapBtn = document.getElementById('btn-map');
+            const indicator = document.getElementById('tab-indicator');
+            const listView = document.getElementById('view-list');
+            const mapView = document.getElementById('view-map');
+
+            if (tab === 'list') {
+                indicator.style.transform = 'translateX(0)';
+                listBtn.classList.replace('text-on-surface-variant', 'text-primary');
+                mapBtn.classList.replace('text-primary', 'text-on-surface-variant');
+                
+                listView.classList.remove('hidden');
+                mapView.classList.add('hidden');
+            } else {
+                indicator.style.transform = 'translateX(100%)';
+                mapBtn.classList.replace('text-on-surface-variant', 'text-primary');
+                listBtn.classList.replace('text-primary', 'text-on-surface-variant');
+                
+                listView.classList.add('hidden');
+                mapView.classList.remove('hidden');
+            }
+        }
+    </script>
+</body></html>

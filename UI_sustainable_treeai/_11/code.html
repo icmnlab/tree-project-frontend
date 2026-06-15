@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+
+<html lang="zh-TW"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>註冊新帳號 - Forest Intelligence</title>
+<!-- Google Fonts & Material Symbols -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Configuration -->
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-primary": "#a2c9ff",
+                        "error-container": "#ffdad6",
+                        "surface-container-lowest": "#ffffff",
+                        "background": "#fcf8ff",
+                        "outline-variant": "#c1c7d3",
+                        "surface": "#fcf8ff",
+                        "surface-tint": "#0060a9",
+                        "on-tertiary": "#ffffff",
+                        "on-tertiary-fixed": "#320047",
+                        "on-surface": "#1a1a2e",
+                        "surface-dim": "#dad7f3",
+                        "outline": "#717782",
+                        "tertiary-fixed-dim": "#ebb2ff",
+                        "primary": "#004e8b",
+                        "secondary-fixed": "#a3f69c",
+                        "error": "#ba1a1a",
+                        "primary-fixed": "#d3e4ff",
+                        "inverse-on-surface": "#f2efff",
+                        "on-secondary-fixed": "#002204",
+                        "on-background": "#1a1a2e",
+                        "surface-variant": "#e2e0fc",
+                        "on-primary-container": "#d2e3ff",
+                        "surface-container-high": "#e8e5ff",
+                        "secondary-container": "#a0f399",
+                        "on-primary": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "inverse-surface": "#2f2e43",
+                        "secondary-fixed-dim": "#88d982",
+                        "surface-bright": "#fcf8ff",
+                        "on-tertiary-container": "#f7d7ff",
+                        "on-secondary-fixed-variant": "#005312",
+                        "primary-container": "#0066b3",
+                        "surface-container-low": "#f5f2ff",
+                        "on-primary-fixed-variant": "#004881",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed": "#001c38",
+                        "secondary": "#1b6d24",
+                        "tertiary": "#781b9f",
+                        "primary-fixed-dim": "#a2c9ff",
+                        "on-secondary-container": "#217128",
+                        "on-secondary": "#ffffff",
+                        "on-surface-variant": "#414751",
+                        "tertiary-container": "#933ab9",
+                        "tertiary-fixed": "#f8d8ff",
+                        "surface-container-highest": "#e2e0fc",
+                        "surface-container": "#efecff",
+                        "on-tertiary-fixed-variant": "#721199"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "touch-target-min": "48px",
+                        "stack-md": "16px",
+                        "margin-screen": "20px",
+                        "stack-sm": "8px",
+                        "stack-lg": "24px",
+                        "gutter-grid": "16px"
+                    },
+                    "fontFamily": {
+                        "display-md": ["Plus Jakarta Sans"],
+                        "label-lg": ["Plus Jakarta Sans"],
+                        "label-md": ["Plus Jakarta Sans"],
+                        "display-md-mobile": ["Plus Jakarta Sans"],
+                        "body-lg": ["Plus Jakarta Sans"],
+                        "headline-sm": ["Plus Jakarta Sans"],
+                        "display-lg": ["Plus Jakarta Sans"],
+                        "display-lg-mobile": ["Plus Jakarta Sans"],
+                        "body-md": ["Plus Jakarta Sans"]
+                    },
+                    "fontSize": {
+                        "display-md": ["24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "700" }],
+                        "label-lg": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "label-md": ["12px", { "lineHeight": "16px", "fontWeight": "500" }],
+                        "display-md-mobile": ["22px", { "lineHeight": "30px", "fontWeight": "700" }],
+                        "body-lg": ["18px", { "lineHeight": "26px", "fontWeight": "400" }],
+                        "headline-sm": ["20px", { "lineHeight": "28px", "fontWeight": "600" }],
+                        "display-lg": ["32px", { "lineHeight": "40px", "letterSpacing": "-0.02em", "fontWeight": "700" }],
+                        "display-lg-mobile": ["28px", { "lineHeight": "36px", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "24px", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Custom scrollbar for modern feel */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #fcf8ff;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #c1c7d3;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #717782;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-surface text-on-surface antialiased min-h-screen flex items-center justify-center p-4 md:p-8 relative overflow-hidden">
+<!-- Decorative background elements -->
+<div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+<div class="absolute top-[-10%] right-[-5%] w-[40vw] h-[40vw] rounded-full bg-primary/5 blur-[100px]"></div>
+<div class="absolute bottom-[-10%] left-[-10%] w-[50vw] h-[50vw] rounded-full bg-secondary-container/20 blur-[120px]"></div>
+</div>
+<!-- Main Registration Card -->
+<main class="w-full max-w-5xl bg-surface-container-lowest rounded-[24px] shadow-[0_16px_40px_rgba(0,0,0,0.06)] flex flex-col md:flex-row overflow-hidden relative z-10 border border-surface-container-highest">
+<!-- Form Section -->
+<div class="w-full md:w-1/2 p-6 sm:p-10 lg:p-14 flex flex-col justify-center">
+<div class="mb-stack-lg flex items-center gap-2">
+<div class="w-8 h-8 rounded-lg bg-primary-container text-on-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">eco</span>
+</div>
+<span class="font-headline-sm text-headline-sm text-primary tracking-tight">Forest Intelligence</span>
+</div>
+<h1 class="font-display-md-mobile text-display-md-mobile md:font-display-md md:text-display-md text-on-surface mb-2">
+                註冊新帳號
+            </h1>
+<p class="font-body-md text-body-md text-on-surface-variant mb-8">
+                加入我們的碳審計調查員網絡，開始精準的環境數據採集。
+            </p>
+<form action="#" class="flex flex-col gap-5" method="POST">
+<!-- Name Field -->
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface ml-1" for="name">姓名</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant pointer-events-none">person</span>
+<input class="w-full h-touch-target-min pl-12 pr-4 bg-transparent border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface placeholder:text-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none" id="name" name="name" placeholder="輸入您的真實姓名" required="" type="text"/>
+</div>
+</div>
+<!-- Account ID Field -->
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface ml-1" for="account_id">帳號 ID</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant pointer-events-none">badge</span>
+<input class="w-full h-touch-target-min pl-12 pr-4 bg-transparent border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface placeholder:text-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none" id="account_id" name="account_id" placeholder="設定登入帳號" required="" type="text"/>
+</div>
+</div>
+<!-- Password Field -->
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface ml-1" for="password">密碼</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant pointer-events-none">lock</span>
+<input class="w-full h-touch-target-min pl-12 pr-12 bg-transparent border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface placeholder:text-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none" id="password" name="password" placeholder="請輸入至少 8 位字元" required="" type="password"/>
+<button class="absolute right-4 top-1/2 -translate-y-1/2 text-outline-variant hover:text-on-surface transition-colors" type="button">
+<span class="material-symbols-outlined">visibility_off</span>
+</button>
+</div>
+</div>
+<!-- Invite Code Field (Required) -->
+<div class="flex flex-col gap-1">
+<label class="font-label-md text-label-md text-on-surface ml-1 flex items-center gap-1" for="invite_code">
+                        邀請碼 <span class="text-error">*</span>
+</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-outline-variant pointer-events-none">key</span>
+<input class="w-full h-touch-target-min pl-12 pr-4 bg-transparent border border-outline-variant rounded-lg font-body-md text-body-md text-on-surface placeholder:text-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-all outline-none bg-surface-container-low" id="invite_code" name="invite_code" placeholder="輸入組織發放的邀請碼" required="" type="text"/>
+</div>
+<p class="font-label-md text-label-md text-outline ml-1 mt-1">此為必填欄位，請向區域負責人索取。</p>
+</div>
+<!-- Submit Action -->
+<div class="mt-4 flex flex-col gap-4">
+<button class="w-full h-touch-target-min bg-primary-container text-on-primary-container font-label-lg text-label-lg rounded-full hover:bg-primary hover:text-on-primary transition-all duration-200 active:scale-[0.98] flex items-center justify-center gap-2 shadow-sm" type="submit">
+                        提交申請
+                        <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+<div class="text-center">
+<a class="font-label-md text-label-md text-primary hover:text-surface-tint transition-colors underline-offset-4 hover:underline" href="#">
+                            已有帳號？立即登入
+                        </a>
+</div>
+</div>
+</form>
+</div>
+<!-- Image Presentation Section (Desktop) -->
+<div class="hidden md:block w-1/2 relative bg-surface-container-low overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent z-10"></div>
+<img alt="Forest canopy background" class="absolute inset-0 w-full h-full object-cover" data-alt="A breathtaking, high-resolution aerial photograph looking straight down into a dense, vibrant green coniferous forest canopy. The scene is illuminated by soft, diffused morning sunlight that highlights the rich textures of the treetops. The color palette emphasizes deep emerald greens and subtle earth tones, projecting a sense of environmental scale, scientific observation, and serene nature. The composition is strictly structural, fitting a modern corporate light-mode design aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCO0pUXspuN9p31uo8y1ibJjSNGsxoYiP4IbS_mc9b8SVQ6W5NCKkwwj4x2dSPhkcJBnXlWwNfhjyTJ2gR8m_YVD3jiVz4PuH6u_bD0bsLdNkfR3em-bYorDVOaUXtBxdUBYHOiL-ei1cMVJukVXHjc9x1A37cw6kYg61gzLm0k0AZ2KGPXExt0mVkdwqwTHKfHCn7x7s66QicQM08fXpRwlrZHm2bABE44912NR_7Ve2o90zVDZt4IoVpyv9ShAY1G1K2z9-BXsQ"/>
+<div class="absolute bottom-10 left-10 right-10 z-20 text-white">
+<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/30 mb-4">
+<span class="material-symbols-outlined text-[16px]">satellite_alt</span>
+<span class="font-label-md text-label-md">v2.4.0-Stable</span>
+</div>
+<h2 class="font-display-md text-display-md mb-2 text-white">精確追蹤每一棵樹的碳匯價值。</h2>
+<p class="font-body-md text-body-md text-white/80 max-w-md">
+                    Forest Intelligence 專為專業林業人員打造，在極端戶外環境下提供穩定、高對比的數據輸入體驗。
+                </p>
+</div>
+</div>
+</main>
+</body></html>
