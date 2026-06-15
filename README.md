@@ -4,7 +4,7 @@ Flutter app — field-survey, two-stage measurement, AR/CV-based DBH estimation,
 project & area management, AI chat / agent, and on-device tree-trunk
 preview. The single companion to the Node backend.
 
-`pubspec.yaml`: `name: sustainable_treeai`, `version: 18.8.0+19`,
+`pubspec.yaml`: `name: sustainable_treeai`, `version: 18.10.0+22`,
 `environment.sdk: '>=3.0.0 <4.0.0'` (Flutter 3.x).
 
 ---
@@ -42,7 +42,7 @@ experiments, but it is not the main persisted DBH path.
 | Secure storage       | `flutter_secure_storage` ^9.0 (JWT + user profile) |
 | Plain prefs          | `shared_preferences` ^2.2 (theme, AI userId, ML URL/key, environment) |
 | State management     | `flutter_riverpod` ^2.3 (+ `riverpod_annotation`) **and** `provider` ^6.0 — both are present; older screens use `provider`, newer V3 screens use Riverpod |
-| Maps                 | `google_maps_flutter` ^2.5, `flutter_map` ^8.1, `latlong2` ^0.9 |
+| Maps                 | `google_maps_flutter` 2.10.0, `flutter_map` ^8.1, `latlong2` ^0.9 |
 | Charts               | `fl_chart` ^0.71 |
 | BLE                  | `flutter_blue_plus` **pinned to 1.32.0** (newer versions have a regression on Android 14) |
 | Camera               | `camera` ^0.11.3 with `camera_android` **pinned to 0.10.9+16** to force the Camera2 backend. CameraX eagerly binds 3 use cases, but LEGACY-tier devices only support 2 |
