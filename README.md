@@ -336,4 +336,4 @@ repo today; manual QA is performed against the self-hosted backend
 
 ## License
 
-MIT — see `LICENSE`. Original development and primary maintenance by **KyleliuNDHU**; see `docs/HANDOFF.md` §0.
+MIT — see `LICENSE`. Original development and primary maintenance by **KyleliuNDHU**; see `AUTHORS.md`, `CONTRIBUTION_RECORD.md`, and `docs/HANDOFF.md` §0.
