@@ -87,14 +87,20 @@ class _TreeEditPageV2State extends State<TreeEditPageV2> {
   final carbonstorageController = TextEditingController();
   final annualcarbonController = TextEditingController();
 
+  // 與後端內建樹況目錄（tree_status_options）對齊，確保編輯頁也能選到
+  // 枯萎/枯立木/倒塌/已移除等（含淘汰狀況；選後由後端 update_v2 連動 lifecycle_status）。
+  // 註：下方仍保留自由文字欄，可輸入目錄外的自訂狀況；V3 新增頁為完整動態目錄，
+  //     此頁為相容舊流程的靜態清單，後續可改接 TreeStatusService 統一。
   final List<String> _commonStatuses = [
     '正常',
-    '枯死',
-    '病蟲害',
     '傾斜',
-    '斷梢',
-    '空洞',
-    '其他'
+    '病蟲害',
+    '枯萎',
+    '枯立木',
+    '枯死',
+    '倒塌',
+    '已移除',
+    '其他',
   ];
 
   // Tree ID is final in edit mode
