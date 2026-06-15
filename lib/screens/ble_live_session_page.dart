@@ -1221,18 +1221,29 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
 
   Widget _buildReadyPanel() {
     final hasData = _lastMeasurement != null;
+    // [RWD] 卡片內為固定高內容（圖示 52 + 標題 + 三步驟 + 等待提示）。在矮螢幕或
+    // 上方狀態列較高時，Expanded 配到的高度可能小於內容（曾見底部溢出 11px）。
+    // 用 LayoutBuilder + SingleChildScrollView + minHeight + IntrinsicHeight：
+    // 空間充足時 Spacer 仍把按鈕推到底；空間不足時改為可捲動，永不溢出。
     return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        child: Column(
-          children: [
-            Card(
-              elevation: 0,
-              color: Colors.green.shade50,
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: IntrinsicHeight(
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: Column(
+                    children: [
+                      Card(
+                        elevation: 0,
+                        color: Colors.green.shade50,
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            children: [
                     Icon(
                       hasData ? Icons.check_circle : Icons.touch_app,
                       size: 52,
@@ -1268,15 +1279,21 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
                 ),
               ),
             ),
-            const Spacer(),
-            if (!_isProcessingTree)
-              TextButton.icon(
-                onPressed: _pickAnotherDevice,
-                icon: const Icon(Icons.bluetooth_searching),
-                label: Text(context.tr('ble_reconnect_scan_other')),
+                      const Spacer(),
+                      if (!_isProcessingTree)
+                        TextButton.icon(
+                          onPressed: _pickAnotherDevice,
+                          icon: const Icon(Icons.bluetooth_searching),
+                          label:
+                              Text(context.tr('ble_reconnect_scan_other')),
+                        ),
+                    ],
+                  ),
+                ),
               ),
-          ],
-        ),
+            ),
+          );
+        },
       ),
     );
   }

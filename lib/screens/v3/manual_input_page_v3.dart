@@ -940,23 +940,33 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
   // === Step 1: Location & Project ===
   Widget _buildBoundaryStatusChip() {
     final status = _boundaryStatus!;
-    if (status.hasBoundary) {
-      return Chip(
-        avatar: const Icon(Icons.check_circle, color: Colors.green, size: 18),
-        label: Text(
-          '區已有邊界${_isLocationValid ? '' : '（目前位置在邊界外）'}',
-          style: const TextStyle(fontSize: 12),
-        ),
-        backgroundColor: Colors.green.shade50,
-      );
-    }
-    return Chip(
-      avatar: const Icon(Icons.info_outline, color: Colors.orange, size: 18),
-      label: Text(
-        '尚未畫邊界（手動模式，GPS 不限制；${status.treeCountWithGps} 棵有 GPS）',
-        style: const TextStyle(fontSize: 12),
+    final hasBoundary = status.hasBoundary;
+    // [RWD] 不用 Chip：長字串（如「尚未畫邊界（手動模式…）」）在窄螢幕會撐爆 Chip
+    // 內部 Row 造成 RenderFlex overflow。改用可換行容器，文字以 Expanded 自動折行。
+    final icon = hasBoundary
+        ? const Icon(Icons.check_circle, color: Colors.green, size: 18)
+        : const Icon(Icons.info_outline, color: Colors.orange, size: 18);
+    final text = hasBoundary
+        ? '區已有邊界${_isLocationValid ? '' : '（目前位置在邊界外）'}'
+        : '尚未畫邊界（手動模式，GPS 不限制；${status.treeCountWithGps} 棵有 GPS）';
+    final bg = hasBoundary ? Colors.green.shade50 : Colors.orange.shade50;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
       ),
-      backgroundColor: Colors.orange.shade50,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          icon,
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(text, style: const TextStyle(fontSize: 12)),
+          ),
+        ],
+      ),
     );
   }
 

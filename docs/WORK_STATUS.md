@@ -5,6 +5,16 @@
 
 ---
 
+## (2026-06-15e) 定位修正其餘兩處 RenderFlex 溢位 — 已完成
+
+- **V3 新增頁邊界狀態（78px 右溢）**：`manual_input_page_v3._buildBoundaryStatusChip` 由 `Chip`（長字串不折行）改為 `Container`＋`Row(圖示 + Expanded(Text))`，文字自動折行。
+- **BLE 連線就緒面板（11px 底溢）**：`ble_live_session_page._buildReadyPanel` 改用 `LayoutBuilder + SingleChildScrollView + ConstrainedBox(minHeight) + IntrinsicHeight`，空間足時 `Spacer` 撐底、不足時可捲動。
+- 兩處 log 因 Flutter 去重未印 widget 行號，依量級與頁面流程反推定位；皆為 debug 期版面警示，不影響功能/release。
+- 驗證：`flutter analyze` 無 issue；`flutter test` 429 cases 全綠。
+- **版本**：前端 `18.10.4+26`。
+
+---
+
 ## (2026-06-15d) 樹種名繁體化 + 批次匯入生命週期補漏 + Ubuntu 重新部署驗證 — 已完成
 
 - **樹種名一律台灣繁體（簡轉繁）**：後端新增 `utils/chineseConvert.js`（`opencc-js` cn→tw），在 Pl@ntNet 回應與**所有寫入路徑**（create_v2／update_v2／批次匯入／CSV／現場量測 transfer）入庫前統一轉繁。

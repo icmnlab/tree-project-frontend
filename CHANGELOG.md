@@ -9,10 +9,19 @@
 
 ---
 
+## v18.10.4 (2026-06-15) — 定位並修正其餘兩處 RenderFlex 溢位
+
+- **V3 新增頁邊界狀態（78px 右溢）**：`manual_input_page_v3._buildBoundaryStatusChip` 原用 `Chip` 包長字串（如「尚未畫邊界（手動模式，GPS 不限制；N 棵有 GPS）」）。`Chip` 不會折行，窄螢幕下其內部 `Row` 觸發 `A RenderFlex overflowed by 78 pixels on the right.`。改為可換行的 `Container`＋`Row`（圖示 + `Expanded(Text)`），文字自動折行，永不溢出。
+- **BLE 連線就緒面板（11px 底溢）**：`ble_live_session_page._buildReadyPanel` 卡片內為固定高內容（圖示 52 + 標題 + 三步驟 + 等待提示），在矮螢幕或上方狀態列較高時，`Expanded` 配到的高度小於內容，觸發 `A RenderFlex overflowed by 11 pixels on the bottom.`。改用 `LayoutBuilder + SingleChildScrollView + ConstrainedBox(minHeight) + IntrinsicHeight`：空間足時 `Spacer` 仍把按鈕推到底，不足時改為可捲動。
+- 兩處 log 因 Flutter 去重未印 widget 行號，依量級（78/11px）與當下頁面流程（地圖建立 + ProjectBoundaryService／BLE teardown）反推定位後修正；皆為 debug 期版面警示，不影響功能與 release。
+- 驗證：`flutter analyze` 無 issue；`flutter test` 429 cases 全綠。
+
+---
+
 ## v18.10.3 (2026-06-15) — 修正匯入預覽 RenderFlex 溢位
 
 - **`ble_import_page` 匯入預覽工具列溢位**：手動匯入「預覽 + 多選刪除」對話框頂列（全選／全不選／提示字）在窄裝置（如 Mi A1）觸發 `A RenderFlex overflowed by 43 pixels on the right.`。將尾端提示字「取消勾選 = 不匯入」改為 `Flexible` + `TextOverflow.ellipsis`，避免擠爆版面（log 實測定位 `ble_import_page.dart:2123`）。
-- 備註：log 另見「11px 底／78px 右」兩處溢位，未印出 widget 行號（Flutter 去重），需 DevTools Inspector 實機定位後再修；不影響功能（debug 期黃黑斑紋警示，release 不顯示）。
+- 備註：log 另見「11px 底／78px 右」兩處溢位已於 **v18.10.4** 定位修正。
 
 ---
 
