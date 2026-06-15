@@ -66,3 +66,6 @@ ios/.symlinks/
 # API keys and backend data
 **/apiKeys.json
 tree-project-backend/
+
+# stray temp files
+*.tmp

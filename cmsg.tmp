@@ -1,3 +1,0 @@
-chore(ui): remove unused Forest Intelligence design assets and theme
-
-Per handover decision: drop UI_sustainable_treeai/ mockups and the unused, unmounted lib/themes/forest_intelligence_theme.dart. Current AppTheme UI stays stable. Bump 18.10.1+23; CHANGELOG + WORK_STATUS updated.
