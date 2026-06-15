@@ -3,7 +3,7 @@
 ![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter&logoColor=white)
 ![Dart](https://img.shields.io/badge/Dart-3-0175C2?logo=dart&logoColor=white)
 ![Platform](https://img.shields.io/badge/platform-Android%20%7C%20iOS-lightgrey)
-![Tests](https://img.shields.io/badge/tests-429%20passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-435%20passing-brightgreen)
 ![Version](https://img.shields.io/badge/version-18.10.4%2B26-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 

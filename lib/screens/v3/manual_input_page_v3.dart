@@ -19,6 +19,7 @@ import '../scanner_page.dart'; // For DBH measurement
 import '../../services/ar_measurement_service.dart'; // For MeasurementResult
 import '../../services/project_area_service.dart'; // 新增專案區位服務
 import 'project_boundary_draw_page.dart'; // [N新功能] 新增專案 → 引導畫邊界
+import '../../widgets/boundary_status_banner.dart';
 
 class ManualInputPageV3 extends StatefulWidget {
   const ManualInputPageV3({super.key});
@@ -940,33 +941,12 @@ class _ManualInputPageV3State extends State<ManualInputPageV3> {
   // === Step 1: Location & Project ===
   Widget _buildBoundaryStatusChip() {
     final status = _boundaryStatus!;
-    final hasBoundary = status.hasBoundary;
-    // [RWD] 不用 Chip：長字串（如「尚未畫邊界（手動模式…）」）在窄螢幕會撐爆 Chip
-    // 內部 Row 造成 RenderFlex overflow。改用可換行容器，文字以 Expanded 自動折行。
-    final icon = hasBoundary
-        ? const Icon(Icons.check_circle, color: Colors.green, size: 18)
-        : const Icon(Icons.info_outline, color: Colors.orange, size: 18);
-    final text = hasBoundary
-        ? '區已有邊界${_isLocationValid ? '' : '（目前位置在邊界外）'}'
-        : '尚未畫邊界（手動模式，GPS 不限制；${status.treeCountWithGps} 棵有 GPS）';
-    final bg = hasBoundary ? Colors.green.shade50 : Colors.orange.shade50;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: bg,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          icon,
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(text, style: const TextStyle(fontSize: 12)),
-          ),
-        ],
-      ),
+    // 呈現層抽到 BoundaryStatusBanner（可換行，避免窄螢幕 RenderFlex 溢位）；
+    // 該 widget 由 test/boundary_status_banner_overflow_test.dart 驗證。
+    return BoundaryStatusBanner(
+      hasBoundary: status.hasBoundary,
+      isLocationValid: _isLocationValid,
+      treeCountWithGps: status.treeCountWithGps,
     );
   }
 

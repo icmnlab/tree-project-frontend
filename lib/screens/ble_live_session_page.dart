@@ -17,6 +17,7 @@ import '../utils/transfer_result.dart';
 import '../services/pending_measurement_service.dart';
 import '../widgets/ble/ble_device_scanner.dart';
 import '../widgets/ble/ble_instrument_checklist.dart';
+import '../widgets/ble/ble_ready_panel.dart';
 import '../widgets/field/field_session_setup.dart';
 import 'pending_measurement_task_page.dart';
 import 'v3/integrated_tree_form_page.dart';
@@ -1220,94 +1221,19 @@ class _BleLiveSessionPageState extends State<BleLiveSessionPage> {
   }
 
   Widget _buildReadyPanel() {
-    final hasData = _lastMeasurement != null;
-    // [RWD] 卡片內為固定高內容（圖示 52 + 標題 + 三步驟 + 等待提示）。在矮螢幕或
-    // 上方狀態列較高時，Expanded 配到的高度可能小於內容（曾見底部溢出 11px）。
-    // 用 LayoutBuilder + SingleChildScrollView + minHeight + IntrinsicHeight：
-    // 空間充足時 Spacer 仍把按鈕推到底；空間不足時改為可捲動，永不溢出。
+    // 呈現層抽到 BleReadyPanel（內含 LayoutBuilder + 捲動防溢位邏輯）；
+    // 由 test/ble_ready_panel_overflow_test.dart 在窄/矮尺寸驗證不溢位。
     return Expanded(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: IntrinsicHeight(
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Column(
-                    children: [
-                      Card(
-                        elevation: 0,
-                        color: Colors.green.shade50,
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Column(
-                            children: [
-                    Icon(
-                      hasData ? Icons.check_circle : Icons.touch_app,
-                      size: 52,
-                      color: Colors.green.shade700,
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      context.tr('ble_ready_title'),
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green.shade900,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-                    _readyStep(context.tr('ble_ready_step1')),
-                    _readyStep(context.tr('ble_ready_step2')),
-                    _readyStep(context.tr('ble_ready_step3')),
-                    if (!hasData) ...[
-                      const SizedBox(height: 16),
-                      Text(
-                        context.tr('ble_ready_waiting'),
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.orange.shade900,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ),
-                      const Spacer(),
-                      if (!_isProcessingTree)
-                        TextButton.icon(
-                          onPressed: _pickAnotherDevice,
-                          icon: const Icon(Icons.bluetooth_searching),
-                          label:
-                              Text(context.tr('ble_reconnect_scan_other')),
-                        ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _readyStep(String text) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(Icons.arrow_right, size: 20, color: Colors.green.shade700),
-          const SizedBox(width: 4),
-          Expanded(child: Text(text, style: const TextStyle(fontSize: 14))),
-        ],
+      child: BleReadyPanel(
+        hasData: _lastMeasurement != null,
+        title: context.tr('ble_ready_title'),
+        step1: context.tr('ble_ready_step1'),
+        step2: context.tr('ble_ready_step2'),
+        step3: context.tr('ble_ready_step3'),
+        waitingText: context.tr('ble_ready_waiting'),
+        scanOtherLabel: context.tr('ble_reconnect_scan_other'),
+        showScanOther: !_isProcessingTree,
+        onScanOther: _pickAnotherDevice,
       ),
     );
   }
