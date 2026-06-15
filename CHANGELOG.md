@@ -9,6 +9,13 @@
 
 ---
 
+## v18.10.3 (2026-06-15) — 修正匯入預覽 RenderFlex 溢位
+
+- **`ble_import_page` 匯入預覽工具列溢位**：手動匯入「預覽 + 多選刪除」對話框頂列（全選／全不選／提示字）在窄裝置（如 Mi A1）觸發 `A RenderFlex overflowed by 43 pixels on the right.`。將尾端提示字「取消勾選 = 不匯入」改為 `Flexible` + `TextOverflow.ellipsis`，避免擠爆版面（log 實測定位 `ble_import_page.dart:2123`）。
+- 備註：log 另見「11px 底／78px 右」兩處溢位，未印出 widget 行號（Flutter 去重），需 DevTools Inspector 實機定位後再修；不影響功能（debug 期黃黑斑紋警示，release 不顯示）。
+
+---
+
 ## v18.10.2 (2026-06-15) — 編輯頁樹況選單對齊內建目錄
 
 - **`tree_edit_page_v2` 樹況快捷選單對齊後端內建目錄**：原靜態清單（正常/枯死/病蟲害/傾斜/斷梢/空洞/其他）**缺少枯萎/枯立木/倒塌/已移除**，使編輯既有樹時無法直接選到淘汰類狀況。改為與 `tree_status_options` 內建項一致（正常/傾斜/病蟲害/枯萎/枯立木/枯死/倒塌/已移除/其他），自由文字欄仍保留可輸入目錄外狀況。

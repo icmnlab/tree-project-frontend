@@ -4,7 +4,7 @@
 > 機密交接見 `HANDOFF_SECRETS_CHECKLIST.md`、部署見 `LAB_DEPLOYMENT_GUIDE.md`、
 > 部署後逐項驗證見 `VERIFICATION_CHECKLIST.md`。
 >
-> 最後更新：2026-06-15　｜　適用版本：前端 `18.10.1+23`、DB migration ≥ 34
+> 最後更新：2026-06-15　｜　適用版本：前端 `18.10.3+25`、DB migration ≥ 35
 
 ---
 

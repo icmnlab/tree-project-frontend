@@ -2145,9 +2145,13 @@ class _BleImportPageState extends State<BleImportPage> {
                         },
                       ),
                       const Spacer(),
-                      const Text(
-                        '取消勾選 = 不匯入',
-                        style: TextStyle(fontSize: 11, color: Colors.grey),
+                      const Flexible(
+                        child: Text(
+                          '取消勾選 = 不匯入',
+                          style: TextStyle(fontSize: 11, color: Colors.grey),
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
+                        ),
                       ),
                     ],
                   ),
