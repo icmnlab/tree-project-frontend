@@ -4,14 +4,14 @@
 ![Dart](https://img.shields.io/badge/Dart-3-0175C2?logo=dart&logoColor=white)
 ![Platform](https://img.shields.io/badge/platform-Android%20%7C%20iOS-lightgrey)
 ![Tests](https://img.shields.io/badge/tests-429%20passing-brightgreen)
-![Version](https://img.shields.io/badge/version-18.10.0%2B22-blue)
+![Version](https://img.shields.io/badge/version-18.10.1%2B23-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 Flutter app — field-survey, two-stage measurement, AR/CV-based DBH estimation,
 project & area management, AI chat / agent, and on-device tree-trunk
 preview. The single companion to the Node backend.
 
-`pubspec.yaml`: `name: sustainable_treeai`, `version: 18.10.0+22`,
+`pubspec.yaml`: `name: sustainable_treeai`, `version: 18.10.1+23`,
 `environment.sdk: '>=3.0.0 <4.0.0'` (Flutter 3.x).
 
 ---
