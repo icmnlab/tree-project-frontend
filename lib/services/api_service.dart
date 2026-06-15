@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/app_config.dart'; // Import AppConfig
@@ -110,12 +111,12 @@ class ApiService {
 
         if (url != null) {
           await AppConfig().setMlServiceUrl(url);
-          print(
+          debugPrint(
               '[ApiService] Successfully updated ML service endpoint from backend: $url');
         }
       }
     } catch (e) {
-      print('[ApiService] Failed to fetch ML config: $e');
+      debugPrint('[ApiService] Failed to fetch ML config: $e');
     }
   }
 
@@ -241,10 +242,10 @@ class ApiService {
             headers: _getHeaders(),
           )
           .timeout(_timeout);
-      print('[ApiService] Cleanup process triggered.');
+      debugPrint('[ApiService] Cleanup process triggered.');
     } catch (e) {
       // 即使失敗了也不需要打斷使用者操作，只需在控制台記錄即可
-      print('[ApiService] Failed to trigger cleanup process: $e');
+      debugPrint('[ApiService] Failed to trigger cleanup process: $e');
     }
   }
 
@@ -320,7 +321,7 @@ class ApiService {
       }
       return [];
     } catch (e) {
-      print('Error fetching tree data: $e');
+      debugPrint('Error fetching tree data: $e');
       return [];
     }
   }

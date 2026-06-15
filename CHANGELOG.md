@@ -4,6 +4,14 @@
 
 ---
 
+## v18.9.1 (2026-06-15) — 程式碼品質：移除 `print`、去個人化註解
+
+- **`avoid_print` 清理**：將 `services/api_service.dart`、`statistics_page.dart`、`screens/ai_sustainability_report_screen.dart`、`screens/ble_import_page.dart`、`screens/manual_input_page_v2.dart` 中殘留的 `print()` 改為 `debugPrint()`，符合 `flutter_lints`（`field_log.dart`、`debug/app_verification_harness.dart` 之 `print` 為刻意設計，已附 `// ignore: avoid_print` 與理由，保留）。
+- **去個人化註解（`screens/v3/integrated_tree_form_page.dart`）**：將 `TODO(Xiang)` 個人指派標記改為中性「待實作」說明，交接後不殘留個人資訊（LIDAR 引擎識別字 `xiangLidar` 等為跨檔 API 命名，未更動）。
+- 全程式碼與文件已掃描，無個人 email／姓名／電話等個資（僅本機 git config 含作者資訊，屬正常）。
+
+---
+
 ## v18.9.0 (2026-06-15) — 樹況選單動態化（內建+自訂可共享）
 
 - **動態樹況選單（`services/tree_status_service.dart` 新增）**：新增/維護量測表單的「樹木狀況」改由後端 `GET /tree-statuses` 動態載入（內建：正常/傾斜/病蟲害/枯萎/枯立木/枯死/倒塌/已移除），API 不可用時落回內建後備清單，離線仍可作業。

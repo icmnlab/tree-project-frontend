@@ -128,7 +128,7 @@ class _AISustainabilityReportScreenState
       }
     } catch (e) {
       // 如果加載失敗，保持默認值
-      print('加載最大胸徑值時發生錯誤: $e');
+      debugPrint('加載最大胸徑值時發生錯誤: $e');
     }
   }
 

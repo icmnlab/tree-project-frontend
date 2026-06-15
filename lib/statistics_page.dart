@@ -100,7 +100,7 @@ class _StatisticsPageState extends State<StatisticsPage> with SingleTickerProvid
         _calculateCarbonMetrics();
       });
     } catch (e) {
-      print('Error fetching tree data: $e');
+      debugPrint('Error fetching tree data: $e');
     }
   }
 

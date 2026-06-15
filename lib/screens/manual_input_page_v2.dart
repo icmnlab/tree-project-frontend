@@ -164,7 +164,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
         });
       }
     } catch (e) {
-      print('載入初始數據失敗: $e');
+      debugPrint('載入初始數據失敗: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -193,7 +193,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
         });
       }
     } catch (e) {
-      print('載入專案失敗: $e');
+      debugPrint('載入專案失敗: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }
@@ -254,7 +254,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
         await _treeService.deletePlaceholderTree(id.toString());
         debugPrint('已刪除佔位樹木 ID: $id');
       } catch (e) {
-        print('刪除佔位樹木失敗: $e');
+        debugPrint('刪除佔位樹木失敗: $e');
       }
     }
     for (var id in _createdAreaIds) {
@@ -262,7 +262,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
         await _projectAreaService.deleteProjectArea(id);
         debugPrint('已刪除專案區位 ID: $id');
       } catch (e) {
-        print('刪除專案區位失敗: $e');
+        debugPrint('刪除專案區位失敗: $e');
       }
     }
   }
@@ -1220,7 +1220,7 @@ class _ManualInputPageV2State extends State<ManualInputPageV2> {
         Navigator.of(context).popUntil((route) => route.isFirst);
       }
     } catch (e) {
-      print('V2 匯入失敗: $e');
+      debugPrint('V2 匯入失敗: $e');
       if (mounted) {
         Navigator.pop(context);
         showDialog(

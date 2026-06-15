@@ -955,15 +955,15 @@ class _IntegratedTreeFormPageState extends State<IntegratedTreeFormPage> {
       _deviceCaps = caps;
       final routing = DbhEngineResolver.resolveForAutoMeasure(
         hardware: caps,
-        // TODO(Xiang): ARKit Scene Depth 采集後設 hasLidarDepthFrame=true
+        // 待實作：ARKit Scene Depth 採集後，將 hasLidarDepthFrame 設為 true
         hasLidarDepthFrame: false,
         xiangPreflightOk: false,
       );
       _logDbh('autoMeasure routing: ${routing.summary}');
 
       if (routing.apiEngine == DbhEngine.xiangLidar) {
-        // TODO(Xiang): PureVisionDbhService.measureDbhXiang(...) when backend ready
-        _logDbh('xiang API selected but not wired — should not happen yet');
+        // 待實作：後端就緒後接上 PureVisionDbhService 的 LIDAR 量測路徑
+        _logDbh('LIDAR API selected but not wired — should not happen yet');
       }
 
       final result = await service.autoMeasureDbh(

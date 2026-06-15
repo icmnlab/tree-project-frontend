@@ -389,7 +389,7 @@ class _BleImportPageState extends State<BleImportPage> {
         });
       });
     } catch (e) {
-      print('掃描錯誤: $e');
+      debugPrint('掃描錯誤: $e');
       // [FIX] 檢查 mounted 再調用 setState
       if (mounted) {
         setState(() => _isScanning = false);
@@ -461,7 +461,7 @@ class _BleImportPageState extends State<BleImportPage> {
       // 連接成功後，開始發現服務並啟動傳輸
       await _discoverServicesAndSubscribe(device);
     } catch (e) {
-      print('連接錯誤: $e');
+      debugPrint('連接錯誤: $e');
       // [FIX] 檢查 widget 是否還在樹中再調用 setState
       if (mounted) {
         setState(() {
@@ -553,7 +553,7 @@ class _BleImportPageState extends State<BleImportPage> {
         throw Exception('未找到 NUS / Haglof notify TX');
       }
     } catch (e) {
-      print('服務發現錯誤: $e');
+      debugPrint('服務發現錯誤: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('服務錯誤: $e')),
