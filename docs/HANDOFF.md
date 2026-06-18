@@ -1,7 +1,8 @@
 # 交接總覽 HANDOFF（單一入口）
 
-> 新人接手請從這份開始。這裡只放「跑起來、測試、部署、找路」需要知道的事，
-> 細節指向各專門文件（見 §10 文件地圖）。最後更新：2026-06-18。
+**文件用途**：接手方操作與架構的單一入口，涵蓋環境建置、測試、部署與模組索引。  
+**建議閱讀順序**：§1 系統概覽 → §4 本機啟動 → §8 領域重點 → §10 文件地圖。  
+**最後修訂**：2026-06-18。
 
 ---
 
@@ -24,38 +25,49 @@
 ## 1. 這是什麼系統
 
 **永續碳匯樹木管理系統（Sustainable TreeAI）**：通用的樹木調查與碳匯管理系統（目標使用單位：國立東華大學環境學院）。
-庫內的港務造林地資料只是開發/CI 測試資料（`backend/dev-fixtures/`），正式上線**不會**匯入，系統也沒有針對該批資料的特殊邏輯。
+庫內的港務造林地資料只是開發/CI 測試資料（後端 repo 的 `dev-fixtures/`），正式上線**不會**匯入，系統也沒有針對該批資料的特殊邏輯。
 
 - **前端**：Flutter App（Android 為主），現場調查、地圖、BLE 連 VLGEO2 測樹儀、AI 助理。
 - **後端**：Node.js + Express + PostgreSQL，提供 API、整批/現場量測資料寫入、專案/邊界/碳匯計算。
 - **ML 服務（選用）**：樹幹偵測 / 深度估計代理（獨立服務，後端透過 `ML_SERVICE_URL` 代理）。
 
-兩個 repo（各自獨立）：
-- `<GITHUB_OWNER>/tree-project-backend`
-- `<GITHUB_OWNER>/tree-project-frontend`
+### Repository layout
 
-> ⚠️ 工作區根目錄 `project_code/` 不是 git repo；`backend/` 與 `frontend/` 各是一個 repo，
-> `docs/`、`ml_service/` 為輔助目錄。
+本專案以**兩個獨立 Git repository** 交付；clone 後請分別在各自 repo 根目錄執行建置與部署（§4）。
+
+| Repository | 內容 |
+|------------|------|
+| `<GITHUB_OWNER>/tree-project-frontend` | Flutter App；交接文件位於 `docs/`（含本檔） |
+| `<GITHUB_OWNER>/tree-project-backend` | Node.js API、PostgreSQL migrations、`ml_service/`（選用 ML） |
 
 ---
 
 ## 2. 目錄結構
 
+以下以各 repository **根目錄**為準（clone 後資料夾名稱通常與 GitHub repo 名稱相同）。
+
+### 2.1 後端（`tree-project-backend`）
+
 ```
-project_code/
-├── backend/        # Node/Express API（一個 git repo）
-│   ├── app.js                      # 入口；prod 開機自動跑 pending migration
-│   ├── routes/ services/ middleware/ config/
-│   ├── database/initial_data/*.pg.sql   # schema/migration SQL（依序）
-│   ├── scripts/                    # migrate.js / run_pending_migrations.js / deploy.sh ...
-│   ├── dev-fixtures/               # 開發/CI 用種子（tree_survey_data.csv 等）
-│   ├── tests/                      # 整合測試框架（runner.js + invariants/journeys/contracts）
-│   └── .github/workflows/ci.yml    # 後端 CI
-├── frontend/       # Flutter App（一個 git repo）
-│   ├── lib/ (screens/ services/ widgets/ models/ config/)
-│   ├── test/                       # 單元/Widget 測試（flutter test）
-│   └── .github/workflows/ci.yml    # 前端 CI
-└── docs/           # 文件（含本檔）
+tree-project-backend/           # repo 根目錄
+├── app.js                      # 入口；prod 開機自動跑 pending migration
+├── routes/ services/ middleware/ config/
+├── database/initial_data/*.pg.sql   # schema/migration SQL（依序）
+├── scripts/                    # migrate.js / run_pending_migrations.js / deploy.sh ...
+├── dev-fixtures/               # 開發/CI 用種子（tree_survey_data.csv 等）
+├── ml_service/                 # 選用 ML 服務（Python / FastAPI）
+├── tests/                      # 整合測試框架（runner.js + invariants/journeys/contracts）
+└── .github/workflows/ci.yml    # 後端 CI
+```
+
+### 2.2 前端（`tree-project-frontend`）
+
+```
+tree-project-frontend/          # repo 根目錄
+├── lib/                        # screens/ services/ widgets/ models/ config/
+├── docs/                       # 交接文件（含本檔）
+├── test/                       # 單元/Widget 測試（flutter test）
+└── .github/workflows/ci.yml    # 前端 CI
 ```
 
 ---
@@ -74,8 +86,10 @@ project_code/
 ## 4. 本機跑起來
 
 ### 4.1 後端
+
+在 **後端 repository 根目錄**（`tree-project-backend/`）執行：
+
 ```bash
-cd backend
 cp .env.example .env          # 填 DATABASE_URL（或 DB_*）、JWT_SECRET、CORS
 npm ci
 node scripts/migrate.js       # 全新空庫：建 schema（不含使用者；可選 dev-fixtures CSV）
@@ -87,8 +101,10 @@ npm start                     # http://localhost:3000  （/health 可測活）
   不想匯入測試樹設 `SKIP_CSV_IMPORT=1`。**正式環境永遠不要跑 `migrate.js`**（見 §6）。
 
 ### 4.2 前端
+
+在 **前端 repository 根目錄**（`tree-project-frontend/`）執行：
+
 ```bash
-cd frontend
 flutter pub get
 flutter run --dart-define=API_BASE_URL=http://<後端IP>:3000/api
 ```
@@ -99,7 +115,8 @@ API 位址由建置期 `--dart-define=API_BASE_URL` 注入（見 `lib/config/app
 ## 5. 測試與 CI
 
 ### 5.1 後端整合測試（`tests/runner.js`）
-針對「跑起來的 server + DB」做契約/旅程/不變式測試，每個 case 自建資料並清理。
+
+在**後端 repository 根目錄**執行。針對「跑起來的 server + DB」做契約/旅程/不變式測試，每個 case 自建資料並清理。
 ```bash
 # 需要：一個已 migrate 的 DB + 一個正在跑的 server
 $env:TEST_BASE_URL="http://localhost:3001/api"   # PowerShell
@@ -109,19 +126,21 @@ node tests/runner.js --list          # 只列出 case
 ```
 - 預設登入 `admin/12345`（需先跑 `seed_dev_users.js`；**正式庫**用 `create_lab_admin.js` 自建管理員，並在 `.env` 或 CI 設 `TEST_ADMIN_USER`/`TEST_ADMIN_PASS`）。
 - 需直連 DB 的 invariants 用 `TEST_DB_URL`（或 `DATABASE_URL`）；沒設則自動 skip。
-- 寫測試規範見 `backend/tests/FRAMEWORK.md`。
+- 寫測試規範見後端 repo 的 `tests/FRAMEWORK.md`。
 
 ### 5.2 前端測試
+
+在**前端 repository 根目錄**執行：
+
 ```bash
-cd frontend
 flutter test                 # 全套（目前 435 pass）
 ```
 
 ### 5.3 CI（GitHub Actions，push / PR 觸發）
 | Repo | Workflow | 內容 |
 |------|----------|------|
-| backend | `.github/workflows/ci.yml` | 起 `postgres:15` → `migrate.js` → `seed_dev_users.js` → 啟 server → `tests/runner.js`（**80 cases**，CI 全綠） |
-| frontend | `.github/workflows/ci.yml` | `flutter pub get` → `analyze`（advisory）→ `flutter test`（435 pass） |
+| `tree-project-backend` | `.github/workflows/ci.yml` | 起 `postgres:15` → `migrate.js` → `seed_dev_users.js` → 啟 server → `tests/runner.js`（**80 cases**，CI 全綠） |
+| `tree-project-frontend` | `.github/workflows/ci.yml` | `flutter pub get` → `analyze`（advisory）→ `flutter test`（435 pass） |
 
 CI 專用環境變數（在 workflow 內設，正式環境**不要**設）：
 - `DB_SSL=false`：連 CI 的無 SSL Postgres。
@@ -164,7 +183,7 @@ pm2 reload tree-backend          # 手動重載
 
 ## 7. 環境變數速查（後端）
 
-完整範本見 `backend/.env.example`。重點：
+完整範本見後端 repo 的 `.env.example`。重點：
 
 | 變數 | 必要性 | 說明 |
 |------|--------|------|
@@ -231,7 +250,7 @@ pm2 reload tree-backend          # 手動重載
 - **四種新增輸入 + 編輯寫庫對照**：見本檔 **§8.1**；歷次機制見 `SURVEY_HISTORY.md`
 - **VLGEO2 BLE 整合**（NUS、PHGF、CSV；**非** Classic SPP）：`VLGEO2_STD_APPLICATION_GUIDE.md`；解析 `ble_live_packet_decoder.dart` / `ble_data_processor.dart`
 - **AI Agent / 文字轉 SQL**：`AI_AGENT_GUIDE.md`
-- **ML 自架（選用）**：`backend/ml_service/README.md`（YOLO iGPU + DA3 NPU；`start.ps1 -Preset da3`）
+- **ML 自架（選用）**：後端 repo 的 `ml_service/README.md`（YOLO iGPU + DA3 NPU；`start.ps1 -Preset da3`）
 
 ---
 
@@ -285,7 +304,7 @@ pm2 reload tree-backend          # 手動重載
 | `ML_CORRECTION_UPLOAD.md` | ML 校正資料上傳（訓練資料回收） |
 | `HANDOFF_EXTERNAL_GNSS_AND_BLE.md` | 外接 GNSS 技術存檔（已取消採購，文件開頭有狀態聲明） |
 | `DATABASE_NORMALIZATION.md` / `BOUNDARY_SYSTEM_DESIGN.md` / `CARBON_CALCULATION.md` | 各子系統設計 |
-| `backend/tests/FRAMEWORK.md` | 後端測試框架寫法 |
+| `tests/FRAMEWORK.md`（後端 repo） | 後端測試框架寫法 |
 
 > 歷史性分析/舊版交接文件已於 2026-06-11 整理移出 repo（原 `docs/history/`、各 roadmap/計畫文件），備份於專案擁有者本機 `handover_backup_20260611/`。
 
