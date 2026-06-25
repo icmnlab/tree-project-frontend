@@ -365,6 +365,7 @@ pm2 reload tree-backend          # 手動重載
 | AR 量測 | `services/ar_measurement_service.dart`、`services/v3/ar_measurement_integration_service.dart`（零引用，整合範例） | 程式碼保留，未主打 |
 | WebSocket 即時掃描 | `services/scanner_service.dart`（零引用；對接 ml_service `/ws/scan`） | 程式碼保留，未掛載 |
 | ML 訓練資料收集 | 後端 `routes/ml_training_data.js` | 保留 |
+| 研究資料集（DBH 校準） | `routes/research_dataset.js`、`admin_research_dataset_page.dart` | **系統管理員限定**；捲尺實測周長+拍攝距離+照片，供距離偏差 α,β 校正與 leakage-free 評估集；研究階段，配合 `DBH_PURE_VISION_RESEARCH.md` |
 | 樹木調查頁（unscoped 模式） | `tree_survey_page.dart` | 底部分頁已移除（與列表重疊）；**保留**供專案/區下鑽與首頁「樹木調查」卡片使用 |
 | 自動多邊形邊界建議 | 後端 boundarySuggest | 通用功能、需使用者確認後才寫入 |
 | 邊界輸入（貼座標 / 匯入 KML·KMZ·GeoJSON / .txt·.csv 座標檔） | `boundary_input.dart` / `boundaryImport.js` / `POST /project-boundaries/import` | 預覽→確認→儲存；TWD97/TM2 自動轉 WGS84；.txt/.csv 由前端 `boundary_input.dart` 解析；方式 2（含座標圖檔）UI 預留 |
