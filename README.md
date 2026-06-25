@@ -326,11 +326,8 @@ repo today; manual QA is performed against the self-hosted backend
 | 接手開發 | [`docs/HANDOFF.md`](docs/HANDOFF.md) |
 | 機密備份 | [`docs/HANDOFF_SECRETS_CHECKLIST.md`](docs/HANDOFF_SECRETS_CHECKLIST.md) |
 | 現場調查員 | [`docs/FIELD_SURVEY_SOP.md`](docs/FIELD_SURVEY_SOP.md) |
-| 文件總索引 | [`docs/HANDOFF.md`](docs/HANDOFF.md) §10 文件地圖 |
 
 本機備份至 `G:\`：`powershell -ExecutionPolicy Bypass -File scripts\handoff_backup.ps1`
-
-> **業界慣例**：根目錄 README 保持精簡（入門 + 連結）；長篇手冊放 `docs/`，避免單一 README 過長難維護。
 
 ---
 

@@ -1,7 +1,7 @@
-# 交接總覽 HANDOFF（單一入口）
+# HANDOFF
 
-**文件用途**：接手方操作與架構的單一入口，涵蓋環境建置、測試、部署與模組索引。  
-**建議閱讀順序**：§1 系統概覽 → [`DEVELOPER_ONBOARDING.md`](DEVELOPER_ONBOARDING.md)（接手開發）→ §4 本機啟動 → §8 領域重點 → §10 文件地圖。  
+接手時建議順序：§1 系統概覽 → §4 本機啟動 → §5 測試 → §8 領域重點。正式環境部署見 `LAB_DEPLOYMENT_GUIDE.md`；金鑰與帳號見 `HANDOFF_SECRETS_CHECKLIST.md`。
+
 **最後修訂**：2026-06-18。
 
 ---
@@ -109,6 +109,35 @@ flutter pub get
 flutter run --dart-define=API_BASE_URL=http://<後端IP>:3000/api
 ```
 API 位址由建置期 `--dart-define=API_BASE_URL` 注入（見 `lib/config/app_config.dart`），不要寫死。
+
+### 4.3 首次建置檢查
+
+開發機（兩 repo 皆需 clone）：
+
+- [ ] 後端：`npm ci` → `migrate.js` → `seed_dev_users.js` → `npm start` → `GET /health` 回 200
+- [ ] 前端：`flutter pub get` → `flutter run --dart-define=API_BASE_URL=http://<後端IP>:3000/api` → 以 `admin` / `12345` 登入
+- [ ] 前端：`flutter test` 通過（435）
+- [ ] 後端（選用）：`node tests/runner.js --list` 可列出整合測試
+
+實驗室／正式主機勿使用 `seed_dev_users.js`；依 `LAB_DEPLOYMENT_GUIDE.md` §0 部署，管理員以 `create_lab_admin.js` 建立。部署後依 `VERIFICATION_CHECKLIST.md` 驗收。
+
+### 4.4 接續開發時的主路徑
+
+現場 BLE 寫庫路徑（維護與除錯時優先熟悉）：
+
+```
+BleLiveSessionPage → POST /api/pending-measurements/...
+  → IntegratedTreeFormPage → POST /api/pending-measurements/transfer
+  → tree_survey + tree_survey_measurements
+```
+
+| 層 | 檔案 |
+|----|------|
+| 前端畫面 | `lib/screens/ble_live_session_page.dart` |
+| 前端 API | `lib/services/pending_measurement_service.dart` |
+| 後端路由 | `routes/pending_measurements.js` |
+
+手動新增與編輯見 §8.1；現場操作見 `FIELD_SURVEY_SOP.md`。
 
 ---
 
@@ -218,17 +247,30 @@ pm2 reload tree-backend          # 手動重載
 - **角色名稱不在換詞範圍**：`專案管理員` 等五個角色是 DB 值，維持原字。
 - 後端回傳的中文錯誤訊息仍可能用舊詞（顯示頻率低，列為接手者待辦）。
 
-### 8.1 四種新增與一種編輯（寫庫路徑摘要）
+### 8.1 四種新增與一種編輯（寫庫路徑）
 
-| 路徑 | 入口 | API | 歷次量測 |
-|------|------|-----|----------|
-| VLGEO2 現場連線 | 儀表板「現場連線」 | pending → `POST /transfer` | ✅ |
-| 藍牙批次／待測量 | 「藍牙匯入」→「待測量任務」 | 同上 | ✅ |
-| 智慧模式 | 樹木調查 → 新增 → 智慧 | `POST /create_v2` | ✅ |
-| 快速模式 | 樹木調查 → 新增 → 快速 | `POST /create_v2` | ✅ |
-| **編輯** | 樹木詳情 | `PUT /update_v2/:id` | ❌ 刻意不寫 |
+| 路徑 | APP 入口 | 畫面 | API | 歷次量測 |
+|------|----------|------|-----|----------|
+| VLGEO2 現場連線 | 首頁「現場連線」 | `BleLiveSessionPage` → `IntegratedTreeFormPage` | pending → `POST /transfer` | ✅ |
+| 藍牙批次／待測量 | 「藍牙匯入」→「待測量任務」 | `BleImportPage` / `PendingMeasurementTaskPage` | 同上 | ✅ |
+| 智慧模式 | 樹木調查 → 新增 → 智慧 | `ManualInputPageV3` | `POST /create_v2` | ✅ |
+| 快速模式 | 樹木調查 → 新增 → 快速 | `TreeInputPageV2` | `POST /create_v2` | ✅ |
+| 編輯 | 樹木詳情 → 編輯 | `TreeEditPageV2` | `PUT /update_v2/:id` | ❌ 刻意不寫 |
 
-**欄位對齊**：樹種、座標、樹高、DBH、樹況、碳儲量、生命週期四路一致；BLE 另寫 `tree_measurement_raw` 與歷次 `instrument_*`；手動路徑不寫儀器附表。智慧模式較快速模式少送 `tree_remark`／`survey_notes` 分欄（見 `manual_input_page_v3.dart`）。詳細歷次語意見 `SURVEY_HISTORY.md`。
+**BLE 與手動的差異**：BLE／待測量先寫入 `pending_tree_measurements`，表單完成後 `transfer` 進正式庫。智慧／快速跳過 pending，直接 `create_v2` 寫入 `tree_survey`（並寫首筆歷次）。編輯只更新主檔，不新增歷次；重測請走 BLE 或待測量。
+
+**智慧 vs 快速**：兩者皆走 `create_v2`；智慧（V3）步驟較完整，快速（V2）欄位較精簡。快速模式多送 `tree_remark`／`survey_notes` 分欄（見 `manual_input_page_v3.dart`）。
+
+**程式入口**：
+
+| 模式 | 前端 | 後端 |
+|------|------|------|
+| 智慧 | `lib/screens/v3/manual_input_page_v3.dart` | `routes/treeSurvey.js` |
+| 快速 | `lib/tree_input_page_v2.dart` | 同上 |
+| 編輯 | `lib/tree_edit_page_v2.dart` | `update_v2` |
+| 共用 HTTP | `lib/services/api_service.dart` 及各 domain service | — |
+
+**欄位對齊**：樹種、座標、樹高、DBH、樹況、碳儲量、生命週期四路一致；BLE 另寫 `tree_measurement_raw` 與歷次 `instrument_*`；手動路徑不寫儀器附表。詳細歷次語意見 `SURVEY_HISTORY.md`。
 
 **ID**：`create_v2` 與 transfer 新樹皆用 `pg_advisory_xact_lock(1)` 產生 `ST-`／`PT-`；trigger 09 補 `project_id`。現場連線每棵 transfer 後以 `id_mapping` 回正式 id（`lib/utils/transfer_result.dart`）。
 
@@ -267,49 +309,30 @@ pm2 reload tree-backend          # 手動重載
 
 ---
 
-## 10. 文件地圖與交接完整度
-
-### 10.1 標準交接包（業界慣例對照）
-
-| 類別 | 文件 | 狀態 | 備註 |
-|------|------|------|------|
-| 專案說明 | 根目錄 `README.md`（前後端各一） | ✅ | 架構圖、快速啟動 |
-| 著作權 | `LICENSE`、`AUTHORS.md`、`CONTRIBUTION_RECORD.md` | ✅ | MIT；fresh push 須保留 |
-| **開發者交接** | **`HANDOFF.md`（本檔）** | ✅ | 單一入口 |
-| 部署／建置 | `LAB_DEPLOYMENT_GUIDE.md`、`BUILD_GUIDE.md` | ✅ | |
-| 機密清單 | `HANDOFF_SECRETS_CHECKLIST.md` | ✅ | |
-| 驗收 | `HANDOVER_CHECKLIST.md`、`VERIFICATION_CHECKLIST.md` | ✅ | |
-| **現場使用者手冊** | `FIELD_SURVEY_SOP.md` | ✅ | BLE 現場連線為主 |
-| 管理員操作 | `ADMIN_AND_INVITE_DESIGN.md` + 後台畫面 | ✅ | 邀請碼、專案區、報表 |
-| 手動新增／編輯 | [`MANUAL_DATA_ENTRY.md`](MANUAL_DATA_ENTRY.md) | ✅ | 智慧／快速／編輯；BLE 見 `FIELD_SURVEY_SOP.md` |
-| 接手開發入門 | [`DEVELOPER_ONBOARDING.md`](DEVELOPER_ONBOARDING.md) | ✅ | 從零裝機順序、第一天檢查表 |
-| 老師／行政一頁摘要 | [`HANDOFF_EXECUTIVE_SUMMARY.md`](HANDOFF_EXECUTIVE_SUMMARY.md) | ✅ | 非技術導覽 |
-| 領域設計 | `DATABASE_*`、`BOUNDARY_*`、`CARBON_*` 等 | ✅ | |
-| 儀器／藍牙 | `VLGEO2_STD_APPLICATION_GUIDE.md` | ✅ | BLE vs Classic 見 §8.2 |
-| 選用 ML | `ml_service/README.md`、`DBH_PURE_VISION_RESEARCH.md` | ✅ | 研究級細節可略 |
-| 內部待辦 | `WORK_STATUS.md` | ❌ 未入 repo | 僅本機；非正式交接件 |
-
-### 10.2 文件索引
+## 10. 文件索引
 
 | 文件 | 用途 |
 |------|------|
-| **`HANDOFF.md`（本檔）** | 單一入口：跑起來 / 測試 / 部署 / 找路 |
-| [`DEVELOPER_ONBOARDING.md`](DEVELOPER_ONBOARDING.md) | **接手開發**：從零 clone → 裝機 → 接續改程式順序 |
-| [`HANDOFF_EXECUTIVE_SUMMARY.md`](HANDOFF_EXECUTIVE_SUMMARY.md) | 一頁摘要（老師／行政） |
-| [`MANUAL_DATA_ENTRY.md`](MANUAL_DATA_ENTRY.md) | 手動新增（智慧／快速）與編輯 |
-| `AUTHORS.md` / `CONTRIBUTION_RECORD.md` | 著作權與主要貢獻者（**須保留**；fresh push 時隨快照一併交付） |
-| `VERIFICATION_CHECKLIST.md` | 部署後實機驗證清單（§0、§8–§10） |
-| `LAB_DEPLOYMENT_GUIDE.md` | 脫離個人帳號、實驗室獨立部署 |
-| `BUILD_GUIDE.md` | App 建置細節 |
-| `HANDOFF_SECRETS_CHECKLIST.md` | 交接日金鑰/帳號/網址逐項清單（必看） |
-| `PROJECT_DATA_AND_DOMAIN.md` | CSV / 專案語意（domain 真相） |
-| `FIELD_SURVEY_SOP.md` | 現場調查操作 SOP（拿儀器到現場照著做） |
-| `SURVEY_HISTORY.md` | 同一棵樹多次調查（歷次量測）機制 |
-| `ADMIN_AND_INVITE_DESIGN.md` | 管理後台與邀請碼規格 |
-| `ML_CORRECTION_UPLOAD.md` | ML 校正資料上傳（訓練資料回收） |
-| `HANDOFF_EXTERNAL_GNSS_AND_BLE.md` | 外接 GNSS 技術存檔（已取消採購，文件開頭有狀態聲明） |
-| `DATABASE_NORMALIZATION.md` / `BOUNDARY_SYSTEM_DESIGN.md` / `CARBON_CALCULATION.md` | 各子系統設計 |
-| `tests/FRAMEWORK.md`（後端 repo） | 後端測試框架寫法 |
+| **`HANDOFF.md`（本檔）** | 架構、本機啟動、測試、部署、模組索引 |
+| `AUTHORS.md` / `CONTRIBUTION_RECORD.md` | 著作權與主要貢獻者（fresh push 須保留） |
+| `LAB_DEPLOYMENT_GUIDE.md` | 實驗室獨立部署（fresh snapshot、webhook、PM2） |
+| `BUILD_GUIDE.md` | Android APK 建置 |
+| `HANDOFF_SECRETS_CHECKLIST.md` | 金鑰、帳號、網址交接清單 |
+| `HANDOVER_CHECKLIST.md` | 交接當日事項 |
+| `VERIFICATION_CHECKLIST.md` | 部署後實機驗證 |
+| `FIELD_SURVEY_SOP.md` | 現場調查操作（含 BLE 與手動新增） |
+| `PROJECT_DATA_AND_DOMAIN.md` | CSV、專案／區語意 |
+| `SURVEY_HISTORY.md` | 歷次量測機制 |
+| `ADMIN_AND_INVITE_DESIGN.md` | 管理後台與邀請碼 |
+| `VLGEO2_STD_APPLICATION_GUIDE.md` | VLGEO2 BLE 整合（見 §8.2） |
+| `DATABASE_NORMALIZATION.md` / `BOUNDARY_SYSTEM_DESIGN.md` / `CARBON_CALCULATION.md` | 子系統設計 |
+| `AI_AGENT_GUIDE.md` | AI 對話／Agent（實驗功能，§12） |
+| `ML_CORRECTION_UPLOAD.md` | ML 校正資料上傳 |
+| `HANDOFF_EXTERNAL_GNSS_AND_BLE.md` | 外接 GNSS 技術存檔（已取消採購） |
+| `tests/FRAMEWORK.md`（後端 repo） | 後端整合測試寫法 |
+| `ml_service/README.md`（後端 repo） | 選用 ML 服務 |
+
+根目錄 `README.md`（前後端各一）為快速入門與技術棧說明。
 
 > 歷史性分析/舊版交接文件已於 2026-06-11 整理移出 repo（原 `docs/history/`、各 roadmap/計畫文件），備份於專案擁有者本機 `handover_backup_20260611/`。
 

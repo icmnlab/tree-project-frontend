@@ -1,6 +1,6 @@
 # 交接驗收清單 HANDOVER_CHECKLIST
 
-> 一頁式、可勾選的交接與上線驗收清單。深入說明見 `HANDOFF.md`（單一入口）、
+> 可勾選的交接與上線驗收清單。說明見 `HANDOFF.md`、
 > 機密交接見 `HANDOFF_SECRETS_CHECKLIST.md`、部署見 `LAB_DEPLOYMENT_GUIDE.md`、
 > 部署後逐項驗證見 `VERIFICATION_CHECKLIST.md`。
 >
