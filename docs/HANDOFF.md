@@ -1,7 +1,7 @@
 # 交接總覽 HANDOFF（單一入口）
 
 **文件用途**：接手方操作與架構的單一入口，涵蓋環境建置、測試、部署與模組索引。  
-**建議閱讀順序**：§1 系統概覽 → §4 本機啟動 → §8 領域重點 → §10 文件地圖。  
+**建議閱讀順序**：§1 系統概覽 → [`DEVELOPER_ONBOARDING.md`](DEVELOPER_ONBOARDING.md)（接手開發）→ §4 本機啟動 → §8 領域重點 → §10 文件地圖。  
 **最後修訂**：2026-06-18。
 
 ---
@@ -280,8 +280,10 @@ pm2 reload tree-backend          # 手動重載
 | 機密清單 | `HANDOFF_SECRETS_CHECKLIST.md` | ✅ | |
 | 驗收 | `HANDOVER_CHECKLIST.md`、`VERIFICATION_CHECKLIST.md` | ✅ | |
 | **現場使用者手冊** | `FIELD_SURVEY_SOP.md` | ✅ | BLE 現場連線為主 |
-| 管理員操作 | `ADMIN_AND_INVITE_DESIGN.md` + 後台畫面 | ⚠️ 分散 | 邀請碼、專案區、報表；可另寫「管理員手冊」合併 |
-| 手動新增／編輯 SOP | — | ⚠️ **缺口** | 智慧／快速／編輯未寫入 SOP；老師若要求完整使用者手冊可擴充 `FIELD_SURVEY_SOP` 或加附錄 |
+| 管理員操作 | `ADMIN_AND_INVITE_DESIGN.md` + 後台畫面 | ✅ | 邀請碼、專案區、報表 |
+| 手動新增／編輯 | [`MANUAL_DATA_ENTRY.md`](MANUAL_DATA_ENTRY.md) | ✅ | 智慧／快速／編輯；BLE 見 `FIELD_SURVEY_SOP.md` |
+| 接手開發入門 | [`DEVELOPER_ONBOARDING.md`](DEVELOPER_ONBOARDING.md) | ✅ | 從零裝機順序、第一天檢查表 |
+| 老師／行政一頁摘要 | [`HANDOFF_EXECUTIVE_SUMMARY.md`](HANDOFF_EXECUTIVE_SUMMARY.md) | ✅ | 非技術導覽 |
 | 領域設計 | `DATABASE_*`、`BOUNDARY_*`、`CARBON_*` 等 | ✅ | |
 | 儀器／藍牙 | `VLGEO2_STD_APPLICATION_GUIDE.md` | ✅ | BLE vs Classic 見 §8.2 |
 | 選用 ML | `ml_service/README.md`、`DBH_PURE_VISION_RESEARCH.md` | ✅ | 研究級細節可略 |
@@ -292,6 +294,9 @@ pm2 reload tree-backend          # 手動重載
 | 文件 | 用途 |
 |------|------|
 | **`HANDOFF.md`（本檔）** | 單一入口：跑起來 / 測試 / 部署 / 找路 |
+| [`DEVELOPER_ONBOARDING.md`](DEVELOPER_ONBOARDING.md) | **接手開發**：從零 clone → 裝機 → 接續改程式順序 |
+| [`HANDOFF_EXECUTIVE_SUMMARY.md`](HANDOFF_EXECUTIVE_SUMMARY.md) | 一頁摘要（老師／行政） |
+| [`MANUAL_DATA_ENTRY.md`](MANUAL_DATA_ENTRY.md) | 手動新增（智慧／快速）與編輯 |
 | `AUTHORS.md` / `CONTRIBUTION_RECORD.md` | 著作權與主要貢獻者（**須保留**；fresh push 時隨快照一併交付） |
 | `VERIFICATION_CHECKLIST.md` | 部署後實機驗證清單（§0、§8–§10） |
 | `LAB_DEPLOYMENT_GUIDE.md` | 脫離個人帳號、實驗室獨立部署 |
