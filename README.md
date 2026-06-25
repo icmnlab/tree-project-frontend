@@ -45,7 +45,7 @@ experiments, but it is not the main persisted DBH path.
 | Concern              | Package(s) |
 |----------------------|------------|
 | HTTP                 | `http`, `dio` ^5.8 |
-| Server-Sent Events   | `flutter_client_sse` ^2.0 (used by AI chat streaming) |
+| Server-Sent Events   | `flutter_client_sse` ^2.0 (legacy; backend AI endpoints now return JSON) |
 | Secure storage       | `flutter_secure_storage` ^9.0 (JWT + user profile) |
 | Plain prefs          | `shared_preferences` ^2.2 (theme, AI userId, ML URL/key, environment) |
 | State management     | `flutter_riverpod` ^2.3 (+ `riverpod_annotation`) **and** `provider` ^6.0 — both are present; older screens use `provider`, newer V3 screens use Riverpod |
@@ -262,9 +262,9 @@ When adding a screen, prefer Riverpod. When editing legacy screens, keep
 - Most calls go through `ApiService` (uses the `http` package).
 - Multipart uploads (images, BLE imports, CSV imports) use `dio` for its
   better progress reporting.
-- AI chat streaming uses `flutter_client_sse` against the SSE-compatible
-  routes on the backend (`/api/agent/chat` is non-stream JSON; `/api/chat`
-  has a streaming option toggled in the UI).
+- AI chat and agent use regular JSON request/response — both `/api/chat`
+  and `/api/agent/chat` are non-stream JSON on the backend. `flutter_client_sse`
+  is retained from an earlier streaming experiment and is not on the current path.
 
 ### Permissions / native config
 
