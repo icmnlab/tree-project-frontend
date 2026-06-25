@@ -232,7 +232,9 @@ DATABASE_URL=postgres://treeapp:<DB_密碼>@localhost:5432/treedb
 DB_SSL=false
 JWT_SECRET=<openssl rand -hex 64 產生>
 CORS_ALLOWED_ORIGINS=https://<你的網域>
+# 以下選用：用自動部署 webhook 才需要
 DEPLOY_WEBHOOK_SECRET=<自訂隨機字串>
+# 選用：只給 GET /webhook/status 讀部署 log；不設則該端點回 401，不影響系統
 ADMIN_API_TOKEN=<自訂隨機字串>
 ```
 
