@@ -157,48 +157,176 @@ flutter build apk --release --dart-define=API_BASE_URL=https://<部署主機>/ap
 
 ---
 
-## 3. 部署步驟（主機）
+## 3. Ubuntu 主機從零搭建（runbook）
 
-### 3.1 依賴
+> 情境：拿到一台乾淨的 Ubuntu 22.04 / 24.04 LTS 主機，從安裝套件到後端上線。
+> 指令以 `sudo` 為前提；`<...>` 都是你要替換的值。後端正式目錄固定為 `/opt/tree-app/backend`
+> （`ecosystem.config.js`、`scripts/deploy.sh` 皆寫死此路徑，請勿改名）。
 
-- Node.js 20 LTS
-- PostgreSQL 15+
--（可選）Python 3.10+、CUDA（ML）
+### 3.1 系統需求
 
-### 3.2 後端
+| 項目 | 版本 / 說明 |
+|------|-------------|
+| OS | Ubuntu 22.04 或 24.04 LTS |
+| Node.js | 20 LTS |
+| PostgreSQL | 15+ |
+| 反向代理 | Nginx |
+| 行程管理 | PM2（cluster 模式，2 workers） |
+| （可選）ML | Python 3.10+、GPU；見 `ml_service/README.md` |
+
+### 3.2 安裝系統套件
 
 ```bash
-cd project_code/backend
-cp .env.example .env   # 實驗室填 DATABASE_URL、JWT_SECRET、CORS_ALLOWED_ORIGINS
-npm ci
-node scripts/migrate.js
-npm start
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y git curl ufw nginx postgresql postgresql-contrib
+
+# Node.js 20 LTS（NodeSource）
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+node -v   # 應為 v20.x
+
+# PM2（全域）
+sudo npm install -g pm2
 ```
 
-`JWT_SECRET` 必須為實驗室專用隨機字串（≥32 字元）。
-
-### 3.3 建立首位管理員
+### 3.3 建立 PostgreSQL 資料庫與使用者
 
 ```bash
-node scripts/list_users.js   # 確認空庫
-# 使用既有 seed 或 SQL 建立 系統管理員，或透過 invite + 手動升級角色
+sudo -u postgres psql <<'SQL'
+CREATE USER treeapp WITH PASSWORD '<DB_密碼>';
+CREATE DATABASE treedb OWNER treeapp;
+GRANT ALL PRIVILEGES ON DATABASE treedb TO treeapp;
+SQL
 ```
 
-建議：使用 `backend/scripts/create_lab_admin.js` 建立實驗室管理員：
+之後 `.env` 的連線字串即：`DATABASE_URL=postgres://treeapp:<DB_密碼>@localhost:5432/treedb`。
+（本機同主機連線通常免 SSL，`.env` 設 `DB_SSL=false`。）
+
+### 3.4 取得程式碼到 `/opt/tree-app`
 
 ```bash
-node scripts/create_lab_admin.js --username labadmin --password 'YourSecurePass1' --display '實驗室管理員'
+sudo mkdir -p /opt/tree-app/logs
+sudo chown -R "$USER" /opt/tree-app
+cd /opt/tree-app
+git clone https://github.com/<你的帳號>/tree-project-backend.git backend
+cd backend
+npm install --production
 ```
 
-### 3.4 Flutter APK
+> fresh snapshot push（不帶舊歷史）見 §0.1；正式上線請 clone **你自己的** repo，主機上不要登入任何個人開發帳號。
+
+### 3.5 設定 `.env`
 
 ```bash
-cd project_code/frontend
+cd /opt/tree-app/backend
+cp .env.example .env
+nano .env
+```
+
+至少填入（完整清單見 `HANDOFF_SECRETS_CHECKLIST.md` §A）：
+
+```ini
+NODE_ENV=production
+PORT=3000
+DATABASE_URL=postgres://treeapp:<DB_密碼>@localhost:5432/treedb
+DB_SSL=false
+JWT_SECRET=<openssl rand -hex 64 產生>
+CORS_ALLOWED_ORIGINS=https://<你的網域>
+DEPLOY_WEBHOOK_SECRET=<自訂隨機字串>
+ADMIN_API_TOKEN=<自訂隨機字串>
+```
+
+### 3.6 初始化資料庫與管理員
+
+```bash
+cd /opt/tree-app/backend
+SKIP_CSV_IMPORT=1 node scripts/migrate.js          # 正式庫：只建 schema，不匯入測試樹
+node scripts/create_lab_admin.js \
+  --username labadmin --password '<強密碼>' --display '實驗室管理員'
+```
+
+> ⚠️ 正式環境**永遠不要**跑 `seed_dev_users.js`（會建 `admin/12345` 弱密碼）；`NODE_ENV=production` 時該腳本也會拒絕執行。
+
+### 3.7 用 PM2 啟動並設定開機自啟
+
+```bash
+cd /opt/tree-app/backend
+pm2 start ecosystem.config.js        # name=tree-backend, cluster ×2, log → /opt/tree-app/logs
+pm2 save                             # 記住目前行程清單
+pm2 startup systemd                  # 依輸出複製貼上它給的那行 sudo 指令
+curl -sf http://127.0.0.1:3000/health   # 應回 200
+```
+
+### 3.8 Nginx 反向代理（範本）
+
+對外只開 Nginx，由它轉發到本機 `:3000`。把下列存成 `/etc/nginx/sites-available/tree-app` 後啟用：
+
+```nginx
+server {
+    listen 443 ssl;
+    server_name <你的網域或 *.ts.net>;
+
+    ssl_certificate     /opt/tree-app/ssl/fullchain.pem;   # 見 §3.9
+    ssl_certificate_key /opt/tree-app/ssl/privkey.pem;
+
+    client_max_body_size 12M;   # 樹木照片上傳（後端限 10M）
+
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+```bash
+sudo ln -s /etc/nginx/sites-available/tree-app /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+> 後端 `app.js` 已 `trust proxy`，會用 `X-Forwarded-For` 判斷來源 IP（速率限制／黑名單需要）。
+> GitHub webhook 路徑 `POST /webhook/deploy` 走同一個反代即可（原部署另用 `:8443`，非必要）。
+
+### 3.9 TLS 憑證
+
+手機端**必須**是受信任的有效憑證，否則 App 全部 API 連不上（見 §0.6 的警告）。兩種做法：
+- **機構網域 + Let's Encrypt**（最佳）：`sudo certbot --nginx -d <你的網域>`。
+- **Tailscale `*.ts.net` 憑證**（內網方便）：`sudo bash scripts/setup_tailscale_tls.sh`（自動產憑證、改 nginx、設 90 天續期 cron）。
+
+### 3.10 防火牆
+
+```bash
+sudo ufw allow OpenSSH
+sudo ufw allow 'Nginx Full'
+sudo ufw enable
+```
+
+### 3.11 自動部署 webhook
+
+GitHub repo → Settings → Webhooks，Payload URL 指向 `https://<主機>/webhook/deploy`，Secret 與 `.env` 的 `DEPLOY_WEBHOOK_SECRET` 一致（細節見 §0.4）。之後 push 到 `main` 會觸發 `scripts/deploy.sh`：pull → `npm install` → `run_pending_migrations.js` → `pm2 reload` → health check → 失敗自動 rollback。
+
+### 3.12 資料庫備份（每日 cron）
+
+```bash
+crontab -e
+# 每日 03:00 備份（腳本見 backend/scripts/backup_db.sh）
+0 3 * * * /opt/tree-app/backend/scripts/backup_db.sh >> /opt/tree-app/logs/backup.log 2>&1
+```
+
+樹木照片存於 Cloudinary（雲端），DB 備份即涵蓋主要資料。
+
+### 3.13 建置並分發 APK
+
+```bash
+cd frontend
 flutter build apk --release \
-  --dart-define=API_BASE_URL=http://192.168.x.x:3000/api
+  --dart-define=API_BASE_URL=https://<你的網域>/api
+# 自簽憑證主機才需要：--dart-define=SELF_SIGNED_TRUSTED_HOSTS=<host>
 ```
 
-將 APK 分發給調查員；**不要**內含開發者 refresh token。
+APK 給調查員安裝；**不含**任何個人金鑰或 token。最後跑一輪 `VERIFICATION_CHECKLIST.md`。
 
 ---
 
