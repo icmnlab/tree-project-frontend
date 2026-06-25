@@ -327,8 +327,6 @@ repo today; manual QA is performed against the self-hosted backend
 | 機密備份 | [`docs/HANDOFF_SECRETS_CHECKLIST.md`](docs/HANDOFF_SECRETS_CHECKLIST.md) |
 | 現場調查員 | [`docs/FIELD_SURVEY_SOP.md`](docs/FIELD_SURVEY_SOP.md) |
 
-本機備份至 `G:\`：`powershell -ExecutionPolicy Bypass -File scripts\handoff_backup.ps1`
-
 ---
 
 ## License
