@@ -342,9 +342,38 @@ pm2 reload tree-backend          # 手動重載
 
 **交接日**：照 `LAB_DEPLOYMENT_GUIDE.md` §0「交接日流程」一次做完（fresh push → 金鑰輪替 → 部署 → webhook → 驗收）。
 
-見 `VERIFICATION_CHECKLIST.md`。目前重點：
-- 把仍標「實機」的 P0 項目盡量轉成自動化測試/腳本（GPS 三選一、新增樹不進待辦、儀器欄位 transfer→history…）。
-- 真正非實機不可的項目（雙機、藍牙硬體）才保留人工驗證。
+> 詳細開發流水帳（每輪改了什麼、commit）在開發者本機的 `WORK_STATUS.md`，不隨 repo 交付。下列為交接者真正需要知道的**未決項**。
+
+### 11.1 需先決策才實作（牽涉需求／權限／資料模型）
+
+| 項目 | 現況 | 待決定 |
+|------|------|--------|
+| 「待維護」跨場/跨天的判定 | 目前僅單場記憶體集合；資料面 `tree_survey_measurements.survey_time` 已就緒（不需改 schema） | 門檻 N（碳匯年度盤點常用 12 個月）、是否對齊到「區」層級 |
+| 歷次紀錄的編輯／刪除 | 歷次目前唯增（量測=不可竄改）；CSV/手動編輯刻意不寫歷次 | 是否開放編輯軌跡（需新 API + 權限） |
+| 邊界輸入「方式 2（含座標圖檔）」 | UI 預留「即將推出」；GeoTIFF/世界檔未實作 | 待學院提供範例檔再評估 |
+
+### 11.2 開放工程待辦（非阻擋，依效益）
+
+- `GET /projects` 合併「只有邊界、無 `projects` 列」的專案，讓前端各頁移除 client-side merge。
+- 重疊邊界時的使用者選擇 UX（目前多邊形相交取第一個）。
+- 效能：`map/meta`、`project_areas` 依縣市查詢為全表掃描 → 預聚合/快取（地圖 marker 已做 viewport 剔除＋聚合）。
+- 弱網離線佇列（pending／照片 dedup）。
+- Staging + `FIXTURE_PROJECT_CODE` harness，讓環境相依測試不再 SKIP。
+- 平台/建置警告清理：Flutter Kotlin Built-in 遷移、Impeller opt-out deprecated。
+- 長期資料模型演進：邊界主鍵改 `project_code`、`tree_survey` 反規範快取欄漸進 VIEW 化（見 `DATABASE_NORMALIZATION.md`）。
+
+### 11.3 已知限制／小債（交接者須知）
+
+- **AI Agent／對話**：預設停用、首頁入口隱藏；穩定版不依賴、缺金鑰不影響其餘功能（見 `AI_AGENT_GUIDE.md`）。
+- **Admin API 金鑰**：休眠功能，`validateApiKey` 未被任何路由呼叫，全站走 JWT（見 §12）。
+- **維護轉移覆寫 `tree_survey`**：對「web 編輯 vs 現場轉移並行」無樂觀鎖；設計上**現場儀器值優先**，列為觀察。
+- **外接 GNSS**：已決議不採購、不續做；現場 GPS 一律手機樹旁取樣（見 `HANDOFF_EXTERNAL_GNSS_AND_BLE.md`）。
+- 後端測試有 1 個 `four_bugs` TODO 案 skip（非阻擋）。
+- 偶發 UI：進地圖頁極偶發 controller disposed race（未能穩定重現）；少數 RenderFlex overflow 視覺警告待 DevTools 定位。
+
+### 11.4 真人／硬體驗證（無法自動化）
+
+藍牙實機收 PHGF、雙機同場（維護鎖 409、`expected_updated_at` 樂觀鎖）、相機／視覺 DBH、T4 等 — 見 `VERIFICATION_CHECKLIST.md`。可自動化者已轉測試（§0.0「已自動化覆蓋」對照表），實機可降為抽查。
 
 ---
 
