@@ -224,7 +224,7 @@ right URL path and JWT.
 | `species_identification_service.dart` | — | `/species/identify` with multipart |
 | `carbon_sink_service.dart` | — | Local cache of carbon-data species list (preloaded in `main`) |
 | `carbon_calculation_service.dart` | `CarbonCalculationService` | Pure-Dart Chave 2014 allometric calculator; bundled wood-density tables for 80+ species (cross-referenced with Zanne et al. 2009 GWDD, IPCC 2006, ICRAF). Used as a client-side preview and in offline mode |
-| `pure_vision_dbh_service.dart` | `PureVisionDbhService` | Singleton. Calls the FastAPI ML service: `/health`, `/measure-dbh`, `/auto-measure-dbh`, `/auto-measure-dbh-multi`, `/estimate-depth`, `/config`, `/debug/depth-at-point`. Sends `X-ML-API-Key`. Two-attempt retry on cold-start. EXIF focal-length pass-through |
+| `pure_vision_dbh_service.dart` | `PureVisionDbhService` | Singleton. Calls the ML service **through the Node proxy** at `ApiService.baseUrl + '/ml-service'`: `/health`, `/measure-dbh`, `/auto-measure-dbh`, `/auto-measure-dbh-multi`, `/config`, `/debug/depth-at-point` (the FastAPI routes are `/api/v1/*`; the proxy maps them). Sends the app JWT (Bearer) — the backend injects `X-ML-API-Key`. Two-attempt retry on cold-start. EXIF focal-length pass-through |
 | `tflite_tracking_service.dart` | — | On-device TFLite (LiteRT 1.4) inference for `tree_trunk_seg.tflite`. Used as the live preview while the user frames a tree |
 | `scanner_service.dart` | — | WebSocket client for the live `/ws/scan` ML endpoint |
 | `ar_measurement_service.dart` | `MeasurementPoint`, `MeasurementResult`, `DeviceCapabilities`, `ReferenceObject`, `ARMeasurementService` | Reference-object based DBH (e.g. an A4 sheet held next to the trunk) |

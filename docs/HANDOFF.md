@@ -307,27 +307,7 @@ pm2 reload tree-backend          # 手動重載
 | 部署後 `/health` 失敗 | `deploy.sh` 會自動 rollback；看 `/opt/tree-app/logs/deploy.log` 與 `pm2 logs tree-backend`。 |
 | 維護鎖相關崩潰 | 取 client 用 `db.pool.connect()` 而非 `db.connect()`（曾因此 unhandledRejection 打掛 process）。 |
 
----
-
-## 設計決策紀錄（why · ADR-lite）
-
-> 本專案以 fresh snapshot 交付（單一 commit，無開發歷史），因此此處保留關鍵設計決策的「為什麼」，作為 commit 歷史的替代記錄。格式＝**決策 → 當初遇到的問題**。對應程式碼見各 route/service。
-
-- **新增即寫歷次首筆**（`create_v2`）：原本只寫快照，歷史表缺第一筆，同棵樹查不到初測；改為新增時同步寫一筆歷次。
-- **生命週期在 新增/編輯/匯入 皆推導**：原本僅維護流程計算 `lifecycle_status`，導致直接新增「枯立木」未被歸類、碳匯誤計；改為四條寫庫路徑都推導。
-- **樂觀鎖（`expected_updated_at` → 409）**：多人同時編輯同一棵樹會互相覆蓋；以版本檢查擋下過期提交，前端取新版本重送。
-- **X-Request-Id 冪等 + 防碰撞 session ID**：現場網路重試會重複送出/重複入庫；以請求 ID 去重。
-- **pending 擁有權守門**：使用者不應修改/轉移他人建立的暫存批次。
-- **全面改 JWT、移除 X-Admin-Token**：兩套驗證機制易錯難維護，統一為 JWT（Admin API 金鑰功能保留但休眠）。
-- **樹種統一繁體 + 共用字防誤轉**：不同調查員簡繁混用；統一轉繁，但「朴樹 ≠ 樸樹」等共用字需排除誤轉。
-- **U+FFFD 亂碼防護（`create_v2`/batch + migration CHECK）**：壞編碼 CSV 會把替代字元寫入資料庫。
-- **PM2 reload 殘留舊 worker 強制重啟**：cluster graceful reload 後偶有舊 worker 未汰換，造成新舊程式碼混版。
-- **邊界多幾何容錯（Polygon→LineString→Point）+ 自相交防呆**：真實 KML/GeoJSON 常只含圖釘、路徑或自相交多邊形。
-- **地圖改 Dart 端網格聚合 + 同座標散開**：數千標記效能不佳、原生 cluster 有相容問題、同 GPS 樹會重疊。
-- **詞彙統一 專案/區、串接一律用 `project_code`**：UI 用詞與 DB 欄位歷史不一致；名稱可變、代碼穩定。
-- **後端網址/自簽信任改 `--dart-define` 注入**：避免把部署專屬網址寫死進 repo。
-- **淘汰改由「維護量測」填報，詳情頁僅留復原**：淘汰狀態應來自真實重測，而非隨手編輯。
-- **正式版預設隱藏 AI 入口（experimental flag 才開）**：現場穩定版不應依賴實驗性功能。
+> 設計決策的「為什麼」記錄在 `CHANGELOG.md`（problem→solution 條目）。
 
 ---
 
