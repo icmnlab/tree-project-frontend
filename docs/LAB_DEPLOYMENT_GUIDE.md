@@ -128,10 +128,18 @@ sudo ufw enable
 ```
 
 ### 步驟 9：建置 APK 給調查員
+前置（一次性，在**開發機**上做，金鑰不進 git）：
+- `frontend/android/key.properties` 填 `GOOGLE_MAPS_API_KEY=...`（申請與限制見 `HANDOFF_SECRETS_CHECKLIST.md` §H；地圖頁必需）。
+- `API_BASE_URL` 用「步驟 7 設好的對外網址」：
+  - Tailscale 部署 → `https://<你的主機>.<tailnet>.ts.net/api`
+  - 機構網域 + Let's Encrypt → `https://<你的網域>/api`
+- 後端 `.env` 的 `CORS_ALLOWED_ORIGINS` 要含同一個來源（協定+主機），否則 App 會被 CORS 擋。
+
 ```bash
 cd frontend
 flutter build apk --release --dart-define=API_BASE_URL=https://<你的網域>/api
 # 若為自簽憑證主機才加：--dart-define=SELF_SIGNED_TRUSTED_HOSTS=<host>
+#   Tailscale (*.ts.net) 與 Let's Encrypt 都是「有效憑證」，不需要這個參數
 ```
 
 ### 步驟 10：驗收
