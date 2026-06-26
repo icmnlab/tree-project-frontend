@@ -205,8 +205,27 @@ cd /opt/tree-app/backend
 node scripts/list_users.js                            # 列出現有使用者
 # 「帳號不存在」= DB 沒有該使用者；正式庫用這支建立管理員（勿用 seed_dev_users.js）
 node scripts/create_lab_admin.js --username labadmin --password '<至少8碼強密碼>' --display '實驗室管理員'
-psql "$DATABASE_URL" -c "SELECT username, role, is_active FROM users;"   # 直接查 DB
+psql "<DATABASE_URL>" -c "SELECT username, role, is_active FROM users;"  # 直接查 DB（連線字串見 .env）
 ```
+
+**登入一直「帳號不存在」但 `list_users` 明明有該帳號**
+- 登入查詢是 `WHERE username = $1`，**大小寫敏感**；帳號存在卻回 404「帳號不存在」，代表**送出的帳號字串與 DB 不符**。
+- **最常見原因**：手機鍵盤把帳號欄**第一個字母自動大寫**（`labadmin` → `Labadmin`），或前後有空白。對策：手機上確認帳號全小寫、無空白再登入。
+- 用稽核紀錄看「手機實際送出的帳號」（決定性證據）：
+  ```bash
+  psql "<DATABASE_URL>" -c "SELECT created_at, username, ip_address, details FROM audit_logs WHERE action='LOGIN_FAILED' ORDER BY created_at DESC LIMIT 5;"
+  ```
+- 在主機直接打 API（繞過手機鍵盤），切開「後端問題」與「手機輸入問題」：
+  ```bash
+  curl -s -X POST https://<你的主機>.ts.net/api/login \
+    -H "Content-Type: application/json" -d '{"account":"labadmin","password":"<密碼>"}'
+  # success:true+token → 後端與帳密正確，問題在手機輸入；回「帳號不存在」→ 檢查後端 .env 的 DATABASE_URL
+  ```
+- `create_lab_admin.js` 只 INSERT、**不會更新既有帳號的密碼**。要重設密碼：先刪再建。
+  ```bash
+  psql "<DATABASE_URL>" -c "DELETE FROM users WHERE username='labadmin';"
+  node scripts/create_lab_admin.js --username labadmin --password '<新密碼>' --display '實驗室管理員'
+  ```
 
 **怎麼判讀（決策樹）**
 - 手機操作時 `pm2 logs tree-backend` **完全沒有新請求** → 問題在「手機↔VM」的網路/DNS（Tailscale、MagicDNS、`API_BASE_URL` 是否完整）；不是後端。
