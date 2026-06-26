@@ -8,21 +8,44 @@
 
 ---
 
-## A. 後端 `.env` 的金鑰 / 服務
+## A. 第三方 API 與服務申請指南（交接者逐項申請，填進 `backend/.env`）
 
-於 `backend/.env`（複製自 `.env.example`）填入下列值：
+> 流程：到平台註冊帳號 → 取得金鑰 → 貼進 `backend/.env`（複製自 `.env.example`）對應變數。
+> 建議用「單位／專案專用帳號」申請（見 §D），日後人員異動只需移交帳號。
 
-| 服務 | 用途 | 變數 | 取得方式 | 必要性 |
-|------|------|------|----------|--------|
-| PostgreSQL | 資料庫連線 | `DATABASE_URL`（或 `DB_*`） | 自架 DB 連線字串 | **必要** |
-| JWT | 登入簽章 | `JWT_SECRET` | `openssl rand -hex 64` 自行產生 | **必要** |
-| Cloudinary | 樹木照片儲存 | `CLOUDINARY_API_KEY` / `_API_SECRET` | cloudinary.com | 選用（無則停用照片上傳） |
-| PlantNet | 樹種辨識 | `PLANTNET_API_KEY` | my.plantnet.org | 選用 |
-| Gemini / OpenAI / Claude / SiliconFlow | AI 助理（Text-to-SQL／Agent） | `GEMINI_API_KEY` 等 | 各 AI 平台 | 選用 |
-| ML Service | 後端↔ML 服務驗證 | `ML_API_KEY`（backend 與 ml_service 兩邊一致） | 自訂字串 | 選用（DBH 視覺估算） |
-| Admin Token | 部署診斷端點 | `ADMIN_API_TOKEN` | 自訂字串 | 選用 |
-| GitHub Webhook | 自動部署簽章 | `DEPLOY_WEBHOOK_SECRET` | 與 GitHub repo webhook 設定一致 | 選用（自動部署用） |
-| Kaggle / Roboflow | ML 訓練資料 | `KAGGLE_KEY` / `ROBOFLOW_API_KEY`（`ml_service/.env`） | kaggle.com / roboflow.com | 選用（僅訓練時） |
+### A-1 必要（不設則系統無法正常運作）
+
+| 服務 | 用途 | `.env` 變數 | 去哪申請 / 產生 | 備註 |
+|------|------|-------------|-----------------|------|
+| PostgreSQL（自架） | 主資料庫 | `DATABASE_URL` 或 `DB_*` | 部署主機自建（不需向外申請） | 建庫見 `LAB_DEPLOYMENT_GUIDE.md` §3.3 |
+| JWT（自產） | 登入 token 簽章 | `JWT_SECRET` | 主機執行 `openssl rand -hex 64` 貼上 | 不需申請；務必夠長夠亂 |
+| Google Maps（前端） | 地圖頁面 | `GOOGLE_MAPS_API_KEY`（放 `android/key.properties`，非 `.env`） | https://console.cloud.google.com → 啟用「Maps SDK for Android」→ 建 API 金鑰 | **務必**用「套件名 + SHA-1」限制；見 `BUILD_GUIDE.md` §3 |
+
+### A-2 建議（缺了對應功能停用，主流程仍可運作）
+
+| 服務 | 用途 | `.env` 變數 | 去哪申請 | 備註 |
+|------|------|-------------|----------|------|
+| Cloudinary | 樹木照片雲端儲存 | `CLOUDINARY_CLOUD_NAME` / `CLOUDINARY_API_KEY` / `CLOUDINARY_API_SECRET` | https://cloudinary.com/users/register_free | 免費額度通常足夠；三項缺一不可；缺則無法上傳照片 |
+| PlantNet | 拍照自動辨識樹種 | `PLANTNET_API_KEY` | https://my.plantnet.org/signup | 免費（有每日次數上限）；缺則無自動辨識 |
+
+### A-3 選用（AI 對話 / Agent；至少設定一個才會開啟 AI 功能）
+
+| 服務 | 用途 | `.env` 變數 | 去哪申請 | 備註 |
+|------|------|-------------|----------|------|
+| OpenAI | AI 對話 / Agent（預設供應商） | `OPENAI_API_KEY` | https://platform.openai.com/api-keys | 付費；預設模型 `gpt-5.4-mini` |
+| Google Gemini | AI 備援 | `GEMINI_API_KEY` | https://aistudio.google.com/app/apikey | 有免費額度 |
+| Anthropic Claude | AI 備援 | `Claude_API_KEY` | https://console.anthropic.com/ | 付費 |
+| SiliconFlow | 便宜模型供應商 | `SiliconFlow_API_KEY`（可再加 `Alt1~3_SiliconFlow_API_KEY` 輪替） | https://siliconflow.cn/ | 程式會優先用它、失敗自動轉 OpenAI |
+| Google CSE | Agent 網路搜尋工具 | `GOOGLE_CSE_API_KEY` + `GOOGLE_CSE_CX` | https://programmablesearchengine.google.com/ | 缺則 search 工具回提示，其餘 agent 功能仍可用 |
+
+### A-4 自架 / 自訂字串（不需向外申請）
+
+| 項目 | 用途 | `.env` 變數 | 怎麼來 | 備註 |
+|------|------|-------------|--------|------|
+| ML Service | 視覺測胸徑（選用） | `ML_SERVICE_URL` / `ML_SERVICE_PUBLIC_URL` / `ML_API_KEY` | 自架 `ml_service` | `ML_API_KEY` 在 backend 與 ml_service 兩邊填**同一串**；見 `ml_service/README.md` |
+| 自動部署 webhook | GitHub push 觸發部署 | `DEPLOY_WEBHOOK_SECRET` | 自訂隨機字串 | 與 GitHub repo webhook 設定一致 |
+| 部署診斷端點 | `GET /webhook/status` | `ADMIN_API_TOKEN` | 自訂隨機字串 | 選用；不設則該端點回 401 |
+| ML 訓練資料 | 重新訓練模型才需要 | `KAGGLE_KEY` / `ROBOFLOW_API_KEY`（放 `ml_service/.env`） | kaggle.com / roboflow.com | 一般部署不需要 |
 
 ---
 
