@@ -2,6 +2,142 @@
 
 > 目標：在自有主機上獨立建置並運行整套系統，**不依賴任何特定個人的 GitHub／雲端帳號**。
 
+> ⚠️ **安全鐵則**：帳號、密碼、API token、伺服器內網 IP **絕對不要寫進本檔或任何 git 追蹤的檔案**（本 repo 會推上 GitHub）。
+> 機密只放：①部署主機的 `backend/.env`、②你個人的密碼管理器。文中一律用 `<...>` 佔位符代表「你要自己填的值」。
+
+---
+
+## 重新部署完整流程（Proxmox VM｜從零照著做）
+
+> 適用情境：拿到實驗室一台 **Proxmox VE 虛擬機**（Web 管理介面 `https://<PVE_HOST>:8006`），要把整套後端重新部署上線。
+> 這節是「不用思考、從上到下照打」的版本；每一步「為什麼這樣做、可調參數」見下方 **§3 Ubuntu runbook**。
+> 名詞：`<PVE_HOST>` = Proxmox 主機位址；`<VM_USER>` = 進到 VM 後的 Linux 帳號；`<你的網域>` = App 連線網址。
+
+### 步驟 0：登入 Proxmox、開機並進入 VM
+1. 瀏覽器開 `https://<PVE_HOST>:8006`，用實驗室給的 Proxmox 帳號／密碼登入（Realm 視設定選 `Proxmox VE authentication` 或 `Linux PAM`）。憑證**不要**寫進任何檔案。
+2. 左側樹狀選單點到你的虛擬機（例如名稱含 `VM121` 那台）→ 上方 **Start** 開機。
+3. 進入系統：點 **>_ Console** 開網頁終端機登入；或先在 Console 內 `ip a` 查到 VM 的 IP，再用自己電腦 `ssh <VM_USER>@<VM_IP>` 連線（之後操作較方便）。
+4. 確認 OS 版本：`lsb_release -a`（本指南支援 Ubuntu 22.04 / 24.04 LTS）。
+
+### 步驟 1：安裝系統套件
+```bash
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y git curl ufw nginx postgresql postgresql-contrib
+# Node.js 20 LTS
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+node -v          # 應為 v20.x
+sudo npm install -g pm2
+```
+
+### 步驟 2：建立 PostgreSQL 資料庫與使用者
+```bash
+sudo -u postgres psql <<'SQL'
+CREATE USER treeapp WITH PASSWORD '<DB_密碼>';
+CREATE DATABASE treedb OWNER treeapp;
+GRANT ALL PRIVILEGES ON DATABASE treedb TO treeapp;
+SQL
+```
+
+### 步驟 3：取得程式碼到 `/opt/tree-app`
+```bash
+sudo mkdir -p /opt/tree-app/logs
+sudo chown -R "$USER" /opt/tree-app
+cd /opt/tree-app
+git clone https://github.com/<你的帳號>/tree-project-backend.git backend
+cd backend
+npm install --production
+```
+
+### 步驟 4：設定 `.env`（機密只放這裡）
+```bash
+cd /opt/tree-app/backend
+cp .env.example .env
+nano .env
+```
+至少填入（完整清單見 `HANDOFF_SECRETS_CHECKLIST.md` §A）：
+```ini
+NODE_ENV=production
+PORT=3000
+DATABASE_URL=postgres://treeapp:<DB_密碼>@localhost:5432/treedb
+DB_SSL=false
+JWT_SECRET=<用 openssl rand -hex 64 產生一串貼上>
+CORS_ALLOWED_ORIGINS=https://<你的網域>
+# 選用：自動部署 webhook 才需要
+DEPLOY_WEBHOOK_SECRET=<自訂隨機字串>
+```
+
+### 步驟 5：建資料庫結構 + 建立管理員
+```bash
+cd /opt/tree-app/backend
+SKIP_CSV_IMPORT=1 node scripts/migrate.js        # 正式庫：只建 schema + 參考資料，不匯入測試樹
+node scripts/create_lab_admin.js --username labadmin --password '<強密碼>' --display '實驗室管理員'
+```
+> 全新部署後：業務資料（樹木、專案、使用者）為空；參考資料（樹種、別名、樹況選單）已隨系統載入。
+
+### 步驟 6：用 PM2 啟動 + 開機自啟
+```bash
+cd /opt/tree-app/backend
+pm2 start ecosystem.config.js     # name=tree-backend, cluster ×2
+pm2 save
+pm2 startup systemd               # 依輸出貼上它給的那行 sudo 指令
+curl -sf http://127.0.0.1:3000/health   # 應回 200
+```
+
+### 步驟 7：Nginx 反向代理 + TLS 憑證
+```bash
+sudo nano /etc/nginx/sites-available/tree-app   # 內容見 §3.8 範本（把 server_name 換成你的網域）
+sudo ln -s /etc/nginx/sites-available/tree-app /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+```
+TLS（手機端必須是有效憑證，否則 App 全部 API 連不上）擇一：
+```bash
+# A. 機構網域 + Let's Encrypt（最佳）
+sudo certbot --nginx -d <你的網域>
+# B. Tailscale *.ts.net 憑證（內網方便）
+sudo bash scripts/setup_tailscale_tls.sh
+```
+
+### 步驟 8：防火牆
+```bash
+sudo ufw allow OpenSSH
+sudo ufw allow 'Nginx Full'
+sudo ufw enable
+```
+
+### 步驟 9：建置 APK 給調查員
+```bash
+cd frontend
+flutter build apk --release --dart-define=API_BASE_URL=https://<你的網域>/api
+# 若為自簽憑證主機才加：--dart-define=SELF_SIGNED_TRUSTED_HOSTS=<host>
+```
+
+### 步驟 10：驗收
+```bash
+curl https://<你的網域>/api/health     # 不要加 -k；回 200/401 且無憑證錯誤即代表手機會信任
+```
+再跑一輪 `VERIFICATION_CHECKLIST.md`。
+
+### 之後「改了程式要重新部署」怎麼做
+- **有設 webhook**：直接 `git push` 到 `main`，主機 `deploy.sh` 會自動 pull→install→增量 migration→reload→health→失敗自動 rollback。
+- **手動部署**：
+  ```bash
+  cd /opt/tree-app/backend
+  git pull
+  npm install --production
+  node scripts/run_pending_migrations.js   # 只跑沒套過的 migration
+  pm2 reload ecosystem.config.js
+  curl -sf http://127.0.0.1:3000/health
+  ```
+
+### VM 常用維運
+```bash
+pm2 status                 # 看後端有沒有在跑
+pm2 logs tree-backend      # 看後端日誌
+sudo systemctl status nginx postgresql
+df -h                      # 看硬碟空間
+```
+
 ---
 
 ## 0. 首次部署流程（一次做完）
