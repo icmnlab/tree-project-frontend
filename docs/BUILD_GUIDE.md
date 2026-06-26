@@ -213,6 +213,12 @@ version: 18.10.4+26
 
 **App 連不到後端／一直轉圈** → 未帶 `--dart-define=API_BASE_URL`，或自簽憑證主機未加入 `SELF_SIGNED_TRUSTED_HOSTS`。
 
+**`Failed host lookup: '<被截斷的主機>'`（例如只剩 `https://vm121-standar`）** → 建置時 `API_BASE_URL` 被 shell 截斷，APK 烤進了不完整的網址。PowerShell 請把整個參數**用雙引號包住**避免被切：
+```powershell
+flutter build apk --release "--dart-define=API_BASE_URL=https://<完整主機>.ts.net/api"
+```
+> 注意要含結尾的 `/api`。Tailscale 部署請用 `*.ts.net` 主機名（**不要**用 `100.x` IP，否則 TLS 憑證不符），且手機需開啟 Tailscale MagicDNS 才解析得到該名稱。可在手機瀏覽器開 `https://<完整主機>.ts.net/health` 驗證能否解析與連線（應回 `OK`）。
+
 **`Keystore file not found`** → 確認 keystore 路徑、`key.properties` 用相對路徑（`keystore/xxx.jks`）。
 
 **`Key password is incorrect`** → 確認密碼無多餘空白／換行。
