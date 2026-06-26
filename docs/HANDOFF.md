@@ -81,6 +81,43 @@ tree-project-frontend/          # repo 根目錄
 | Flutter | stable（Dart SDK `>=3.0.0 <4.0.0`） |
 | Python / CUDA | 僅 ML 服務需要（選用） |
 
+### 3.1 接手開發者要「自己安裝／自己建立」的東西（清單＋規則）
+
+> 原則：**程式碼進 git；金鑰、密碼、簽章、本機路徑不進 git**（`.gitignore` 已涵蓋 `.env`、`key.properties`、`*.jks`）。
+> 下列每人各自一份，不要互傳、不要 commit。
+
+**A. 要安裝的工具**
+| 工具 | 用途 | 備註 |
+|------|------|------|
+| Git for Windows | 版控 + 認證 | 內含 Credential Manager（首次 push 跳瀏覽器登入自己的帳號） |
+| Flutter SDK + Android Studio | 跑 App | 含 Android SDK、JDK17；`flutter doctor` 全綠 |
+| **Windows 開發人員模式** | Flutter plugin 需要 symlink | `設定 → 系統 → 開發人員選項` 開啟，或執行 `start ms-settings:developers` |
+| Node.js 20 LTS | 後端（要本機跑後端才需要） | |
+| PostgreSQL 15+ | 後端 DB（連遠端 DB 則免裝） | |
+
+**B. 要自己「打 / 建立」的設定（每人一份，不進 git）**
+| 項目 | 在哪 | 怎麼設 | 規則 |
+|------|------|--------|------|
+| Git 身分 | 全域 | `git config --global user.name/user.email`（填自己的） | commit 會掛自己名字 |
+| GitHub 認證 | 首次 push | 跳瀏覽器登入自己帳號；或帳號+PAT | 需先被加為 `icmnlab` collaborator |
+| 自己的 Google Maps 金鑰 | Google Cloud `tree-project` | 見 `HANDOFF_SECRETS_CHECKLIST.md` §H | 綁「套件名 `com.sustainable.treeai` + 自己的 debug SHA-1」 |
+| debug keystore | `~/.android/debug.keystore` | 首次 build 自動產生，或手動 `keytool -genkeypair`（見下） | 用來取 SHA-1 |
+| 前端 `android/key.properties` | 前端 repo | **debug 只需 `GOOGLE_MAPS_API_KEY=` 一行**；release 才加簽章欄 | 不進 git |
+| 後端 `.env` | 後端 repo | 由 `.env.example` 複製，填 `DATABASE_URL`、`JWT_SECRET`（`openssl rand -hex 64`）等 | 不進 git；機密放這裡 |
+
+**C. 規則**
+- 機密一律放 `.env` / `key.properties` / 密碼管理器，**永不 commit**。
+- 分支：從 `main` 開 `feat/*`，PR 合回（見 §6.3）。
+- 每人用**自己的** GitHub 帳號與 Maps 金鑰（SHA-1 綁自己的 keystore）。
+
+> 手動建立 debug keystore（若首次 build 前就想取 SHA-1）：
+> ```powershell
+> & "C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" -genkeypair -v `
+>   -keystore "$env:USERPROFILE\.android\debug.keystore" -storepass android -keypass android `
+>   -alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 `
+>   -dname "CN=Android Debug,O=Android,C=US"
+> ```
+
 ---
 
 ## 4. 本機跑起來
@@ -207,6 +244,65 @@ pm2 reload tree-backend          # 手動重載
 > - `migrate.js`：全新空庫一次建好（含 CSV）。**只用於開發/CI/全新庫**。
 > - `run_pending_migrations.js`：用 `schema_migrations` 表只跑新增量。**正式部署一律走這支**。
 > - 兩支共用 `migrationFiles` 清單；新增 migration 請加進 `scripts/migrate.js` 的清單並照編號排序。
+
+### 6.3 Git 協作流程（分支與 PR）
+
+採 **GitHub Flow**（小團隊最簡單、業界常用）：`main` 永遠保持可部署，功能在短命分支開發、用 PR 合回。
+
+**分支規則**
+- 長期分支只有 **`main`**（受保護：需 PR + CI 綠燈才能合、禁止 force push）。
+- 功能分支**由開發者自己在要動工時才開**，不需事先建一堆空分支。命名：`feat/xxx`、`fix/xxx`、`chore/xxx`。
+
+**帳號與權限**
+- 每位開發者用**自己的 GitHub 帳號**；由 repo 擁有者（`icmnlab`）在 **Settings → Collaborators** 把他加為協作者（Write）。
+- 推送後 **commit 會標記各自的作者身分**（誰寫的就掛誰），歷史貢獻不會被覆蓋。
+
+**新成員第一次設定（onboarding，一次性）**
+```bash
+# 1) 設定自己的 git 身分（顯示在 commit 上）
+git config --global user.name  "你的名字"
+git config --global user.email "你的GitHub信箱"
+
+# 2) 認證 GitHub（用 Git 內建 Credential Manager，不需安裝 gh）
+#    安裝「Git for Windows」即內含 Git Credential Manager。
+#    第一次 git clone / git push 私有操作時，會自動跳出瀏覽器 → 登入自己的 GitHub 帳號 → 完成。
+#    （憑證會存進 Windows「認證管理員」，之後免再登入。）
+#
+#    若沒跳瀏覽器、出現帳密輸入：帳號填自己的 GitHub 名稱、密碼貼 Personal Access Token
+#      （PAT 申請：GitHub → Settings → Developer settings → Personal access tokens，勾 repo 權限；不要用登入密碼）。
+#    要換成別的帳號：控制台 → 認證管理員 → Windows 認證 → 刪除 git:https://github.com，下次操作會重新登入。
+#    （選用）若已裝 GitHub CLI，也可改用 gh auth login；沒裝就用上面瀏覽器登入即可。
+
+# 3) clone 專案（接受 collaborator 邀請後）
+git clone https://github.com/icmnlab/tree-project-backend.git
+git clone https://github.com/icmnlab/tree-project-frontend.git
+
+# 4) 之後依本檔 §4「本機跑起來」安裝相依、建 .env / key.properties
+```
+
+**標準流程**
+```bash
+git checkout main && git pull origin main      # 先同步最新
+git checkout -b feat/ble-export                 # 開功能分支
+# ...改程式、commit...
+git add -A && git commit -m "feat: BLE 量測匯出 CSV"
+git push -u origin feat/ble-export              # 推分支
+# 到 GitHub 開 Pull Request → CI 跑測試 → review → Merge 進 main
+git checkout main && git pull                    # 合併後本地同步
+git branch -d feat/ble-export                     # 刪掉已合併的本地分支
+```
+
+**常用 git 操作**
+```bash
+git status                       # 看當前變更
+git log --oneline -10            # 看近期提交
+git diff                         # 看未暫存的差異
+git pull origin main             # 同步遠端
+git stash / git stash pop        # 暫存未完成的修改去切分支
+git restore <file>               # 丟棄某檔的本地修改
+```
+
+> 有設部署 webhook 時：**只有合併進 `main` 會觸發正式機部署**；功能分支與 PR 不會。
 
 ---
 

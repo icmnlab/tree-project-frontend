@@ -19,7 +19,7 @@
 |------|------|-------------|-----------------|------|
 | PostgreSQL（自架） | 主資料庫 | `DATABASE_URL` 或 `DB_*` | 部署主機自建（不需向外申請） | 建庫見 `LAB_DEPLOYMENT_GUIDE.md` §3.3 |
 | JWT（自產） | 登入 token 簽章 | `JWT_SECRET` | 主機執行 `openssl rand -hex 64` 貼上 | 不需申請；務必夠長夠亂 |
-| Google Maps（前端） | 地圖頁面 | `GOOGLE_MAPS_API_KEY`（放 `android/key.properties`，非 `.env`） | https://console.cloud.google.com → 啟用「Maps SDK for Android」→ 建 API 金鑰 | **務必**用「套件名 + SHA-1」限制；見 `BUILD_GUIDE.md` §3 |
+| Google Maps（前端） | 地圖頁面 | `GOOGLE_MAPS_API_KEY`（放 `android/key.properties`，非 `.env`） | https://console.cloud.google.com → 啟用「Maps SDK for Android」→ 建 API 金鑰 | **務必**用「套件名 + SHA-1」限制；從新增專案開始的完整步驟見 **§H**，注入機制見 `BUILD_GUIDE.md` §3 |
 
 ### A-2 建議（缺了對應功能停用，主流程仍可運作）
 
@@ -101,11 +101,99 @@
 
 ## G. 本機 / 離線備份（不進 Git）
 
-| 項目 | 路徑 |
-|------|------|
-| Android 簽章 | `android/key.properties` + `*.jks` |
-| 後端機密 | `backend/.env`、`backend/ml_service/.env` |
-| 管理員帳號 / 邀請碼清單 | 後台維運文件 |
+> ★★★ **最重要：release / upload keystore（上架簽章金鑰）** ★★★
+> - 檔案：`android/keystore/upload-keystore-new.jks`（alias `tree_app_upload_xu.6`）＋它的 `storePassword/keyPassword`。
+> - **一旦遺失，已上架到 Google Play 的 App 就無法再用同一身分更新**（除非有開 Play App Signing 走金鑰重設流程，曠日廢時）。
+> - 請務必：①離線備份這個 `.jks` 與密碼到密碼管理器／安全儲存；②交接時當面移交；③**絕不** commit 進 git。
+> - **debug keystore**（`~/.android/debug.keystore`）相反——它是**可拋棄**的，每台開發機各自一份、只用於開發；遺失重建即可（但重建後 SHA-1 會變，需重新加進 Maps 金鑰限制）。
+
+| 項目 | 路徑 | 重要性 |
+|------|------|--------|
+| **release/upload keystore** | `android/keystore/*.jks` + 密碼 | ★ 上架命脈，務必備份 |
+| Android 設定/金鑰 | `android/key.properties` | 每人一份；含 Maps 金鑰 |
+| 後端機密 | `backend/.env`、`backend/ml_service/.env` | 部署機一份 |
+| 管理員帳號 / 邀請碼清單 | 後台維運文件 | |
 
 自動備份：`cd frontend; powershell -ExecutionPolicy Bypass -File scripts\handoff_backup.ps1`
 （輸出至 `G:\TreeAI-Handoff\yyyyMMdd_HHmm\`，排除 build 與機密檔）。
+
+---
+
+## H. 附錄：Google Cloud 專案設定（地圖金鑰，從新增專案開始）
+
+> 本專案地圖（地圖頁、邊界繪製、維護地圖）以 `google_maps_flutter` 顯示，**只需要 Maps 的 API 金鑰，不需要 Google 登入 / OAuth**。
+> 下面 H-1～H-5 是「從零建立 Google Cloud 專案到拿到可用金鑰」的完整步驟；H-6（OAuth）目前用不到，僅未來要加「Google 登入」才需要，附上怎麼填供參考。
+>
+> 對應已知值：Android applicationId = `com.sustainable.treeai`；iOS bundle id = `com.sustainable.sustainableTreeai`。
+
+### H-1 建立專案
+1. 開 https://console.cloud.google.com → 上方專案選單 → **新增專案（New Project）**。
+2. 專案名稱：`tree-project`；機構 / 父項資源：**無組織（No organization）**→ 建立。
+
+### H-2 啟用必要 API
+左側「API 和服務 → 程式庫」搜尋並啟用：
+- **Maps SDK for Android**（Android 地圖必需）
+- **Maps SDK for iOS**（iOS 地圖才需要）
+
+### H-3 啟用帳單（重要，否則地圖會灰底）
+- 「帳單（Billing）」→ 連結一個帳單帳戶（Google 有每月免費額度，一般用量內不收費）。
+- 沒有連結帳單時，Maps SDK 會回錯誤、地圖顯示空白／灰底。
+
+### H-4 建立並限制 API 金鑰
+「API 和服務 → 憑證 → 建立憑證 → API 金鑰」，建一把給 Android、一把給 iOS（分開比較好控管）：
+
+**Android 金鑰**
+- 應用程式限制：選 **Android 應用程式** → 新增項目：
+  - 套件名稱：`com.sustainable.treeai`
+  - SHA-1 憑證指紋：用你的簽章 keystore 取得：
+    ```bash
+    keytool -list -v -keystore <keystore.jks> -alias <alias>
+    ```
+    （debug 與 release 各一組 SHA-1，建議都加；debug 預設在 `~/.android/debug.keystore`，密碼 `android`）
+- API 限制：選 **限制金鑰** → 只勾 **Maps SDK for Android**。
+
+**iOS 金鑰**
+- 應用程式限制：選 **iOS 應用程式** → Bundle ID：`com.sustainable.sustainableTreeai`
+- API 限制：只勾 **Maps SDK for iOS**。
+
+### H-5 把金鑰填進專案（不進 git）
+- Android：`frontend/android/key.properties`（範本 `key.properties.example`）：
+  ```properties
+  GOOGLE_MAPS_API_KEY=AIza...你的Android金鑰...
+  ```
+- iOS：Xcode build setting / xcconfig 設 `GOOGLE_MAPS_API_KEY_IOS=AIza...你的iOS金鑰...`
+- 注入機制已設定好，不必改程式（詳見 `BUILD_GUIDE.md` §3）。
+
+> **在誰的電腦、用哪把 keystore？**
+> - 建金鑰是在**瀏覽器**（`console.cloud.google.com`），任何電腦皆可，建議登入**單位/團隊 Google 帳號**（勿綁個人）。
+> - Android 金鑰的 **SHA-1 要對應「實際簽 APK 的那把 keystore」**：
+>   - 接手者用自己的新 keystore → 把**他的 SHA-1** 加進金鑰限制。
+>   - 沿用現有 release keystore（連 keystore 一起移交）→ SHA-1 不變，且舊使用者可無痛更新。
+>
+> **金鑰命名建議（建立 API 金鑰時的「名稱」欄）**：`tree-project Android Maps Key`（iOS 之後做時用 `tree-project iOS Maps Key`）。名稱只是標籤，可自訂。
+>
+> **`flutter run`（debug）vs release 的 key.properties**（依 `android/app/build.gradle.kts`）：
+> - **debug（`flutter run`）只需要 `GOOGLE_MAPS_API_KEY` 一行**；debug 會自動用系統 `~/.android/debug.keystore` 簽，**不需**填 `storeFile/keyAlias/storePassword/keyPassword`。
+> - 簽章那幾欄只有 **release**（`flutter build apk --release`）才會用到，且 `storeFile` 路徑相對於 `android/app/`。
+>
+> **可以先給對方什麼？**
+> - **套件名** `com.sustainable.treeai`：固定值，現在就能給。
+> - **SHA-1**：取決於 keystore——
+>   - 開發階段：用各人的 **debug keystore**（`~/.android/debug.keystore`，密碼 `android`），每台電腦 SHA-1 不同，要各自加進限制（或開發另用一把不加限制的金鑰）。
+>   - 上架/正式：用 **release keystore** 的 SHA-1（若沿用現有的就先取出給對方）。
+> - 取 SHA-1 指令：`keytool -list -v -keystore <keystore> -alias <alias>`（輸出裡的 `SHA1:` 那行）。
+
+### H-6 OAuth 設定（本專案目前用不到；未來加「Google 登入」才需要）
+
+> 現況：程式碼無 `google_sign_in`、無 `google-services.json`，登入走自家帳密 + JWT。
+> 以下僅在「日後要支援 Google 帳號登入」時才設定，照填即可：
+
+1. **OAuth 同意畫面（OAuth consent screen）**
+   - User Type：**外部（External）**（無組織只能選這個）→ 建立。
+   - 應用程式名稱：`tree-project`；使用者支援電子郵件：你的信箱；開發人員聯絡資訊：你的信箱。
+   - 範圍（Scopes）：加 `openid`、`.../auth/userinfo.email`、`.../auth/userinfo.profile`（只是要識別使用者的話這三個就夠）。
+   - 測試使用者（Test users）：發布狀態維持「測試中」時，把要登入的 Google 帳號加進來。
+2. **建立 OAuth 用戶端 ID（Credentials → 建立憑證 → OAuth client ID）**
+   - Android：套件名 `com.sustainable.treeai` + SHA-1（同 H-4）。
+   - iOS：Bundle ID `com.sustainable.sustainableTreeai`。
+   - 若後端要驗證 Google token：另建一個 **Web application** 用戶端，取得 client_id / client_secret 放後端 `.env`（本專案目前無此需求）。

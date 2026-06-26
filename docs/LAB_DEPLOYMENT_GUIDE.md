@@ -7,6 +7,26 @@
 
 ---
 
+## 部署用到的工具是什麼（白話對照）
+
+| 工具 | 一句話說明 | 在本系統的角色 |
+|------|------------|----------------|
+| **Ubuntu** | Linux 作業系統 | 後端主機的 OS（跑在 Proxmox 虛擬機裡） |
+| **Proxmox VE** | 虛擬機管理平台 | 實驗室用它開出我們的 Ubuntu VM（`https://<host>:8006` 管理） |
+| **PostgreSQL** | 關聯式資料庫 | 存所有資料（樹木、專案、使用者…）；本系統用 v16 |
+| **Node.js** | JavaScript 執行環境 | 跑後端程式（Express API）；用 v20 LTS |
+| **npm** | Node 套件管理器 | `npm install` 安裝後端相依套件 |
+| **PM2** | Node 程式的「常駐管理員」 | 讓後端開機自啟、崩潰自動重啟、多核心並行（cluster）、看 log；程序名 `tree-backend` |
+| **nginx** | 反向代理 / 網頁伺服器 | 對外收 443(HTTPS) 轉給後端 3000；負責 TLS、限速、安全標頭 |
+| **Tailscale** | 零設定的私有網路（VPN）+ 免費 `*.ts.net` 憑證 | 讓手機與 VM 在同一虛擬內網直接互連；並提供**受信任 HTTPS 憑證**（手機不必信任自簽憑證）。本次採用 |
+| **ngrok** | 把內網服務開一個公開臨時網址 | Tailscale 的替代方案（免費網址會變）；本次**未採用** |
+| **Let's Encrypt / certbot** | 免費正式 TLS 憑證 | 若改用「機構網域」對外時的發憑證工具（Tailscale 方案則不需要） |
+| **UFW** | Ubuntu 防火牆 | 只開放必要連接埠（SSH、HTTP/HTTPS） |
+| **`.env`** | 環境變數設定檔 | 放資料庫連線、JWT 密鑰、各 API 金鑰；**不進 git** |
+| **GitHub webhook** | git push 時通知主機 | 觸發 `deploy.sh` 自動部署（選用） |
+
+---
+
 ## 重新部署完整流程（Proxmox VM｜從零照著做）
 
 > 適用情境：拿到實驗室一台 **Proxmox VE 虛擬機**（Web 管理介面 `https://<PVE_HOST>:8006`），要把整套後端重新部署上線。
