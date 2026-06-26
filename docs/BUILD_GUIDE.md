@@ -237,3 +237,7 @@ keyAlias=androiddebugkey
 storeFile=debug.keystore
 ```
 > 正式上架（Google Play）仍須改用**獨立 upload/release keystore**並妥善備份（見 §4、§5 與 `HANDOFF_SECRETS_CHECKLIST.md` §G）；debug keystore 僅供測試。
+
+**建置中出現大量 `Could not close incremental caches ... this and base files have different roots`（但最後仍 `√ Built ...apk`）** → **非致命警告**，可忽略。成因：專案與 pub 套件快取在**不同磁碟**（例如專案在 `D:\`、pub cache 在 `C:\Users\<user>\AppData\Local\Pub\Cache`）。Kotlin 增量編譯快取以相對路徑記錄來源檔，跨磁碟算不出相對路徑而丟例外，Kotlin 會自動退回「非增量（full）編譯」並完成建置。判斷依據是看**最後一行**是否為 `√ Built build\app\outputs\flutter-apk\app-release.apk`。要消除雜訊可把專案與 pub cache 放同一磁碟，或設環境變數 `PUB_CACHE` 指到專案所在磁碟（不影響產物）。
+
+**`unable to find directory entry in pubspec.yaml: ...\assets\images\`** → `pubspec.yaml` 宣告了某資產資料夾但該資料夾不存在（git 不追蹤空資料夾，clone 後可能缺）。不影響建置；若程式有引用該資料夾內的檔案，補上檔案或建立該資料夾即可。
