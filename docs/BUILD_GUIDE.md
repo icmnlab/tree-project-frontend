@@ -218,3 +218,22 @@ version: 18.10.4+26
 **`Key password is incorrect`** → 確認密碼無多餘空白／換行。
 
 **iOS `No signing certificate`** → 確認 Apple Developer 帳號、Keychain 憑證、重新下載 Provisioning Profile。
+
+**`Gradle build daemon has been stopped: since the JVM garbage collector is thrashing`** → Gradle JVM 記憶體不足。常見原因是 Flutter 的 `Upgrading gradle.properties` migrator 把 `android/gradle.properties` 改寫、**洗掉了 `org.gradle.jvmargs`（記憶體）與 `android.useAndroidX=true`**（症狀會同時出現 `[!] Your app isn't using AndroidX.` 警告）。修復：把 `android/gradle.properties` 還原為含足夠堆積的設定後，停 daemon、`flutter clean` 再 build：
+```properties
+org.gradle.jvmargs=-Xmx4G -XX:MaxMetaspaceSize=2G -XX:ReservedCodeCacheSize=512m -XX:+HeapDumpOnOutOfMemoryError
+android.useAndroidX=true
+android.enableJetifier=true
+android.builtInKotlin=false
+android.newDsl=false
+```
+> `-Xmx` 取捨：記憶體小的機器設太大反而會吃 swap 變更慢／更易 thrash；16GB 以上可用 `-Xmx4G`，8GB 機器建議 `-Xmx2G`。改完先 `cd android; .\gradlew --stop; cd ..` 再 `flutter clean`。
+
+**release 簽章失敗（`Keystore file ... not found` / 密碼錯）但只是要現場測試** → `build.gradle.kts` 的 release **一定**讀 `key.properties` 簽章欄位、無 debug fallback。若尚未建立正式 upload keystore，可**暫時用 debug keystore 簽 release**（須與註冊到 Maps 金鑰的 SHA-1 同一把，地圖才會顯示）：把 debug keystore 複製到 `android/app/`，並將 `key.properties` 簽章欄位改為：
+```properties
+storePassword=android
+keyPassword=android
+keyAlias=androiddebugkey
+storeFile=debug.keystore
+```
+> 正式上架（Google Play）仍須改用**獨立 upload/release keystore**並妥善備份（見 §4、§5 與 `HANDOFF_SECRETS_CHECKLIST.md` §G）；debug keystore 僅供測試。
