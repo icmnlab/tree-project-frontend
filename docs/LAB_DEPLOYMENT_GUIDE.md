@@ -170,6 +170,52 @@ sudo systemctl status nginx postgresql
 df -h                      # 看硬碟空間
 ```
 
+### 偵錯與查 log（VM）
+> App 出問題時的標準排查順序：先確認「請求有沒有到後端」，再決定是網路層還是應用層的問題。
+
+**後端 PM2 log（PM2 程序名 = `tree-backend`，見 `ecosystem.config.js`）**
+```bash
+pm2 status                          # 程序是否 online / 重啟次數
+pm2 logs tree-backend               # 即時串流（Ctrl+C 離開）
+pm2 logs tree-backend --lines 200   # 最近 200 行
+pm2 logs tree-backend --err         # 只看錯誤輸出
+pm2 logs tree-backend --out         # 只看一般輸出
+pm2 describe tree-backend           # 看詳細設定與 log 檔路徑
+ls -l /opt/tree-app/logs            # log 檔位置：backend-out-*.log / backend-error-*.log
+tail -n 100 /opt/tree-app/logs/backend-error-0.log
+```
+
+**Nginx log（TLS / 反向代理這一層）**
+```bash
+sudo tail -n 100 /var/log/nginx/access.log   # 有沒有收到 /api/... 請求、回應碼
+sudo tail -n 100 /var/log/nginx/error.log
+sudo nginx -t                                # 設定語法檢查
+sudo ss -ltnp | grep ':443'                  # 443 是否在 listen
+```
+
+**後端／TLS 連線自測（在 VM 上）**
+```bash
+curl -sf http://127.0.0.1:3000/health                 # 直接打後端（繞過 nginx）→ OK 代表後端活著
+curl https://<你的主機>.ts.net/health                 # 經 nginx + TLS → OK 代表整條鏈路通
+```
+
+**資料庫 / 使用者（登入相關）**
+```bash
+cd /opt/tree-app/backend
+node scripts/list_users.js                            # 列出現有使用者
+# 「帳號不存在」= DB 沒有該使用者；正式庫用這支建立管理員（勿用 seed_dev_users.js）
+node scripts/create_lab_admin.js --username labadmin --password '<至少8碼強密碼>' --display '實驗室管理員'
+psql "$DATABASE_URL" -c "SELECT username, role, is_active FROM users;"   # 直接查 DB
+```
+
+**怎麼判讀（決策樹）**
+- 手機操作時 `pm2 logs tree-backend` **完全沒有新請求** → 問題在「手機↔VM」的網路/DNS（Tailscale、MagicDNS、`API_BASE_URL` 是否完整）；不是後端。
+- `nginx access.log` **有** `/api/...` 但回 4xx/5xx → 請求有到，問題在後端（看 `pm2 logs tree-backend --err`）。
+- 登入回「**帳號不存在**」→ 連線正常，只是 DB 沒帳號 → 用上面的 `create_lab_admin.js` 建立。
+
+**已知非致命訊息**
+- backend-error log 出現 `Key (typname, typnamespace)=(schema_migrations, ...) already exists`（pg 錯誤碼 `23505`）：某次啟動嘗試建立已存在的 `schema_migrations` 表所致，**不影響運行**（屬重複部署的冪等性雜訊）。只要 out log 有「成功連接到 PostgreSQL」且 `pm2 status` 為 online 即正常。
+
 ### Nginx / TLS 疑難排解（實戰踩過的坑）
 > 以下三點是這次實際部署遇到並解決的問題，照著做可避免重蹈覆轍。
 
