@@ -232,7 +232,14 @@ Module doc template (Western style):
 
 ### Phase 4 — Deployment runbook
 
-Convert local `DEPLOYMENT_LOG.md` ops into public `LAB_DEPLOYMENT_GUIDE.md` after VM steps verified.
+Convert local `DEPLOYMENT_LOG.md` ops into public `LAB_DEPLOYMENT_GUIDE.md` after VM steps verified (deferred until school-side SSH/webhook work).
+
+### Phase 5 — Operations runbooks (complete 2026-06-29)
+
+- [x] `FIELD_SURVEY_SOP.md` — field operator procedures
+- [x] `VERIFICATION_CHECKLIST.md` — post-deploy QA
+- [x] `HANDOVER_CHECKLIST.md` — delivery sign-off
+- [x] `AUTHORS.md` consolidated; `CONTRIBUTION_RECORD.md` → pointer stub
 
 ---
 
@@ -252,6 +259,6 @@ Before marking a module doc "reviewed":
 
 | Date | Change |
 |------|--------|
-| 2026-06-29 | Species/PlantNet + ML correction docs; backend docs index |
+| 2026-06-29 | Phase 5 ops runbooks + AUTHORS consolidation |
 | 2026-06-29 | Phase 2 module guides + experimental docs complete |
 | 2026-06-29 | Initial inventory: 129 Dart, 168 JS, 145 endpoints, 13 dashboard cards |

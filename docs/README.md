@@ -78,7 +78,8 @@ Western-style technical docs: one canonical architecture guide plus focused topi
 | Status | Files |
 |--------|-------|
 | **Canonical (reviewed)** | `ARCHITECTURE.md`, `CODEBASE_INVENTORY.md`, `API_REFERENCE.md`, `HANDOFF.md`, `LAB_DEPLOYMENT_GUIDE.md`, `BUILD_GUIDE.md`, `HANDOFF_SECRETS_CHECKLIST.md` |
-| **Topic guides (reviewed 2026-06-29)** | `ADMIN_AND_INVITE_DESIGN.md`, `SURVEY_HISTORY.md`, `BOUNDARY_SYSTEM_DESIGN.md`, `VLGEO2_STD_APPLICATION_GUIDE.md`, `PROJECT_DATA_AND_DOMAIN.md`, `DATABASE_NORMALIZATION.md`, `CARBON_CALCULATION.md`, `SPECIES_AND_PLANTNET.md`, `ML_CORRECTION_UPLOAD.md` |
+| **Topic guides (reviewed 2026-06-29)** | Domain, BLE, carbon, species, ML — see table above |
+| **Operations (reviewed 2026-06-29)** | `FIELD_SURVEY_SOP.md`, `VERIFICATION_CHECKLIST.md`, `HANDOVER_CHECKLIST.md` |
 | **Experimental (reviewed 2026-06-29)** | `EXPERIMENTAL_FEATURES.md`, `VISUAL_MEASUREMENT.md`, `AI_SUSTAINABILITY_REPORT.md`, `AI_AGENT_GUIDE.md` |
 | **Research / reference** | DBH research notes, external GNSS handoff — not production paths |
 

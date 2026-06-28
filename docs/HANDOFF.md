@@ -13,9 +13,9 @@
 | 項目 | 說明 |
 |------|------|
 | **授權** | MIT License；著作權人見 `LICENSE`（`Copyright (c) 2025 KyleliuNDHU`） |
-| **歸屬文件（不可刪）** | 根目錄 `AUTHORS.md`、`CONTRIBUTION_RECORD.md` — 與 `LICENSE` 同級；接手方須保留 |
+| **歸屬文件（不可刪）** | **`AUTHORS.md`**（正本）、**`LICENSE`**；`CONTRIBUTION_RECORD.md` 為相容用指標，內容併入 `AUTHORS.md` |
 | **推送至接手方 GitHub** | **建議 fresh snapshot**（`git checkout --orphan`），**不帶舊 commit 歷史**，避免開發期私有資訊外洩；步驟見 `LAB_DEPLOYMENT_GUIDE.md` §0.1 或 `scripts/prepare_fresh_handover.ps1` |
-| **貢獻證明** | 接手方 repo 的歸屬靠上述三檔載明，**不靠**完整 `git log`；交付方應**本機私人封存**完整開發歷史作個人佐證（不推送給接手方） |
+| **貢獻證明** | 接手方 repo 歸屬以 **`AUTHORS.md` + `LICENSE`** 為準（GitHub `icmnlab` 目前僅顯示一位 contributor，符合 fresh snapshot）；交付方本機私人封存完整 `git log` |
 | **接手方義務** | 依 MIT 可修改程式碼，但**須保留** `LICENSE` 版權聲明與歸屬文件；刪除或偽造歸屬違反授權條款 |
 
 > 本節釐清**著作權與開發歸屬**；維運責任、主機與 API 金鑰自交接日起由接手方負責（見 `HANDOVER_CHECKLIST.md`、`HANDOFF_SECRETS_CHECKLIST.md`）。
