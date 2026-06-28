@@ -21,7 +21,7 @@ Deploy the full TreeAI stack—Node.js API, PostgreSQL, Nginx reverse proxy, PM2
 | `tree-project-backend` | Node.js API, migrations, `scripts/deploy.sh`, `ml_service/` (optional) |
 | `tree-project-frontend` | Flutter Android app; deployment docs in `docs/` |
 
-**Canonical attribution**: `LICENSE` and **`AUTHORS.md`** (not `CONTRIBUTION_RECORD.md`). Fresh handover pushes must preserve both files.
+**Canonical attribution**: `LICENSE` and **`AUTHORS.md`**. Fresh handover pushes must preserve both files.
 
 **Health check endpoint**: `GET /health` returns plain text `OK` (public, no JWT). Do **not** use `/api/health`—all `/api/*` routes require JWT and return `401` without a token.
 

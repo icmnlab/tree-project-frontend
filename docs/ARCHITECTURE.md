@@ -4,7 +4,7 @@ Technical reference for developers maintaining **Sustainable TreeAI**. Describes
 
 **Audience**: engineers onboarding to the codebase (read this before deployment runbooks).
 
-**Related docs**: `HANDOFF.md` (quick start) · `PROJECT_DATA_AND_DOMAIN.md` (domain terms) · `SURVEY_HISTORY.md` (measurement history) · `backend/tests/FRAMEWORK.md` (integration tests)
+**Related docs**: `HANDOFF.md` (quick start) · `API_REFERENCE.md` · `backend/openapi/openapi.yaml` (machine-readable API) · `PROJECT_DATA_AND_DOMAIN.md` (domain terms) · `SURVEY_HISTORY.md` (measurement history) · `backend/tests/FRAMEWORK.md` (integration tests)
 
 **Last updated**: 2026-06-29
 

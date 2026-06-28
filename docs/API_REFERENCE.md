@@ -301,9 +301,17 @@ Mount: `/api/admin` · `routes/admin.js`
 
 ---
 
-## OpenAPI (future)
+## OpenAPI
 
-Western teams often publish **`openapi.yaml`** for Swagger UI and client codegen. This markdown catalog is the interim source of truth until an OpenAPI spec is added (see `CODEBASE_INVENTORY.md` Phase 3).
+Machine-readable spec: **`tree-project-backend/openapi/openapi.yaml`** (OpenAPI 3.0.3).
+
+| Action | Command |
+|--------|---------|
+| Regenerate | `cd backend && node scripts/generate_openapi.js` |
+| Import | Postman → Import → `openapi/openapi.yaml` |
+| Preview | `npx @redocly/cli preview-docs openapi/openapi.yaml` |
+
+See `backend/openapi/README.md`. Request/response schemas are minimal; roles and bodies remain in this markdown catalog and route source.
 
 To verify an endpoint against code:
 
@@ -318,4 +326,5 @@ grep -n "router\.\(get\|post\|put\|patch\|delete\)" routes/<file>.js
 
 | Date | Change |
 |------|--------|
+| 2026-06-29 | OpenAPI spec added (`backend/openapi/openapi.yaml`) |
 | 2026-06-29 | Initial catalog: 145 endpoints from route audit |

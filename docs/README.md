@@ -68,8 +68,16 @@ Hidden by default (`ENABLE_EXPERIMENTAL_UI=false`). **Document anyway** — mark
 | Document | Purpose |
 |----------|---------|
 | `backend/README.md` | Backend quick start and architecture diagram |
+| `backend/openapi/openapi.yaml` | OpenAPI 3.0 spec (Postman / Swagger) |
+| `backend/openapi/README.md` | How to regenerate and import the spec |
 | `backend/tests/FRAMEWORK.md` | Integration test framework |
 | `backend/ml_service/README.md` | Optional ML service |
+
+### Meta
+
+| Document | Purpose |
+|----------|---------|
+| `DOCUMENTATION_RETENTION.md` | Which docs must stay vs may be archived |
 
 ## Documentation status (2026-06-29)
 
@@ -81,9 +89,10 @@ Western-style technical docs: one canonical architecture guide plus focused topi
 | **Topic guides (reviewed 2026-06-29)** | Domain, BLE, carbon, species, ML — see table above |
 | **Operations (reviewed 2026-06-29)** | `FIELD_SURVEY_SOP.md`, `VERIFICATION_CHECKLIST.md`, `HANDOVER_CHECKLIST.md` |
 | **Experimental (reviewed 2026-06-29)** | `EXPERIMENTAL_FEATURES.md`, `VISUAL_MEASUREMENT.md`, `AI_SUSTAINABILITY_REPORT.md`, `AI_AGENT_GUIDE.md` |
-| **Research / reference** | DBH research notes, external GNSS handoff — not production paths |
+| **OpenAPI (2026-06-29)** | `backend/openapi/openapi.yaml` + `openapi/README.md` |
+| **Research / reference** | DBH research notes, external GNSS handoff — optional; see `DOCUMENTATION_RETENTION.md` |
 
-Production deployment runbooks derived from real VM operations will be published here after school-side steps (SSH, webhook, Funnel) are completed and verified. Until then, placeholders live in local ops logs only.
+Production deployment steps from live VM operations will be merged into `LAB_DEPLOYMENT_GUIDE.md` after school-side SSH/webhook work. Until then, sensitive ops notes stay local-only.
 
 ## Contributing to docs
 

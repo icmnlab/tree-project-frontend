@@ -15,7 +15,7 @@ Original development by **KyleliuNDHU**. Copyright and scope: **`AUTHORS.md`** +
 
 - Recipient GitHub (`icmnlab`) uses a **fresh snapshot** (orphan commit, no full dev history).
 - Deliverer retains private `git log` archive locally — not pushed to recipient.
-- `CONTRIBUTION_RECORD.md` is a legacy pointer to `AUTHORS.md`.
+Attribution: **`AUTHORS.md`** + **`LICENSE`**. Deliverer keeps private `git log` archive locally.
 
 Procedure: `LAB_DEPLOYMENT_GUIDE.md` §0.1 or `scripts/prepare_fresh_handover.ps1`.
 
@@ -39,7 +39,7 @@ Procedure: `LAB_DEPLOYMENT_GUIDE.md` §0.1 or `scripts/prepare_fresh_handover.ps
 - [ ] No uncommitted secrets; `.env` / keystores gitignored
 - [ ] Version aligned (`pubspec.yaml`, `CHANGELOG.md`)
 - [ ] Docs reviewed: `HANDOFF.md`, `ARCHITECTURE.md`, `VERIFICATION_CHECKLIST.md`, `FIELD_SURVEY_SOP.md`
-- [ ] Root contains `LICENSE`, `AUTHORS.md`, `CONTRIBUTION_RECORD.md` (stub → AUTHORS)
+- [ ] Root contains `LICENSE`, `AUTHORS.md`
 - [ ] Fresh snapshot pushed to recipient org; deliverer private history archived
 
 ---

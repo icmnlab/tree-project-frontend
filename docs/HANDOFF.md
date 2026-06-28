@@ -13,7 +13,7 @@
 | 項目 | 說明 |
 |------|------|
 | **授權** | MIT License；著作權人見 `LICENSE`（`Copyright (c) 2025 KyleliuNDHU`） |
-| **歸屬文件（不可刪）** | **`AUTHORS.md`**（正本）、**`LICENSE`**；`CONTRIBUTION_RECORD.md` 為相容用指標，內容併入 `AUTHORS.md` |
+| **歸屬文件（不可刪）** | **`AUTHORS.md`**、**`LICENSE`** |
 | **推送至接手方 GitHub** | **建議 fresh snapshot**（`git checkout --orphan`），**不帶舊 commit 歷史**，避免開發期私有資訊外洩；步驟見 `LAB_DEPLOYMENT_GUIDE.md` §0.1 或 `scripts/prepare_fresh_handover.ps1` |
 | **貢獻證明** | 接手方 repo 歸屬以 **`AUTHORS.md` + `LICENSE`** 為準（GitHub `icmnlab` 目前僅顯示一位 contributor，符合 fresh snapshot）；交付方本機私人封存完整 `git log` |
 | **接手方義務** | 依 MIT 可修改程式碼，但**須保留** `LICENSE` 版權聲明與歸屬文件；刪除或偽造歸屬違反授權條款 |
@@ -420,7 +420,7 @@ git restore <file>               # 丟棄某檔的本地修改
 | **`docs/README.md`** | **文件索引 hub**（Start here、topic 分類、documentation status） |
 | **`CODEBASE_INVENTORY.md`** | **程式清單**：129 Dart / 168 JS / 145 API / 13 首頁功能 — 撰寫文件時防遺漏 |
 | **`API_REFERENCE.md`** | **REST API 目錄**（依模組分類，歐美常見 API Reference 風格） |
-| `AUTHORS.md` / `CONTRIBUTION_RECORD.md` | 著作權與主要貢獻者（fresh push 須保留） |
+| `AUTHORS.md` | 著作權與主要貢獻者（fresh push 須保留） |
 | `LAB_DEPLOYMENT_GUIDE.md` | 實驗室獨立部署（fresh snapshot、webhook、PM2） |
 | `BUILD_GUIDE.md` | Android APK 建置 |
 | `HANDOFF_SECRETS_CHECKLIST.md` | 金鑰、帳號、網址交接清單 |

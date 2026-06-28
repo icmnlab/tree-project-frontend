@@ -53,6 +53,6 @@ The deliverer keeps a **private archive** of the full development history (`git 
 
 ## Related
 
-- `CONTRIBUTION_RECORD.md` — legacy filename; points here
 - `HANDOFF.md` §0 — handover context for new maintainers
 - `HANDOVER_CHECKLIST.md` — delivery sign-off
+- `docs/DOCUMENTATION_RETENTION.md` — which docs may be archived or removed

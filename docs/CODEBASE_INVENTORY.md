@@ -216,9 +216,12 @@ Most `/api/*` routes require JWT; many add `requireRole(...)` or `projectAuthFil
 12. [x] Species & PlantNet → `SPECIES_AND_PLANTNET.md`
 13. [x] ML correction upload → `ML_CORRECTION_UPLOAD.md`
 
-### Phase 3 — OpenAPI (optional, not started)
+### Phase 3 — OpenAPI (complete 2026-06-29)
 
-Generate or maintain `backend/openapi.yaml` for Swagger UI / Postman import. Not required for handover but standard at larger companies.
+- [x] `backend/openapi/openapi.yaml` — auto-generated from routes (146 operations)
+- [x] `backend/scripts/generate_openapi.js` — regen script
+- [x] `backend/openapi/README.md` — Postman / Swagger usage
+- [x] `DOCUMENTATION_RETENTION.md` — delete vs keep policy
 
 Module doc template (Western style):
 
@@ -238,7 +241,7 @@ Convert local `DEPLOYMENT_LOG.md` ops into public `LAB_DEPLOYMENT_GUIDE.md` afte
 
 - [x] `FIELD_SURVEY_SOP.md` — field operator procedures
 - [x] `HANDOVER_CHECKLIST.md` — delivery sign-off
-- [x] `AUTHORS.md` consolidated; `CONTRIBUTION_RECORD.md` → pointer stub
+- [x] `AUTHORS.md` consolidated (removed redundant `CONTRIBUTION_RECORD.md`)
 
 ### Phase 6 — Canonical ops guides (complete 2026-06-29)
 
@@ -265,7 +268,7 @@ Before marking a module doc "reviewed":
 
 | Date | Change |
 |------|--------|
-| 2026-06-29 | Phase 6 canonical guides (LAB/BUILD/SECRETS) + verification matrix restored |
+| 2026-06-29 | Phase 3 OpenAPI + documentation retention policy |
 | 2026-06-29 | Phase 5 ops runbooks + AUTHORS consolidation |
 | 2026-06-29 | Phase 2 module guides + experimental docs complete |
 | 2026-06-29 | Initial inventory: 129 Dart, 168 JS, 145 endpoints, 13 dashboard cards |
