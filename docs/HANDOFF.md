@@ -1,8 +1,8 @@
 # HANDOFF
 
-接手時建議順序：§1 系統概覽 → §4 本機啟動 → §5 測試 → §8 領域重點。正式環境部署見 `LAB_DEPLOYMENT_GUIDE.md`；金鑰與帳號見 `HANDOFF_SECRETS_CHECKLIST.md`。
+接手時建議順序：§1 系統概覽 → **`ARCHITECTURE.md`（程式怎麼跑、檔案對照、資料庫為何這麼多）** → §4 本機啟動 → §5 測試 → §8 領域重點。正式環境部署見 `LAB_DEPLOYMENT_GUIDE.md`（需到校/VM）；金鑰與帳號見 `HANDOFF_SECRETS_CHECKLIST.md`。
 
-**最後修訂**：2026-06-18。
+**最後修訂**：2026-06-29。
 
 ---
 
@@ -411,7 +411,9 @@ git restore <file>               # 丟棄某檔的本地修改
 
 | 文件 | 用途 |
 |------|------|
-| **`HANDOFF.md`（本檔）** | 架構、本機啟動、測試、部署、模組索引 |
+| **`HANDOFF.md`（本檔）** | 快速上手：本機啟動、測試、部署索引 |
+| **`ARCHITECTURE.md`** | **程式架構**：功能怎麼跑、對應檔案/API、資料庫 SQL 為何這麼多（歐美常見技術文件風格） |
+| **`docs/README.md`** | **文件索引 hub**（Start here、topic 分類、documentation status） |
 | `AUTHORS.md` / `CONTRIBUTION_RECORD.md` | 著作權與主要貢獻者（fresh push 須保留） |
 | `LAB_DEPLOYMENT_GUIDE.md` | 實驗室獨立部署（fresh snapshot、webhook、PM2） |
 | `BUILD_GUIDE.md` | Android APK 建置 |
