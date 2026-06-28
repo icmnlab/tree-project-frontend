@@ -390,6 +390,9 @@ Non-fatal warning; safe to ignore if the build ends with `√ Built build\app\ou
 
 | Document | Purpose |
 |----------|---------|
+| [ONBOARDING_READING_PATH.md](./ONBOARDING_READING_PATH.md) | Reading order; GitHub entry point |
+| [LOCAL_DEVELOPER_SETUP.md](./LOCAL_DEVELOPER_SETUP.md) | `.env`, `key.properties`, keystores |
+| [ANDROID_RELEASE_AND_PLAY_STORE.md](./ANDROID_RELEASE_AND_PLAY_STORE.md) | Play Store release checklist |
 | [HANDOFF_SECRETS_CHECKLIST.md](./HANDOFF_SECRETS_CHECKLIST.md) | Secrets inventory and handoff checklist |
 | [EXPERIMENTAL_FEATURES.md](./EXPERIMENTAL_FEATURES.md) | Experimental UI flags and dashboard cards |
 | `lib/config/app_config.dart` | Runtime config and feature flags |

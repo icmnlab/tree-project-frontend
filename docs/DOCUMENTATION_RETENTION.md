@@ -47,7 +47,20 @@ See also **`RESEARCH_REFERENCE.md`** for the full research-tier index.
 
 ---
 
-## Tier 4 — Removed / consolidated
+## Tier 4 — Local only (never push)
+
+| File | Location | Why local |
+|------|----------|-----------|
+| `DEPLOYMENT_LOG.md` | `project_code/docs/` | School IPs, VM accounts, live ops output |
+| `FACE_TO_FACE_HANDOFF.md` | `project_code/docs/` | In-person KT agenda; not for public repo |
+| `HANDOVER_SCRIPT.md` | `project_code/docs/` | Talk track and Q&A cheat sheet |
+| `REDEPLOY_MANUAL.md`, `COMMANDS_CHEATSHEET.md` | `project_code/docs/` | Contain real hostnames/credentials |
+
+Recipient long-term docs = GitHub `frontend/docs/` only. See `ONBOARDING_READING_PATH.md` §In-person handover.
+
+---
+
+## Tier 5 — Removed / consolidated
 
 | File | Status |
 |------|--------|

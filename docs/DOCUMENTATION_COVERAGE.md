@@ -51,7 +51,7 @@ DOCUMENTATION_RETENTION.md ← Delete vs keep policy
 | `lib/screens/` | 29 | CODEBASE_INVENTORY §3, ARCHITECTURE §5, module guides |
 | `lib/services/` | 45 | CODEBASE_INVENTORY §3.4, ARCHITECTURE |
 | `lib/utils/`, `widgets/`, `models/` | 35+ | ARCHITECTURE §5, BLE/ boundary guides |
-| `lib/config/` | 3 | BUILD_GUIDE, EXPERIMENTAL_FEATURES |
+| `lib/config/` | 3 | BUILD_GUIDE, LOCAL_DEVELOPER_SETUP, EXPERIMENTAL_FEATURES |
 | `test/` | 28 | HANDOFF §5, VERIFICATION §2 |
 | `assets/` | models, COA JSON | BUILD_GUIDE, CARBON_CALCULATION, ml_service |
 | `android/`, `ios/` | native | BUILD_GUIDE, HANDOFF_SECRETS §H |
@@ -108,7 +108,7 @@ Content from old ops-heavy Chinese prose was **merged** into English runbooks, n
 | OpenAPI request/response schemas | Low | Extend `generate_openapi.js` when needed |
 | Per-endpoint RBAC in OpenAPI | Low | Use API_REFERENCE for roles |
 | VM webhook/Funnel steps | Medium | Phase 4 after school |
-| Frontend `README.md` mixed CN/EN | Low | Point to docs hub (updated) |
+| Play Store / upload keystore | Low | **`ANDROID_RELEASE_AND_PLAY_STORE.md`** added |
 
 **When code changes**: update ARCHITECTURE + API_REFERENCE + openapi regen + affected module guide in same PR.
 

@@ -263,6 +263,14 @@ Convert local `DEPLOYMENT_LOG.md` ops into public `LAB_DEPLOYMENT_GUIDE.md` afte
 - [x] `RESEARCH_REFERENCE.md` — research vs production doc tiers
 - [x] `DOCUMENTATION_COVERAGE.md` — GitHub tree vs doc coverage audit
 
+### Phase 8 — Onboarding & mobile release (complete 2026-06-29)
+
+- [x] `ONBOARDING_READING_PATH.md` — GitHub reading order, KT expectations
+- [x] `LOCAL_DEVELOPER_SETUP.md` — key.properties, .env, debug keystore
+- [x] `ANDROID_RELEASE_AND_PLAY_STORE.md` — Play Console, upload keystore, AAB
+
+**Local only (not in git)**: face-to-face talk track in `project_code/docs/FACE_TO_FACE_HANDOFF.md` + `HANDOVER_SCRIPT.md`
+
 ---
 
 ## 7. Verification checklist (for doc authors)

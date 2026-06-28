@@ -1,6 +1,6 @@
 # HANDOFF
 
-接手時建議順序：§1 系統概覽 → **`ARCHITECTURE.md`（程式怎麼跑、檔案對照、資料庫為何這麼多）** → §4 本機啟動 → §5 測試 → §8 領域重點。正式環境部署見 `LAB_DEPLOYMENT_GUIDE.md`（需到校/VM）；金鑰與帳號見 `HANDOFF_SECRETS_CHECKLIST.md`。
+接手時建議順序：**[`ONBOARDING_READING_PATH.md`](./ONBOARDING_READING_PATH.md)**（GitHub 怎麼看）→ §1 系統概覽 → **`ARCHITECTURE.md`** → §4 本機啟動 → §5 測試 → §8 領域重點。本機必建檔案見 **`LOCAL_DEVELOPER_SETUP.md`**；Play 上架見 **`ANDROID_RELEASE_AND_PLAY_STORE.md`**。正式環境部署見 `LAB_DEPLOYMENT_GUIDE.md`（需到校/VM）；金鑰與帳號見 `HANDOFF_SECRETS_CHECKLIST.md`。
 
 **最後修訂**：2026-06-29。
 

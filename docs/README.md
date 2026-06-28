@@ -2,10 +2,13 @@
 
 Documentation for **Sustainable TreeAI** (`tree-project-frontend` + `tree-project-backend`).
 
+**New to the project?** Start with **[ONBOARDING_READING_PATH.md](./ONBOARDING_READING_PATH.md)** — reading order, what to understand vs look up, and how GitHub docs relate to in-person handover.
+
 ## Start here
 
 | Priority | Document | When to read |
 |----------|----------|--------------|
+| 0 | **[ONBOARDING_READING_PATH.md](./ONBOARDING_READING_PATH.md)** | Where to start on GitHub; day-by-day plan |
 | 1 | **[ARCHITECTURE.md](./ARCHITECTURE.md)** | Onboarding: how the system works, file map, APIs, database in Git |
 | 2 | **[CODEBASE_INVENTORY.md](./CODEBASE_INVENTORY.md)** | Full file/feature catalog (129 Dart, 168 JS, 145 APIs) |
 | 3 | **[API_REFERENCE.md](./API_REFERENCE.md)** | All REST endpoints by module |
@@ -22,6 +25,8 @@ Documentation for **Sustainable TreeAI** (`tree-project-frontend` + `tree-projec
 |----------|---------|
 | `LAB_DEPLOYMENT_GUIDE.md` | Server provisioning, PM2, nginx, TLS |
 | `BUILD_GUIDE.md` | Android APK build |
+| `LOCAL_DEVELOPER_SETUP.md` | `.env`, `key.properties`, debug keystore (not in git) |
+| `ANDROID_RELEASE_AND_PLAY_STORE.md` | Upload keystore, AAB, Play Console checklist |
 | `VERIFICATION_CHECKLIST.md` | Post-deploy smoke tests |
 | `HANDOVER_CHECKLIST.md` | Handover day tasks |
 | `FIELD_SURVEY_SOP.md` | Field survey procedures (BLE + manual) |
@@ -98,7 +103,8 @@ Western-style technical docs: one canonical architecture guide plus focused topi
 | **Experimental (reviewed 2026-06-29)** | `EXPERIMENTAL_FEATURES.md`, `VISUAL_MEASUREMENT.md`, `AI_SUSTAINABILITY_REPORT.md`, `AI_AGENT_GUIDE.md` |
 | **OpenAPI (2026-06-29)** | `backend/openapi/openapi.yaml` + `openapi/README.md` |
 | **Backend catalog (2026-06-29)** | `backend/docs/SOURCE_LAYOUT.md`, `DATABASE_SCHEMA.md` |
-| **Meta (2026-06-29)** | `RESEARCH_REFERENCE.md`, `DOCUMENTATION_COVERAGE.md` |
+| **Onboarding (2026-06-29)** | `ONBOARDING_READING_PATH.md`, `LOCAL_DEVELOPER_SETUP.md`, `ANDROID_RELEASE_AND_PLAY_STORE.md` |
+| **Meta (2026-06-29)** | `RESEARCH_REFERENCE.md`, `DOCUMENTATION_COVERAGE.md`, `DOCUMENTATION_RETENTION.md` |
 | **Research / reference** | DBH research notes, external GNSS — see `RESEARCH_REFERENCE.md` |
 
 Production deployment steps from live VM operations will be merged into `LAB_DEPLOYMENT_GUIDE.md` after school-side SSH/webhook work. Until then, sensitive ops notes stay local-only.
