@@ -1,23 +1,105 @@
-# 修正紀錄上傳（選用）
+# ML Correction Upload (Optional)
 
-## 兩種「訓練資料」
+Background upload of user corrections when auto-suggested DBH, species, or carbon values are overridden.
 
-| 機制 | 用途 | 預設 |
-|------|------|------|
-| **研究資料蒐集**（管理後台） | 捲尺周長 + 距離 + 照片，DBH 校準用乾淨資料集 | 管理員主動使用 |
-| **修正紀錄上傳**（`MLDataCollector`） | 使用者改寫自動 DBH／樹種／碳儲量時的背景紀錄 | **關閉** |
+**Last reviewed against code**: 2026-06-29  
+**Status**: **Disabled by default** — not required for production surveys
 
-## 何時啟用修正紀錄
+---
 
-僅在需要從**大量現場覆寫**回推模型誤差時：
+## Overview
+
+When enabled, the V3 ML data collector records diffs between auto-computed and user-entered values and batches them to the backend for model improvement research.
+
+This is **separate** from the admin **research dataset** flow (tape-measure circumference + distance + photos). Prefer research dataset for clean DBH calibration data.
+
+---
+
+## Two training-data mechanisms
+
+| Mechanism | Purpose | Default |
+|-----------|---------|---------|
+| Research dataset (admin) | Tape measure + distance + photo for DBH α,β calibration | Admin-only, on demand |
+| ML correction upload | Background diffs when user overrides auto values | **Off** |
+
+Research dataset: `routes/research_dataset.js`, `admin_research_dataset_page.dart`.  
+See `VISUAL_MEASUREMENT.md` § Research dataset.
+
+---
+
+## Enabling
 
 ```bash
 flutter run --dart-define=ENABLE_ML_CORRECTION_UPLOAD=true
 ```
 
-啟用後：V3 服務頁（`v3_services_page.dart`）會出現「修正紀錄上傳」卡片，並每 30 分鐘嘗試上傳至後端 `POST /api/ml-training/batch`（`routes/ml_training_data.js`）。
+Build flag: `lib/config/app_config.dart` → `enableMlCorrectionUpload`.
 
-## 建議
+When on:
 
-- 一般調查／碳匯作業：**不必開啟**，減少背景流量與隱私顧慮。
-- 研究 DBH 實驗：優先使用 **研究資料蒐集**，不要用修正紀錄取代。
+- V3 services page shows **修正紀錄上傳** card (`v3_services_page.dart`)
+- Collector: `lib/services/v3/ml_data_collector.dart`
+- Upload interval: ~30 minutes to `POST /api/ml-training/batch`
+
+---
+
+## User flow
+
+1. User edits auto DBH / species / carbon in V3-integrated forms.
+2. `MLDataCollector` records `{ auto_values, user_values, difference, context }`.
+3. Periodic batch upload → backend stores in `ml_training_batches` / `ml_training_records`.
+4. Admin export: routes under `ml_training_data.js` (≥業務管理員).
+
+---
+
+## API
+
+Mount: `/api/ml-training` · `routes/ml_training_data.js`
+
+| Method | Path | Role |
+|--------|------|------|
+| POST | `/api/ml-training/batch` | Device batch upload |
+| POST | `/api/ml-training/image` | Optional image attachment |
+
+See `API_REFERENCE.md` § ML training data.
+
+---
+
+## Code map
+
+| Layer | File |
+|-------|------|
+| Flag | `lib/config/app_config.dart` |
+| Collector | `lib/services/v3/ml_data_collector.dart` |
+| Upload service | `lib/services/v3/ml_data_sync_service.dart` |
+| UI | `lib/screens/v3/v3_services_page.dart` |
+| Backend | `backend/routes/ml_training_data.js` |
+
+Record types include `carbonCalculation`, DBH correction, species correction (see route `chk_record_type` constraint).
+
+---
+
+## Data model
+
+| Table | Purpose |
+|-------|---------|
+| `ml_training_batches` | Upload batch metadata |
+| `ml_training_records` | Individual correction rows (JSONB diffs) |
+
+Tables created on first use via route initializer.
+
+---
+
+## Operational notes
+
+- **Do not enable** for routine port surveys — adds background traffic and stores field edits.
+- For DBH research, use **research dataset** instead of correction upload.
+- Gated by same experimental-adjacent build flags as V3; home card `v3` hidden unless `ENABLE_EXPERIMENTAL_UI=true`, but correction flag is independent.
+
+---
+
+## Related
+
+- `EXPERIMENTAL_FEATURES.md` — V3 card visibility
+- `VISUAL_MEASUREMENT.md` — ML pipeline overview
+- `backend/ml_service/README.md` — inference service (separate from correction upload)

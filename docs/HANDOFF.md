@@ -385,6 +385,7 @@ git restore <file>               # 丟棄某檔的本地修改
 - **資料庫正規化 / schema**：`DATABASE_NORMALIZATION.md`
 - **專案邊界系統**（手繪／貼座標／匯入 KML·GeoJSON／convex-hull 建議邊界）：`BOUNDARY_SYSTEM_DESIGN.md`（輸入方式見 §3.5）
 - **碳匯計算**：`CARBON_CALCULATION.md`
+- **樹種目錄與 PlantNet 辨識**：`SPECIES_AND_PLANTNET.md`（首頁卡預設可見）
 - **四種新增輸入 + 編輯寫庫對照**：見本檔 **§8.1**；歷次機制見 `SURVEY_HISTORY.md`
 - **VLGEO2 BLE 整合**（NUS、PHGF、CSV；**非** Classic SPP）：`VLGEO2_STD_APPLICATION_GUIDE.md`；解析 `ble_live_packet_decoder.dart` / `ble_data_processor.dart`
 - **AI Agent / 文字轉 SQL**：`AI_AGENT_GUIDE.md`（Experimental）
@@ -430,7 +431,8 @@ git restore <file>               # 丟棄某檔的本地修改
 | `SURVEY_HISTORY.md` | 歷次量測機制 |
 | `ADMIN_AND_INVITE_DESIGN.md` | 管理後台與邀請碼 |
 | `VLGEO2_STD_APPLICATION_GUIDE.md` | VLGEO2 BLE 整合（見 §8.2） |
-| `DATABASE_NORMALIZATION.md` / `BOUNDARY_SYSTEM_DESIGN.md` / `CARBON_CALCULATION.md` | 子系統設計 |
+| `DATABASE_NORMALIZATION.md` / `BOUNDARY_SYSTEM_DESIGN.md` / `CARBON_CALCULATION.md` / `SPECIES_AND_PLANTNET.md` | 子系統設計 |
+| `ML_CORRECTION_UPLOAD.md` | ML 修正紀錄上傳（預設關閉） |
 | `AI_AGENT_GUIDE.md` | AI 對話／Agent（Experimental，§12） |
 | `EXPERIMENTAL_FEATURES.md` | 實驗 UI 開關與隱藏卡片 |
 | `VISUAL_MEASUREMENT.md` | 視覺 DBH、Scanner、V3 ML sync |

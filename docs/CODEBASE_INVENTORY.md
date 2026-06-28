@@ -213,8 +213,14 @@ Most `/api/*` routes require JWT; many add `requireRole(...)` or `projectAuthFil
 9. [x] Experimental umbrella → `EXPERIMENTAL_FEATURES.md`
 10. [x] Visual measurement → `VISUAL_MEASUREMENT.md`
 11. [x] AI sustainability report → `AI_SUSTAINABILITY_REPORT.md`
+12. [x] Species & PlantNet → `SPECIES_AND_PLANTNET.md`
+13. [x] ML correction upload → `ML_CORRECTION_UPLOAD.md`
 
-Each module doc template (Western style):
+### Phase 3 — OpenAPI (optional, not started)
+
+Generate or maintain `backend/openapi.yaml` for Swagger UI / Postman import. Not required for handover but standard at larger companies.
+
+Module doc template (Western style):
 
 - **Overview** — what problem it solves  
 - **User flow** — App screens  
@@ -223,10 +229,6 @@ Each module doc template (Western style):
 - **Data model** — tables and fields  
 - **Configuration** — env vars  
 - **Testing** — which test files cover it  
-
-### Phase 3 — OpenAPI (optional)
-
-Generate or maintain `backend/openapi.yaml` for Swagger UI / Postman import. Not required for handover but standard at larger companies.
 
 ### Phase 4 — Deployment runbook
 
@@ -250,5 +252,6 @@ Before marking a module doc "reviewed":
 
 | Date | Change |
 |------|--------|
+| 2026-06-29 | Species/PlantNet + ML correction docs; backend docs index |
 | 2026-06-29 | Phase 2 module guides + experimental docs complete |
 | 2026-06-29 | Initial inventory: 129 Dart, 168 JS, 145 endpoints, 13 dashboard cards |
