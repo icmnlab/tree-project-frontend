@@ -37,6 +37,7 @@ Documentation for **Sustainable TreeAI** (`tree-project-frontend` + `tree-projec
 |----------|---------|
 | `PROJECT_DATA_AND_DOMAIN.md` | Project / area terminology, CSV semantics |
 | `SURVEY_HISTORY.md` | Snapshot vs measurement history tables |
+| `DATABASE_DESIGN.md` | **Why** 49 SQL files, entity model, design principles (start here for DB questions) |
 | `DATABASE_SCHEMA.md` | Migration order and table catalog |
 | `DATABASE_NORMALIZATION.md` | Normalization rules |
 | `BOUNDARY_SYSTEM_DESIGN.md` | Project boundaries |
@@ -80,6 +81,7 @@ Start with **[RESEARCH_REFERENCE.md](./RESEARCH_REFERENCE.md)** for tier definit
 | `backend/README.md` | Backend quick start and architecture diagram |
 | `backend/docs/SOURCE_LAYOUT.md` | Controllers, services, middleware, utils catalog |
 | `backend/openapi/openapi.yaml` | OpenAPI 3.0 spec (Postman / Swagger) |
+| `OPENAPI_SCOPE.md` | What OpenAPI includes; schema deepening policy |
 | `backend/openapi/README.md` | How to regenerate and import the spec |
 | `backend/tests/FRAMEWORK.md` | Integration test framework |
 | `backend/ml_service/README.md` | Optional ML service |
@@ -102,7 +104,8 @@ Western-style technical docs: one canonical architecture guide plus focused topi
 | **Operations (reviewed 2026-06-29)** | `FIELD_SURVEY_SOP.md`, `VERIFICATION_CHECKLIST.md`, `HANDOVER_CHECKLIST.md` |
 | **Experimental (reviewed 2026-06-29)** | `EXPERIMENTAL_FEATURES.md`, `VISUAL_MEASUREMENT.md`, `AI_SUSTAINABILITY_REPORT.md`, `AI_AGENT_GUIDE.md` |
 | **OpenAPI (2026-06-29)** | `backend/openapi/openapi.yaml` + `openapi/README.md` |
-| **Backend catalog (2026-06-29)** | `backend/docs/SOURCE_LAYOUT.md`, `DATABASE_SCHEMA.md` |
+| **Backend catalog (2026-06-29)** | `backend/docs/SOURCE_LAYOUT.md`, `DATABASE_DESIGN.md`, `DATABASE_SCHEMA.md` |
+| **API policy (2026-06-29)** | `OPENAPI_SCOPE.md`, `backend/openapi/openapi.yaml` |
 | **Onboarding (2026-06-29)** | `ONBOARDING_READING_PATH.md`, `LOCAL_DEVELOPER_SETUP.md`, `ANDROID_RELEASE_AND_PLAY_STORE.md` |
 | **Meta (2026-06-29)** | `RESEARCH_REFERENCE.md`, `DOCUMENTATION_COVERAGE.md`, `DOCUMENTATION_RETENTION.md` |
 | **Research / reference** | DBH research notes, external GNSS — see `RESEARCH_REFERENCE.md` |

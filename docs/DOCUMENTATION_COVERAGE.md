@@ -14,11 +14,13 @@ Honest map of **what is documented** vs **what exists on GitHub**. Use with `COD
 | Are all **production** flows documented? | **Yes** — module guides + ARCHITECTURE + API_REFERENCE |
 | Is every **source file** named in a doc? | **Layers yes, every file no** — 129 Dart files are grouped by directory/feature, not one page per file (standard at Google/Amazon scale) |
 | Were **old README/docs** read word-for-word? | **Rewritten against code**, with local archive snapshot for diff; research files kept intentionally |
-| Database documented? | **Yes** — `DATABASE_SCHEMA.md` + `DATABASE_NORMALIZATION.md` + ARCHITECTURE §3 |
+| Database documented? | **Yes** — `DATABASE_DESIGN.md` + `DATABASE_SCHEMA.md` + `DATABASE_NORMALIZATION.md` + ARCHITECTURE §3 |
 | Controllers / services documented? | **Yes** — `backend/docs/SOURCE_LAYOUT.md` |
 | All GitHub files in scope? | **Application + ops yes**; binary assets, lockfiles, CI YAML summarized below |
 
-**Not done (deferred)**: Phase 4 VM-specific runbook steps until school-side SSH/webhook verification.
+**Not done (deferred)**: Phase 4 VM-specific runbook (SSH/webhook/Funnel) until school-side verification.
+
+**Documentation set complete** for handover except Phase 4 ops (2026-06-29).
 
 ---
 
@@ -30,7 +32,8 @@ ARCHITECTURE.md         ← System design
 CODEBASE_INVENTORY.md   ← Feature/file catalog
 API_REFERENCE.md        ← Human API catalog
 backend/openapi/        ← Machine API catalog
-DATABASE_SCHEMA.md      ← Schema + migrations
+DATABASE_DESIGN.md     ← Why 49 files + entity model (handover FAQ)
+DATABASE_SCHEMA.md     ← Migration order + table catalog
 backend/docs/SOURCE_LAYOUT.md ← Backend layer catalog
 <Module guides>.md      ← One per domain
 <Runbooks>.md           ← Deploy, build, verify, field SOP
@@ -105,8 +108,8 @@ Content from old ops-heavy Chinese prose was **merged** into English runbooks, n
 
 | Gap | Severity | Action |
 |-----|----------|--------|
-| OpenAPI request/response schemas | Low | Extend `generate_openapi.js` when needed |
-| Per-endpoint RBAC in OpenAPI | Low | Use API_REFERENCE for roles |
+| OpenAPI request/response schemas | **By design — shallow** | Documented in `OPENAPI_SCOPE.md`; deepen when external codegen needed |
+| Per-endpoint RBAC in OpenAPI | **By design** | `API_REFERENCE.md` + middleware code |
 | VM webhook/Funnel steps | Medium | Phase 4 after school |
 | Play Store / upload keystore | Low | **`ANDROID_RELEASE_AND_PLAY_STORE.md`** added |
 

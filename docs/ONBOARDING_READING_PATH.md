@@ -27,7 +27,7 @@ Do **not** start from scattered markdown at repo root alone — the hub orders d
 | **1** | 2–3 h | `README.md` (hub) → `HANDOFF.md` §1–§5 → `ARCHITECTURE.md` → clone both repos → run backend + `flutter run` |
 | **1** | 1 h | `CODEBASE_INVENTORY.md` (skim) → `API_REFERENCE.md` (bookmark) |
 | **2** | 2 h | Your domain: survey → `SURVEY_HISTORY.md`; boundaries → `BOUNDARY_SYSTEM_DESIGN.md`; BLE → `VLGEO2_STD_APPLICATION_GUIDE.md` |
-| **2** | 1 h | `DATABASE_SCHEMA.md` + `backend/docs/SOURCE_LAYOUT.md` |
+| **2** | 1 h | `DATABASE_DESIGN.md` → `DATABASE_SCHEMA.md` → `backend/docs/SOURCE_LAYOUT.md` |
 | **3** | 2 h | `BUILD_GUIDE.md` + `LOCAL_DEVELOPER_SETUP.md` → create `key.properties`, `.env` |
 | **Before deploy** | | `LAB_DEPLOYMENT_GUIDE.md`, `HANDOFF_SECRETS_CHECKLIST.md`, `VERIFICATION_CHECKLIST.md` |
 | **Before Play Store** | | `ANDROID_RELEASE_AND_PLAY_STORE.md` |
@@ -45,7 +45,7 @@ Do **not** start from scattered markdown at repo root alone — the hub orders d
 | **System story** | Request flow, data flow (BLE → pending → transfer), auth, deploy | `ARCHITECTURE.md`, `HANDOFF.md` §8 |
 | **Find anything** | Directory counts, feature map | `CODEBASE_INVENTORY.md`, `SOURCE_LAYOUT.md` |
 | **Change a feature** | One module guide + matching route/service files | Module guide + `API_REFERENCE.md` |
-| **Database** | Table purposes, migration order — not every SQL line | `DATABASE_SCHEMA.md` |
+| **Database** | Table purposes, design rationale, migration order | `DATABASE_DESIGN.md`, `DATABASE_SCHEMA.md` |
 | **Long tail** | Look up when needed | Tests, one-off scripts, research tier |
 
 Rough scale: ~380 tracked source files; **~12 backend + frontend files** explain ~80% of production behavior (listed in `ARCHITECTURE.md` §4 and `HANDOFF.md` §8).
@@ -60,7 +60,7 @@ As the **original author**, you do **not** need to recite every file in a face-t
 
 | Area | Documented? | Primary docs |
 |------|-------------|--------------|
-| PostgreSQL schema & migrations | Yes | `DATABASE_SCHEMA.md`, `DATABASE_NORMALIZATION.md`, `ARCHITECTURE.md` §3 |
+| PostgreSQL schema & migrations | Yes | `DATABASE_DESIGN.md`, `DATABASE_SCHEMA.md`, `DATABASE_NORMALIZATION.md` |
 | Backend routes / services / middleware | Yes | `API_REFERENCE.md`, `backend/docs/SOURCE_LAYOUT.md`, OpenAPI |
 | Flutter screens / services | Yes (by feature) | `ARCHITECTURE.md` §5, `CODEBASE_INVENTORY.md`, module guides |
 | Local secrets & build files | Yes | `LOCAL_DEVELOPER_SETUP.md`, `BUILD_GUIDE.md`, `HANDOFF_SECRETS_CHECKLIST.md` |

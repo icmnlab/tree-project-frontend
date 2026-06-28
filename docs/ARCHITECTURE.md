@@ -78,11 +78,13 @@ Client
 
 **Short answer**: yes, this is normal for a mature PostgreSQL app. Not everything is “data”; most files are **schema migrations** versioned as SQL.
 
+**Handover deep dive**: [`DATABASE_DESIGN.md`](./DATABASE_DESIGN.md) — design principles, entity model, 30-second / 2-minute FAQ for “why 49 files?”
+
 ### 3.1 Three categories
 
 | Category | Location | In production? | Purpose |
 |----------|----------|----------------|---------|
-| **Schema migrations** | `backend/database/initial_data/*.pg.sql` (35 numbered steps) | **Yes** — required | CREATE/ALTER tables, triggers, views, reference master data |
+| **Schema migrations** | `backend/database/initial_data/*.pg.sql` (49 ordered steps) | **Yes** — required | CREATE/ALTER tables, triggers, views, reference master data |
 | **Dev fixtures** | `backend/dev-fixtures/` | **No** — dev/CI only | ~7000 test trees CSV, demo port boundaries, column maps |
 | **Runtime data** | PostgreSQL on server | **No** — not in git | Surveys, users, photos metadata, audit logs |
 
@@ -375,7 +377,8 @@ Operational steps: `LAB_DEPLOYMENT_GUIDE.md` (public). School-only VM notes stay
 | **Hub** | `docs/README.md` | Index of all docs |
 | **Onboarding** | `HANDOFF.md`, `HANDOFF_SECRETS_CHECKLIST.md` | Maintained |
 | **Operations** | `LAB_DEPLOYMENT_GUIDE.md`, `BUILD_GUIDE.md`, checklists | Maintained; full runbook from live VM ops pending |
-| **Database** | `DATABASE_SCHEMA.md`, `DATABASE_NORMALIZATION.md` | Migration order + table catalog |
+| **Database** | `DATABASE_DESIGN.md`, `DATABASE_SCHEMA.md`, `DATABASE_NORMALIZATION.md` | Design rationale + migration catalog |
+| **OpenAPI policy** | `OPENAPI_SCOPE.md`, `backend/openapi/openapi.yaml` | Path catalog; schemas intentionally shallow |
 | **Backend layers** | `backend/docs/SOURCE_LAYOUT.md` | Controllers, services, middleware, utils |
 | **Domain deep-dives** | `SURVEY_HISTORY.md`, `CARBON_CALCULATION.md`, `BOUNDARY_SYSTEM_DESIGN.md`, etc. | Reviewed 2026-06-29 |
 | **Research tier** | `RESEARCH_REFERENCE.md` | Non-SOP research docs indexed |

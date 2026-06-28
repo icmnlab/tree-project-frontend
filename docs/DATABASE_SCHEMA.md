@@ -5,7 +5,7 @@ PostgreSQL schema, migration order, and table catalog for **Sustainable TreeAI**
 **Last reviewed**: 2026-06-29  
 **SQL location**: `tree-project-backend/database/initial_data/*.pg.sql`  
 **Runner**: `scripts/migrate.js` (full) · `scripts/run_pending_migrations.js` (production incremental)  
-**Related**: `DATABASE_NORMALIZATION.md` · `ARCHITECTURE.md` §3 · `SURVEY_HISTORY.md`
+**Related**: [`DATABASE_DESIGN.md`](./DATABASE_DESIGN.md) (why & how we designed) · `DATABASE_NORMALIZATION.md` · `ARCHITECTURE.md` §3 · `SURVEY_HISTORY.md`
 
 ---
 

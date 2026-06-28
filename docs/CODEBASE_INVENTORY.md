@@ -269,6 +269,11 @@ Convert local `DEPLOYMENT_LOG.md` ops into public `LAB_DEPLOYMENT_GUIDE.md` afte
 - [x] `LOCAL_DEVELOPER_SETUP.md` — key.properties, .env, debug keystore
 - [x] `ANDROID_RELEASE_AND_PLAY_STORE.md` — Play Console, upload keystore, AAB
 
+### Phase 9 — Database design narrative + OpenAPI policy (complete 2026-06-29)
+
+- [x] `DATABASE_DESIGN.md` — why 49 SQL files, entity model, handover talking points
+- [x] `OPENAPI_SCOPE.md` — schema deepening explained; shallow spec is intentional
+
 **Local only (not in git)**: face-to-face talk track in `project_code/docs/FACE_TO_FACE_HANDOFF.md` + `HANDOVER_SCRIPT.md`
 
 ---
