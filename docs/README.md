@@ -7,11 +7,12 @@ Documentation for **Sustainable TreeAI** (`tree-project-frontend` + `tree-projec
 | Priority | Document | When to read |
 |----------|----------|--------------|
 | 1 | **[ARCHITECTURE.md](./ARCHITECTURE.md)** | Onboarding: how the system works, file map, APIs, database in Git |
-| 2 | **[CODEBASE_INVENTORY.md](./CODEBASE_INVENTORY.md)** | Full file/feature catalog (129 Dart, 168 JS, 145 APIs) — use so nothing is missed |
+| 2 | **[CODEBASE_INVENTORY.md](./CODEBASE_INVENTORY.md)** | Full file/feature catalog (129 Dart, 168 JS, 145 APIs) |
 | 3 | **[API_REFERENCE.md](./API_REFERENCE.md)** | All REST endpoints by module |
-| 4 | **[HANDOFF.md](./HANDOFF.md)** | Run locally, run tests, find other docs |
-| 3 | **[HANDOFF_SECRETS_CHECKLIST.md](./HANDOFF_SECRETS_CHECKLIST.md)** | API keys and `.env` setup |
-| 4 | **[LAB_DEPLOYMENT_GUIDE.md](./LAB_DEPLOYMENT_GUIDE.md)** | Deploy to a production server |
+| 4 | **[DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md)** | Migrations, tables, dev vs production data |
+| 5 | **[HANDOFF.md](./HANDOFF.md)** | Run locally, run tests, find other docs |
+| 6 | **[HANDOFF_SECRETS_CHECKLIST.md](./HANDOFF_SECRETS_CHECKLIST.md)** | API keys and `.env` setup |
+| 7 | **[LAB_DEPLOYMENT_GUIDE.md](./LAB_DEPLOYMENT_GUIDE.md)** | Deploy to a production server |
 
 ## By topic
 
@@ -31,6 +32,7 @@ Documentation for **Sustainable TreeAI** (`tree-project-frontend` + `tree-projec
 |----------|---------|
 | `PROJECT_DATA_AND_DOMAIN.md` | Project / area terminology, CSV semantics |
 | `SURVEY_HISTORY.md` | Snapshot vs measurement history tables |
+| `DATABASE_SCHEMA.md` | Migration order and table catalog |
 | `DATABASE_NORMALIZATION.md` | Normalization rules |
 | `BOUNDARY_SYSTEM_DESIGN.md` | Project boundaries |
 | `ADMIN_AND_INVITE_DESIGN.md` | Admin UI and invite codes |
@@ -55,12 +57,15 @@ Hidden by default (`ENABLE_EXPERIMENTAL_UI=false`). **Document anyway** — mark
 | `VISUAL_MEASUREMENT.md` | Scanner, pure-vision DBH, V3 ML sync |
 | `AI_SUSTAINABILITY_REPORT.md` | AI-generated carbon sustainability report |
 
-### Research (reference)
+### Research (reference — not production SOP)
+
+Start with **[RESEARCH_REFERENCE.md](./RESEARCH_REFERENCE.md)** for tier definitions.
 
 | Document | Purpose |
 |----------|---------|
-| `DBH_MEASUREMENT_RESEARCH_V2.md` | DBH measurement research notes |
-| `DBH_PURE_VISION_RESEARCH.md` | Vision-only DBH research |
+| `RESEARCH_REFERENCE.md` | Index: research vs experimental vs production docs |
+| `DBH_MEASUREMENT_RESEARCH_V2.md` | DBH vision research archive (2026-02) |
+| `DBH_PURE_VISION_RESEARCH.md` | Vision-only DBH research (V1) |
 | `HANDOFF_EXTERNAL_GNSS_AND_BLE.md` | External GNSS (cancelled procurement) |
 
 ### Backend repo
@@ -68,6 +73,7 @@ Hidden by default (`ENABLE_EXPERIMENTAL_UI=false`). **Document anyway** — mark
 | Document | Purpose |
 |----------|---------|
 | `backend/README.md` | Backend quick start and architecture diagram |
+| `backend/docs/SOURCE_LAYOUT.md` | Controllers, services, middleware, utils catalog |
 | `backend/openapi/openapi.yaml` | OpenAPI 3.0 spec (Postman / Swagger) |
 | `backend/openapi/README.md` | How to regenerate and import the spec |
 | `backend/tests/FRAMEWORK.md` | Integration test framework |
@@ -78,6 +84,7 @@ Hidden by default (`ENABLE_EXPERIMENTAL_UI=false`). **Document anyway** — mark
 | Document | Purpose |
 |----------|---------|
 | `DOCUMENTATION_RETENTION.md` | Which docs must stay vs may be archived |
+| `DOCUMENTATION_COVERAGE.md` | Honest audit: GitHub files vs documented scope |
 
 ## Documentation status (2026-06-29)
 
@@ -90,7 +97,9 @@ Western-style technical docs: one canonical architecture guide plus focused topi
 | **Operations (reviewed 2026-06-29)** | `FIELD_SURVEY_SOP.md`, `VERIFICATION_CHECKLIST.md`, `HANDOVER_CHECKLIST.md` |
 | **Experimental (reviewed 2026-06-29)** | `EXPERIMENTAL_FEATURES.md`, `VISUAL_MEASUREMENT.md`, `AI_SUSTAINABILITY_REPORT.md`, `AI_AGENT_GUIDE.md` |
 | **OpenAPI (2026-06-29)** | `backend/openapi/openapi.yaml` + `openapi/README.md` |
-| **Research / reference** | DBH research notes, external GNSS handoff — optional; see `DOCUMENTATION_RETENTION.md` |
+| **Backend catalog (2026-06-29)** | `backend/docs/SOURCE_LAYOUT.md`, `DATABASE_SCHEMA.md` |
+| **Meta (2026-06-29)** | `RESEARCH_REFERENCE.md`, `DOCUMENTATION_COVERAGE.md` |
+| **Research / reference** | DBH research notes, external GNSS — see `RESEARCH_REFERENCE.md` |
 
 Production deployment steps from live VM operations will be merged into `LAB_DEPLOYMENT_GUIDE.md` after school-side SSH/webhook work. Until then, sensitive ops notes stay local-only.
 

@@ -34,6 +34,8 @@ These map to real code paths. Deleting them creates gaps for the recipient team.
 
 ## Tier 3 — Reference (optional but recommended)
 
+See also **`RESEARCH_REFERENCE.md`** for the full research-tier index.
+
 | File | Delete? | Notes |
 |------|---------|-------|
 | `DBH_MEASUREMENT_RESEARCH_V2.md` | Optional | Research notes; production path is `VISUAL_MEASUREMENT.md` + `ml_service/README.md` |

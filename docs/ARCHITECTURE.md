@@ -375,8 +375,12 @@ Operational steps: `LAB_DEPLOYMENT_GUIDE.md` (public). School-only VM notes stay
 | **Hub** | `docs/README.md` | Index of all docs |
 | **Onboarding** | `HANDOFF.md`, `HANDOFF_SECRETS_CHECKLIST.md` | Maintained |
 | **Operations** | `LAB_DEPLOYMENT_GUIDE.md`, `BUILD_GUIDE.md`, checklists | Maintained; full runbook from live VM ops pending |
-| **Domain deep-dives** | `SURVEY_HISTORY.md`, `CARBON_CALCULATION.md`, `BOUNDARY_SYSTEM_DESIGN.md`, etc. | Use alongside §4; rewrite individually after code audit |
-| **Local-only ops log** | `project_code/docs/DEPLOYMENT_LOG.md` | Not in git; will become public deployment runbook when VM steps are complete |
+| **Database** | `DATABASE_SCHEMA.md`, `DATABASE_NORMALIZATION.md` | Migration order + table catalog |
+| **Backend layers** | `backend/docs/SOURCE_LAYOUT.md` | Controllers, services, middleware, utils |
+| **Domain deep-dives** | `SURVEY_HISTORY.md`, `CARBON_CALCULATION.md`, `BOUNDARY_SYSTEM_DESIGN.md`, etc. | Reviewed 2026-06-29 |
+| **Research tier** | `RESEARCH_REFERENCE.md` | Non-SOP research docs indexed |
+| **Coverage audit** | `DOCUMENTATION_COVERAGE.md` | GitHub tree vs documented scope |
+| **Local-only ops log** | `project_code/docs/DEPLOYMENT_LOG.md` | Not in git; VM-specific steps merged into LAB guide after school verification |
 
 Pre-rewrite snapshots of all `docs/*.md` files are archived locally at `project_code/docs/archive/frontend-docs-snapshot-20260629/` for diff reference.
 

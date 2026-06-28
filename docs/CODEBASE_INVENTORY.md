@@ -18,28 +18,34 @@ Complete catalog of source files and product features for **Sustainable TreeAI**
 | Route modules | — | **24** files |
 | Service modules | **45** `.dart` | **16** `.js` |
 | DB migration SQL | — | **49** files in `database/initial_data/` |
-| Documentation (git) | **22+** `.md` in `docs/` | README, `tests/FRAMEWORK.md`, `ml_service/` |
+| Documentation (git) | **30+** `.md` in `docs/` | README, `backend/docs/SOURCE_LAYOUT.md`, `tests/FRAMEWORK.md`, `ml_service/` |
 
 **Product surface**: **13** home dashboard cards + **2** bottom-nav tabs + **admin** console + auth flows.
 
 ---
 
-## 2. Western documentation stack (target state)
+## 2. Western documentation stack (current state)
 
-Industry practice for a system this size:
+Industry practice for a system this size — **single hub, tiered depth, code as source of truth**:
 
 | Layer | Document | Status |
 |-------|----------|--------|
-| Hub | `docs/README.md` | Done |
-| Architecture | `ARCHITECTURE.md` | Done (overview, middleware, DB-in-git) |
-| **Inventory (this file)** | `CODEBASE_INVENTORY.md` | Done |
-| **API reference** | `API_REFERENCE.md` | Done (endpoint catalog) |
-| Module guides | One doc per domain (survey, boundaries, AI, …) | **Phase 2** — rewrite topic docs against code |
-| OpenAPI spec | `openapi.yaml` (optional, generated or hand-maintained) | **Phase 3** — future |
-| Runbooks | Deployment from verified VM ops | **Phase 4** — after school-side steps |
-| ADRs | Only for major decisions | As needed |
+| Hub | `docs/README.md` | ✅ Done |
+| Architecture | `ARCHITECTURE.md` | ✅ Done |
+| **Inventory (this file)** | `CODEBASE_INVENTORY.md` | ✅ Done |
+| **API reference** | `API_REFERENCE.md` | ✅ Done (145 endpoints) |
+| **OpenAPI** | `backend/openapi/openapi.yaml` | ✅ Done (146 operations) |
+| **Database** | `DATABASE_SCHEMA.md` + `DATABASE_NORMALIZATION.md` | ✅ Done |
+| **Backend layers** | `backend/docs/SOURCE_LAYOUT.md` | ✅ Done (controllers, services, middleware, utils) |
+| **Coverage audit** | `DOCUMENTATION_COVERAGE.md` | ✅ Done (honest gap matrix) |
+| **Research tier** | `RESEARCH_REFERENCE.md` | ✅ Done (non-SOP docs explained) |
+| Module guides | 13 domain / experimental guides | ✅ Phase 2 complete |
+| Runbooks | LAB / BUILD / SECRETS / VERIFY / FIELD | ✅ Phase 5–6 complete |
+| VM-specific deploy steps | `LAB_DEPLOYMENT_GUIDE.md` §live ops | ⏸ Phase 4 — after school SSH/webhook |
 
-**Rule**: when code changes routes, tables, or user-visible flows → update `ARCHITECTURE.md`, `API_REFERENCE.md`, and the relevant module guide in the same PR.
+**Rule**: when code changes routes, tables, or user-visible flows → update `ARCHITECTURE.md`, `API_REFERENCE.md`, regenerate OpenAPI if needed, and the relevant module guide in the same PR.
+
+**Not every file gets its own page** — 129 Dart files are grouped by feature (standard at large companies). See `DOCUMENTATION_COVERAGE.md`.
 
 ---
 
@@ -172,7 +178,7 @@ Full path list: **`API_REFERENCE.md`**.
 | Dev fixtures | 5+ | `dev-fixtures/` — not for production |
 | Views | 1 | `tree_survey_with_areas.pg.sql` |
 
-See `ARCHITECTURE.md` §3 for what is required vs optional.
+See `DATABASE_SCHEMA.md` (migration order + table catalog) and `ARCHITECTURE.md` §3.
 
 ---
 
@@ -250,6 +256,13 @@ Convert local `DEPLOYMENT_LOG.md` ops into public `LAB_DEPLOYMENT_GUIDE.md` afte
 - [x] `HANDOFF_SECRETS_CHECKLIST.md` — secrets inventory
 - [x] `VERIFICATION_CHECKLIST.md` — full regression matrix (B1–B23 restored)
 
+### Phase 7 — Backend & DB catalog (complete 2026-06-29)
+
+- [x] `backend/docs/SOURCE_LAYOUT.md` — every controller, service, middleware, util, route module
+- [x] `DATABASE_SCHEMA.md` — 49 migrations, core tables, dev vs prod data
+- [x] `RESEARCH_REFERENCE.md` — research vs production doc tiers
+- [x] `DOCUMENTATION_COVERAGE.md` — GitHub tree vs doc coverage audit
+
 ---
 
 ## 7. Verification checklist (for doc authors)
@@ -271,4 +284,5 @@ Before marking a module doc "reviewed":
 | 2026-06-29 | Phase 3 OpenAPI + documentation retention policy |
 | 2026-06-29 | Phase 5 ops runbooks + AUTHORS consolidation |
 | 2026-06-29 | Phase 2 module guides + experimental docs complete |
+| 2026-06-29 | Phase 7: SOURCE_LAYOUT, DATABASE_SCHEMA, RESEARCH_REFERENCE, COVERAGE audit |
 | 2026-06-29 | Initial inventory: 129 Dart, 168 JS, 145 endpoints, 13 dashboard cards |
