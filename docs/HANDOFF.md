@@ -414,6 +414,8 @@ git restore <file>               # 丟棄某檔的本地修改
 | **`HANDOFF.md`（本檔）** | 快速上手：本機啟動、測試、部署索引 |
 | **`ARCHITECTURE.md`** | **程式架構**：功能怎麼跑、對應檔案/API、資料庫 SQL 為何這麼多（歐美常見技術文件風格） |
 | **`docs/README.md`** | **文件索引 hub**（Start here、topic 分類、documentation status） |
+| **`CODEBASE_INVENTORY.md`** | **程式清單**：129 Dart / 168 JS / 145 API / 13 首頁功能 — 撰寫文件時防遺漏 |
+| **`API_REFERENCE.md`** | **REST API 目錄**（依模組分類，歐美常見 API Reference 風格） |
 | `AUTHORS.md` / `CONTRIBUTION_RECORD.md` | 著作權與主要貢獻者（fresh push 須保留） |
 | `LAB_DEPLOYMENT_GUIDE.md` | 實驗室獨立部署（fresh snapshot、webhook、PM2） |
 | `BUILD_GUIDE.md` | Android APK 建置 |

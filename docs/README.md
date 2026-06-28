@@ -7,7 +7,9 @@ Documentation for **Sustainable TreeAI** (`tree-project-frontend` + `tree-projec
 | Priority | Document | When to read |
 |----------|----------|--------------|
 | 1 | **[ARCHITECTURE.md](./ARCHITECTURE.md)** | Onboarding: how the system works, file map, APIs, database in Git |
-| 2 | **[HANDOFF.md](./HANDOFF.md)** | Run locally, run tests, find other docs |
+| 2 | **[CODEBASE_INVENTORY.md](./CODEBASE_INVENTORY.md)** | Full file/feature catalog (129 Dart, 168 JS, 145 APIs) — use so nothing is missed |
+| 3 | **[API_REFERENCE.md](./API_REFERENCE.md)** | All REST endpoints by module |
+| 4 | **[HANDOFF.md](./HANDOFF.md)** | Run locally, run tests, find other docs |
 | 3 | **[HANDOFF_SECRETS_CHECKLIST.md](./HANDOFF_SECRETS_CHECKLIST.md)** | API keys and `.env` setup |
 | 4 | **[LAB_DEPLOYMENT_GUIDE.md](./LAB_DEPLOYMENT_GUIDE.md)** | Deploy to a production server |
 
@@ -64,7 +66,7 @@ We are migrating to **Western-style technical docs**: one canonical architecture
 
 | Status | Files |
 |--------|-------|
-| **Canonical (reviewed)** | `ARCHITECTURE.md`, `HANDOFF.md`, `LAB_DEPLOYMENT_GUIDE.md`, `BUILD_GUIDE.md`, `HANDOFF_SECRETS_CHECKLIST.md` |
+| **Canonical (reviewed)** | `ARCHITECTURE.md`, `CODEBASE_INVENTORY.md`, `API_REFERENCE.md`, `HANDOFF.md`, `LAB_DEPLOYMENT_GUIDE.md`, `BUILD_GUIDE.md`, `HANDOFF_SECRETS_CHECKLIST.md` |
 | **Topic docs (use with ARCHITECTURE)** | Domain, BLE, carbon, AI, boundary docs listed above |
 | **Pending full rewrite** | Will be updated file-by-file after code verification; superseded snapshots kept locally under `project_code/docs/archive/` (not in git) |
 
