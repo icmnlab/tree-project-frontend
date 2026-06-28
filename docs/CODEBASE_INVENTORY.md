@@ -200,17 +200,19 @@ Most `/api/*` routes require JWT; many add `requireRole(...)` or `projectAuthFil
 - [x] `CODEBASE_INVENTORY.md` (this file)
 - [x] `API_REFERENCE.md`
 
-### Phase 2 — Module guides (rewrite topic docs, verify against code)
+### Phase 2 — Module guides (complete 2026-06-29)
 
-Priority order by user-facing impact:
-
-1. Auth & RBAC → merge into `ADMIN_AND_INVITE_DESIGN.md`
-2. Survey & pending → `SURVEY_HISTORY.md`
-3. Boundaries → `BOUNDARY_SYSTEM_DESIGN.md`
-4. BLE → `VLGEO2_STD_APPLICATION_GUIDE.md`
-5. Species & PlantNet → new section in API ref + topic doc
-6. Carbon → `CARBON_CALCULATION.md`
-7. AI / Agent → `AI_AGENT_GUIDE.md`
+1. [x] Auth & RBAC → `ADMIN_AND_INVITE_DESIGN.md`
+2. [x] Survey & pending → `SURVEY_HISTORY.md`
+3. [x] Boundaries → `BOUNDARY_SYSTEM_DESIGN.md`
+4. [x] BLE → `VLGEO2_STD_APPLICATION_GUIDE.md`
+5. [x] Domain / CSV → `PROJECT_DATA_AND_DOMAIN.md`
+6. [x] DB normalization → `DATABASE_NORMALIZATION.md`
+7. [x] Carbon → `CARBON_CALCULATION.md`
+8. [x] AI chat → `AI_AGENT_GUIDE.md`
+9. [x] Experimental umbrella → `EXPERIMENTAL_FEATURES.md`
+10. [x] Visual measurement → `VISUAL_MEASUREMENT.md`
+11. [x] AI sustainability report → `AI_SUSTAINABILITY_REPORT.md`
 
 Each module doc template (Western style):
 
@@ -248,4 +250,5 @@ Before marking a module doc "reviewed":
 
 | Date | Change |
 |------|--------|
+| 2026-06-29 | Phase 2 module guides + experimental docs complete |
 | 2026-06-29 | Initial inventory: 129 Dart, 168 JS, 145 endpoints, 13 dashboard cards |

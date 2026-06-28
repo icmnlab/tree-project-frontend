@@ -41,8 +41,18 @@ Documentation for **Sustainable TreeAI** (`tree-project-frontend` + `tree-projec
 | Document | Purpose |
 |----------|---------|
 | `VLGEO2_STD_APPLICATION_GUIDE.md` | VLGEO2 BLE meter |
-| `AI_AGENT_GUIDE.md` | AI chat and agent (optional) |
+| `AI_AGENT_GUIDE.md` | AI chat and agent (Experimental) |
 | `ML_CORRECTION_UPLOAD.md` | ML correction data upload |
+
+### Experimental / in-progress features
+
+Hidden by default (`ENABLE_EXPERIMENTAL_UI=false`). **Document anyway** — mark status so handover teams know what exists in code.
+
+| Document | Purpose |
+|----------|---------|
+| `EXPERIMENTAL_FEATURES.md` | Build flag, hidden home cards, doc policy |
+| `VISUAL_MEASUREMENT.md` | Scanner, pure-vision DBH, V3 ML sync |
+| `AI_SUSTAINABILITY_REPORT.md` | AI-generated carbon sustainability report |
 
 ### Research (reference)
 
@@ -62,13 +72,14 @@ Documentation for **Sustainable TreeAI** (`tree-project-frontend` + `tree-projec
 
 ## Documentation status (2026-06-29)
 
-We are migrating to **Western-style technical docs**: one canonical architecture guide (`ARCHITECTURE.md`) plus focused topic docs. Older handover-style files remain in this folder while they are reviewed against the codebase.
+Western-style technical docs: one canonical architecture guide plus focused topic and experimental module guides.
 
 | Status | Files |
 |--------|-------|
 | **Canonical (reviewed)** | `ARCHITECTURE.md`, `CODEBASE_INVENTORY.md`, `API_REFERENCE.md`, `HANDOFF.md`, `LAB_DEPLOYMENT_GUIDE.md`, `BUILD_GUIDE.md`, `HANDOFF_SECRETS_CHECKLIST.md` |
-| **Topic docs (use with ARCHITECTURE)** | Domain, BLE, carbon, AI, boundary docs listed above |
-| **Pending full rewrite** | Will be updated file-by-file after code verification; superseded snapshots kept locally under `project_code/docs/archive/` (not in git) |
+| **Topic guides (reviewed 2026-06-29)** | `ADMIN_AND_INVITE_DESIGN.md`, `SURVEY_HISTORY.md`, `BOUNDARY_SYSTEM_DESIGN.md`, `VLGEO2_STD_APPLICATION_GUIDE.md`, `PROJECT_DATA_AND_DOMAIN.md`, `DATABASE_NORMALIZATION.md`, `CARBON_CALCULATION.md` |
+| **Experimental (reviewed 2026-06-29)** | `EXPERIMENTAL_FEATURES.md`, `VISUAL_MEASUREMENT.md`, `AI_SUSTAINABILITY_REPORT.md`, `AI_AGENT_GUIDE.md` |
+| **Research / reference** | DBH research notes, external GNSS handoff — not production paths |
 
 Production deployment runbooks derived from real VM operations will be published here after school-side steps (SSH, webhook, Funnel) are completed and verified. Until then, placeholders live in local ops logs only.
 

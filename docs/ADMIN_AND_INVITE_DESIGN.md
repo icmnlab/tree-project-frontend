@@ -1,49 +1,116 @@
-# 管理後台與邀請碼 — 已定案規格（2026-05；2026-06-15 對齊現況）
+# Admin, Invites & RBAC
 
-## 邀請碼（已實作）
+User administration, invite-based registration, and role-based access control.
 
-| 項目 | 規格 |
-|------|------|
-| 產生者 | **業務管理員**以上 |
-| 內建角色 | 建立時指定 `role`（不可高於建立者） |
-| 區／專案 | `project_codes[]`（畫面「區」）註冊後寫入 `user_projects`；`project_locations[]`（畫面「專案」）存於邀請列僅供紀錄 |
-| 一次性 | 預設 `max_uses=1` |
-| 過期 | `expires_in_days`（1–90 天） |
-| 審核啟用 | `requires_approval=true` → 新帳號 `is_active=false`，管理員於使用者列表啟用 |
-
-### API（掛載於 `apiRouter` `/api` 下，見 `routes/users.js`）
-
-| 方法 | 路徑 | 權限 | 用途 |
-|------|------|------|------|
-| `GET` | `/api/invites` | ≥業務管理員 | 列出邀請碼（含 `created_at` 供前端分組） |
-| `POST` | `/api/invites` | ≥業務管理員 | 建立邀請碼 |
-| `PATCH` | `/api/invites/:inviteId/deactivate` | ≥業務管理員 | 停用 |
-| `DELETE` | `/api/invites/:inviteId` | ≥業務管理員 | 刪除紀錄（寫稽核 `DELETE_INVITE`） |
-
-### 前端 UI（`invite_management_page.dart`，已實作）
-
-- **依建立日期分組顯示**（讀 `created_at`），每張卡顯示建立時間、角色、綁定區/專案、使用狀態。
-- **建立表單的區/專案綁定採 V2 風格選單**：`ExpansionTile` + `CheckboxListTile` **多選**（複選）`project_codes`（區）與 `project_locations`（專案）。
-- **每筆可停用或刪除**（`PopupMenuButton`：停用→`PATCH …/deactivate`、刪除→`DELETE …/:inviteId`）。
-
-App 入口：**管理後台 → 使用者管理**，使用者列表上方的「邀請碼」按鈕。
-
-公開註冊：`POST /api/register` + `RegisterPage`。
+**Last reviewed against code**: 2026-06-29
 
 ---
 
-## 樹木歷史 vs 現場場次 vs 多人
+## Overview
 
-| 概念 | 說明 |
-|------|------|
-| **樹木歷史** | `tree_measurement_raw`、多次調查時間序列；見 `SURVEY_HISTORY.md` |
-| **現場場次** | `FieldSessionSetup`、`session_id`、BLE `_liveSessionId` — 單次外業工作脈絡，**非**歷史頁 |
-| **多人** | 各調查員各自登入／各自 session；後端 `X-Request-Id` 去重、`pg_advisory_xact_lock` 配號、`expected_updated_at` 樂觀鎖 |
+Five roles (high → low): 系統管理員 → 業務管理員 → 專案管理員 → 調查管理員 → 一般使用者. Backend enforces roles via `middleware/requireRole.js` and project scope via `middleware/projectAuth.js`. Frontend mirrors visibility in `lib/models/role_permissions.dart`.
 
 ---
 
-## 管理後台待辦
+## User flow
 
-- ~~稽核 log 檢視~~ **已實作**（`AuditLogPage`，管理後台入口）
-- ~~邀請碼日期分組 / 刪除 / 多選綁定 UI~~ **已實作**（見上節）
-- 邀請 `project_locations` 首次登入引導（選填，未做）
+| Task | UI | Min role |
+|------|-----|----------|
+| Login | `login_page.dart` | — |
+| Register with invite | `register_page.dart` | public + valid invite |
+| Manage users | `admin_page.dart` → `user_form_screen.dart` | 業務管理員 |
+| Manage invites | `invite_management_page.dart` | 業務管理員 |
+| Audit log | `audit_log_page.dart` | 業務管理員 |
+| IP blacklist | `ip_blacklist_page.dart` | 系統管理員 |
+| Password resets queue | `pending_password_resets_page.dart` | 業務管理員 |
+
+**Login field**: use **`username`**, not display name (`POST /api/login` body `{ account, password }`).
+
+---
+
+## Invite codes
+
+| Rule | Implementation |
+|------|----------------|
+| Created by | 業務管理員 or higher |
+| Role on invite | Cannot exceed creator's role |
+| Project scope | `project_codes[]` → `user_projects` on register |
+| Default uses | `max_uses=1` |
+| Expiry | `expires_in_days` (1–90) |
+| Approval | `requires_approval=true` → `is_active=false` until admin enables |
+
+### API
+
+| Method | Path | Role |
+|--------|------|------|
+| GET | `/api/invites` | 業務+ |
+| POST | `/api/invites` | 業務+ |
+| PATCH | `/api/invites/:id/deactivate` | 業務+ |
+| DELETE | `/api/invites/:id` | 業務+ |
+| POST | `/api/register` | public |
+
+Full list: `API_REFERENCE.md` § Authentication.
+
+---
+
+## User management API
+
+| Method | Path | Role |
+|--------|------|------|
+| GET/POST | `/api/users` | 業務+ |
+| PUT | `/api/users/:id` | 業務+ |
+| PUT | `/api/users/:id/status` | 業務+ |
+| DELETE | `/api/users/:id` | 業務+ |
+| GET/PUT | `/api/users/:userId/projects` | 業務+ |
+
+---
+
+## Code map
+
+| Layer | File |
+|-------|------|
+| Routes | `backend/routes/users.js` |
+| JWT | `backend/middleware/jwtAuth.js` |
+| Roles | `backend/middleware/roleAuth.js` |
+| Project filter | `backend/middleware/projectAuth.js` |
+| Login lockout | `backend/middleware/loginAttemptMonitor.js` |
+| IP guard | `backend/middleware/ipBlacklistGuard.js` |
+| Audit | `backend/services/auditLogService.js` |
+| Frontend auth | `lib/services/auth_service.dart` |
+| Frontend invites | `lib/services/invite_service.dart` |
+| RBAC UI model | `lib/models/role_permissions.dart` |
+
+Production admin creation: `node scripts/create_lab_admin.js` (not SQL seed). Dev only: `seed_dev_users.js`.
+
+---
+
+## Data model
+
+| Table | Purpose |
+|-------|---------|
+| `users` | Accounts, `role`, `is_active`, lockout fields |
+| `invites` | Codes, role, project_codes, expiry, uses |
+| `user_projects` | `(user_id, project_code)` scope |
+| `audit_logs` | LOGIN_*, admin actions |
+| `ip_blacklist` | Brute-force IP blocks |
+
+---
+
+## Configuration
+
+- `JWT_SECRET` — token signing (required)
+- Rate limits — `middleware/rateLimiter.js`; `BURST_LIMIT_MAX` in `.env`
+
+---
+
+## Testing
+
+- `backend/tests/invariants/` — RBAC isolation, login contracts
+- Frontend role UI — `test/` widget tests where present
+
+---
+
+## Related
+
+- `API_REFERENCE.md` § Admin
+- `SURVEY_HISTORY.md` — field session vs audit (separate concepts)

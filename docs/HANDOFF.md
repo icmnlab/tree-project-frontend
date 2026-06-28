@@ -387,7 +387,10 @@ git restore <file>               # 丟棄某檔的本地修改
 - **碳匯計算**：`CARBON_CALCULATION.md`
 - **四種新增輸入 + 編輯寫庫對照**：見本檔 **§8.1**；歷次機制見 `SURVEY_HISTORY.md`
 - **VLGEO2 BLE 整合**（NUS、PHGF、CSV；**非** Classic SPP）：`VLGEO2_STD_APPLICATION_GUIDE.md`；解析 `ble_live_packet_decoder.dart` / `ble_data_processor.dart`
-- **AI Agent / 文字轉 SQL**：`AI_AGENT_GUIDE.md`
+- **AI Agent / 文字轉 SQL**：`AI_AGENT_GUIDE.md`（Experimental）
+- **實驗功能總覽**（隱藏卡片、build flag）：`EXPERIMENTAL_FEATURES.md`
+- **視覺量測 / V3 ML**：`VISUAL_MEASUREMENT.md`（Experimental）
+- **AI 永續報告**：`AI_SUSTAINABILITY_REPORT.md`（Experimental）
 - **ML 自架（選用）**：後端 repo 的 `ml_service/README.md`（YOLO iGPU + DA3 NPU；`start.ps1 -Preset da3`）
 
 ---
@@ -428,7 +431,10 @@ git restore <file>               # 丟棄某檔的本地修改
 | `ADMIN_AND_INVITE_DESIGN.md` | 管理後台與邀請碼 |
 | `VLGEO2_STD_APPLICATION_GUIDE.md` | VLGEO2 BLE 整合（見 §8.2） |
 | `DATABASE_NORMALIZATION.md` / `BOUNDARY_SYSTEM_DESIGN.md` / `CARBON_CALCULATION.md` | 子系統設計 |
-| `AI_AGENT_GUIDE.md` | AI 對話／Agent（實驗功能，§12） |
+| `AI_AGENT_GUIDE.md` | AI 對話／Agent（Experimental，§12） |
+| `EXPERIMENTAL_FEATURES.md` | 實驗 UI 開關與隱藏卡片 |
+| `VISUAL_MEASUREMENT.md` | 視覺 DBH、Scanner、V3 ML sync |
+| `AI_SUSTAINABILITY_REPORT.md` | AI 永續報告（Experimental） |
 | `ML_CORRECTION_UPLOAD.md` | ML 校正資料上傳 |
 | `HANDOFF_EXTERNAL_GNSS_AND_BLE.md` | 外接 GNSS 技術存檔（已取消採購） |
 | `tests/FRAMEWORK.md`（後端 repo） | 後端整合測試寫法 |
@@ -491,8 +497,8 @@ git restore <file>               # 丟棄某檔的本地修改
 | 功能 | 程式碼位置 | 狀態 |
 |------|-----------|------|
 | AI 對話（樹木問答） | `screens/ai_chat_page.dart`、`routes/ai.js` | **程式保留**；首頁卡預設隱藏；見 `AI_AGENT_GUIDE.md` |
-| AI 永續報告 | `/ai-sustainability-report`、`routes/ai.js` | **程式保留**；首頁卡預設隱藏 |
-| 視覺 DBH（純視覺量測） | `scanner_page.dart`、`pure_vision_dbh_service.dart`、`ml_service/` | **整合表單/編輯內可用**；首頁「掃描測試」卡預設隱藏；精度研究階段，見 `DBH_PURE_VISION_RESEARCH.md` |
+| AI 永續報告 | `/ai-sustainability-report`、`routes/ai.js` | **程式保留**；首頁卡預設隱藏；見 `AI_SUSTAINABILITY_REPORT.md` |
+| 視覺 DBH（純視覺量測） | `scanner_page.dart`、`pure_vision_dbh_service.dart`、`ml_service/` | **整合表單/編輯內可用**；首頁「掃描測試」卡預設隱藏；見 `VISUAL_MEASUREMENT.md`、`DBH_PURE_VISION_RESEARCH.md` |
 | AR 量測 | `services/ar_measurement_service.dart`、`services/v3/ar_measurement_integration_service.dart`（零引用，整合範例） | 程式碼保留，未主打 |
 | WebSocket 即時掃描 | `services/scanner_service.dart`（零引用；對接 ml_service `/ws/scan`） | 程式碼保留，未掛載 |
 | ML 訓練資料收集 | 後端 `routes/ml_training_data.js` | 保留 |
