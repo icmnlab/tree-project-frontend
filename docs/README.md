@@ -77,7 +77,7 @@ Western-style technical docs: one canonical architecture guide plus focused topi
 
 | Status | Files |
 |--------|-------|
-| **Canonical (reviewed)** | `ARCHITECTURE.md`, `CODEBASE_INVENTORY.md`, `API_REFERENCE.md`, `HANDOFF.md`, `LAB_DEPLOYMENT_GUIDE.md`, `BUILD_GUIDE.md`, `HANDOFF_SECRETS_CHECKLIST.md` |
+| **Canonical (reviewed 2026-06-29)** | `ARCHITECTURE.md`, `CODEBASE_INVENTORY.md`, `API_REFERENCE.md`, `HANDOFF.md`, `LAB_DEPLOYMENT_GUIDE.md`, `BUILD_GUIDE.md`, `HANDOFF_SECRETS_CHECKLIST.md` |
 | **Topic guides (reviewed 2026-06-29)** | Domain, BLE, carbon, species, ML — see table above |
 | **Operations (reviewed 2026-06-29)** | `FIELD_SURVEY_SOP.md`, `VERIFICATION_CHECKLIST.md`, `HANDOVER_CHECKLIST.md` |
 | **Experimental (reviewed 2026-06-29)** | `EXPERIMENTAL_FEATURES.md`, `VISUAL_MEASUREMENT.md`, `AI_SUSTAINABILITY_REPORT.md`, `AI_AGENT_GUIDE.md` |

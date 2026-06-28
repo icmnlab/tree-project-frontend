@@ -1,344 +1,153 @@
-# 獨立部署指南（實驗室 / 自有主機）
+# Lab Deployment Runbook
 
-> 目標：在自有主機上獨立建置並運行整套系統，**不依賴任何特定個人的 GitHub／雲端帳號**。
-
-> ⚠️ **安全鐵則**：帳號、密碼、API token、伺服器內網 IP **絕對不要寫進本檔或任何 git 追蹤的檔案**（本 repo 會推上 GitHub）。
-> 機密只放：①部署主機的 `backend/.env`、②你個人的密碼管理器。文中一律用 `<...>` 佔位符代表「你要自己填的值」。
-
----
-
-## 部署用到的工具是什麼（白話對照）
-
-| 工具 | 一句話說明 | 在本系統的角色 |
-|------|------------|----------------|
-| **Ubuntu** | Linux 作業系統 | 後端主機的 OS（跑在 Proxmox 虛擬機裡） |
-| **Proxmox VE** | 虛擬機管理平台 | 實驗室用它開出我們的 Ubuntu VM（`https://<host>:8006` 管理） |
-| **PostgreSQL** | 關聯式資料庫 | 存所有資料（樹木、專案、使用者…）；本系統用 v16 |
-| **Node.js** | JavaScript 執行環境 | 跑後端程式（Express API）；用 v20 LTS |
-| **npm** | Node 套件管理器 | `npm install` 安裝後端相依套件 |
-| **PM2** | Node 程式的「常駐管理員」 | 讓後端開機自啟、崩潰自動重啟、多核心並行（cluster）、看 log；程序名 `tree-backend` |
-| **nginx** | 反向代理 / 網頁伺服器 | 對外收 443(HTTPS) 轉給後端 3000；負責 TLS、限速、安全標頭 |
-| **Tailscale** | 零設定的私有網路（VPN）+ 免費 `*.ts.net` 憑證 | 讓手機與 VM 在同一虛擬內網直接互連；並提供**受信任 HTTPS 憑證**（手機不必信任自簽憑證）。本次採用 |
-| **ngrok** | 把內網服務開一個公開臨時網址 | Tailscale 的替代方案（免費網址會變）；本次**未採用** |
-| **Let's Encrypt / certbot** | 免費正式 TLS 憑證 | 若改用「機構網域」對外時的發憑證工具（Tailscale 方案則不需要） |
-| **UFW** | Ubuntu 防火牆 | 只開放必要連接埠（SSH、HTTP/HTTPS） |
-| **`.env`** | 環境變數設定檔 | 放資料庫連線、JWT 密鑰、各 API 金鑰；**不進 git** |
-| **GitHub webhook** | git push 時通知主機 | 觸發 `deploy.sh` 自動部署（選用） |
+| Field | Value |
+|-------|-------|
+| **Purpose** | Deploy and operate the TreeAI backend stack on lab-owned infrastructure without dependency on any individual developer account |
+| **Audience** | Lab operators, sysadmins, handover recipients |
+| **Scope** | Proxmox VM quick start, Ubuntu production runbook, TLS, redeploy, operations, troubleshooting |
+| **Related docs** | `HANDOFF.md`, `HANDOFF_SECRETS_CHECKLIST.md`, `VERIFICATION_CHECKLIST.md`, `AUTHORS.md`, `LICENSE` |
+| **Production path** | `/opt/tree-app/backend` (fixed; do not rename) |
 
 ---
 
-## 重新部署完整流程（Proxmox VM｜從零照著做）
+## Overview
 
-> 適用情境：拿到實驗室一台 **Proxmox VE 虛擬機**（Web 管理介面 `https://<PVE_HOST>:8006`），要把整套後端重新部署上線。
-> 這節是「不用思考、從上到下照打」的版本；每一步「為什麼這樣做、可調參數」見下方 **§3 Ubuntu runbook**。
-> 名詞：`<PVE_HOST>` = Proxmox 主機位址；`<VM_USER>` = 進到 VM 後的 Linux 帳號；`<你的網域>` = App 連線網址。
+Deploy the full TreeAI stack—Node.js API, PostgreSQL, Nginx reverse proxy, PM2 process manager—on lab-owned hardware. The system must run independently of any specific person's GitHub or cloud accounts.
 
-### 步驟 0：登入 Proxmox、開機並進入 VM
-1. 瀏覽器開 `https://<PVE_HOST>:8006`，用實驗室給的 Proxmox 帳號／密碼登入（Realm 視設定選 `Proxmox VE authentication` 或 `Linux PAM`）。憑證**不要**寫進任何檔案。
-2. 左側樹狀選單點到你的虛擬機（例如名稱含 `VM121` 那台）→ 上方 **Start** 開機。
-3. 進入系統：點 **>_ Console** 開網頁終端機登入；或先在 Console 內 `ip a` 查到 VM 的 IP，再用自己電腦 `ssh <VM_USER>@<VM_IP>` 連線（之後操作較方便）。
-4. 確認 OS 版本：`lsb_release -a`（本指南支援 Ubuntu 22.04 / 24.04 LTS）。
+**Two repositories** (clone and operate separately):
 
-### 步驟 1：安裝系統套件
-```bash
-sudo apt update && sudo apt upgrade -y
-sudo apt install -y git curl ufw nginx postgresql postgresql-contrib
-# Node.js 20 LTS
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs
-node -v          # 應為 v20.x
-sudo npm install -g pm2
-```
+| Repository | Contents |
+|------------|----------|
+| `tree-project-backend` | Node.js API, migrations, `scripts/deploy.sh`, `ml_service/` (optional) |
+| `tree-project-frontend` | Flutter Android app; deployment docs in `docs/` |
 
-### 步驟 2：建立 PostgreSQL 資料庫與使用者
-```bash
-sudo -u postgres psql <<'SQL'
-CREATE USER treeapp WITH PASSWORD '<DB_密碼>';
-CREATE DATABASE treedb OWNER treeapp;
-GRANT ALL PRIVILEGES ON DATABASE treedb TO treeapp;
-SQL
-```
+**Canonical attribution**: `LICENSE` and **`AUTHORS.md`** (not `CONTRIBUTION_RECORD.md`). Fresh handover pushes must preserve both files.
 
-### 步驟 3：取得程式碼到 `/opt/tree-app`
-```bash
-sudo mkdir -p /opt/tree-app/logs
-sudo chown -R "$USER" /opt/tree-app
-cd /opt/tree-app
-git clone https://github.com/<你的帳號>/tree-project-backend.git backend
-cd backend
-npm install --production
-```
-
-### 步驟 4：設定 `.env`（機密只放這裡）
-```bash
-cd /opt/tree-app/backend
-cp .env.example .env
-nano .env
-```
-至少填入（完整清單見 `HANDOFF_SECRETS_CHECKLIST.md` §A）：
-```ini
-NODE_ENV=production
-PORT=3000
-DATABASE_URL=postgres://treeapp:<DB_密碼>@localhost:5432/treedb
-DB_SSL=false
-JWT_SECRET=<用 openssl rand -hex 64 產生一串貼上>
-CORS_ALLOWED_ORIGINS=https://<你的網域>
-# 選用：自動部署 webhook 才需要
-DEPLOY_WEBHOOK_SECRET=<自訂隨機字串>
-```
-
-### 步驟 5：建資料庫結構 + 建立管理員
-```bash
-cd /opt/tree-app/backend
-SKIP_CSV_IMPORT=1 node scripts/migrate.js        # 正式庫：只建 schema + 參考資料，不匯入測試樹
-node scripts/create_lab_admin.js --username labadmin --password '<強密碼>' --display '實驗室管理員'
-```
-> 全新部署後：業務資料（樹木、專案、使用者）為空；參考資料（樹種、別名、樹況選單）已隨系統載入。
-
-### 步驟 6：用 PM2 啟動 + 開機自啟
-```bash
-cd /opt/tree-app/backend
-pm2 start ecosystem.config.js     # name=tree-backend, cluster ×2
-pm2 save
-pm2 startup systemd               # 依輸出貼上它給的那行 sudo 指令
-curl -sf http://127.0.0.1:3000/health   # 應回 200
-```
-
-### 步驟 7：Nginx 反向代理 + TLS 憑證
-```bash
-sudo nano /etc/nginx/sites-available/tree-app   # 內容見 §3.8 範本（把 server_name 換成你的網域）
-sudo ln -s /etc/nginx/sites-available/tree-app /etc/nginx/sites-enabled/
-sudo nginx -t && sudo systemctl reload nginx
-```
-TLS（手機端必須是有效憑證，否則 App 全部 API 連不上）擇一：
-```bash
-# A. 機構網域 + Let's Encrypt（最佳）
-sudo certbot --nginx -d <你的網域>
-# B. Tailscale *.ts.net 憑證（內網方便）
-#    先到 Tailscale 後台啟用 HTTPS Certificates，再用 `tailscale status` 查出本機 *.ts.net 全名，
-#    並「當參數傳入」（不要靠腳本自動偵測，原因見本指南「Nginx / TLS 疑難排解」）：
-sudo bash scripts/setup_tailscale_tls.sh <你的主機>.<tailnet>.ts.net
-```
-
-### 步驟 8：防火牆
-```bash
-sudo ufw allow OpenSSH
-sudo ufw allow 'Nginx Full'
-sudo ufw enable
-```
-
-### 步驟 9：建置 APK 給調查員
-前置（一次性，在**開發機**上做，金鑰不進 git）：
-- `frontend/android/key.properties` 填 `GOOGLE_MAPS_API_KEY=...`（申請與限制見 `HANDOFF_SECRETS_CHECKLIST.md` §H；地圖頁必需）。
-- `API_BASE_URL` 用「步驟 7 設好的對外網址」：
-  - Tailscale 部署 → `https://<你的主機>.<tailnet>.ts.net/api`
-  - 機構網域 + Let's Encrypt → `https://<你的網域>/api`
-- 後端 `.env` 的 `CORS_ALLOWED_ORIGINS` 要含同一個來源（協定+主機），否則 App 會被 CORS 擋。
-
-```bash
-cd frontend
-flutter build apk --release --dart-define=API_BASE_URL=https://<你的網域>/api
-# 若為自簽憑證主機才加：--dart-define=SELF_SIGNED_TRUSTED_HOSTS=<host>
-#   Tailscale (*.ts.net) 與 Let's Encrypt 都是「有效憑證」，不需要這個參數
-```
-
-### 步驟 10：驗收
-```bash
-# 公開健康檢查端點（不需 token），成功回純文字 OK
-curl https://<你的網域>/health        # 不要加 -k；回 200 且無憑證錯誤 = 手機會信任憑證
-```
-- **為什麼用 `/health` 而不是 `/api/health`**：健康檢查掛在 `backend/app.js` 的 `app.get('/health', ...)`，是公開端點、回純文字 `OK`。`/api/*` 底下的路由都掛了 JWT 驗證中介層，未帶 token 會回 `401 {"success":false,"message":"未授權：缺少 JWT token"}`——所以打 `/api/health` 會誤判成失敗。重點是「**有回應且憑證不報錯**」就代表 TLS→nginx→後端整條鏈路通。
-- 再跑一輪 `VERIFICATION_CHECKLIST.md`。
-
-### 之後「改了程式要重新部署」怎麼做
-- **有設 webhook**：直接 `git push` 到 `main`，主機 `deploy.sh` 會自動 pull→install→增量 migration→reload→health→失敗自動 rollback。
-- **手動部署**：
-  ```bash
-  cd /opt/tree-app/backend
-  git pull
-  npm install --production
-  node scripts/run_pending_migrations.js   # 只跑沒套過的 migration
-  pm2 reload ecosystem.config.js
-  curl -sf http://127.0.0.1:3000/health
-  ```
-
-### VM 常用維運
-```bash
-pm2 status                 # 看後端有沒有在跑
-pm2 logs tree-backend      # 看後端日誌
-sudo systemctl status nginx postgresql
-df -h                      # 看硬碟空間
-```
-
-### 偵錯與查 log（VM）
-> App 出問題時的標準排查順序：先確認「請求有沒有到後端」，再決定是網路層還是應用層的問題。
-
-**後端 PM2 log（PM2 程序名 = `tree-backend`，見 `ecosystem.config.js`）**
-```bash
-pm2 status                          # 程序是否 online / 重啟次數
-pm2 logs tree-backend               # 即時串流（Ctrl+C 離開）
-pm2 logs tree-backend --lines 200   # 最近 200 行
-pm2 logs tree-backend --err         # 只看錯誤輸出
-pm2 logs tree-backend --out         # 只看一般輸出
-pm2 describe tree-backend           # 看詳細設定與 log 檔路徑
-ls -l /opt/tree-app/logs            # log 檔位置：backend-out-*.log / backend-error-*.log
-tail -n 100 /opt/tree-app/logs/backend-error-0.log
-```
-
-**Nginx log（TLS / 反向代理這一層）**
-```bash
-sudo tail -n 100 /var/log/nginx/access.log   # 有沒有收到 /api/... 請求、回應碼
-sudo tail -n 100 /var/log/nginx/error.log
-sudo nginx -t                                # 設定語法檢查
-sudo ss -ltnp | grep ':443'                  # 443 是否在 listen
-```
-
-**後端／TLS 連線自測（在 VM 上）**
-```bash
-curl -sf http://127.0.0.1:3000/health                 # 直接打後端（繞過 nginx）→ OK 代表後端活著
-curl https://<你的主機>.ts.net/health                 # 經 nginx + TLS → OK 代表整條鏈路通
-```
-
-**資料庫 / 使用者（登入相關）**
-```bash
-cd /opt/tree-app/backend
-node scripts/list_users.js                            # 列出現有使用者
-# 「帳號不存在」= DB 沒有該使用者；正式庫用這支建立管理員（勿用 seed_dev_users.js）
-node scripts/create_lab_admin.js --username labadmin --password '<至少8碼強密碼>' --display '實驗室管理員'
-psql "<DATABASE_URL>" -c "SELECT username, role, is_active FROM users;"  # 直接查 DB（連線字串見 .env）
-```
-
-**登入一直「帳號不存在」但 `list_users` 明明有該帳號**
-- 登入查詢是 `WHERE username = $1`，**大小寫敏感**；帳號存在卻回 404「帳號不存在」，代表**送出的帳號字串與 DB 不符**。
-- **最常見原因（實戰踩到）**：
-  1. **登入填了「顯示名稱(display)」而不是「帳號(username)」**。例如帳號是 `labadmin`、display 是 `實驗室管理員`；登入帳號欄要填 `labadmin`。用稽核紀錄看送出的 `username` 即可確認。
-  2. 手機鍵盤把帳號**第一個字母自動大寫**（`labadmin` → `Labadmin`），或前後有空白。對策：確認全小寫、無空白。
-- **`node scripts/*.js` 報 `Cannot find module`**：要先 `cd /opt/tree-app/backend` 再執行（腳本路徑是相對的）。
-- 用稽核紀錄看「手機實際送出的帳號」（決定性證據）：
-  ```bash
-  psql "<DATABASE_URL>" -c "SELECT created_at, username, ip_address, details FROM audit_logs WHERE action='LOGIN_FAILED' ORDER BY created_at DESC LIMIT 5;"
-  ```
-- 在主機直接打 API（繞過手機鍵盤），切開「後端問題」與「手機輸入問題」：
-  ```bash
-  curl -s -X POST https://<你的主機>.ts.net/api/login \
-    -H "Content-Type: application/json" -d '{"account":"labadmin","password":"<密碼>"}'
-  # success:true+token → 後端與帳密正確，問題在手機輸入；回「帳號不存在」→ 檢查後端 .env 的 DATABASE_URL
-  ```
-- `create_lab_admin.js` 只 INSERT、**不會更新既有帳號的密碼**。要重設密碼：先刪再建。
-  ```bash
-  psql "<DATABASE_URL>" -c "DELETE FROM users WHERE username='labadmin';"
-  node scripts/create_lab_admin.js --username labadmin --password '<新密碼>' --display '實驗室管理員'
-  ```
-
-### 帳號與 IP 限制管理（刪除帳號 / 解鎖 / 解除流量限制）
-> `<DATABASE_URL>` 用 `.env` 裡的連線字串（形如 `postgres://<user>:<pass>@localhost:5432/<db>`）。
-
-**A. 刪除 / 停用帳號**
-```bash
-# 停用（建議；保留歷史，之後可再啟用）
-psql "<DATABASE_URL>" -c "UPDATE users SET is_active=false WHERE username='<帳號>';"
-# 永久刪除（注意：若該使用者有關聯資料／外鍵，刪除可能失敗或留下孤兒資料；多數情況建議用停用）
-psql "<DATABASE_URL>" -c "DELETE FROM users WHERE username='<帳號>';"
-```
-
-**B. 帳號被鎖定（5 次密碼錯誤 → 停用 30 分鐘，見 `middleware/loginAttemptMonitor.js`）**
-```bash
-# 手動解鎖：重新啟用並清空失敗計數（超過 30 分鐘其實會自動解鎖）
-psql "<DATABASE_URL>" -c "UPDATE users SET is_active=true, login_attempts=0, last_attempt_time=NULL WHERE username='<帳號>';"
-```
-
-**C. 解除 IP 流量限制 / IP 黑名單**
-- 限流器（`middleware/rateLimiter.js`，**記憶體內**，重啟即清空）：
-  - `apiLimiter` 500 次/15 分、`loginLimiter` 50 次/時、`aiLimiter` 30 次/時、`burstLimiter` 60 次/10 秒。
-  - 想立刻清掉「記憶體內」的計數：`pm2 reload tree-backend`（或等視窗時間過）。
-  - 實驗室可放寬爆量上限：`.env` 設 `BURST_LIMIT_MAX=120` 後 `pm2 reload tree-backend`。
-  - **測試/CI 才用**：`.env` 設 `DISABLE_RATE_LIMIT=true`（正式環境勿用）。
-- IP 黑名單（`ip_blacklist` 表，**持久化**；爆量或 1 小時內登入失敗 ≥30 次會被加入，累犯升級、3 次永久封鎖）：
-  ```bash
-  # 看目前被封鎖的 IP
-  psql "<DATABASE_URL>" -c "SELECT ip, locked_until, reason, offense_count FROM ip_blacklist ORDER BY updated_at DESC;"
-  # 完全解除某 IP（含累進次數歸零）
-  psql "<DATABASE_URL>" -c "DELETE FROM ip_blacklist WHERE ip='<IP>';"
-  # 或只讓它立即過期（保留累犯紀錄）
-  psql "<DATABASE_URL>" -c "UPDATE ip_blacklist SET locked_until=NOW() WHERE ip='<IP>';"
-  # 清掉該 IP 的登入失敗計數（避免解鎖後又立刻被命中）
-  psql "<DATABASE_URL>" -c "DELETE FROM ip_login_attempts WHERE ip='<IP>';"
-  ```
-  - 也有管理 API：`/api/admin/ip-blacklist`（需管理員 JWT）；在主機上用 psql 最直接。
-
-**怎麼判讀（決策樹）**
-- 手機操作時 `pm2 logs tree-backend` **完全沒有新請求** → 問題在「手機↔VM」的網路/DNS（Tailscale、MagicDNS、`API_BASE_URL` 是否完整）；不是後端。
-- `nginx access.log` **有** `/api/...` 但回 4xx/5xx → 請求有到，問題在後端（看 `pm2 logs tree-backend --err`）。
-- 登入回「**帳號不存在**」→ 連線正常，只是 DB 沒帳號 → 用上面的 `create_lab_admin.js` 建立。
-
-**已知非致命訊息**
-- backend-error log 出現 `Key (typname, typnamespace)=(schema_migrations, ...) already exists`（pg 錯誤碼 `23505`）：某次啟動嘗試建立已存在的 `schema_migrations` 表所致，**不影響運行**（屬重複部署的冪等性雜訊）。只要 out log 有「成功連接到 PostgreSQL」且 `pm2 status` 為 online 即正常。
-
-### Nginx / TLS 疑難排解（實戰踩過的坑）
-> 以下三點是這次實際部署遇到並解決的問題，照著做可避免重蹈覆轍。
-
-**1) `setup_tailscale_tls.sh` 執行後完全無輸出、`nginx -t` 報找不到 `ts.crt`**
-- 原因：腳本未帶參數時會自動偵測 `*.ts.net` 名稱（`tailscale status --json | grep ... | head -1`）。在 `set -e -o pipefail` 下，`head` 先關管線使 `grep` 收到 SIGPIPE（非零），整條 pipeline 被判失敗，腳本在產憑證前就**無聲中止**。
-- 解法：**把 `*.ts.net` 全名當參數傳入**，跳過自動偵測：
-  ```bash
-  sudo bash scripts/setup_tailscale_tls.sh <你的主機>.<tailnet>.ts.net
-  ```
-
-**2) `nginx -t` 報 `conflicting server name ...` + `could not build server_names_hash`**
-- 原因：舊版腳本把備份檔存成 `/etc/nginx/sites-enabled/tree-app.bak.<時間>`，而 nginx 會 `include sites-enabled/*` **載入該資料夾每一個檔**，於是 `tree-app` 與 `tree-app.bak.*` 有相同 `server_name` → 衝突且 hash 表建不起來。
-- 立即解法：刪掉 sites-enabled 內的備份檔，再測試 + 重載：
-  ```bash
-  sudo rm -f /etc/nginx/sites-enabled/tree-app.bak.*
-  ls -l /etc/nginx/sites-enabled/        # 應只剩 tree-app 一個檔
-  sudo nginx -t && sudo systemctl reload nginx
-  ```
-- 永久修復：腳本已改成把備份寫到 `/opt/tree-app/nginx-conf-backups/`（不在 nginx include 範圍）。
-- 若是單一長網域真的撞到 hash 上限，再加大 bucket：
-  ```bash
-  sudo sed -i 's/^http {/http {\n    server_names_hash_bucket_size 128;/' /etc/nginx/nginx.conf
-  sudo nginx -t && sudo systemctl reload nginx
-  ```
-
-**3) `curl .../api/health` 回 `401 未授權：缺少 JWT token`（其實不是錯）**
-- 原因：`/api/*` 路由都掛 JWT 驗證中介層，沒帶 token 一律回 401。後端用 `.env` 的 `JWT_SECRET` 來簽發與驗證登入後的 token；驗收階段不會有 token，所以打 `/api/*` 必然 401。
-- 正確驗收：改打公開端點 `/health`（`app.js` 的 `app.get('/health', ...)`，回純文字 `OK`）：
-  ```bash
-  curl https://<你的網域>/health        # 預期：OK
-  ```
-- 重點：能回應（401 或 OK）且**憑證不報錯**，就代表 TLS→nginx→後端整條鏈路是通的。
+**Health check endpoint**: `GET /health` returns plain text `OK` (public, no JWT). Do **not** use `/api/health`—all `/api/*` routes require JWT and return `401` without a token.
 
 ---
 
-## 0. 首次部署流程（一次做完）
+## Security
 
-> 情境：在自己的 GitHub repo 與部署主機上，從零建立整套系統。
+### Non-negotiable rules
 
-### 0.1 推送程式碼到接手方 GitHub（fresh snapshot，不帶舊歷史）
+| Rule | Action |
+|------|--------|
+| No secrets in git | Never commit passwords, API tokens, private IPs, or `.env` |
+| Secrets live in two places only | ① `backend/.env` on the deployment host ② personal password manager |
+| Use placeholders in docs | Replace `<SERVER_IP>`, `<YOUR_DOMAIN>`, `<TAILNET>`, `<DB_PASSWORD>`, etc. with your values |
+| No personal accounts on prod | Do not log into personal GitHub or cloud accounts on the deployment host |
+| Production admin creation | Use `create_lab_admin.js` only; never run `seed_dev_users.js` in production |
 
-**不要**把開發用 repo 的完整 `git push` 給接手方——舊 commit 可能含開發期私有 IP、帳號、除錯訊息等。
+### Secret rotation at handover
 
-改用「單一乾淨快照」開新歷史（**兩個 repo 各做一次**）。歸屬由 `LICENSE`、`AUTHORS.md`、`CONTRIBUTION_RECORD.md` 載明，不靠舊 `git log`。
+Rotate all keys per `HANDOFF_SECRETS_CHECKLIST.md` §A before go-live. Revoke old keys held by prior developers.
 
-**PowerShell（建議）**：
+---
+
+## Architecture
+
+### Single-host lab topology
+
+```
+┌─────────────────┐     Wi‑Fi / LAN      ┌──────────────────────────────┐
+│ Field Android   │ ──────────────────► │ Lab host (Ubuntu VM)          │
+│ Flutter App     │                     │  • Node backend :3000         │
+└─────────────────┘                     │  • PostgreSQL                 │
+                                        │  • ML service (optional GPU)  │
+                                        │  • Nginx reverse proxy :443   │
+                                        └──────────────────────────────┘
+```
+
+### Component roles
+
+| Component | Role |
+|-----------|------|
+| **Ubuntu 22.04 / 24.04 LTS** | Backend OS (runs inside Proxmox VM) |
+| **Proxmox VE** | Hypervisor; Web UI at `https://<PVE_HOST>:8006` |
+| **PostgreSQL 16** | Primary datastore (trees, projects, users) |
+| **Node.js 20 LTS** | Express API runtime |
+| **PM2** | Process supervisor; app name `tree-backend`, cluster ×2, auto-restart |
+| **Nginx** | TLS termination, reverse proxy to `:3000`, rate-limit headers |
+| **Tailscale** | Private mesh VPN + free `*.ts.net` trusted TLS certs (recommended for lab) |
+| **Let's Encrypt / certbot** | Public-domain TLS (preferred for institutional deployment) |
+| **UFW** | Host firewall (SSH, HTTP/HTTPS only) |
+| **`.env`** | Runtime secrets (DB, JWT, API keys); not in git |
+| **GitHub webhook** | Optional push-triggered deploy via `scripts/deploy.sh` |
+
+### Independence checklist
+
+| Item | Requirement |
+|------|-------------|
+| Source code | Lab-owned GitHub repo or release tarball; no `.env` |
+| Database | Lab-hosted PostgreSQL; run `scripts/migrate.js` |
+| System admin | Created via `create_lab_admin.js` (not personal email) |
+| Field user accounts | `POST /api/invites` or in-app admin |
+| App API URL | Build-time `API_BASE_URL` dart-define |
+| ML service | `ML_SERVICE_URL` in `.env`; separate from personal Tailscale |
+| TLS | Trusted cert required for Android (see TLS Options) |
+
+### Design constraints
+
+- Do not embed JWT, DB passwords, or ML API keys in the APK.
+- Backend `app.js` sets `trust proxy`; Nginx must pass `X-Forwarded-For` for rate limiting and IP blacklist.
+- Tree photos stored in Cloudinary; DB backup covers relational data.
+
+---
+
+## Prerequisites
+
+| Requirement | Version / notes |
+|-------------|-----------------|
+| OS | Ubuntu 22.04 or 24.04 LTS |
+| Node.js | 20 LTS |
+| PostgreSQL | 15+ (guide tested with 16) |
+| Nginx | Latest from apt |
+| PM2 | Global install via npm |
+| Proxmox VE | For lab VM provisioning (optional if bare metal) |
+| Tailscale account | If using `*.ts.net` TLS |
+| Flutter SDK | On build machine for APK (not required on server) |
+| GitHub repo | Lab-owned `tree-project-backend` (+ frontend for APK build) |
+
+**Access required before starting**:
+
+- Proxmox Web UI credentials (do not document in git)
+- VM SSH user (`<VM_USER>`) and network reachability
+- Lab GitHub repo clone URL
+- Secret values per `HANDOFF_SECRETS_CHECKLIST.md` §A
+
+---
+
+## Handover Day
+
+Complete once when transferring the system to a new organization. Sections map to legacy §0.1–0.7.
+
+### 0.1 Push fresh snapshot to recipient GitHub
+
+Do **not** push full development history—old commits may contain private IPs, credentials, or debug artifacts.
+
+Create a clean single-commit history (**repeat for both backend and frontend repos**). Attribution is declared in `LICENSE` and **`AUTHORS.md`**.
+
+**PowerShell (recommended)**:
 
 ```powershell
-cd backend   # 或 frontend
+cd backend   # or frontend
 .\scripts\prepare_fresh_handover.ps1
-git remote add recipient https://github.com/<RECIPIENT>/tree-project-frontend.git
+git remote add recipient https://github.com/<RECIPIENT>/tree-project-backend.git
 git push recipient handover:main
 git checkout main
 ```
 
-**或手動（bash）**：
+**Manual (bash)**:
 
 ```bash
-cd frontend
+cd frontend   # or backend
 git checkout main && git pull
 git checkout --orphan handover
 git add -A
 git commit -m "Initial handover snapshot (2026-06)
 
-Copyright (c) 2025 KyleliuNDHU. See LICENSE, AUTHORS.md, CONTRIBUTION_RECORD.md.
+Copyright (c) 2025 KyleliuNDHU. See LICENSE and AUTHORS.md.
 
 Original development and primary maintenance by KyleliuNDHU.
 Fresh history push without prior commit log."
@@ -347,180 +156,122 @@ git push recipient handover:main
 git checkout main
 ```
 
-**交付方（推送前）**：在本機私人匯出開發歷史作個人證明，**不要**上傳給接手方：
+**Outgoing party only** (local evidence; do not upload to recipient):
 
 ```bash
 git log --oneline --decorate > handover_evidence_git_log.txt
 git shortlog -sn > handover_evidence_shortlog.txt
 ```
 
-推上去後 CI 會自動跑（workflow 不依賴 GitHub Secrets，零設定即可綠）。
+CI runs automatically on push (workflows require no GitHub Secrets).
 
-### 0.2 金鑰全部重新申請
+### 0.2 Rotate all secrets
 
-依 `HANDOFF_SECRETS_CHECKLIST.md` §A 逐項作廢舊金鑰、申請新金鑰，填入部署主機的 `backend/.env`
-（範本 `backend/.env.example`）。Google Maps key 填 `frontend/android/key.properties`（範本 `key.properties.example`）。
+Follow `HANDOFF_SECRETS_CHECKLIST.md` §A: revoke old keys, issue new keys, populate `backend/.env` (from `.env.example`). Google Maps key goes in `frontend/android/key.properties` (from `key.properties.example`).
 
-### 0.3 部署主機（見本指南 §3）
+### 0.3 Deploy backend host
 
-照 §3 安裝依賴、建 DB、跑 `migrate.js`（正式庫設 `SKIP_CSV_IMPORT=1`）、PM2 啟動。
+Execute [Production Runbook](#production-runbook) §3.1–3.10. Run migrate with `SKIP_CSV_IMPORT=1`. Start PM2.
 
-### 0.4 設定自動部署 webhook
+### 0.4 Configure deploy webhook
 
-實驗室 GitHub repo → Settings → Webhooks → Add webhook：
-- Payload URL：`https://<部署主機>/webhook/deploy`
-- Content type：`application/json`
-- Secret：與主機 `backend/.env` 的 `DEPLOY_WEBHOOK_SECRET` 一致（自訂隨機字串）
-- 事件：Just the push event
+GitHub repo → **Settings → Webhooks → Add webhook**:
 
-之後 push 到 `main` 即自動部署（機制見 `HANDOFF.md` §6.1）。
+| Field | Value |
+|-------|-------|
+| Payload URL | `https://<YOUR_DOMAIN>/webhook/deploy` |
+| Content type | `application/json` |
+| Secret | Must match `DEPLOY_WEBHOOK_SECRET` in `backend/.env` |
+| Events | Just the push event |
 
-### 0.5 建立管理員（正式環境）
+Push to `main` triggers `scripts/deploy.sh` (see [Redeploy / Webhook](#redeploy--webhook)).
 
-`users` 表**不**含預寫種子。首次部署 migrate 完成後：
+> **Note (public internet)**: GitHub webhooks require the deployment host to be reachable from the public internet. If the VM is Tailscale-only, configure **Tailscale Funnel** or an institutional reverse proxy. Detailed Funnel setup is deferred to post–on-campus VM work; document the chosen ingress path in local ops notes.
 
-```bash
-node scripts/create_lab_admin.js --username labadmin --password '<強密碼>' --display '實驗室管理員'
-```
+### 0.5 Create production admin
 
-- 僅在空庫或需新增管理員時執行；username 重複會報錯。
-- **勿**在 production 執行 `seed_dev_users.js`（該腳本僅供本機／CI，會建立 `admin/12345` 等弱密碼測試帳）。
-- 若舊庫仍有歷史 seed 帳號（`admin`/`test`/`tt2`），建議停用或刪除後只保留 `create_lab_admin` 建立的帳號。
-
-### 0.6 建置 APK 與驗收
+The `users` table has no pre-seeded accounts. After migrate completes:
 
 ```bash
-cd frontend
-flutter build apk --release --dart-define=API_BASE_URL=https://<部署主機>/api
+cd /opt/tree-app/backend
+node scripts/create_lab_admin.js \
+  --username labadmin \
+  --password '<STRONG_PASSWORD>' \
+  --display 'Lab Administrator'
 ```
-最後跑一輪 `VERIFICATION_CHECKLIST.md`，並在 GitHub 設定 `main` 分支保護（required CI check）。
 
-> ⚠️ **手機端 TLS 必須是「受信任的有效憑證」**
-> Android 預設**拒絕自簽憑證**。若 `API_BASE_URL` 指向自簽憑證的主機（例如直接用
-> `https://<IP>/api`，憑證 CN=IP、自簽），App 啟動自檢會出現：
-> `CERTIFICATE_VERIFY_FAILED: self signed certificate`，**所有 API 都連不上**。
->
-> 正確做法（擇一）：
-> 1. **機構網域 + 正式憑證**（最佳）：用學校／圖資中心的網域 + Let's Encrypt（certbot），
->    `API_BASE_URL=https://tree.example.edu.tw/api`。
-> 2. **Tailscale 有效憑證**（內網/測試很方便，免費自動簽發）：
->    - 快速法（免 sudo，operator 即可，但繞過 nginx 速率限制）：
->      ```bash
->      tailscale serve --bg --https 443 http://127.0.0.1:3000   # 關閉：tailscale serve --https=443 off
->      ```
->      App 指向 `https://<主機>.<tailnet>.ts.net/api`。
->    - 正式法（保留 nginx 速率限制／安全標頭，需 sudo）：**一鍵腳本**
->      ```bash
->      sudo bash scripts/setup_tailscale_tls.sh   # 自動偵測 ts.net 名稱、產憑證、改 nginx（含備份/測試/回滾）、設 90 天 renew cron
->      ```
->      手動等效步驟：`sudo tailscale cert --cert-file /opt/tree-app/ssl/ts.crt --key-file /opt/tree-app/ssl/ts.key <主機>.<tailnet>.ts.net` →
->      nginx `server_name` 加該 ts.net 名稱、`ssl_certificate` 指向 ts.crt/ts.key → `sudo nginx -t && sudo systemctl reload nginx`。
->      （Tailscale 憑證約 90 天，腳本已設 `/etc/cron.d/tree-tls-renew` 自動續期。）
-> 用 `curl https://<主機>/api/health`（**不要加 `-k`**）回 200/401 且無憑證錯誤，即代表手機會信任。
+| Rule | Detail |
+|------|--------|
+| Run once | Duplicate username throws an error |
+| Never in production | `seed_dev_users.js` (creates `admin/12345` weak test accounts) |
+| Legacy seed cleanup | Deactivate or delete historical `admin`/`test`/`tt2` accounts if present |
 
-### 0.7 交接日 checklist
+### 0.6 Build APK and validate TLS
 
-- [ ] 兩 repo fresh push 完成、CI 綠
-- [ ] `HANDOFF_SECRETS_CHECKLIST.md` §A 金鑰全部輪替完
-- [ ] 後端部署完成、`/health` OK
-- [ ] webhook 自動部署測試一次（push 小變更 → 自動上線）
-- [ ] 管理員以 `create_lab_admin.js` 建立（非 DB 種子）；舊 seed 帳號已停用或刪除
-- [ ] APK 建置並在實機登入成功
-- [ ] `VERIFICATION_CHECKLIST.md` 跑過一輪
-- [ ] 確認無任何個人帳號殘留存取（Tailscale／GitHub webhook／雲端服務）
+See [APK Build](#apk-build) and [Verification](#verification).
+
+**Android TLS requirement**: The device rejects self-signed certificates. `API_BASE_URL` must point to a **trusted** cert (Let's Encrypt or Tailscale `*.ts.net`). Self-signed or raw IP HTTPS causes `CERTIFICATE_VERIFY_FAILED` and blocks all API calls.
+
+### 0.7 Handover day checklist
+
+- [ ] Both repos fresh-pushed; CI green on `main`
+- [ ] `HANDOFF_SECRETS_CHECKLIST.md` §A keys rotated
+- [ ] Backend deployed; `GET /health` returns `OK`
+- [ ] Webhook deploy tested (push trivial change → auto deploy)
+- [ ] Admin created via `create_lab_admin.js`; legacy seed accounts removed/disabled
+- [ ] APK built and field login verified on physical device
+- [ ] `VERIFICATION_CHECKLIST.md` completed
+- [ ] No residual personal-account access (Tailscale, GitHub webhook, cloud services)
+- [ ] `main` branch protection enabled with required CI check
 
 ---
 
-## 1. 架構建議（單機實驗室）
+## Quick Start — Proxmox VM
 
-```
-┌─────────────────┐     Wi‑Fi / LAN      ┌──────────────────────────────┐
-│ 調查員 Android   │ ──────────────────► │ 實驗室主機（Windows/Linux）    │
-│ Flutter App     │                     │  • Node 後端 :3000             │
-└─────────────────┘                     │  • PostgreSQL                │
-                                        │  • ML 服務（可選 GPU 機）     │
-                                        │  • Nginx 反向代理（建議）      │
-                                        └──────────────────────────────┘
-```
+End-to-end procedure for redeploying on a Proxmox VE VM. For rationale and tunables, see [Production Runbook](#production-runbook).
 
-- **不要**把 JWT、DB 密碼、ML API Key 寫死在 App；使用建置時注入或首次啟動設定。
-- 程式碼以**你自己的 GitHub repo** 為準（見 §0.1 fresh push）；不要在部署主機登入任何個人開發帳號。
+**Placeholders**: `<PVE_HOST>` = Proxmox host; `<VM_USER>` = Linux login; `<YOUR_DOMAIN>` = app-facing hostname; `<TAILNET>` = Tailscale tailnet name.
 
----
+### Step 0 — Access Proxmox and boot VM
 
-## 2. 獨立性檢查表（不綁定特定個人帳號）
+1. Open `https://<PVE_HOST>:8006`; authenticate with lab-provided credentials (realm: `Proxmox VE authentication` or `Linux PAM`).
+2. Select target VM in left tree → **Start**.
+3. Open **>_ Console** for web terminal, or run `ip a` in console then `ssh <VM_USER>@<SERVER_IP>` from workstation.
+4. Verify OS: `lsb_release -a` (expect Ubuntu 22.04 or 24.04 LTS).
 
-| 項目 | 做法 |
-|------|------|
-| 原始碼 | 以 release 壓縮包或實驗室 git 伺服器為準，不含 `.env` |
-| 資料庫 | 實驗室自建 PostgreSQL，執行 `backend/scripts/migrate.js` |
-| 系統管理員 | 部署腳本建立 **lab-admin**（非個人信箱） |
-| 調查員帳號 | `POST /api/invites` 發邀請碼，或管理 Web 建立 |
-| App 連線位址 | `frontend` 建置參數 / `assets/config.json` 指向實驗室 IP |
-| ML 服務 | 實驗室 `.env` 的 `ML_SERVICE_URL`，與個人 Tailscale 分離 |
-| 憑證 | 內網可用自簽 + App 僅信任該 CA（或 HTTP 僅限實驗室 VLAN） |
-
----
-
-## 3. Ubuntu 主機從零搭建（runbook）
-
-> 情境：拿到一台乾淨的 Ubuntu 22.04 / 24.04 LTS 主機，從安裝套件到後端上線。
-> 指令以 `sudo` 為前提；`<...>` 都是你要替換的值。後端正式目錄固定為 `/opt/tree-app/backend`
-> （`ecosystem.config.js`、`scripts/deploy.sh` 皆寫死此路徑，請勿改名）。
-
-### 3.1 系統需求
-
-| 項目 | 版本 / 說明 |
-|------|-------------|
-| OS | Ubuntu 22.04 或 24.04 LTS |
-| Node.js | 20 LTS |
-| PostgreSQL | 15+ |
-| 反向代理 | Nginx |
-| 行程管理 | PM2（cluster 模式，2 workers） |
-| （可選）ML | Python 3.10+、GPU；見 `ml_service/README.md` |
-
-### 3.2 安裝系統套件
+### Step 1 — Install system packages
 
 ```bash
 sudo apt update && sudo apt upgrade -y
 sudo apt install -y git curl ufw nginx postgresql postgresql-contrib
-
-# Node.js 20 LTS（NodeSource）
 curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
-node -v   # 應為 v20.x
-
-# PM2（全域）
+node -v          # expect v20.x
 sudo npm install -g pm2
 ```
 
-### 3.3 建立 PostgreSQL 資料庫與使用者
+### Step 2 — Create PostgreSQL database and user
 
 ```bash
 sudo -u postgres psql <<'SQL'
-CREATE USER treeapp WITH PASSWORD '<DB_密碼>';
+CREATE USER treeapp WITH PASSWORD '<DB_PASSWORD>';
 CREATE DATABASE treedb OWNER treeapp;
 GRANT ALL PRIVILEGES ON DATABASE treedb TO treeapp;
 SQL
 ```
 
-之後 `.env` 的連線字串即：`DATABASE_URL=postgres://treeapp:<DB_密碼>@localhost:5432/treedb`。
-（本機同主機連線通常免 SSL，`.env` 設 `DB_SSL=false`。）
-
-### 3.4 取得程式碼到 `/opt/tree-app`
+### Step 3 — Clone code to `/opt/tree-app`
 
 ```bash
 sudo mkdir -p /opt/tree-app/logs
 sudo chown -R "$USER" /opt/tree-app
 cd /opt/tree-app
-git clone https://github.com/<你的帳號>/tree-project-backend.git backend
+git clone https://github.com/<ORG>/tree-project-backend.git backend
 cd backend
 npm install --production
 ```
 
-> fresh snapshot push（不帶舊歷史）見 §0.1；正式上線請 clone **你自己的** repo，主機上不要登入任何個人開發帳號。
-
-### 3.5 設定 `.env`
+### Step 4 — Configure `.env`
 
 ```bash
 cd /opt/tree-app/backend
@@ -528,55 +279,216 @@ cp .env.example .env
 nano .env
 ```
 
-至少填入（完整清單見 `HANDOFF_SECRETS_CHECKLIST.md` §A）：
+Minimum required (full list: `HANDOFF_SECRETS_CHECKLIST.md` §A):
 
 ```ini
 NODE_ENV=production
 PORT=3000
-DATABASE_URL=postgres://treeapp:<DB_密碼>@localhost:5432/treedb
+DATABASE_URL=postgres://treeapp:<DB_PASSWORD>@localhost:5432/treedb
 DB_SSL=false
-JWT_SECRET=<openssl rand -hex 64 產生>
-CORS_ALLOWED_ORIGINS=https://<你的網域>
-# 以下選用：用自動部署 webhook 才需要
-DEPLOY_WEBHOOK_SECRET=<自訂隨機字串>
-# 選用：只給 GET /webhook/status 讀部署 log；不設則該端點回 401，不影響系統
-ADMIN_API_TOKEN=<自訂隨機字串>
+JWT_SECRET=<output of: openssl rand -hex 64>
+CORS_ALLOWED_ORIGINS=https://<YOUR_DOMAIN>
+# Optional: deploy webhook only
+DEPLOY_WEBHOOK_SECRET=<random string>
 ```
 
-### 3.6 初始化資料庫與管理員
+### Step 5 — Initialize database and admin
 
 ```bash
 cd /opt/tree-app/backend
-SKIP_CSV_IMPORT=1 node scripts/migrate.js          # 正式庫：只建 schema，不匯入測試樹
+SKIP_CSV_IMPORT=1 node scripts/migrate.js
 node scripts/create_lab_admin.js \
-  --username labadmin --password '<強密碼>' --display '實驗室管理員'
+  --username labadmin \
+  --password '<STRONG_PASSWORD>' \
+  --display 'Lab Administrator'
 ```
 
-> ⚠️ 正式環境**永遠不要**跑 `seed_dev_users.js`（會建 `admin/12345` 弱密碼）；`NODE_ENV=production` 時該腳本也會拒絕執行。
+Post-migrate state: business tables empty; reference data (species, aliases, condition enums) loaded.
 
-### 3.7 用 PM2 啟動並設定開機自啟
+### Step 6 — Start PM2 and enable boot persistence
 
 ```bash
 cd /opt/tree-app/backend
-pm2 start ecosystem.config.js        # name=tree-backend, cluster ×2, log → /opt/tree-app/logs
-pm2 save                             # 記住目前行程清單
-pm2 startup systemd                  # 依輸出複製貼上它給的那行 sudo 指令
-curl -sf http://127.0.0.1:3000/health   # 應回 200
+pm2 start ecosystem.config.js     # name=tree-backend, cluster ×2
+pm2 save
+pm2 startup systemd               # run the sudo command it prints
+curl -sf http://127.0.0.1:3000/health   # expect 200, body OK
 ```
 
-### 3.8 Nginx 反向代理（範本）
+### Step 7 — Nginx reverse proxy and TLS
 
-對外只開 Nginx，由它轉發到本機 `:3000`。把下列存成 `/etc/nginx/sites-available/tree-app` 後啟用：
+```bash
+sudo nano /etc/nginx/sites-available/tree-app   # template: Production Runbook §3.8
+sudo ln -s /etc/nginx/sites-available/tree-app /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+TLS (pick one):
+
+```bash
+# A. Institutional domain + Let's Encrypt (preferred)
+sudo certbot --nginx -d <YOUR_DOMAIN>
+
+# B. Tailscale *.ts.net certificate (lab / mesh)
+# Enable HTTPS Certificates in Tailscale admin console first.
+# Pass full ts.net hostname as argument (do not rely on auto-detection):
+sudo bash scripts/setup_tailscale_tls.sh <hostname>.<TAILNET>.ts.net
+```
+
+### Step 8 — Firewall
+
+```bash
+sudo ufw allow OpenSSH
+sudo ufw allow 'Nginx Full'
+sudo ufw enable
+```
+
+### Step 9 — Build field APK
+
+One-time on **build machine** (signing keys not in git):
+
+- Populate `frontend/android/key.properties` with `GOOGLE_MAPS_API_KEY` (see `HANDOFF_SECRETS_CHECKLIST.md` §H).
+- Set `API_BASE_URL` to match Step 7:
+  - Tailscale: `https://<hostname>.<TAILNET>.ts.net/api`
+  - Let's Encrypt: `https://<YOUR_DOMAIN>/api`
+- `CORS_ALLOWED_ORIGINS` in backend `.env` must match the same origin (scheme + host).
+
+```bash
+cd frontend
+flutter build apk --release \
+  --dart-define=API_BASE_URL=https://<YOUR_DOMAIN>/api
+# Self-signed hosts only (not needed for Tailscale or Let's Encrypt):
+#   --dart-define=SELF_SIGNED_TRUSTED_HOSTS=<host>
+```
+
+### Step 10 — Acceptance
+
+```bash
+curl https://<YOUR_DOMAIN>/health    # no -k; expect 200 and body OK
+```
+
+| Check | Expected |
+|-------|----------|
+| TLS | No certificate error without `-k` |
+| Body | Plain text `OK` |
+| Path | `/health` (not `/api/health`) |
+
+Complete `VERIFICATION_CHECKLIST.md`.
+
+---
+
+## Production Runbook
+
+Detailed Ubuntu procedure. All paths assume `/opt/tree-app/backend`.
+
+### 3.1 System requirements
+
+| Item | Version / notes |
+|------|-----------------|
+| OS | Ubuntu 22.04 or 24.04 LTS |
+| Node.js | 20 LTS |
+| PostgreSQL | 15+ |
+| Reverse proxy | Nginx |
+| Process manager | PM2 cluster mode, 2 workers |
+| ML (optional) | Python 3.10+, GPU; see `ml_service/README.md` |
+
+### 3.2 Install system packages
+
+```bash
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y git curl ufw nginx postgresql postgresql-contrib
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+node -v   # expect v20.x
+sudo npm install -g pm2
+```
+
+### 3.3 Create PostgreSQL database and user
+
+```bash
+sudo -u postgres psql <<'SQL'
+CREATE USER treeapp WITH PASSWORD '<DB_PASSWORD>';
+CREATE DATABASE treedb OWNER treeapp;
+GRANT ALL PRIVILEGES ON DATABASE treedb TO treeapp;
+SQL
+```
+
+Connection string: `DATABASE_URL=postgres://treeapp:<DB_PASSWORD>@localhost:5432/treedb` with `DB_SSL=false` for localhost.
+
+### 3.4 Clone code to `/opt/tree-app`
+
+```bash
+sudo mkdir -p /opt/tree-app/logs
+sudo chown -R "$USER" /opt/tree-app
+cd /opt/tree-app
+git clone https://github.com/<ORG>/tree-project-backend.git backend
+cd backend
+npm install --production
+```
+
+Clone **lab-owned** repo only. Fresh snapshot procedure: [Handover Day §0.1](#01-push-fresh-snapshot-to-recipient-github).
+
+### 3.5 Configure `.env`
+
+```bash
+cd /opt/tree-app/backend
+cp .env.example .env
+nano .env
+```
+
+```ini
+NODE_ENV=production
+PORT=3000
+DATABASE_URL=postgres://treeapp:<DB_PASSWORD>@localhost:5432/treedb
+DB_SSL=false
+JWT_SECRET=<openssl rand -hex 64>
+CORS_ALLOWED_ORIGINS=https://<YOUR_DOMAIN>
+# Optional: deploy webhook
+DEPLOY_WEBHOOK_SECRET=<random string>
+# Optional: GET /webhook/status log access; omit → endpoint returns 401
+ADMIN_API_TOKEN=<random string>
+```
+
+Full variable list: `HANDOFF_SECRETS_CHECKLIST.md` §A.
+
+### 3.6 Initialize database and admin
+
+```bash
+cd /opt/tree-app/backend
+SKIP_CSV_IMPORT=1 node scripts/migrate.js
+node scripts/create_lab_admin.js \
+  --username labadmin \
+  --password '<STRONG_PASSWORD>' \
+  --display 'Lab Administrator'
+```
+
+Never run `seed_dev_users.js` in production (`NODE_ENV=production` blocks it regardless).
+
+### 3.7 Start PM2 and enable boot persistence
+
+```bash
+cd /opt/tree-app/backend
+pm2 start ecosystem.config.js
+pm2 save
+pm2 startup systemd
+curl -sf http://127.0.0.1:3000/health
+```
+
+Logs: `/opt/tree-app/logs/backend-out-*.log`, `backend-error-*.log`.
+
+### 3.8 Nginx reverse proxy template
+
+Save as `/etc/nginx/sites-available/tree-app`:
 
 ```nginx
 server {
     listen 443 ssl;
-    server_name <你的網域或 *.ts.net>;
+    server_name <YOUR_DOMAIN>;
 
-    ssl_certificate     /opt/tree-app/ssl/fullchain.pem;   # 見 §3.9
+    ssl_certificate     /opt/tree-app/ssl/fullchain.pem;   # see TLS Options
     ssl_certificate_key /opt/tree-app/ssl/privkey.pem;
 
-    client_max_body_size 12M;   # 樹木照片上傳（後端限 10M）
+    client_max_body_size 12M;   # tree photo uploads (backend limit 10M)
 
     location / {
         proxy_pass http://127.0.0.1:3000;
@@ -593,16 +505,13 @@ sudo ln -s /etc/nginx/sites-available/tree-app /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
-> 後端 `app.js` 已 `trust proxy`，會用 `X-Forwarded-For` 判斷來源 IP（速率限制／黑名單需要）。
-> GitHub webhook 路徑 `POST /webhook/deploy` 走同一個反代即可（原部署另用 `:8443`，非必要）。
+`POST /webhook/deploy` uses the same vhost. Legacy separate `:8443` listener is not required.
 
-### 3.9 TLS 憑證
+### 3.9 TLS certificates
 
-手機端**必須**是受信任的有效憑證，否則 App 全部 API 連不上（見 §0.6 的警告）。兩種做法：
-- **機構網域 + Let's Encrypt**（最佳）：`sudo certbot --nginx -d <你的網域>`。
-- **Tailscale `*.ts.net` 憑證**（內網方便）：`sudo bash scripts/setup_tailscale_tls.sh`（自動產憑證、改 nginx、設 90 天續期 cron）。
+See [TLS Options](#tls-options). Android requires a trusted certificate.
 
-### 3.10 防火牆
+### 3.10 Firewall
 
 ```bash
 sudo ufw allow OpenSSH
@@ -610,68 +519,481 @@ sudo ufw allow 'Nginx Full'
 sudo ufw enable
 ```
 
-### 3.11 自動部署 webhook
+### 3.11 Deploy webhook
 
-GitHub repo → Settings → Webhooks，Payload URL 指向 `https://<主機>/webhook/deploy`，Secret 與 `.env` 的 `DEPLOY_WEBHOOK_SECRET` 一致（細節見 §0.4）。之後 push 到 `main` 會觸發 `scripts/deploy.sh`：pull → `npm install` → `run_pending_migrations.js` → `pm2 reload` → health check → 失敗自動 rollback。
+Configure per [Handover Day §0.4](#04-configure-deploy-webhook). Push to `main` runs:
 
-### 3.12 資料庫備份（每日 cron）
+`pull` → `npm install --production` → `run_pending_migrations.js` → `pm2 reload` → health check → rollback on failure.
+
+Mechanism details: `HANDOFF.md` §6.1.
+
+### 3.12 Database backup cron
 
 ```bash
 crontab -e
-# 每日 03:00 備份（腳本見 backend/scripts/backup_db.sh）
+# Daily 03:00
 0 3 * * * /opt/tree-app/backend/scripts/backup_db.sh >> /opt/tree-app/logs/backup.log 2>&1
 ```
 
-樹木照片存於 Cloudinary（雲端），DB 備份即涵蓋主要資料。
+Tree photos reside in Cloudinary; DB backup covers primary relational data.
 
-### 3.13 建置並分發 APK
+### 3.13 Build and distribute APK
+
+See [APK Build](#apk-build). Run `VERIFICATION_CHECKLIST.md` before field rollout.
+
+---
+
+## TLS Options
+
+Android rejects self-signed certificates. Choose one path.
+
+### Option A — Institutional domain + Let's Encrypt (production preferred)
+
+```bash
+sudo certbot --nginx -d <YOUR_DOMAIN>
+```
+
+- `API_BASE_URL=https://<YOUR_DOMAIN>/api`
+- `CORS_ALLOWED_ORIGINS=https://<YOUR_DOMAIN>`
+
+### Option B — Tailscale `*.ts.net` certificate (lab / mesh)
+
+**Prerequisites**: Tailscale installed on VM; HTTPS Certificates enabled in Tailscale admin console.
+
+**Recommended (nginx rate limits + security headers preserved)**:
+
+```bash
+cd /opt/tree-app/backend
+sudo bash scripts/setup_tailscale_tls.sh <hostname>.<TAILNET>.ts.net
+```
+
+| Requirement | Detail |
+|-------------|--------|
+| Argument mandatory | Pass full `*.ts.net` hostname; auto-detection fails silently under `set -o pipefail` |
+| Cert validity | ~90 days; cron at `/etc/cron.d/tree-tls-renew` |
+| Cert paths | `/opt/tree-app/ssl/ts.crt`, `ts.key` |
+| Nginx backup path | `/opt/tree-app/nginx-conf-backups/` — **never** under `sites-enabled/` |
+
+**Quick alternative (bypasses nginx rate limits; operator-level, no sudo)**:
+
+```bash
+tailscale serve --bg --https 443 http://127.0.0.1:3000
+# Disable: tailscale serve --https=443 off
+```
+
+**Manual equivalent**:
+
+```bash
+sudo tailscale cert \
+  --cert-file /opt/tree-app/ssl/ts.crt \
+  --key-file /opt/tree-app/ssl/ts.key \
+  <hostname>.<TAILNET>.ts.net
+# Update nginx server_name and ssl_certificate paths, then:
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+- `API_BASE_URL=https://<hostname>.<TAILNET>.ts.net/api`
+
+### Option C — Self-signed (not recommended)
+
+Requires `--dart-define=SELF_SIGNED_TRUSTED_HOSTS=<host>` at APK build. Field devices will fail TLS verification without this flag.
+
+### TLS validation
+
+```bash
+curl https://<YOUR_DOMAIN>/health    # no -k; expect OK, no cert error
+```
+
+---
+
+## APK Build
+
+Execute on a **build machine**, not the production server.
+
+### Prerequisites
+
+| File | Purpose |
+|------|---------|
+| `frontend/android/key.properties` | `GOOGLE_MAPS_API_KEY` (required for map screen) |
+| Backend `.env` | `CORS_ALLOWED_ORIGINS` must match APK origin |
+
+### Build command
 
 ```bash
 cd frontend
 flutter build apk --release \
-  --dart-define=API_BASE_URL=https://<你的網域>/api
-# 自簽憑證主機才需要：--dart-define=SELF_SIGNED_TRUSTED_HOSTS=<host>
+  --dart-define=API_BASE_URL=https://<YOUR_DOMAIN>/api
 ```
 
-APK 給調查員安裝；**不含**任何個人金鑰或 token。最後跑一輪 `VERIFICATION_CHECKLIST.md`。
+| Deployment type | `API_BASE_URL` |
+|-----------------|----------------|
+| Let's Encrypt | `https://<YOUR_DOMAIN>/api` |
+| Tailscale | `https://<hostname>.<TAILNET>.ts.net/api` |
+
+APK contains no personal keys or tokens. Distribute to field surveyors via lab-approved channel.
+
+### App config reference
+
+Inspect `lib/config/app_config.dart` and build-time `dart-define` values. Lab can retarget API endpoint without source changes.
 
 ---
 
-## 4. 設定檔位置（App）
+## Verification
 
-檢查 `lib/config/app_config.dart` 與建置時 `dart-define`，確保實驗室可改 API 位址而無需改程式碼。
+### Health check
 
----
+```bash
+curl https://<YOUR_DOMAIN>/health
+```
 
-## 5. 管理用 Web UI（**已決定 defer，非必做**）
+| Endpoint | Auth | Expected |
+|----------|------|----------|
+| `GET /health` | None | `200`, body `OK` |
+| `GET /api/health` | JWT required | `401` without token — **not** a failure indicator |
 
-> 2026-06 決議：App 內建管理後台（admin 頁）已涵蓋使用者/邀請碼/專案管理需求，
-> 獨立瀏覽器版 Web portal **刻意不做**；未來若有需求，建議用 React-Admin/Refine 接現有 REST+JWT，非手刻。
+A `401` on `/api/*` with valid TLS still proves nginx → backend connectivity. Use `/health` for automated checks.
 
-教授／管理員需要**不改程式**即可：
+### Full checklist
 
-| 功能 | 說明 |
-|------|------|
-| 使用者與邀請碼 | 建立調查員、重設密碼、停用帳號 |
-| 專案與專案區 | CRUD `projects` / `project_areas` |
-| 專案邊界 | 地圖檢視／匯入 GeoJSON／觸發建議邊界 |
-| 待測量 / 樹木資料 | 查詢、匯出 CSV、修正錯誤列 |
-| 系統設定 | ML URL、備份、CORS、維護模式 |
-
-**建議技術**：後端同 repo 加 `admin-portal/`（React/Vue）或輕量 `ejs` 管理頁，共用既有 JWT + `requireRole('業務管理員')` API。
-
-**優先順序**：P0 使用者+邀請 → P1 專案/邊界檢視 → P2 資料庫備份與匯出。
+Run every item in `VERIFICATION_CHECKLIST.md` after initial deploy and after each major release.
 
 ---
 
-## 6. 備份與還原
+## Redeploy / Webhook
 
-- 每日 `pg_dump` 實驗室 DB
-- 上傳樹木影像目錄一併備份
-- 文件化還原：`psql` + migrate 版本號
+### Automatic (webhook configured)
+
+Push to `main`. Host executes `scripts/deploy.sh`:
+
+1. `git pull`
+2. `npm install --production`
+3. `node scripts/run_pending_migrations.js`
+4. `pm2 reload ecosystem.config.js`
+5. Health check
+6. Rollback on failure
+
+### Manual redeploy
+
+```bash
+cd /opt/tree-app/backend
+git pull
+npm install --production
+node scripts/run_pending_migrations.js
+pm2 reload ecosystem.config.js
+curl -sf http://127.0.0.1:3000/health
+```
 
 ---
 
-## 7. 與本輪程式修復的關係
+## Operations / Logs
 
-部署新版本後請執行 `docs/VERIFICATION_CHECKLIST.md` 全部勾選一次。
+### Routine status
+
+```bash
+pm2 status
+pm2 logs tree-backend
+sudo systemctl status nginx postgresql
+df -h
+```
+
+### PM2 logs (process name: `tree-backend`)
+
+```bash
+pm2 status
+pm2 logs tree-backend
+pm2 logs tree-backend --lines 200
+pm2 logs tree-backend --err
+pm2 logs tree-backend --out
+pm2 describe tree-backend
+ls -l /opt/tree-app/logs
+tail -n 100 /opt/tree-app/logs/backend-error-0.log
+```
+
+### Nginx logs
+
+```bash
+sudo tail -n 100 /var/log/nginx/access.log
+sudo tail -n 100 /var/log/nginx/error.log
+sudo nginx -t
+sudo ss -ltnp | grep ':443'
+```
+
+### Backend / TLS self-test (on VM)
+
+```bash
+curl -sf http://127.0.0.1:3000/health
+curl https://<hostname>.<TAILNET>.ts.net/health
+```
+
+### Diagnostic decision tree
+
+| Observation | Likely cause | Next action |
+|-------------|--------------|-------------|
+| No new lines in `pm2 logs` during app use | Network/DNS between phone and VM | Check Tailscale, MagicDNS, `API_BASE_URL` |
+| Nginx `access.log` shows `/api/*` with 4xx/5xx | Backend application error | `pm2 logs tree-backend --err` |
+| Login returns "account not found" | DB missing user or input mismatch | See [Login Troubleshooting](#login-troubleshooting) |
+
+### Known non-fatal log noise
+
+`Key (typname, typnamespace)=(schema_migrations, ...) already exists` (PostgreSQL `23505`): idempotent migration retry on restart. Safe to ignore if PM2 status is `online` and out-log shows successful PostgreSQL connection.
+
+---
+
+## Login Troubleshooting
+
+### List users
+
+```bash
+cd /opt/tree-app/backend
+node scripts/list_users.js
+psql "<DATABASE_URL>" -c "SELECT username, role, is_active FROM users;"
+```
+
+Create admin (production):
+
+```bash
+node scripts/create_lab_admin.js \
+  --username labadmin \
+  --password '<STRONG_PASSWORD>' \
+  --display 'Lab Administrator'
+```
+
+Never use `seed_dev_users.js` on production databases.
+
+### Symptom: "Account not found" but user exists in DB
+
+Login query: `WHERE username = $1` (**case-sensitive**).
+
+| Cause | Fix |
+|-------|-----|
+| User entered **display name** instead of **username** | Login field must be `labadmin`, not display label |
+| Mobile keyboard capitalized first letter | Ensure all lowercase, no leading/trailing spaces |
+| Script run from wrong directory | `cd /opt/tree-app/backend` before `node scripts/*.js` |
+
+### Audit evidence
+
+```bash
+psql "<DATABASE_URL>" -c \
+  "SELECT created_at, username, ip_address, details FROM audit_logs \
+   WHERE action='LOGIN_FAILED' ORDER BY created_at DESC LIMIT 5;"
+```
+
+### Isolate backend vs client input
+
+```bash
+curl -s -X POST https://<YOUR_DOMAIN>/api/login \
+  -H "Content-Type: application/json" \
+  -d '{"account":"labadmin","password":"<PASSWORD>"}'
+```
+
+| Response | Interpretation |
+|----------|----------------|
+| `success:true` + token | Backend OK; fix phone input |
+| "Account not found" | Verify `DATABASE_URL` in `.env` |
+
+### Password reset
+
+`create_lab_admin.js` inserts only; does not update existing passwords.
+
+```bash
+psql "<DATABASE_URL>" -c "DELETE FROM users WHERE username='labadmin';"
+node scripts/create_lab_admin.js \
+  --username labadmin \
+  --password '<NEW_PASSWORD>' \
+  --display 'Lab Administrator'
+```
+
+---
+
+## Account / IP Management
+
+Use `<DATABASE_URL>` from `backend/.env` (`postgres://<user>:<pass>@localhost:5432/<db>`).
+
+### A. Deactivate or delete account
+
+```bash
+# Preferred: soft disable
+psql "<DATABASE_URL>" -c \
+  "UPDATE users SET is_active=false WHERE username='<USERNAME>';"
+
+# Hard delete (may fail on FK constraints)
+psql "<DATABASE_URL>" -c \
+  "DELETE FROM users WHERE username='<USERNAME>';"
+```
+
+### B. Unlock account (login lockout)
+
+After 5 failed passwords → 30-minute lock (`middleware/loginAttemptMonitor.js`).
+
+```bash
+psql "<DATABASE_URL>" -c \
+  "UPDATE users SET is_active=true, login_attempts=0, last_attempt_time=NULL \
+   WHERE username='<USERNAME>';"
+```
+
+Auto-unlock occurs after 30 minutes without manual intervention.
+
+### C. Rate limits and IP blacklist
+
+**In-memory rate limiter** (`middleware/rateLimiter.js`; cleared on process restart):
+
+| Limiter | Limit |
+|---------|-------|
+| `apiLimiter` | 500 req / 15 min |
+| `loginLimiter` | 50 req / hour |
+| `aiLimiter` | 30 req / hour |
+| `burstLimiter` | 60 req / 10 sec |
+
+| Action | Command / config |
+|--------|------------------|
+| Clear in-memory counters | `pm2 reload tree-backend` |
+| Raise burst ceiling | `BURST_LIMIT_MAX=120` in `.env`, then reload |
+| Disable limits (test/CI only) | `DISABLE_RATE_LIMIT=true` — **never in production** |
+
+**Persistent IP blacklist** (`ip_blacklist` table; triggered by burst abuse or ≥30 login failures/hour):
+
+```bash
+psql "<DATABASE_URL>" -c \
+  "SELECT ip, locked_until, reason, offense_count FROM ip_blacklist ORDER BY updated_at DESC;"
+
+psql "<DATABASE_URL>" -c "DELETE FROM ip_blacklist WHERE ip='<IP>';"
+
+psql "<DATABASE_URL>" -c \
+  "UPDATE ip_blacklist SET locked_until=NOW() WHERE ip='<IP>';"
+
+psql "<DATABASE_URL>" -c "DELETE FROM ip_login_attempts WHERE ip='<IP>';"
+```
+
+Admin API alternative: `GET/POST /api/admin/ip-blacklist` (requires admin JWT). Direct `psql` is fastest on-host.
+
+---
+
+## Nginx / TLS Troubleshooting
+
+### Issue 1 — `setup_tailscale_tls.sh` silent exit; `nginx -t` cannot find `ts.crt`
+
+| Field | Detail |
+|-------|--------|
+| **Symptom** | Script produces no output; nginx fails on missing cert |
+| **Cause** | Auto-detection pipeline (`grep \| head`) fails under `set -e -o pipefail` |
+| **Fix** | Pass hostname explicitly: `sudo bash scripts/setup_tailscale_tls.sh <hostname>.<TAILNET>.ts.net` |
+
+### Issue 2 — `conflicting server name` / `could not build server_names_hash`
+
+| Field | Detail |
+|-------|--------|
+| **Symptom** | `nginx -t` reports duplicate `server_name` |
+| **Cause** | Backup files in `/etc/nginx/sites-enabled/` (nginx includes all files in that directory) |
+| **Immediate fix** | `sudo rm -f /etc/nginx/sites-enabled/tree-app.bak.*` |
+| **Verify** | `ls -l /etc/nginx/sites-enabled/` — only `tree-app` symlink should remain |
+| **Permanent fix** | Script stores backups in `/opt/tree-app/nginx-conf-backups/` |
+
+```bash
+sudo rm -f /etc/nginx/sites-enabled/tree-app.bak.*
+ls -l /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+If a legitimately long domain exceeds hash bucket size:
+
+```bash
+sudo sed -i 's/^http {/http {\n    server_names_hash_bucket_size 128;/' /etc/nginx/nginx.conf
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+### Issue 3 — `/api/health` returns `401 Unauthorized`
+
+| Field | Detail |
+|-------|--------|
+| **Symptom** | `401 {"success":false,"message":"..."}` on health probe |
+| **Cause** | JWT middleware on all `/api/*` routes |
+| **Fix** | Probe `GET /health` instead |
+| **Interpretation** | Any HTTP response without TLS error confirms nginx → backend path |
+
+```bash
+curl https://<YOUR_DOMAIN>/health    # expect: OK
+```
+
+---
+
+## Backup
+
+### Automated daily backup
+
+Cron entry (see Production Runbook §3.12):
+
+```bash
+0 3 * * * /opt/tree-app/backend/scripts/backup_db.sh >> /opt/tree-app/logs/backup.log 2>&1
+```
+
+### Scope
+
+| Asset | Location | Backup method |
+|-------|----------|---------------|
+| PostgreSQL | localhost | `backup_db.sh` (`pg_dump`) |
+| Tree photos | Cloudinary | Provider-side; not on VM disk |
+| Nginx config | `/etc/nginx/sites-available/tree-app` | Manual or config-mgmt; backups in `/opt/tree-app/nginx-conf-backups/` |
+| TLS certs | `/opt/tree-app/ssl/` | Regenerable via certbot or `setup_tailscale_tls.sh` |
+| Application code | GitHub | Source of truth is remote repo |
+
+### Restore procedure (outline)
+
+1. Restore PostgreSQL dump: `psql` or `pg_restore` into `treedb`.
+2. Verify `schema_migrations` table version matches expected release.
+3. Run `node scripts/run_pending_migrations.js` if deploying newer code atop older dump.
+4. `pm2 reload ecosystem.config.js`.
+5. Validate `GET /health`.
+
+Document org-specific RPO/RTO in local ops notes.
+
+---
+
+## Deferred Web Portal
+
+**Status (2026-06)**: Deferred. In-app admin screens cover user management, invite codes, and project administration. A standalone browser admin portal is **out of scope** for current handover.
+
+If required later, recommended approach: React-Admin or Refine consuming existing REST + JWT APIs—not a custom from-scratch portal.
+
+### Would-be feature map (future reference)
+
+| Feature | Description |
+|---------|-------------|
+| Users and invites | Create surveyors, reset passwords, deactivate accounts |
+| Projects and areas | CRUD `projects` / `project_areas` |
+| Project boundaries | Map view, GeoJSON import, suggested boundary triggers |
+| Survey data | Query, CSV export, row correction |
+| System settings | ML URL, backup, CORS, maintenance mode |
+
+Suggested priority if revived: P0 users + invites → P1 projects/boundaries → P2 backup/export UI.
+
+---
+
+## Appendix — Glossary
+
+| Term | Definition |
+|------|------------|
+| `<SERVER_IP>` | VM or host IPv4/IPv6 address on lab network |
+| `<YOUR_DOMAIN>` | App-facing hostname (institutional FQDN or `*.ts.net`) |
+| `<TAILNET>` | Tailscale tailnet identifier in `*.ts.net` hostnames |
+| `<PVE_HOST>` | Proxmox hypervisor address |
+| `<VM_USER>` | Linux account on deployment VM |
+| `<DB_PASSWORD>` | PostgreSQL role password for `treeapp` |
+| `<ORG>` | Lab GitHub organization or user owning the repo |
+| **Fresh snapshot** | Orphan-branch single-commit push without prior git history |
+| **`tree-backend`** | PM2 process name (`ecosystem.config.js`) |
+| **`SKIP_CSV_IMPORT=1`** | Migrate flag: schema + reference data only; no dev tree CSV |
+| **`/health`** | Public liveness endpoint; returns plain text `OK` |
+| **Tailscale Funnel** | Exposes Tailscale service to public internet (for GitHub webhooks) |
+| **CORS** | `CORS_ALLOWED_ORIGINS` must match APK `API_BASE_URL` origin |
+| **Cloudinary** | External object storage for tree photos |
+
+### Related documents
+
+| Document | Purpose |
+|----------|---------|
+| `AUTHORS.md` | Canonical attribution (preserve on handover) |
+| `LICENSE` | MIT license and copyright |
+| `HANDOFF.md` | System overview, local dev, webhook mechanism |
+| `HANDOFF_SECRETS_CHECKLIST.md` | Secret inventory and rotation |
+| `VERIFICATION_CHECKLIST.md` | Post-deploy validation |
+| `ml_service/README.md` | Optional ML service setup |

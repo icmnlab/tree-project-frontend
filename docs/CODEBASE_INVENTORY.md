@@ -234,12 +234,18 @@ Module doc template (Western style):
 
 Convert local `DEPLOYMENT_LOG.md` ops into public `LAB_DEPLOYMENT_GUIDE.md` after VM steps verified (deferred until school-side SSH/webhook work).
 
-### Phase 5 — Operations runbooks (complete 2026-06-29)
+### Phase 5 — Field & handover runbooks (complete 2026-06-29)
 
 - [x] `FIELD_SURVEY_SOP.md` — field operator procedures
-- [x] `VERIFICATION_CHECKLIST.md` — post-deploy QA
 - [x] `HANDOVER_CHECKLIST.md` — delivery sign-off
 - [x] `AUTHORS.md` consolidated; `CONTRIBUTION_RECORD.md` → pointer stub
+
+### Phase 6 — Canonical ops guides (complete 2026-06-29)
+
+- [x] `LAB_DEPLOYMENT_GUIDE.md` — production deployment runbook
+- [x] `BUILD_GUIDE.md` — mobile build and release
+- [x] `HANDOFF_SECRETS_CHECKLIST.md` — secrets inventory
+- [x] `VERIFICATION_CHECKLIST.md` — full regression matrix (B1–B23 restored)
 
 ---
 
@@ -259,6 +265,7 @@ Before marking a module doc "reviewed":
 
 | Date | Change |
 |------|--------|
+| 2026-06-29 | Phase 6 canonical guides (LAB/BUILD/SECRETS) + verification matrix restored |
 | 2026-06-29 | Phase 5 ops runbooks + AUTHORS consolidation |
 | 2026-06-29 | Phase 2 module guides + experimental docs complete |
 | 2026-06-29 | Initial inventory: 129 Dart, 168 JS, 145 endpoints, 13 dashboard cards |
