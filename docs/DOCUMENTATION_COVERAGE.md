@@ -85,7 +85,7 @@ DOCUMENTATION_RETENTION.md ← Delete vs keep policy
 |------|-----|
 | `node_modules/`, `.dart_tool/`, `build/` | Generated; not in git |
 | `package-lock.json`, `pubspec.lock` | Standard lockfiles |
-| `.github/workflows/` | CI described in HANDOFF §5; workflow is self-explanatory |
+| `.github/workflows/` | CI summarized in `DEVELOPMENT_WORKFLOW.md`; YAML is source of truth |
 | Individual migration SQL bodies | Named + ordered in DATABASE_SCHEMA; details in SQL comments |
 | Every test case | Listed by area in VERIFICATION + test file names in FRAMEWORK |
 

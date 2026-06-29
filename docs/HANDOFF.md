@@ -205,8 +205,10 @@ flutter test                 # 全套（目前 435 pass）
 ### 5.3 CI（GitHub Actions，push / PR 觸發）
 | Repo | Workflow | 內容 |
 |------|----------|------|
-| `tree-project-backend` | `.github/workflows/ci.yml` | 起 `postgres:15` → `migrate.js` → `seed_dev_users.js` → 啟 server → `tests/runner.js`（**80 cases**，CI 全綠） |
+| `tree-project-backend` | `.github/workflows/ci.yml` | 起 `postgres:15` → `migrate.js` → `seed_dev_users.js` → 啟 server → `tests/runner.js`（**89 cases**） |
 | `tree-project-frontend` | `.github/workflows/ci.yml` | `flutter pub get` → `analyze`（advisory）→ `flutter test`（435 pass） |
+
+完整開發流程（分支、PR、CI 門檻）：**`DEVELOPMENT_WORKFLOW.md`**。
 
 CI 專用環境變數（在 workflow 內設，正式環境**不要**設）：
 - `DB_SSL=false`：連 CI 的無 SSL Postgres。

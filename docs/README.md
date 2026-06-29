@@ -14,8 +14,9 @@ Documentation for **Sustainable TreeAI** (`tree-project-frontend` + `tree-projec
 | 3 | **[API_REFERENCE.md](./API_REFERENCE.md)** | All REST endpoints by module |
 | 4 | **[DATABASE_SCHEMA.md](./DATABASE_SCHEMA.md)** | Migrations, tables, dev vs production data |
 | 5 | **[HANDOFF.md](./HANDOFF.md)** | Run locally, run tests, find other docs |
-| 6 | **[HANDOFF_SECRETS_CHECKLIST.md](./HANDOFF_SECRETS_CHECKLIST.md)** | API keys and `.env` setup |
-| 7 | **[LAB_DEPLOYMENT_GUIDE.md](./LAB_DEPLOYMENT_GUIDE.md)** | Deploy to a production server |
+| 6 | **[DEVELOPMENT_WORKFLOW.md](./DEVELOPMENT_WORKFLOW.md)** | Git branch, PR, CI gates, daily dev loop |
+| 7 | **[HANDOFF_SECRETS_CHECKLIST.md](./HANDOFF_SECRETS_CHECKLIST.md)** | API keys and `.env` setup |
+| 8 | **[LAB_DEPLOYMENT_GUIDE.md](./LAB_DEPLOYMENT_GUIDE.md)** | Deploy to a production server |
 
 ## By topic
 
@@ -106,7 +107,7 @@ Western-style technical docs: one canonical architecture guide plus focused topi
 | **OpenAPI (2026-06-29)** | `backend/openapi/openapi.yaml` + `openapi/README.md` |
 | **Backend catalog (2026-06-29)** | `backend/docs/SOURCE_LAYOUT.md`, `DATABASE_DESIGN.md`, `DATABASE_SCHEMA.md` |
 | **API policy (2026-06-29)** | `OPENAPI_SCOPE.md`, `backend/openapi/openapi.yaml` |
-| **Onboarding (2026-06-29)** | `ONBOARDING_READING_PATH.md`, `LOCAL_DEVELOPER_SETUP.md`, `ANDROID_RELEASE_AND_PLAY_STORE.md` |
+| **Onboarding (2026-06-29)** | `ONBOARDING_READING_PATH.md`, `LOCAL_DEVELOPER_SETUP.md`, `ANDROID_RELEASE_AND_PLAY_STORE.md`, `DEVELOPMENT_WORKFLOW.md` |
 | **Meta (2026-06-29)** | `RESEARCH_REFERENCE.md`, `DOCUMENTATION_COVERAGE.md`, `DOCUMENTATION_RETENTION.md` |
 | **Research / reference** | DBH research notes, external GNSS — see `RESEARCH_REFERENCE.md` |
 

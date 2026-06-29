@@ -29,6 +29,7 @@ Do **not** start from scattered markdown at repo root alone — the hub orders d
 | **2** | 2 h | Your domain: survey → `SURVEY_HISTORY.md`; boundaries → `BOUNDARY_SYSTEM_DESIGN.md`; BLE → `VLGEO2_STD_APPLICATION_GUIDE.md` |
 | **2** | 1 h | `DATABASE_DESIGN.md` → `DATABASE_SCHEMA.md` → `backend/docs/SOURCE_LAYOUT.md` |
 | **3** | 2 h | `BUILD_GUIDE.md` + `LOCAL_DEVELOPER_SETUP.md` → create `key.properties`, `.env` |
+| **3b** | 30 min | `DEVELOPMENT_WORKFLOW.md` — branch, PR, CI |
 | **Before deploy** | | `LAB_DEPLOYMENT_GUIDE.md`, `HANDOFF_SECRETS_CHECKLIST.md`, `VERIFICATION_CHECKLIST.md` |
 | **Before Play Store** | | `ANDROID_RELEASE_AND_PLAY_STORE.md` |
 
