@@ -706,7 +706,7 @@ curl -sf http://127.0.0.1:3000/health && echo OK
 
 ```bash
 cd /opt/tree-app/backend
-CONFIRM=YES SKIP_CSV_IMPORT=0 ./scripts/reset_fresh_db.sh
+CONFIRM=YES SKIP_CSV_IMPORT=0 bash scripts/reset_fresh_db.sh
 node scripts/seed_dev_users.js    # dev login admin/12345 — NOT for production admin
 # optional demo boundaries:
 node scripts/seed_dev_boundaries.js
@@ -716,12 +716,21 @@ psql "$DATABASE_URL" -c "SELECT COUNT(*) FROM tree_survey;"
 **Restore production-empty state after testing:**
 
 ```bash
-CONFIRM=YES SKIP_CSV_IMPORT=1 ./scripts/reset_fresh_db.sh
+CONFIRM=YES SKIP_CSV_IMPORT=1 bash scripts/reset_fresh_db.sh
 node scripts/create_lab_admin.js --username labadmin --password '<STRONG>' --display 'Lab Admin'
 pm2 reload tree-backend
 ```
 
 See `backend/dev-fixtures/README.md` and `DATABASE_DESIGN.md` §Production vs development data policy.
+
+**Troubleshooting (2026-06-30 lab)**:
+
+| Error | Fix |
+|-------|-----|
+| `./scripts/reset_fresh_db.sh: Permission denied` | Use `bash scripts/reset_fresh_db.sh` or `chmod +x scripts/reset_fresh_db.sh` |
+| `reset_fetsh_db.sh: No such file` | Typo — filename is **`reset_fresh_db.sh`** |
+| `curl -sf https://127.0.0.1:3000/health` silent fail | Use **`http://`** for local PM2; HTTPS only via nginx/`*.ts.net` |
+| SSH fails with wrong `100.113.x.x` IP | VM Tailscale IP is **`100.116.125.118`**; client must be on same tailnet (`tailscale status`) |
 
 ### Enable SSH (one-time, Ubuntu VM)
 
