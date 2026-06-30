@@ -396,7 +396,11 @@ App login: **管理員登入** → username `admin_icmnlab` (not display name).
 **If a bad trailer slipped in** (branch not merged yet):
 
 ```powershell
-git commit --amend --no-verify -m "your message without trailer"
+# Cursor IDE may inject Co-authored-by even with --no-verify; use commit-tree:
+$tree = git rev-parse 'HEAD^{tree}'
+$parent = git rev-parse 'HEAD^'
+$new = & 'C:\Program Files\Git\bin\git.exe' commit-tree $tree -p $parent -m 'your message without trailer'
+git reset --hard $new
 git log -1 --format=%B
 git push --force-with-lease
 ```
