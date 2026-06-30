@@ -179,7 +179,124 @@ git config user.email   # e.g. anita.likebear@gmail.com
 1. `user.email` matches a **verified email** on your GitHub account (or your `@users.noreply.github.com` address).
 2. You push branches / merge PRs under **your** GitHub user (e.g. `anita`), not the org account.
 
-**Using `origin` instead of `icmnlab` remote name**: Anita's setup already has `origin` → `icmnlab` — all commands below use `origin`; no second remote required.
+**Using `origin` instead of `icmnlab` remote name**: If you cloned from `icmnlab` directly, `origin` is enough — all commands below use `origin`.
+
+---
+
+## New machine — first clone (no repo on disk yet)
+
+Use this on a **new PC** or any machine that has **never** cloned the project. Path examples use `D:\treeproject`; change if you prefer (e.g. `C:\dev\treeproject`).
+
+### 0. Prerequisites (once per machine)
+
+| Tool | Check |
+|------|--------|
+| Git | `git --version` |
+| Flutter 3.x | `flutter doctor` (Android toolchain OK for mobile work) |
+| Node 18+ | `node -v` (only if running backend locally) |
+| GitHub access | Invited as **collaborator** on `icmnlab/tree-project-backend` and `tree-project-frontend` |
+
+### 1. Git identity (once per machine — **your** name on commits)
+
+```powershell
+git config --global user.name "Your Name"
+git config --global user.email "you@example.com"
+```
+
+Use an email **verified on your GitHub account** so contributions appear on your profile. This does **not** change who owns the repo — pushes still go to `icmnlab`.
+
+### 2. Clone both repos
+
+```powershell
+mkdir D:\treeproject
+cd D:\treeproject
+
+git clone https://github.com/icmnlab/tree-project-backend.git
+git clone https://github.com/icmnlab/tree-project-frontend.git
+```
+
+**Why two repos?** — Frontend and backend are separate GitHub projects; daily work may touch one or both.
+
+**Verify remotes:**
+
+```powershell
+cd D:\treeproject\tree-project-backend
+git remote -v    # origin → icmnlab/tree-project-backend
+
+cd D:\treeproject\tree-project-frontend
+git remote -v    # origin → icmnlab/tree-project-frontend
+```
+
+First `git push` will open browser login (Git Credential Manager) — sign in with **your** GitHub collaborator account.
+
+### 3. Frontend — dependencies and local secrets
+
+```powershell
+cd D:\treeproject\tree-project-frontend
+flutter pub get
+
+cd android
+copy key.properties.example key.properties
+notepad key.properties
+```
+
+In `key.properties`, at minimum set **`GOOGLE_MAPS_API_KEY`** (Maps screens). Signing fields can stay as placeholders for debug builds.
+
+**Do not create** `pubspec.yaml` — it is already in the repo.  
+**Do not commit** `key.properties`, `.env`, or keystores.
+
+If `flutter pub get` errors on `assets/images/`: `mkdir assets\images` once, or pull `main` after the `assets/images/.gitkeep` chore PR is merged.
+
+### 4. Backend — only if you run the server locally (optional)
+
+Most handover work uses the **lab VM** backend; local backend is optional.
+
+```powershell
+cd D:\treeproject\tree-project-backend
+copy .env.example .env
+notepad .env
+# Set DATABASE_URL, JWT_SECRET at minimum — see LOCAL_DEVELOPER_SETUP.md
+
+npm ci
+node scripts/migrate.js
+node scripts/seed_dev_users.js    # dev DB only — admin/12345
+npm start
+```
+
+Never use `seed_dev_users.js` against the production lab VM database.
+
+### 5. Verify frontend tests (recommended)
+
+```powershell
+cd D:\treeproject\tree-project-frontend
+flutter test
+```
+
+### 6. Run or build against lab VM
+
+**Debug on device/emulator:**
+
+```powershell
+cd D:\treeproject\tree-project-frontend
+flutter run -d <device-id> `
+  --dart-define=API_BASE_URL=https://vm121-standard-pc-i440fx-piix-1996.tail146e6a.ts.net/api `
+  --dart-define=SELF_SIGNED_TRUSTED_HOSTS=.ts.net
+```
+
+**Release APK for field testing:**
+
+```powershell
+flutter build apk --release `
+  --dart-define=API_BASE_URL=https://vm121-standard-pc-i440fx-piix-1996.tail146e6a.ts.net/api `
+  --dart-define=SELF_SIGNED_TRUSTED_HOSTS=.ts.net
+```
+
+App: **管理員登入** → username `admin_icmnlab`. Empty lab DB — create 專案／區 in the app before field survey.
+
+### 7. Next steps
+
+Continue with [Daily loop (after initial sync)](#daily-loop-after-initial-sync).  
+If you later get a second machine that **already** has clones, use [Existing clone — first sync](#existing-clone--first-sync-already-at-dtreeproject) instead of cloning again.
 
 ---
 
@@ -259,6 +376,8 @@ App login: **管理員登入** → username `admin_icmnlab` (not display name).
 
 ---
 
+## Database changes
+
 | Environment | Command |
 |-------------|---------|
 | Dev / CI fresh DB | `node scripts/migrate.js` |
@@ -294,7 +413,9 @@ See local ops log `project_code/docs/DEPLOYMENT_LOG.md` §G.4 for full checklist
 
 1. Collaborator invite on both `icmnlab` repos  
 2. `git config user.name` + `user.email` — **your** identity ([Git identity](#git-identity--whose-contribution-is-it))  
-3. Clone **or** [Existing clone — first sync](#existing-clone--first-sync-already-at-dtreeproject) if already at `D:\treeproject`  
+3. Clone **or** pick one:
+   - [New machine — first clone](#new-machine--first-clone-no-repo-on-disk-yet) (new PC, not cloned yet)
+   - [Existing clone — first sync](#existing-clone--first-sync-already-at-dtreeproject) (`D:\treeproject` already there)  
 4. `LOCAL_DEVELOPER_SETUP.md` — `key.properties`; optional backend `.env` for local server  
 5. This file — [Daily loop](#daily-loop-after-initial-sync)  
 6. `ONBOARDING_READING_PATH.md` — full doc map  
