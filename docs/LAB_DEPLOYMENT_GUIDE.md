@@ -735,6 +735,8 @@ See `backend/dev-fixtures/README.md` and `DATABASE_DESIGN.md` §Production vs de
 | `psql: role "vm121" does not exist` | Shell did not load `.env`; run `set -a && source .env && set +a` before `psql "$DATABASE_URL"` |
 | `pm2 reload` ignores new `.env` values | Use `pm2 reload tree-backend --update-env` |
 | Tree detail page shows all fields as 無 | **Map → detail path**: `/map` returns lightweight markers; detail page must refetch `by_id` (fixed in `fix/map-detail-refetch-from-map`). Rebuild APK after merge |
+| GitHub webhook **400 plain HTTP to HTTPS port** | Funnel must target **`http://127.0.0.1:3000`**, not `:443` (nginx ssl). See `DEPLOYMENT_LOG.md` §I.5.1 |
+| `unable to find directory entry` `assets/images/` | Run `git pull` for `assets/images/.gitkeep` or `mkdir assets/images` then `flutter pub get` |
 | Admin user shows no assigned areas in user form | **Expected** for `系統管理員` — API bypasses `user_projects`; do not confuse with surveyor role permissions |
 
 **Tree detail diagnostic SQL (on VM):**
@@ -791,7 +793,9 @@ cd /opt/tree-app/backend
 #   ADMIN_API_TOKEN=<openssl rand -hex 32>
 pm2 reload tree-backend
 
-sudo tailscale funnel --bg --https=443 http://127.0.0.1:443
+sudo tailscale funnel --https=443 off   # if reconfiguring
+# Funnel terminates HTTPS; backend must be plain HTTP (not nginx :443 ssl)
+sudo tailscale funnel --bg --https=443 http://127.0.0.1:3000
 sudo tailscale funnel status
 ```
 

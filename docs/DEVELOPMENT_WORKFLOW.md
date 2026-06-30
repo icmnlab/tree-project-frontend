@@ -151,6 +151,8 @@ docs: update DATABASE_DESIGN FAQ
 chore: regenerate openapi.yaml
 ```
 
+**Author policy (lab handover)**: commit from a **terminal** with `git commit -m "..."` only. Do **not** add `Co-authored-by: Cursor` or other AI trailers. Avoid Cursor IDE's built-in commit UI if it injects co-author lines.
+
 ---
 
 ## Database changes
