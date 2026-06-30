@@ -198,6 +198,8 @@ See local ops log `project_code/docs/DEPLOYMENT_LOG.md` §G.4 for full checklist
 
 Purpose: verify GitHub access, CI, and (backend) webhook deploy before real feature work.
 
+**Important**: Opening or merging a PR on GitHub does **not** require a local `git pull` first. Pull locally only when you need to build, run tests, or start new work after a merge.
+
 **Backend (triggers lab VM deploy on merge to `main`):**
 
 ```bash
@@ -223,6 +225,10 @@ git push -u origin chore/my-first-push
 ```
 
 **Rules**: never commit `.env`, passwords, `key.properties`, or lab IPs in public docs. Server secrets live only on VM `.env` and GitHub Webhook settings.
+
+**Local `git status` noise**: after `flutter pub get`, `linux/` / `macos/` / `windows/` `generated_plugin_*` files may show as modified — run `git restore` on those paths; do not commit them.
+
+**Webhook `Invalid signature` in PM2 logs**: GitHub Webhook **Secret** must exactly match VM `DEPLOY_WEBHOOK_SECRET` in `/opt/tree-app/backend/.env`, then `pm2 reload tree-backend --update-env`. See local ops log `project_code/docs/DEPLOYMENT_LOG.md` §I.5.
 
 **After backend merge**: SSH to VM → `tail -n 20 /opt/tree-app/logs/deploy.log` or `GET /webhook/status` with `X-Admin-Token`.
 
