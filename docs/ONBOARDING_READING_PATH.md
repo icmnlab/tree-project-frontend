@@ -2,8 +2,8 @@
 
 How to read documentation on GitHub, what you need to understand, and whether docs alone are enough to continue development.
 
-**Last reviewed**: 2026-06-30  
-**Entry point**: [`docs/README.md`](./README.md)
+**Last reviewed**: 2026-07-01  
+**Entry point**: [`docs/README.md`](./README.md) — **Step 1** of the reading path
 
 ---
 
@@ -35,6 +35,18 @@ Do **not** start from scattered markdown at repo root alone — the hub orders d
 | **Before Play Store** | | `ANDROID_RELEASE_AND_PLAY_STORE.md` |
 
 **Operators / field crews**: `FIELD_SURVEY_SOP.md` only — skip ML research files.
+
+---
+
+## Language (English vs 中文)
+
+| Audience | Read |
+|----------|------|
+| Engineers (architecture, API, Git/CI) | **English** — `docs/README.md` hub |
+| Taiwan lab / 現場 | `HANDOFF.md`, `FIELD_SURVEY_SOP.md` (mixed 中文 OK) |
+| VM 實操含密碼 | Local `DEPLOYMENT_LOG.md` only — **not** on GitHub |
+
+We do **not** maintain a full Chinese mirror of every doc. See `docs/README.md` §Language policy.
 
 ---
 

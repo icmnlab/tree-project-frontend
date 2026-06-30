@@ -2,9 +2,25 @@
 
 Documentation for **Sustainable TreeAI** (`tree-project-frontend` + `tree-project-backend`).
 
-**New to the project?** Start with **[ONBOARDING_READING_PATH.md](./ONBOARDING_READING_PATH.md)** — reading order, what to understand vs look up, and how GitHub docs relate to in-person handover.
+---
 
-## Start here
+## Start here (read in this order)
+
+| Step | Document | Who |
+|------|----------|-----|
+| **1** | **[ONBOARDING_READING_PATH.md](./ONBOARDING_READING_PATH.md)** | Everyone — day plan, what to read vs skip |
+| **2** | **[HANDOFF.md](./HANDOFF.md)** §1–§5 | Developers — run locally, tests, repo layout |
+| **3** | **[ARCHITECTURE.md](./ARCHITECTURE.md)** | Developers — system story, data flow, file map |
+| **4** | **[DEVELOPMENT_WORKFLOW.md](./DEVELOPMENT_WORKFLOW.md)** | Developers — branch, PR, CI, daily loop |
+| **5** | Topic guides below | When you touch that feature |
+| **Ops / deploy** | **[LAB_DEPLOYMENT_GUIDE.md](./LAB_DEPLOYMENT_GUIDE.md)** | VM operators |
+| **Field crews** | **[FIELD_SURVEY_SOP.md](./FIELD_SURVEY_SOP.md)** | Surveyors (Chinese-friendly) |
+
+**Repo roots**: `frontend/README.md` and `backend/README.md` are **code READMEs** (stack, build). The **documentation hub is this file** — do not start from scattered markdown elsewhere.
+
+**Language**: English is the canonical language for architecture, API, and workflow docs (Western eng-team standard). Some operational docs (`HANDOFF.md`, `FIELD_SURVEY_SOP.md`) mix Chinese for the Taiwan lab. See [Language policy](#language-policy) below.
+
+---
 
 | Priority | Document | When to read |
 |----------|----------|--------------|
@@ -94,24 +110,32 @@ Start with **[RESEARCH_REFERENCE.md](./RESEARCH_REFERENCE.md)** for tier definit
 | `DOCUMENTATION_RETENTION.md` | Which docs must stay vs may be archived |
 | `DOCUMENTATION_COVERAGE.md` | Honest audit: GitHub files vs documented scope |
 
-## Documentation status (2026-06-29)
+## Documentation status (2026-07-01)
 
 Western-style technical docs: one canonical architecture guide plus focused topic and experimental module guides.
 
 | Status | Files |
 |--------|-------|
+| **Hub & onboarding (2026-07-01)** | `README.md` (this file), `ONBOARDING_READING_PATH.md`, `DEVELOPMENT_WORKFLOW.md` |
 | **Canonical (reviewed 2026-06-29)** | `ARCHITECTURE.md`, `CODEBASE_INVENTORY.md`, `API_REFERENCE.md`, `HANDOFF.md`, `LAB_DEPLOYMENT_GUIDE.md`, `BUILD_GUIDE.md`, `HANDOFF_SECRETS_CHECKLIST.md` |
 | **Topic guides (reviewed 2026-06-29)** | Domain, BLE, carbon, species, ML — see table above |
-| **Operations (reviewed 2026-06-29)** | `FIELD_SURVEY_SOP.md`, `VERIFICATION_CHECKLIST.md`, `HANDOVER_CHECKLIST.md` |
+| **Operations (reviewed 2026-06-29; VM Phase 4 verified 2026-07-01)** | `FIELD_SURVEY_SOP.md`, `VERIFICATION_CHECKLIST.md`, `HANDOVER_CHECKLIST.md`, `LAB_DEPLOYMENT_GUIDE.md` §Phase 4 |
 | **Experimental (reviewed 2026-06-29)** | `EXPERIMENTAL_FEATURES.md`, `VISUAL_MEASUREMENT.md`, `AI_SUSTAINABILITY_REPORT.md`, `AI_AGENT_GUIDE.md` |
 | **OpenAPI (2026-06-29)** | `backend/openapi/openapi.yaml` + `openapi/README.md` |
 | **Backend catalog (2026-06-29)** | `backend/docs/SOURCE_LAYOUT.md`, `DATABASE_DESIGN.md`, `DATABASE_SCHEMA.md` |
-| **API policy (2026-06-29)** | `OPENAPI_SCOPE.md`, `backend/openapi/openapi.yaml` |
-| **Onboarding (2026-06-29)** | `ONBOARDING_READING_PATH.md`, `LOCAL_DEVELOPER_SETUP.md`, `ANDROID_RELEASE_AND_PLAY_STORE.md`, `DEVELOPMENT_WORKFLOW.md` |
 | **Meta (2026-06-29)** | `RESEARCH_REFERENCE.md`, `DOCUMENTATION_COVERAGE.md`, `DOCUMENTATION_RETENTION.md` |
-| **Research / reference** | DBH research notes, external GNSS — see `RESEARCH_REFERENCE.md` |
 
-Production deployment steps from live VM operations will be merged into `LAB_DEPLOYMENT_GUIDE.md` after school-side SSH/webhook work. Until then, sensitive ops notes stay local-only.
+**Lab VM ops with real IPs/passwords**: local-only `project_code/docs/DEPLOYMENT_LOG.md` (not in git). Public runbook: `LAB_DEPLOYMENT_GUIDE.md` (placeholders only).
+
+## Language policy
+
+| Language | Use for | Examples |
+|----------|---------|----------|
+| **English (canonical in git)** | Architecture, API catalog, CI/workflow, deployment runbooks, module guides | `ARCHITECTURE.md`, `API_REFERENCE.md`, `DEVELOPMENT_WORKFLOW.md`, `LAB_DEPLOYMENT_GUIDE.md` |
+| **Chinese (mixed, where helpful)** | Local handover prose, field SOP, audit notes inside `HANDOFF.md` | `HANDOFF.md` §4–§6, `FIELD_SURVEY_SOP.md` |
+| **Not maintained** | Full duplicate Chinese translation of every English doc | Avoid — doubles drift risk |
+
+This matches common practice at international product teams with a local field org: **one source of truth in English**, localized only where operators need it.
 
 ## Contributing to docs
 

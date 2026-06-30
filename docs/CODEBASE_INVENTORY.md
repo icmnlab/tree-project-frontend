@@ -274,10 +274,10 @@ Public steps: `LAB_DEPLOYMENT_GUIDE.md` §Phase 4. Live outputs: local `DEPLOYME
 - [x] `DATABASE_DESIGN.md` — why 49 SQL files, entity model, handover talking points
 - [x] `OPENAPI_SCOPE.md` — schema deepening explained; shallow spec is intentional
 
-### Phase 4 — School lab ops runbook (docs complete 2026-06-29; VM verification pending)
+### Phase 4 — School lab ops runbook (docs + VM verified 2026-07-01)
 
 - [x] `LAB_DEPLOYMENT_GUIDE.md` §Phase 4 — SSH, webhook, CSV test, reset, git pull (public placeholders)
-- [ ] Live VM verification — output in local `DEPLOYMENT_LOG.md` only
+- [x] Live VM verification — SSH + Funnel + webhook deploy (details in local `DEPLOYMENT_LOG.md` §M)
 
 ---
 

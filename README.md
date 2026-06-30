@@ -11,7 +11,7 @@ Flutter app — field-survey, two-stage measurement, AR/CV-based DBH estimation,
 project & area management, AI chat / agent, and on-device tree-trunk
 preview. The single companion to the Node backend.
 
-**Documentation hub**: [`docs/README.md`](docs/README.md) — start with [`ONBOARDING_READING_PATH.md`](docs/ONBOARDING_READING_PATH.md) for reading order.
+**Documentation hub**: [`docs/README.md`](docs/README.md) — **start here** → [`ONBOARDING_READING_PATH.md`](docs/ONBOARDING_READING_PATH.md)
 
 `pubspec.yaml`: `name: sustainable_treeai`, `version: 18.10.4+26`,
 `environment.sdk: '>=3.0.0 <4.0.0'` (Flutter 3.x).
