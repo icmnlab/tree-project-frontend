@@ -239,9 +239,9 @@ Module doc template (Western style):
 - **Configuration** — env vars  
 - **Testing** — which test files cover it  
 
-### Phase 4 — Deployment runbook
+### Phase 4 — Deployment runbook (superseded by §Phase 4 School lab ops below)
 
-Convert local `DEPLOYMENT_LOG.md` ops into public `LAB_DEPLOYMENT_GUIDE.md` after VM steps verified (deferred until school-side SSH/webhook work).
+Public steps: `LAB_DEPLOYMENT_GUIDE.md` §Phase 4. Live outputs: local `DEPLOYMENT_LOG.md`.
 
 ### Phase 5 — Field & handover runbooks (complete 2026-06-29)
 
