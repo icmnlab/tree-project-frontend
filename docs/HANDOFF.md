@@ -208,8 +208,7 @@ flutter test                 # 全套（目前 435 pass）
 | `tree-project-backend` | `.github/workflows/ci.yml` | 起 `postgres:15` → `migrate.js` → `seed_dev_users.js` → 啟 server → `tests/runner.js`（**89 cases**） |
 | `tree-project-frontend` | `.github/workflows/ci.yml` | `flutter pub get` → `analyze`（advisory）→ `flutter test`（435 pass） |
 
-完整開發流程（分支、PR、CI 門檻）：**`DEVELOPMENT_WORKFLOW.md`**。  
-測試 CSV、清空 DB、GitHub 比 VM 新怎麼 pull：**`DEV_DATA_RESET_AND_SYNC.md`**。
+完整開發流程（分支、PR、CI 門檻）：**`DEVELOPMENT_WORKFLOW.md`**。
 
 CI 專用環境變數（在 workflow 內設，正式環境**不要**設）：
 - `DB_SSL=false`：連 CI 的無 SSL Postgres。
@@ -479,6 +478,8 @@ git restore <file>               # 丟棄某檔的本地修改
 
 - **AI Agent／對話**：預設停用、首頁入口隱藏；穩定版不依賴、缺金鑰不影響其餘功能（見 `AI_AGENT_GUIDE.md`）。
 - **Admin API 金鑰**：休眠功能，`validateApiKey` 未被任何路由呼叫，全站走 JWT（見 §12）。
+- **系統管理員與 `user_projects`**：`seed_dev_users.js`／`create_lab_admin.js` **皆不**寫入 `user_projects`；使用者管理 UI 顯示「關聯專案／區」為空屬**預期**。API 層 `projectAuthFilter` 對 `系統管理員`、`業務管理員` bypass，不需手動指派區。僅 `調查管理員`、`專案管理員` 等需 `user_projects`。
+- **地圖 → 樹木詳情欄位全「無」**（2026-06-30 現場重現路徑）：**現場量測**填表提交 → 轉入 `tree_survey` → 從**地圖頁**點新樹 marker →「查看完整詳情」。根因：`GET /api/tree_survey/map` 為效能只回 id、座標、樹種名等**精簡欄位**（見 `routes/treeSurvey.js` `/map` SELECT）；詳情頁若未 refetch 會全「無」。已修：`tree_survey_detail_page.dart` 進頁 `GET /tree_survey/by_id/:id`；**需新 APK**。若 refetch 後樹高／胸徑仍「無」，查 DB `dbh_cm`/`tree_height_m` 是否 NULL（transfer 未寫入量測）。診斷 SQL：本機 `project_code/docs/DEPLOYMENT_LOG.md` §G.1、§H。
 - **維護轉移覆寫 `tree_survey`**：對「web 編輯 vs 現場轉移並行」無樂觀鎖；設計上**現場儀器值優先**，列為觀察。
 - **外接 GNSS**：已決議不採購、不續做；現場 GPS 一律手機樹旁取樣（見 `HANDOFF_EXTERNAL_GNSS_AND_BLE.md`）。
 - 後端測試有 1 個 `four_bugs` TODO 案 skip（非阻擋）。

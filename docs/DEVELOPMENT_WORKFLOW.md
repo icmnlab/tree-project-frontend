@@ -34,24 +34,7 @@ Western practice: **this file + `.github/workflows/ci.yml`** — we document *wh
 8. git checkout main && git pull
 ```
 
-### Sync when remote is ahead
-
-```bash
-git fetch origin
-git log --oneline HEAD..origin/main   # incoming commits
-git pull origin main
-```
-
-**Lab VM (Ubuntu)**: prefer `bash scripts/deploy.sh` after pull — see `LAB_DEPLOYMENT_GUIDE.md` §Dev test data, database reset, and code sync.
-
-**First clone** (new collaborator):
-
-```bash
-git clone https://github.com/icmnlab/tree-project-backend.git
-git clone https://github.com/icmnlab/tree-project-frontend.git
-```
-
-First `git push` triggers Git Credential Manager (Windows) or PAT — `HANDOFF.md` §6.3.
+**Two repos**: frontend and backend are separate. If a feature touches both, open **two PRs** or one coordinated pair; merge backend first if API contract changes.
 
 ---
 
@@ -191,6 +174,16 @@ Never run full `migrate.js` on production with survey data unless you intend a f
 
 CI validates quality; it does not publish mobile apps.
 
+### Lab VM webhook smoke test (first-time handover)
+
+After Funnel + GitHub Webhook are configured on the lab VM:
+
+1. Open a small PR on `icmnlab/tree-project-backend` (e.g. `docs:` one-line change).
+2. Merge to `main` after CI passes.
+3. On VM: `curl -s -H "X-Admin-Token: …" https://<vm>.ts.net/webhook/status` and `tail /opt/tree-app/logs/deploy.log`.
+
+See local ops log `project_code/docs/DEPLOYMENT_LOG.md` §G.4 for full checklist (not in git).
+
 ---
 
 ## New team member onboarding
@@ -200,6 +193,38 @@ CI validates quality; it does not publish mobile apps.
 3. `LOCAL_DEVELOPER_SETUP.md`  
 4. This file — daily loop  
 5. `ONBOARDING_READING_PATH.md` — full doc map  
+
+### First push exercise (recommended for handover)
+
+Purpose: verify GitHub access, CI, and (backend) webhook deploy before real feature work.
+
+**Backend (triggers lab VM deploy on merge to `main`):**
+
+```bash
+git clone https://github.com/icmnlab/tree-project-backend.git
+cd tree-project-backend
+git checkout -b chore/my-first-push
+# edit docs/README.md — add one line under "Last updated"
+git add docs/README.md
+git commit -m "docs: handover first-push marker"
+git push -u origin chore/my-first-push
+# GitHub → Open Pull Request → wait for CI → Merge
+```
+
+**Frontend (CI only; rebuild APK separately after merge):**
+
+```bash
+git clone https://github.com/icmnlab/tree-project-frontend.git
+cd tree-project-frontend
+git checkout -b chore/my-first-push
+# edit docs/README.md similarly
+git push -u origin chore/my-first-push
+# PR → CI (flutter test) → merge
+```
+
+**Rules**: never commit `.env`, passwords, `key.properties`, or lab IPs in public docs. Server secrets live only on VM `.env` and GitHub Webhook settings.
+
+**After backend merge**: SSH to VM → `tail -n 20 /opt/tree-app/logs/deploy.log` or `GET /webhook/status` with `X-Admin-Token`.
 
 ---
 
