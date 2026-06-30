@@ -11,7 +11,7 @@ Documentation for **Sustainable TreeAI** (`tree-project-frontend` + `tree-projec
 | **1** | **[ONBOARDING_READING_PATH.md](./ONBOARDING_READING_PATH.md)** | Everyone — day plan, what to read vs skip |
 | **2** | **[HANDOFF.md](./HANDOFF.md)** §1–§5 | Developers — run locally, tests, repo layout |
 | **3** | **[ARCHITECTURE.md](./ARCHITECTURE.md)** | Developers — system story, data flow, file map |
-| **4** | **[DEVELOPMENT_WORKFLOW.md](./DEVELOPMENT_WORKFLOW.md)** | Developers — fork, branch, PR, CI, daily loop |
+| **4** | **[DEVELOPMENT_WORKFLOW.md](./DEVELOPMENT_WORKFLOW.md)** | Developers — branch, PR, CI, daily loop (internal team) |
 | **5** | Topic guides below | When you touch that feature |
 | **Ops / deploy** | **[LAB_DEPLOYMENT_GUIDE.md](./LAB_DEPLOYMENT_GUIDE.md)** | VM operators |
 | **Field crews** | **[FIELD_SURVEY_SOP.md](./FIELD_SURVEY_SOP.md)** | Surveyors (Chinese-friendly) |

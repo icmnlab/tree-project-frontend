@@ -837,34 +837,25 @@ crontab -e
 # 0 3 * * * /opt/tree-app/backend/scripts/backup_db.sh >> /opt/tree-app/logs/backup.log 2>&1
 ```
 
-### Recipient: fork, clone, and sync
+### Recipient: clone org repo and sync
 
-**Developer laptop** (first time or behind org `main`):
-
-1. On GitHub: **Fork** `icmnlab/tree-project-backend` and `icmnlab/tree-project-frontend` to your account.
-2. Clone **your fork** and add `upstream`:
+**Developer laptop** (first time or behind `main`):
 
 ```bash
 git config --global user.name "Your Name"
 git config --global user.email "you@example.com"
 
-git clone https://github.com/<YOUR_USER>/tree-project-backend.git
-git clone https://github.com/<YOUR_USER>/tree-project-frontend.git
+# After org/collaborator invite accepted:
+git clone https://github.com/icmnlab/tree-project-backend.git
+git clone https://github.com/icmnlab/tree-project-frontend.git
 
-cd tree-project-backend
-git remote add upstream https://github.com/icmnlab/tree-project-backend.git
-git fetch upstream && git checkout main && git merge upstream/main
-
-cd ../tree-project-frontend
-git remote add upstream https://github.com/icmnlab/tree-project-frontend.git
-git fetch upstream && git checkout main && git merge upstream/main
+# or if already cloned:
+git pull origin main
 ```
 
-If already cloned from `icmnlab` directly, repoint remotes per `DEVELOPMENT_WORKFLOW.md` §Fork and remotes.
+First `git push` opens browser login — sign in with **your** GitHub account (must have repo write access). Push **feature branches** only; `main` is protected.
 
-First `git push` opens browser login — sign in with **your** GitHub account; push goes to **your fork**, not `icmnlab/main`.
-
-Daily loop: `DEVELOPMENT_WORKFLOW.md` — branch → push to fork → PR to `icmnlab` → CI green → **maintainer** merge → VM webhook deploys backend.
+Daily loop: `DEVELOPMENT_WORKFLOW.md` — branch → push to org → PR → CI green → merge → VM webhook deploys backend.
 
 ---
 

@@ -2,7 +2,7 @@
 
 How to develop, test, review, and merge changes — GitHub Flow + CI gates.
 
-**Last reviewed**: 2026-06-29 (fork + PR contribution model; no direct push to `icmnlab/main`)  
+**Last reviewed**: 2026-06-29 (internal-team GitHub Flow — same as Google/Meta/MS eng on org repos)  
 **Related**: `HANDOFF.md` §4–§6 · `LOCAL_DEVELOPER_SETUP.md` · `backend/tests/FRAMEWORK.md`
 
 ---
@@ -13,80 +13,77 @@ How to develop, test, review, and merge changes — GitHub Flow + CI gates.
 |-------|--------|
 | Branching | **GitHub Flow** — only long-lived branch is `main` |
 | Feature branches | `feat/*`, `fix/*`, `chore/*` — create when you start work |
-| **Contribution model** | **Fork + Pull Request** (standard OSS / eng-team practice) |
-| Remotes | **`origin`** = your fork · **`upstream`** = `icmnlab/tree-project-*` |
-| Merge | PR into **`icmnlab` `main`** → **CI green** → org maintainer merges |
-| Deploy | Merge to `icmnlab/main` triggers webhook deploy (when configured) |
+| **Contribution model** | **Internal team on org repo** — clone `icmnlab`, push **feature branches**, open **PR** to `main` |
+| Remotes | **`origin`** = `icmnlab/tree-project-*` (canonical org repo) |
+| Merge | PR → **CI green** → review → merge ( **`main` is protected** — no direct push) |
+| Deploy | Merge to `main` triggers webhook deploy (when configured) |
 | Docs | Update module guide + `API_REFERENCE.md` when routes/behavior change |
 
-Western practice: contributors **do not** get write access to the org repo for day-to-day work. You push to **your fork** and open a PR to **`icmnlab`**. Org **maintainers** review and merge. **This file + `.github/workflows/ci.yml`** document what CI enforces.
+**How big-tech internal teams work** (Google, Meta, Microsoft, Amazon on GitHub/Git-on-Borg): engineers **clone the org repository**, push **short-lived branches** to the **same remote**, and merge via **Pull Request + CI + code review**. Branch protection blocks direct pushes to `main`. **Forking is for open-source external contributors**, not for everyday lab teammates with org access.
+
+**This lab (`icmnlab`)**: add each developer as **org member** or **repo Collaborator (Write)**, enable **branch protection** on `main`, and use the daily loop below. **This file + `.github/workflows/ci.yml`** document what CI enforces.
 
 ---
 
-## Fork and remotes (required setup)
+## Repository access (internal team — default)
 
-| Remote | URL | Purpose |
-|--------|-----|---------|
-| **`origin`** | `https://github.com/<YOUR_GITHUB_USER>/tree-project-*` | Where **you push** branches |
-| **`upstream`** | `https://github.com/icmnlab/tree-project-*` | Canonical repo — **pull** latest `main` from here |
-
-**One-time on GitHub (web):** open `icmnlab/tree-project-backend` and `icmnlab/tree-project-frontend` → **Fork** (top right) → fork to **your** account.
-
-**Clone your fork** (not `icmnlab` directly):
+| Step | Action |
+|------|--------|
+| 1 | Org admin invites developer to **`icmnlab`** org **or** both repos as **Collaborator (Write)** |
+| 2 | Developer accepts invite; uses **their own** GitHub account for `git push` |
+| 3 | Admin enables **branch protection** on `main` (PR required, CI required, no force push) |
+| 4 | Developer clones **org repo** — `origin` points at `icmnlab` |
 
 ```powershell
 mkdir D:\treeproject
 cd D:\treeproject
 
-git clone https://github.com/<YOUR_GITHUB_USER>/tree-project-backend.git
-cd tree-project-backend
-git remote add upstream https://github.com/icmnlab/tree-project-backend.git
-
-cd ..
-git clone https://github.com/<YOUR_GITHUB_USER>/tree-project-frontend.git
-cd tree-project-frontend
-git remote add upstream https://github.com/icmnlab/tree-project-frontend.git
+git clone https://github.com/icmnlab/tree-project-backend.git
+git clone https://github.com/icmnlab/tree-project-frontend.git
 ```
 
 **Verify:**
 
 ```powershell
 git remote -v
-# origin    https://github.com/<YOU>/tree-project-backend.git (fetch/push)
-# upstream  https://github.com/icmnlab/tree-project-backend.git (fetch only)
+# origin  https://github.com/icmnlab/tree-project-backend.git (fetch/push)
 ```
 
-**Already cloned `icmnlab` directly?** Repoint remotes (keep your work):
+**Rules:**
 
-```powershell
-cd D:\treeproject\tree-project-backend   # or frontend
-git remote rename origin upstream
-git remote add origin https://github.com/<YOUR_GITHUB_USER>/tree-project-backend.git
-git fetch --all
-git push -u origin main    # seed your fork once (if fork is empty); skip if fork already has history
-```
-
-**Do not** add contributors as org **Collaborators** for normal development — fork + PR is enough and matches branch protection on `main`.
+- **Do** push feature branches: `git push -u origin feat/my-change`
+- **Do not** push directly to `main` — branch protection + PR workflow (even if you have Write access)
+- Each commit uses **your** `git config user.name` / `user.email` — contributions stay on your profile after merge
 
 ---
 
 ## Daily development loop
 
 ```
-1. git fetch upstream
-2. git checkout main && git pull upstream main
-3. git checkout -b feat/my-change
-4. Code + local tests (see below)
-5. git commit --no-verify -m "feat: short description"
-6. git log -1 --format=%B    # confirm no Co-authored-by
-7. git push -u origin feat/my-change
-8. GitHub → Open PR: base icmnlab/main ← head YOUR_FORK/feat/my-change
-9. Wait for CI → maintainer review → Merge
-10. git checkout main && git pull upstream main
-11. git push origin main     # optional: keep fork main in sync
+1. git pull origin main
+2. git checkout -b feat/my-change
+3. Code + local tests (see below)
+4. git commit --no-verify -m "feat: short description"
+5. git log -1 --format=%B    # confirm no Co-authored-by
+6. git push -u origin feat/my-change
+7. GitHub → Open Pull Request (base main ← compare feat/my-change, same repo)
+8. Wait for CI green → review → Merge
+9. git checkout main && git pull origin main
 ```
 
 **Two repos**: frontend and backend are separate. If a feature touches both, open **two PRs** or one coordinated pair; merge backend first if API contract changes.
+
+---
+
+## External contributors (fork — optional)
+
+Use **only** when someone **does not** have `icmnlab` write access (e.g. guest researcher, upstream OSS pattern):
+
+1. Fork `icmnlab/tree-project-*` to their GitHub account  
+2. Clone the fork; `git remote add upstream https://github.com/icmnlab/tree-project-*.git`  
+3. Push branches to **fork** (`origin`); open PR **from fork** into `icmnlab/main`  
+
+Lab teammates with org/repo access should **not** use fork for daily work — use [Repository access](#repository-access-internal-team--default) instead.
 
 ---
 
@@ -180,16 +177,18 @@ Add those only if product needs them (e.g. release workflow on git tag — see `
 
 ---
 
-## Branch protection (on `icmnlab`)
+## Branch protection (required on `icmnlab`)
 
 | Rule | Purpose |
 |------|---------|
-| Require PR before merge | No direct push to org `main` — contributors use forks |
-| Require status checks | `frontend-ci` / `backend-ci` jobs green |
+| Require PR before merge | **No direct push to `main`** — even team members use feature branches + PR |
+| Require status checks | `frontend-ci` / `backend-ci` jobs green before merge |
 | No force push | Preserve history |
-| Restrict who can push to `main` | **Org maintainers only** — everyone else via fork PR |
+| (Recommended) Require 1 approval | Code review gate — standard at Google/Meta/Amazon |
 
 Configure: GitHub repo → Settings → Branches → branch protection rule for `main`.
+
+**Write access + protected `main`** is the normal internal-team pattern: you **can** push branches to the org repo; you **cannot** bypass review by pushing to `main`.
 
 ---
 
@@ -217,7 +216,7 @@ chore: regenerate openapi.yaml
 
 ## Git identity — whose contribution is it?
 
-**Question**: If I fork `icmnlab/tree-project-*` and open PRs, do commits count as someone else?
+**Question**: If I clone `icmnlab/tree-project-*` and push branches, do commits count as someone else?
 
 **No.** GitHub attributes each commit to the **author on the commit object**, set by **your local** `git config`:
 
@@ -228,17 +227,16 @@ git config user.email   # e.g. you@example.com
 
 | What | Who it affects |
 |------|----------------|
-| `origin` URL = `https://github.com/<YOU>/...` | Your **fork** — where you push feature branches |
-| `upstream` URL = `https://github.com/icmnlab/...` | Canonical org repo — read + PR target only |
+| `origin` URL = `https://github.com/icmnlab/...` | Org repo — where the team pushes **feature branches** |
 | `git config user.name` / `user.email` | **Your name** on commits and GitHub contribution graph |
-| GitHub login used for `git push` | Your personal account (push to **fork**); merge done by maintainer on org repo |
+| GitHub login used for `git push` | Must be a **team member** with repo write access — can differ from commit email |
 
 **Requirements for GitHub to link commits to your profile**:
 
 1. `user.email` matches a **verified email** on your GitHub account (or your `@users.noreply.github.com` address).
-2. You push branches to **your fork** under **your** GitHub user; merged PRs still credit your commits.
+2. You push branches and merge PRs under **your** GitHub user, not a shared bot account (unless explicitly agreed).
 
-**Remote naming**: `origin` = fork, `upstream` = `icmnlab` — convention used throughout this doc (same as GitHub's fork docs).
+**Remote naming**: clone from `icmnlab` → default remote name `origin` — used throughout this doc.
 
 ---
 
@@ -253,7 +251,7 @@ Use this on a **new PC** or any machine that has **never** cloned the project. P
 | Git | `git --version` |
 | Flutter 3.x | `flutter doctor` (Android toolchain OK for mobile work) |
 | Node 18+ | `node -v` (only if running backend locally) |
-| GitHub account | Personal account with **forks** of both `icmnlab` repos (see [Fork and remotes](#fork-and-remotes-required-setup)) |
+| GitHub access | **Org member** or **Collaborator (Write)** on both `icmnlab` repos (see [Repository access](#repository-access-internal-team--default)) |
 
 ### 1. Git identity (once per machine — **your** name on commits)
 
@@ -262,30 +260,16 @@ git config --global user.name "Your Name"
 git config --global user.email "you@example.com"
 ```
 
-Use an email **verified on your GitHub account** so contributions appear on your profile after PRs merge.
+Use an email **verified on your GitHub account** so contributions appear on your profile. Pushes go to the **org repo** (`icmnlab`); commits still show **your** author identity.
 
-### 2. Fork, clone, and add `upstream`
-
-Follow [Fork and remotes](#fork-and-remotes-required-setup) — clone **your fork**, add `upstream` → `icmnlab`.
+### 2. Clone both org repos
 
 ```powershell
 mkdir D:\treeproject
 cd D:\treeproject
 
-git clone https://github.com/<YOUR_GITHUB_USER>/tree-project-backend.git
-cd tree-project-backend
-git remote add upstream https://github.com/icmnlab/tree-project-backend.git
-git fetch upstream
-git checkout main
-git merge upstream/main
-
-cd D:\treeproject
-git clone https://github.com/<YOUR_GITHUB_USER>/tree-project-frontend.git
-cd tree-project-frontend
-git remote add upstream https://github.com/icmnlab/tree-project-frontend.git
-git fetch upstream
-git checkout main
-git merge upstream/main
+git clone https://github.com/icmnlab/tree-project-backend.git
+git clone https://github.com/icmnlab/tree-project-frontend.git
 ```
 
 **Why two repos?** — Frontend and backend are separate GitHub projects; daily work may touch one or both.
@@ -294,13 +278,13 @@ git merge upstream/main
 
 ```powershell
 cd D:\treeproject\tree-project-backend
-git remote -v    # origin → YOUR fork; upstream → icmnlab
+git remote -v    # origin → icmnlab/tree-project-backend
 
 cd D:\treeproject\tree-project-frontend
-git remote -v
+git remote -v    # origin → icmnlab/tree-project-frontend
 ```
 
-First `git push` opens browser login (Git Credential Manager) — sign in with **your** GitHub account (the fork owner).
+First `git push` opens browser login (Git Credential Manager) — sign in with **your** GitHub account (must have accepted org/collaborator invite).
 
 ### 3. Frontend — dependencies and local secrets
 
@@ -375,26 +359,26 @@ If you later get a second machine that **already** has clones, use [Existing clo
 
 ## Existing clone — first sync (already at `D:\treeproject`)
 
-If you **already cloned from `icmnlab`** (legacy setup), first [repoint remotes](#fork-and-remotes-required-setup) (`origin` → your fork, `upstream` → `icmnlab`), then sync:
+For team members who **already cloned** before PR merges:
 
 ### Backend (`D:\treeproject\tree-project-backend`)
 
 ```powershell
 cd D:\treeproject\tree-project-backend
-git remote -v          # origin → YOUR fork; upstream → icmnlab
-git fetch upstream
+git remote -v          # expect origin → icmnlab/tree-project-backend
+git fetch origin
 git checkout main
-git pull upstream main
+git pull origin main
 ```
 
 ### Frontend (`D:\treeproject\tree-project-frontend`)
 
 ```powershell
 cd D:\treeproject\tree-project-frontend
-git remote -v
-git fetch upstream
+git remote -v          # expect origin → icmnlab/tree-project-frontend
+git fetch origin
 git checkout main
-git pull upstream main
+git pull origin main
 
 # Discard Flutter auto-generated noise (do NOT commit):
 git restore linux/flutter/ macos/Flutter/ windows/flutter/
@@ -431,20 +415,18 @@ App login: **管理員登入** → username `admin_icmnlab` (not display name).
 ## Daily loop (after initial sync)
 
 ```
-1. git fetch upstream
-2. git checkout main && git pull upstream main
-3. git checkout -b feat/my-change
-4. Code + flutter test / node tests/runner.js
-5. git add <files>
-6. git commit --no-verify -m "feat: short description"
-7. git log -1 --format=%B    # confirm no Co-authored-by
-8. git push -u origin feat/my-change
-9. GitHub → Open PR (base: icmnlab/main ← head: YOUR_FORK/feat/my-change) → CI green → Merge
-10. git checkout main && git pull upstream main
-11. git push origin main    # optional: sync fork
+1. git pull origin main
+2. git checkout -b feat/my-change
+3. Code + flutter test / node tests/runner.js
+4. git add <files>
+5. git commit --no-verify -m "feat: short description"
+6. git log -1 --format=%B    # confirm no Co-authored-by
+7. git push -u origin feat/my-change
+8. GitHub → Open Pull Request (same repo: main ← feat/my-change) → CI green → Merge
+9. git checkout main && git pull origin main
 ```
 
-**Local WIP when pulling**: `git stash` → `git pull upstream main` → `git stash pop`.
+**Local WIP when pulling**: `git stash` → `git pull origin main` → `git stash pop`.
 
 **Backend merge to `main`** → lab VM webhook runs `deploy.sh` (after Funnel targets `:3000` and webhook Secret matches — see local `DEPLOYMENT_LOG.md` §I.5).
 
@@ -458,7 +440,7 @@ App login: **管理員登入** → username `admin_icmnlab` (not display name).
 |------|--------|-----|
 | **After each `git commit`** | **Yes (recommended)** | Cursor / IDE commit UI can inject trailers; one `git log -1 --format=%B` takes 2 seconds |
 | **`git pull` / `git status` / start of day** | No | Trailers live on commit objects, not in working tree |
-| **Before opening PR** | Optional extra pass | `git log upstream/main..HEAD --format=%B` if you used IDE commits on the branch |
+| **Before opening PR** | Optional extra pass | `git log origin/main..HEAD --format=%B` if you used IDE commits on the branch |
 
 **Normal PowerShell flow** (`git commit --no-verify -m "..."`) usually does **not** add co-authors. The check is a safety net when developing inside Cursor.
 
@@ -486,12 +468,12 @@ Use this after step 7 in the [Daily loop](#daily-loop-after-initial-sync): `git 
 
 | Step | Action | Why |
 |------|--------|-----|
-| 1 | On **your fork**, click **Compare & pull request** (or `https://github.com/icmnlab/<repo>/compare/main...<YOUR_USER>:<repo>:feat/my-change`) | PR merges into org `main`; push to fork alone does not deploy |
-| 2 | Base repository = **`icmnlab/<repo>`**, base = **`main`**, head = **your fork / branch** | Webhook deploy tracks org `main` only |
+| 1 | Open repo → **Compare & pull request** (or `https://github.com/icmnlab/<repo>/compare/main...feat/my-change`) | Push alone does not change `main`; PR is the review + CI gate |
+| 2 | Base = **`main`**, compare = **your feature branch** (same repo) | Webhook deploy tracks `main` only |
 | 3 | Fill title (imperative, e.g. `fix: resolve species_id on transfer`) + short body (what / why / test plan) | Reviewers and future you rely on PR text |
 | 4 | Wait for **CI green** (Actions tab) | Catches broken tests before merge; branch protection should require this |
-| 5 | (Optional) Request review from org maintainer | Human gate before merge |
-| 6 | **Maintainer** merges pull request | Only org maintainers merge to `icmnlab/main` |
+| 5 | (Optional) Request review from teammate | Human gate — standard internal review |
+| 6 | **Merge pull request** → Confirm | Updates `main`; triggers backend deploy webhook when configured |
 | 7 | (Optional) **Delete branch** on GitHub | Reduces stale branch clutter |
 
 **You do not need a local `git pull` just to open or merge a PR** — that happens on GitHub. Pull locally when you need to build, test, or start the next branch.
@@ -508,15 +490,14 @@ Use this after step 7 in the [Daily loop](#daily-loop-after-initial-sync): `git 
 ```powershell
 cd D:\treeproject\tree-project-<backend|frontend>
 git checkout main
-git pull upstream main
-git push origin main          # optional: update fork
+git pull origin main
 git branch -d feat/my-change    # optional: delete local branch after merge
 ```
 
 | Step | Why |
 |------|-----|
 | `checkout main` | Feature branch is done; `main` is the integration line |
-| `pull upstream main` | Your disk must match org `main` before the next branch or APK build |
+| `pull origin main` | Your disk must match GitHub before the next branch or APK build |
 | Delete local branch | Avoid accidentally committing on a merged branch name |
 
 ### Verify the change landed
@@ -566,67 +547,64 @@ See local ops log `project_code/docs/DEPLOYMENT_LOG.md` §G.4 for full checklist
 
 ## New team member onboarding
 
-1. **Fork** both repos on GitHub (`icmnlab` → Fork to your account) — see [Fork and remotes](#fork-and-remotes-required-setup)  
+1. Org admin: invite to **`icmnlab`** org **or** both repos as **Collaborator (Write)**; enable **branch protection** on `main`  
 2. `git config user.name` + `user.email` — **your** identity ([Git identity](#git-identity--whose-contribution-is-it))  
-3. Clone **your fork** + add `upstream`, **or** repoint an existing `icmnlab` clone:
+3. Clone **or** pick one:
    - [New machine — first clone](#new-machine--first-clone-no-repo-on-disk-yet) (new PC)
    - [Existing clone — first sync](#existing-clone--first-sync-already-at-dtreeproject) (`D:\treeproject` already there)  
 4. `LOCAL_DEVELOPER_SETUP.md` — `key.properties`; optional backend `.env` for local server  
 5. This file — [Daily loop](#daily-loop-after-initial-sync)  
 6. `ONBOARDING_READING_PATH.md` — full doc map  
 
-**Org maintainers** (not every developer): merge PRs, VM secrets, GitHub org settings. Lab VM ops: local `project_code/docs/DEPLOYMENT_LOG.md` §I–J (not in git).
+Lab VM ops: local `project_code/docs/DEPLOYMENT_LOG.md` §I–J (not in git).
 
 ### First push exercise (recommended for handover)
 
-Purpose: verify fork push, PR, CI, and (backend) webhook deploy after maintainer merge — **before** real feature work.
+Purpose: verify GitHub access, CI, and (backend) webhook deploy before real feature work.
 
 **Important**: Opening or merging a PR on GitHub does **not** require a local `git pull` first. Pull locally only when you need to build, run tests, or start new work after a merge.
 
 ### First push — scenarios (what can happen)
 
-**Short answer**: Feature branch on **your fork** (`git push -u origin chore/my-first-push`) → PR to **`icmnlab/main`** — **nothing deploys until a maintainer merges**.
+**Short answer**: Feature branch + `git push -u origin chore/my-first-push` to the **org repo** is standard — **nothing deploys until PR merges to `main`**.
 
 | Situation | What you see | Is it OK? | What to do |
 |-----------|--------------|-----------|------------|
 | First `git push` ever | Browser opens (Git Credential Manager) | Yes | Sign in with **your** GitHub account |
-| Push rejected **403** to `icmnlab` | `Permission denied` | **Expected** if `origin` still points to org repo | Repoint: `origin` = your fork, `upstream` = icmnlab; push to **origin** only |
-| Push to **feature branch** on fork | `branch 'feat/x' set up to track 'origin/feat/x'` | **Yes — intended** | Open PR to `icmnlab/main`; wait for CI |
-| Push to **`icmnlab/main`** directly | Rejected (no write access or branch protection) | **Expected** | Use fork + PR |
+| Push rejected **403** | `Permission denied` / `Write access not granted` | No (nothing uploaded) | Accept org/collaborator invite; verify `origin` → `icmnlab/...`; Windows Credential Manager → delete `git:https://github.com` → retry |
+| Push to **feature branch** | `branch 'feat/x' set up to track 'origin/feat/x'` | **Yes — intended** | Open PR on GitHub; wait for CI |
+| Push to **`main`** with branch protection | Rejected by GitHub | **Yes (protection worked)** | Use feature branch + PR instead |
+| Push to **`main`** without protection | Updates remote main; webhook may deploy | **Avoid** | Enable branch protection; revert via PR if needed |
 | `git push` asks for password | GitHub no longer accepts account passwords for HTTPS | Normal | Use **PAT** as password, or browser login via GCM |
-| `origin` points to wrong fork | Push goes to wrong user/repo | Fix remotes | `git remote -v`; `git remote set-url origin https://github.com/<YOU>/tree-project-*.git` |
-| After push: "Compare & pull request" on **your fork** | Banner on fork repo page | Yes | Base: `icmnlab/<repo>` `main` ← your branch → Create PR |
-| Maintainer merges PR | Org `main` moves; backend VM deploys (if webhook OK) | Yes | `git pull upstream main` when you code again |
+| Wrong `origin` URL | Push to wrong repo | Fix remote | `git remote -v`; `git remote set-url origin https://github.com/icmnlab/tree-project-*.git` |
+| After push: "Compare & pull request" | Banner on repo page | Yes | Base `main` ← your branch → Create PR |
+| Merge PR | `main` moves; backend VM deploys (if webhook OK) | Yes | `git pull origin main` when you code again |
 
-**Webhook only fires on org `main` push** (after merge). Feature-branch pushes to your fork run CI on the PR only.
+**Webhook only fires on `main` push** (after merge). Feature-branch pushes run CI on the PR only.
 
-**Backend (triggers lab VM deploy when maintainer merges to org `main`):**
+**Backend (triggers lab VM deploy on merge to `main`):**
 
 ```bash
-git clone https://github.com/<YOUR_GITHUB_USER>/tree-project-backend.git
+git clone https://github.com/icmnlab/tree-project-backend.git
 cd tree-project-backend
-git remote add upstream https://github.com/icmnlab/tree-project-backend.git
-git fetch upstream && git checkout main && git merge upstream/main
 git checkout -b chore/my-first-push
 # edit docs/README.md — add one line under "Last updated"
 git add docs/README.md
 git commit --no-verify -m "docs: handover first-push marker"
 git log -1 --format=%B
 git push -u origin chore/my-first-push
-# GitHub → PR to icmnlab/main → CI → maintainer merge
+# GitHub → Open Pull Request → wait for CI → Merge
 ```
 
 **Frontend (CI only; rebuild APK separately after merge):**
 
 ```bash
-git clone https://github.com/<YOUR_GITHUB_USER>/tree-project-frontend.git
+git clone https://github.com/icmnlab/tree-project-frontend.git
 cd tree-project-frontend
-git remote add upstream https://github.com/icmnlab/tree-project-frontend.git
-git fetch upstream && git checkout main && git merge upstream/main
 git checkout -b chore/my-first-push
 # edit docs/README.md similarly
 git push -u origin chore/my-first-push
-# PR to icmnlab/main → CI (flutter test) → maintainer merge
+# PR → CI (flutter test) → merge
 ```
 
 **Rules**: never commit `.env`, passwords, `key.properties`, or lab IPs in public docs. Server secrets live only on VM `.env` and GitHub Webhook settings.
@@ -651,9 +629,9 @@ git push -u origin chore/my-first-push
 
 | Item | Check |
 |------|--------|
-| Forks of `icmnlab/tree-project-backend` + `tree-project-frontend` | GitHub → Fork (your account) |
-| Remotes: `origin` = fork, `upstream` = icmnlab | `git remote -v` |
+| **Collaborator (Write)** or org member on both `icmnlab` repos | GitHub invite accepted |
 | `git config user.name` / `user.email` | Your GitHub identity |
+| `D:\treeproject` clones with `origin` → `icmnlab` | `git remote -v` |
 | Node 18+ (backend tests) | `node -v` |
 | Optional: lab VM SSH / Console | For SQL verify after deploy |
 
@@ -669,14 +647,14 @@ Field logs: local `project_code/docs/DEPLOYMENT_LOG.md` §K.
 
 ```powershell
 cd D:\treeproject\tree-project-backend
-git fetch upstream
+git fetch origin
 git checkout main
-git pull upstream main
+git pull origin main
 
 cd D:\treeproject\tree-project-frontend
-git fetch upstream
+git fetch origin
 git checkout main
-git pull upstream main
+git pull origin main
 git restore linux/flutter/ macos/Flutter/ windows/flutter/ 2>$null
 flutter pub get
 ```
@@ -715,7 +693,7 @@ psql "$DATABASE_URL" -c "
 ```powershell
 cd D:\treeproject\tree-project-backend
 git checkout main
-git pull upstream main
+git pull origin main
 git checkout -b fix/st-1-species-id-on-transfer
 ```
 
@@ -932,7 +910,7 @@ psql "$DATABASE_URL" -c "
 
 #### F.3 App verification
 
-1. `git pull upstream main` on frontend if you changed Phase C; rebuild APK if needed.
+1. `git pull origin main` on frontend if you changed Phase C; rebuild APK if needed.
 2. Open **ST-1** detail → **樹種編號** should show e.g. `0001`, not「無」.
 3. Optional: survey **one new tree** → confirm new row has `species_id` in SQL immediately after transfer.
 
@@ -943,7 +921,7 @@ psql "$DATABASE_URL" -c "
 - [ ] Backend PR merged; VM `deploy.log` shows new commit
 - [ ] SQL: all ST-* rows have non-null `species_id` (backfill or re-survey)
 - [ ] App: ST-1 樹種編號 visible
-- [ ] Local `main` pulled: `git checkout main && git pull upstream main`
+- [ ] Local `main` pulled: `git checkout main && git pull origin main`
 - [ ] Feature branch deleted (GitHub + local)
 
 ---
