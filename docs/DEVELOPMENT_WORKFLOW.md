@@ -2,7 +2,7 @@
 
 How to develop, test, review, and merge changes — GitHub Flow + CI gates.
 
-**Last reviewed**: 2026-06-30 (handover: ST-1 exercise, push-after-branch, Co-authored-by policy)  
+**Last reviewed**: 2026-07-01 (handover closure: SSH/webhook, first-push FAQ, ST-1 optional)  
 **Related**: `HANDOFF.md` §4–§6 · `LOCAL_DEVELOPER_SETUP.md` · `backend/tests/FRAMEWORK.md`
 
 ---
@@ -513,6 +513,24 @@ Purpose: verify GitHub access, CI, and (backend) webhook deploy before real feat
 
 **Important**: Opening or merging a PR on GitHub does **not** require a local `git pull` first. Pull locally only when you need to build, run tests, or start new work after a merge.
 
+### First push — scenarios (what can happen)
+
+**Short answer**: If you use a **feature branch** (`git checkout -b chore/my-first-push`) and `git push -u origin chore/my-first-push`, you are following standard practice — **nothing breaks on `main`**, webhook **does not** deploy until merge.
+
+| Situation | What you see | Is it OK? | What to do |
+|-----------|--------------|-----------|------------|
+| First `git push` ever | Browser opens (Git Credential Manager) | Yes | Sign in with **your** GitHub collaborator account |
+| Push rejected **403** | `Permission denied` / `Write access not granted` | Yes (nothing uploaded) | Accept org invite; verify `origin` → `icmnlab/...`; Windows Credential Manager → delete `git:https://github.com` → retry |
+| Push to **feature branch** | `branch 'feat/x' set up to track 'origin/feat/x'` | **Yes — intended** | Open PR on GitHub; wait for CI |
+| Push to **`main`** with branch protection | Rejected by GitHub | Yes (protection worked) | Use feature branch + PR instead |
+| Push to **`main`** without protection | Updates remote main; backend webhook may deploy | Avoid | Revert via PR; enable branch protection |
+| `git push` asks for password | GitHub no longer accepts account passwords for HTTPS | Normal | Use **PAT** as password, or browser login via GCM |
+| Two clones / wrong remote | Push goes to personal fork | Fix remote | `git remote -v`; set `origin` to `https://github.com/icmnlab/tree-project-*.git` |
+| After push: "Compare & pull request" on GitHub | Banner on repo page | Yes | Click → base `main` ← your branch → Create PR |
+| Merge PR | `main` moves; backend VM deploys (if webhook OK) | Yes | Pull locally when you need to code again |
+
+**Webhook only fires on `main` push** (after merge). Feature-branch pushes run CI on PR only — safe for first-time practice.
+
 **Backend (triggers lab VM deploy on merge to `main`):**
 
 ```bash
@@ -548,13 +566,13 @@ git push -u origin chore/my-first-push
 
 ---
 
-## Guided exercise — fix ST-1 `species_id` shows「無」(recommended handover)
+## Guided exercise — fix ST-1 `species_id` shows「無」(optional reference)
 
-**Purpose**: Walk through the full [Daily loop](#daily-loop-after-initial-sync) + [After push](#after-you-push-a-new-branch-full-checklist) on a **real bug** found during 2026-06-30 field testing on the **empty lab DB** (`admin_icmnlab`).
+**Status (2026-07-01)**: **Optional** — not required to close handover. Documented for the **next** developer who touches pending→transfer or species catalog. Original assignee did not run this live; known issue tracked in `HANDOFF.md` §11.3.
 
-**Recommendation**: **Yes — assignee should run this checklist once** before taking ownership. It validates GitHub access, CI, backend deploy, and reading production code paths.
+**Purpose**: Reference implementation walkthrough for [Daily loop](#daily-loop-after-initial-sync) + [After push](#after-you-push-a-new-branch-full-checklist) on a real bug found during 2026-06-30 field testing.
 
-**Estimated time**: 2–4 hours (first time).
+**When to run**: Before your first species/transfer change, or when fixing ST-* rows with NULL `species_id` in DB.
 
 **Prerequisites**:
 

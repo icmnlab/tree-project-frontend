@@ -306,6 +306,8 @@ git restore <file>               # 丟棄某檔的本地修改
 
 > 有設部署 webhook 時：**只有合併進 `main` 會觸發正式機部署**；功能分支與 PR 不會。
 
+**第一次 push 常見狀況**（用 feature branch 就安全）：瀏覽器登入、403 權限、PAT — 見 `DEVELOPMENT_WORKFLOW.md` §「First push — scenarios」。**不要**第一次就推 `main`；`git checkout -b chore/...` → push → PR 為標準做法。
+
 ---
 
 ## 7. 環境變數速查（後端）
@@ -480,7 +482,7 @@ git restore <file>               # 丟棄某檔的本地修改
 - **Admin API 金鑰**：休眠功能，`validateApiKey` 未被任何路由呼叫，全站走 JWT（見 §12）。
 - **系統管理員與 `user_projects`**：`seed_dev_users.js`／`create_lab_admin.js` **皆不**寫入 `user_projects`；使用者管理 UI 顯示「關聯專案／區」為空屬**預期**。API 層 `projectAuthFilter` 對 `系統管理員`、`業務管理員` bypass，不需手動指派區。僅 `調查管理員`、`專案管理員` 等需 `user_projects`。
 - **地圖 → 樹木詳情欄位全「無」**（2026-06-30 現場重現路徑）：**現場量測**填表提交 → 轉入 `tree_survey` → 從**地圖頁**點新樹 marker →「查看完整詳情」。根因：`GET /api/tree_survey/map` 為效能只回 id、座標、樹種名等**精簡欄位**（見 `routes/treeSurvey.js` `/map` SELECT）；詳情頁若未 refetch 會全「無」。已修：`tree_survey_detail_page.dart` 進頁 `GET /tree_survey/by_id/:id`（PR #1 **`47d8cff` 已 merge**）；**需新 APK**。若 refetch 後樹高／胸徑仍「無」，查 DB `dbh_cm`/`tree_height_m` 是否 NULL（transfer 未寫入量測）。診斷 SQL：本機 `project_code/docs/DEPLOYMENT_LOG.md` §G.1、§K。
-- **ST-1 樹種編號顯示「無」**（2026-06-30 正式空庫現場）：量測 ST-1～ST-3 後，詳情**樹種名稱**可能有值，**樹種編號**「無」。根因：transfer 僅用 `species_name` 精確查 `tree_species`，未 `toTraditional`、未查 `species_synonyms`；前端 `_ensureSpeciesId()` 雖建檔但未把 `species_id` 寫入 pending。**修復**：`DEVELOPMENT_WORKFLOW.md` §Guided exercise（Phases A–G，含 copy-paste 程式）；本機 ops §K–§L。**Fix PR 由接手方開** — `fix/st-1-species-id-on-transfer`。
+- **ST-1 樹種編號顯示「無」**（2026-06-30 正式空庫現場）：量測 ST-1～ST-3 後，詳情**樹種名稱**可能有值，**樹種編號**「無」。根因：transfer 僅用 `species_name` 精確查 `tree_species`，未 `toTraditional`、未查 `species_synonyms`。**非阻擋交接**；修復 runbook（optional）：`DEVELOPMENT_WORKFLOW.md` §Guided exercise；本機 ops §K、§M.5。
 - **維護轉移覆寫 `tree_survey`**：對「web 編輯 vs 現場轉移並行」無樂觀鎖；設計上**現場儀器值優先**，列為觀察。
 - **外接 GNSS**：已決議不採購、不續做；現場 GPS 一律手機樹旁取樣（見 `HANDOFF_EXTERNAL_GNSS_AND_BLE.md`）。
 - 後端測試有 1 個 `four_bugs` TODO 案 skip（非阻擋）。

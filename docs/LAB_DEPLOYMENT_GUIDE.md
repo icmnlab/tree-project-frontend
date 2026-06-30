@@ -679,6 +679,21 @@ Verified steps from live VM ops are recorded locally in `project_code/docs/DEPLO
 **Pull before SSH/webhook?** Yes — always sync code first.  
 **SSH before webhook?** Recommended — webhook setup edits `.env` and logs; SSH simplifies this.
 
+### Phase 4 completion status (lab VM, 2026-07-01)
+
+The following were verified on the school lab VM (details with real outputs in local `project_code/docs/DEPLOYMENT_LOG.md` §M — not in git):
+
+| Item | Status |
+|------|--------|
+| SSH (`openssh-server`, tailnet `100.116.125.118:22`) | Done |
+| Tailscale Funnel → `http://127.0.0.1:3000` | Done |
+| GitHub Webhook → `/webhook/deploy`, Secret, `application/json` | Done |
+| Push/merge to `main` → `deploy.log` updates | Done (smoke test merge `0bce9f6`) |
+| Production-empty DB + `create_lab_admin.js` | Done (`admin_icmnlab`) |
+| DB backup cron | **Not yet** — recommended follow-up |
+
+**Still open (non-blocking):** ST-1 `species_id` on transfer (optional fix runbook in `DEVELOPMENT_WORKFLOW.md`); merge pending doc PR `chore/assets-and-handover-guide`.
+
 ### Sync VM when GitHub is ahead
 
 All commands on **Ubuntu VM** at `/opt/tree-app/backend`:
