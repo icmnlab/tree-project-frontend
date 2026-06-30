@@ -2,7 +2,7 @@
 
 How to develop, test, review, and merge changes — GitHub Flow + CI gates.
 
-**Last reviewed**: 2026-06-30  
+**Last reviewed**: 2026-06-30 (handover: ST-1 exercise, push-after-branch, Co-authored-by policy)  
 **Related**: `HANDOFF.md` §4–§6 · `LOCAL_DEVELOPER_SETUP.md` · `backend/tests/FRAMEWORK.md`
 
 ---
@@ -151,9 +151,14 @@ docs: update DATABASE_DESIGN FAQ
 chore: regenerate openapi.yaml
 ```
 
-**Author policy (lab handover)**: commit from a **terminal** with `git commit -m "..."` only. Do **not** add `Co-authored-by: Cursor` or other AI trailers. Avoid Cursor IDE's built-in commit UI if it injects co-author lines.
+**Author policy (lab handover)**:
 
-**Author policy (lab handover)**: commit from a **terminal outside Cursor** with `git commit --no-verify -m "..."`. Verify with `git log -1 --format=%B` — no `Co-authored-by: Cursor` line. Do not use Cursor's Source Control commit button if it injects AI trailers.
+- Commit from a **terminal** (PowerShell / bash) with `git commit --no-verify -m "..."`.
+- Do **not** add `Co-authored-by: Cursor` or other AI trailers.
+- Avoid Cursor IDE's **Source Control → Commit** button if it injects co-author lines.
+- After **every** commit, run `git log -1 --format=%B` and confirm the message body has **no** `Co-authored-by:` line (see [Co-authored-by — daily practice](#co-authored-by--daily-practice) below).
+
+**Why `--no-verify`?** — Skips local hooks that some IDE setups attach; does **not** skip GitHub CI on PR.
 
 ---
 
@@ -376,6 +381,82 @@ App login: **管理員登入** → username `admin_icmnlab` (not display name).
 
 ---
 
+## Co-authored-by — daily practice
+
+**Question**: Do I need to check for `Co-authored-by: Cursor` on every commit?
+
+| When | Check? | Why |
+|------|--------|-----|
+| **After each `git commit`** | **Yes (recommended)** | Cursor / IDE commit UI can inject trailers; one `git log -1 --format=%B` takes 2 seconds |
+| **`git pull` / `git status` / start of day** | No | Trailers live on commit objects, not in working tree |
+| **Before opening PR** | Optional extra pass | `git log origin/main..HEAD --format=%B` if you used IDE commits on the branch |
+
+**Normal PowerShell flow** (`git commit --no-verify -m "..."`) usually does **not** add co-authors. The check is a safety net when developing inside Cursor.
+
+**If a bad trailer slipped in** (branch not merged yet):
+
+```powershell
+git commit --amend --no-verify -m "your message without trailer"
+git log -1 --format=%B
+git push --force-with-lease
+```
+
+**If already on `main` and pushed**: leave history as-is for old commits; **new** commits must not add trailers. Lab policy documented in local `DEPLOYMENT_LOG.md` §I.5.2.
+
+---
+
+## After you push a new branch (full checklist)
+
+Use this after step 7 in the [Daily loop](#daily-loop-after-initial-sync): `git push -u origin feat/my-change`.
+
+### On GitHub (web)
+
+| Step | Action | Why |
+|------|--------|-----|
+| 1 | Open repo → **Compare & pull request** (or `https://github.com/icmnlab/<repo>/compare/main...feat/my-change`) | Push alone does not change `main`; PR is the review + CI gate |
+| 2 | Base = **`main`**, compare = **your branch** | Webhook deploy and production track `main` only |
+| 3 | Fill title (imperative, e.g. `fix: resolve species_id on transfer`) + short body (what / why / test plan) | Reviewers and future you rely on PR text |
+| 4 | Wait for **CI green** (Actions tab) | Catches broken tests before merge; branch protection should require this |
+| 5 | (Optional) Request review from teammate | Human gate for lab handover |
+| 6 | **Merge pull request** → Confirm | Creates merge commit on `main`; closes the branch workflow |
+| 7 | (Optional) **Delete branch** on GitHub | Reduces stale branch clutter |
+
+**You do not need a local `git pull` just to open or merge a PR** — that happens on GitHub. Pull locally when you need to build, test, or start the next branch.
+
+### After merge — by repo
+
+| Repo | What happens automatically | What you do manually |
+|------|---------------------------|----------------------|
+| **Backend** | GitHub fires **push webhook** → Tailscale Funnel → VM `deploy.sh` (`git pull`, npm, pending migrations, `pm2 reload`) | If deploy fails: fix Funnel target (`http://127.0.0.1:3000`), Webhook Secret, Content type `application/json`; Redeliver in GitHub → check `deploy.log` on VM |
+| **Frontend** | CI already ran on PR; merge updates GitHub `main` only | **`flutter build apk --release`** with lab `API_BASE_URL` and distribute APK — CI does not ship mobile builds |
+
+### After merge — on your machine
+
+```powershell
+cd D:\treeproject\tree-project-<backend|frontend>
+git checkout main
+git pull origin main
+git branch -d feat/my-change    # optional: delete local branch after merge
+```
+
+| Step | Why |
+|------|-----|
+| `checkout main` | Feature branch is done; `main` is the integration line |
+| `pull origin main` | Your disk must match GitHub before the next branch or APK build |
+| Delete local branch | Avoid accidentally committing on a merged branch name |
+
+### Verify the change landed
+
+| Change type | Verify |
+|-------------|--------|
+| Backend API / transfer logic | VM: `tail -n 30 /opt/tree-app/logs/deploy.log` shows new commit hash; `curl http://127.0.0.1:3000/health` |
+| Frontend UI | New APK on device; login `admin_icmnlab` + **管理員登入**; retest the user path |
+| Docs only | GitHub `main` commit visible; no VM action unless backend docs-only still triggers webhook |
+
+**Two-repo features**: merge **backend first** if the API contract changed; then frontend PR that depends on it.
+
+---
+
 ## Database changes
 
 | Environment | Command |
@@ -460,6 +541,337 @@ git push -u origin chore/my-first-push
 **Webhook `Invalid signature` in PM2 logs**: GitHub Webhook **Secret** must exactly match VM `DEPLOY_WEBHOOK_SECRET` in `/opt/tree-app/backend/.env`, then `pm2 reload tree-backend --update-env`. See local ops log `project_code/docs/DEPLOYMENT_LOG.md` §I.5.
 
 **After backend merge**: SSH to VM → `tail -n 20 /opt/tree-app/logs/deploy.log` or `GET /webhook/status` with `X-Admin-Token`.
+
+---
+
+## Guided exercise — fix ST-1 `species_id` shows「無」(recommended handover)
+
+**Purpose**: Walk through the full [Daily loop](#daily-loop-after-initial-sync) + [After push](#after-you-push-a-new-branch-full-checklist) on a **real bug** found during 2026-06-30 field testing on the **empty lab DB** (`admin_icmnlab`).
+
+**Recommendation**: **Yes — assignee should run this checklist once** before taking ownership. It validates GitHub access, CI, backend deploy, and reading production code paths.
+
+**Estimated time**: 2–4 hours (first time).
+
+**Prerequisites**:
+
+| Item | Check |
+|------|--------|
+| Collaborator on `icmnlab/tree-project-backend` + `tree-project-frontend` | GitHub invite accepted |
+| `git config user.name` / `user.email` | Your GitHub identity |
+| `D:\treeproject` clones with `origin` → `icmnlab` | `git remote -v` |
+| Node 18+ (backend tests) | `node -v` |
+| Optional: lab VM SSH / Console | For SQL verify after deploy |
+
+Field logs: local `project_code/docs/DEPLOYMENT_LOG.md` §K.
+
+---
+
+### Phase A — Sync and confirm the bug exists
+
+#### A.1 Pull latest `main` (both repos)
+
+**Why**: Fix branch must start from current integration line (includes merged PR #1 on both repos).
+
+```powershell
+cd D:\treeproject\tree-project-backend
+git fetch origin
+git checkout main
+git pull origin main
+
+cd D:\treeproject\tree-project-frontend
+git fetch origin
+git checkout main
+git pull origin main
+git restore linux/flutter/ macos/Flutter/ windows/flutter/ 2>$null
+flutter pub get
+```
+
+#### A.2 (Optional) Reproduce on device
+
+Skip if ST-1～ST-3 already exist on lab VM from 2026-06-30 session.
+
+1. Build/run APK with lab API (see [Build APK](#existing-clone--first-sync-already-at-dtreeproject)).
+2. **管理員登入** → `admin_icmnlab`.
+3. Create 專案／區 → BLE survey → submit 1+ trees.
+4. Open tree detail for **ST-1** → **樹種編號** shows「無」 while **樹種名稱** may show 樟 / 測試樹種.
+
+#### A.3 Confirm in DB (VM)
+
+**Why**: Separates UI bug from DB NULL — ST-1 is **`species_id` NULL in DB**, not just stale UI.
+
+```bash
+cd /opt/tree-app/backend
+set -a && source .env && set +a
+psql "$DATABASE_URL" -c "
+  SELECT id, system_tree_id, species_id, species_name, dbh_cm
+  FROM tree_survey ORDER BY id;"
+```
+
+**Before fix**: `species_name` filled, `species_id` NULL or empty.
+
+---
+
+### Phase B — Implement the fix (backend)
+
+#### B.1 Create feature branch
+
+**Why**: Never commit directly to `main`; PR + CI gate.
+
+```powershell
+cd D:\treeproject\tree-project-backend
+git checkout main
+git pull origin main
+git checkout -b fix/st-1-species-id-on-transfer
+```
+
+#### B.2 Add helper `utils/speciesResolve.js`
+
+**Why**: Transfer lookup was inline and missed `toTraditional` + `species_synonyms`. Central helper matches `normalize_species_traditional.js` §D logic.
+
+Create file `utils/speciesResolve.js`:
+
+```javascript
+const { toTraditional } = require('./chineseConvert');
+
+async function tableExists(client, tableName) {
+  const r = await client.query(
+    `SELECT 1 FROM information_schema.tables
+     WHERE table_schema = 'public' AND table_name = $1`,
+    [tableName],
+  );
+  return r.rows.length > 0;
+}
+
+/**
+ * Resolve tree_species.id for pending → tree_survey transfer.
+ * @param {import('pg').PoolClient} client
+ * @param {{ speciesName?: string, speciesIdHint?: string }} opts
+ * @returns {Promise<string|null>}
+ */
+async function resolveSpeciesIdForName(client, { speciesName, speciesIdHint } = {}) {
+  if (speciesIdHint && String(speciesIdHint).trim()) {
+    const hint = String(speciesIdHint).trim();
+    const byId = await client.query(
+      'SELECT id FROM tree_species WHERE id = $1 LIMIT 1',
+      [hint],
+    );
+    if (byId.rows.length > 0) return byId.rows[0].id;
+  }
+
+  if (!speciesName || !String(speciesName).trim()) return null;
+
+  const normalized = toTraditional(String(speciesName).trim());
+  if (!normalized) return null;
+
+  const direct = await client.query(
+    'SELECT id FROM tree_species WHERE name = $1 OR scientific_name = $1 LIMIT 1',
+    [normalized],
+  );
+  if (direct.rows.length > 0) return direct.rows[0].id;
+
+  if (await tableExists(client, 'species_synonyms')) {
+    const syn = await client.query(
+      `SELECT ss.canonical_species_id AS id
+       FROM species_synonyms ss
+       WHERE ss.variant_name = $1
+       LIMIT 1`,
+      [normalized],
+    );
+    if (syn.rows.length > 0) return syn.rows[0].id;
+  }
+
+  return null;
+}
+
+module.exports = { resolveSpeciesIdForName };
+```
+
+#### B.3 Wire into transfer — `routes/pending_measurements.js`
+
+**Location**: transfer loop, ~L1004–1018 (search for `// 嘗試查找 species_id`).
+
+**Why**: Replace raw-name-only lookup; also read optional `species_id` from `raw_data_snapshot` (Phase C).
+
+1. Near top of file (with other requires), add:
+
+```javascript
+const { resolveSpeciesIdForName } = require('../utils/speciesResolve');
+```
+
+2. Replace the inline species lookup block with:
+
+```javascript
+      // 嘗試查找 species_id（繁體正規化 + 同義詞 + snapshot hint）
+      let speciesId = null;
+      const snapshot = parseRawDataSnapshot(p.raw_data_snapshot);
+      if (p.species_name || snapshot.species_id) {
+        try {
+          speciesId = await resolveSpeciesIdForName(client, {
+            speciesName: p.species_name,
+            speciesIdHint: snapshot.species_id,
+          });
+        } catch (err) {
+          console.warn(`[Transfer] Species lookup failed for ${p.species_name}:`, err.message);
+        }
+      }
+```
+
+**Do not remove** existing `toTraditional(p.species_name)` on INSERT — lookup and stored name stay aligned.
+
+---
+
+### Phase C — Optional frontend belt-and-suspenders
+
+**Why**: Form already calls `_ensureSpeciesId()` but never sends `species_id` to pending; snapshot gives transfer a direct hint.
+
+File: `lib/screens/v3/integrated_tree_form_page.dart`
+
+Before each `_pendingService.updateMeasurement(...)` call, build snapshot merge:
+
+```dart
+      final speciesSnapshot = (_speciesId != null && _speciesId!.isNotEmpty)
+          ? {'species_id': _speciesId}
+          : null;
+      final maintenanceSnapshot = _isMaintenance
+          ? {'update_tree_location': _updateTreeLocation}
+          : null;
+      final rawDataSnapshotMerge = {
+        if (speciesSnapshot != null) ...speciesSnapshot,
+        if (maintenanceSnapshot != null) ...maintenanceSnapshot,
+      };
+```
+
+Pass `rawDataSnapshotMerge: rawDataSnapshotMerge.isEmpty ? null : rawDataSnapshotMerge` to **all three** `updateMeasurement` calls in `_submitForm` (initial, 409 retry, conflict keepMine).
+
+**If backend-only fix**: skip Phase C; backend helper alone fixes new transfers when synonym/direct name match exists.
+
+**Two PRs**: backend PR first → merge → deploy; then frontend PR + new APK (optional).
+
+---
+
+### Phase D — Local verification
+
+```powershell
+cd D:\treeproject\tree-project-backend
+npm ci
+node scripts/migrate.js
+node tests/runner.js
+```
+
+**Why `migrate.js`**: CI uses empty Postgres; ensures helper does not break schema assumptions.
+
+**Expect**: 89 tests pass (same as CI). If you add a contract test later, put it under `tests/contracts/`.
+
+Frontend (if Phase C):
+
+```powershell
+cd D:\treeproject\tree-project-frontend
+flutter test
+```
+
+---
+
+### Phase E — Commit, push, PR, merge
+
+```powershell
+cd D:\treeproject\tree-project-backend
+git add utils/speciesResolve.js routes/pending_measurements.js
+git commit --no-verify -m "fix: resolve species_id on pending transfer"
+git log -1 --format=%B
+git push -u origin fix/st-1-species-id-on-transfer
+```
+
+**Check commit message**: no `Co-authored-by:` line.
+
+**GitHub**:
+
+1. Open PR: base `main` ← compare `fix/st-1-species-id-on-transfer`.
+2. Title: `fix: resolve species_id on pending transfer`
+3. Body template:
+
+```markdown
+## Summary
+- Add `utils/speciesResolve.js` (toTraditional + species_synonyms + snapshot hint)
+- Use in pending → tree_survey transfer
+
+## Test plan
+- [ ] `node tests/runner.js` green locally
+- [ ] CI green
+- [ ] After merge: VM SQL shows species_id for new survey
+- [ ] App detail page 樹種編號 not「無」
+
+Fixes ST-1 handover bug (2026-06-30 field test).
+```
+
+4. Wait **CI green** → **Merge pull request**.
+
+Follow [After you push a new branch](#after-you-push-a-new-branch-full-checklist) for post-merge steps.
+
+---
+
+### Phase F — After merge: deploy + verify
+
+#### F.1 VM deploy (automatic for backend)
+
+**Why**: Webhook listens to `main` push only.
+
+```bash
+tail -n 30 /opt/tree-app/logs/deploy.log
+curl -sf http://127.0.0.1:3000/health && echo OK
+```
+
+If `deploy.log` unchanged → fix Funnel (`http://127.0.0.1:3000`), Webhook Secret, Redeliver (see `DEPLOYMENT_LOG.md` §I.5).
+
+#### F.2 Backfill existing ST-* rows (no re-survey)
+
+**Why**: Fix applies to **new** transfers; rows already in DB need backfill script §D.
+
+```bash
+cd /opt/tree-app/backend
+set -a && source .env && set +a
+node scripts/normalize_species_traditional.js          # dry-run — read output
+node scripts/normalize_species_traditional.js --apply  # writes species_id
+psql "$DATABASE_URL" -c "
+  SELECT system_tree_id, species_id, species_name FROM tree_survey ORDER BY id;"
+```
+
+#### F.3 App verification
+
+1. `git pull origin main` on frontend if you changed Phase C; rebuild APK if needed.
+2. Open **ST-1** detail → **樹種編號** should show e.g. `0001`, not「無」.
+3. Optional: survey **one new tree** → confirm new row has `species_id` in SQL immediately after transfer.
+
+---
+
+### Phase G — Done checklist (tick before closing exercise)
+
+- [ ] Backend PR merged; VM `deploy.log` shows new commit
+- [ ] SQL: all ST-* rows have non-null `species_id` (backfill or re-survey)
+- [ ] App: ST-1 樹種編號 visible
+- [ ] Local `main` pulled: `git checkout main && git pull origin main`
+- [ ] Feature branch deleted (GitHub + local)
+
+---
+
+### Root cause reference (read before coding)
+
+| Layer | Fact |
+|-------|------|
+| Frontend `integrated_tree_form_page.dart` | `_ensureSpeciesId()` calls `POST /tree_species` and sets `_speciesId` **before** submit |
+| Frontend `updateMeasurement()` | Sends **`species_name` only** — not `species_id`; `pending_tree_measurements` has no `species_id` column |
+| Backend `pending_measurements.js` transfer (~L1004–1017) | Old code: `WHERE name = $1 OR scientific_name = $1` on **raw** `p.species_name` — **no** `toTraditional`, **no** `species_synonyms` |
+| AI identify path | Catalog row may use **scientific name**; UI shows **樟**; synonym in `species_synonyms` but old transfer ignored it |
+| Detail page | `_f('species_id','樹種編號')` → NULL displays「無」 |
+
+### Other issues seen same session (not this bug)
+
+| Issue | Log / symptom | Action |
+|-------|---------------|--------|
+| Cloudinary | `[tree_images] Invalid cloud_name Root` 401 | Set valid `CLOUDINARY_*` in VM `.env`; photos stay local until fixed |
+| Google Maps | `animateCamera` PlatformException | Timing/race; lower priority |
+| Map detail all「無」 | Fixed frontend PR #1 `47d8cff` | Rebuild APK with current `main` |
+
+Field logs: local `DEPLOYMENT_LOG.md` §K.
 
 ---
 
