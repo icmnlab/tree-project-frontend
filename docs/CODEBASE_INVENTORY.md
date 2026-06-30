@@ -41,7 +41,7 @@ Industry practice for a system this size — **single hub, tiered depth, code as
 | **Research tier** | `RESEARCH_REFERENCE.md` | ✅ Done (non-SOP docs explained) |
 | Module guides | 13 domain / experimental guides | ✅ Phase 2 complete |
 | Runbooks | LAB / BUILD / SECRETS / VERIFY / FIELD | ✅ Phase 5–6 complete |
-| VM-specific deploy steps | `LAB_DEPLOYMENT_GUIDE.md` §live ops | ⏸ Phase 4 — after school SSH/webhook |
+| VM-specific deploy steps | `LAB_DEPLOYMENT_GUIDE.md` §Phase 4 | ✅ Doc written; live output in local `DEPLOYMENT_LOG.md` |
 
 **Rule**: when code changes routes, tables, or user-visible flows → update `ARCHITECTURE.md`, `API_REFERENCE.md`, regenerate OpenAPI if needed, and the relevant module guide in the same PR.
 
@@ -274,12 +274,10 @@ Convert local `DEPLOYMENT_LOG.md` ops into public `LAB_DEPLOYMENT_GUIDE.md` afte
 - [x] `DATABASE_DESIGN.md` — why 49 SQL files, entity model, handover talking points
 - [x] `OPENAPI_SCOPE.md` — schema deepening explained; shallow spec is intentional
 
-### Phase 10 — Dev data, reset, git sync (complete 2026-06-29; VM ops logged locally)
+### Phase 4 — School lab ops runbook (docs complete 2026-06-29; VM verification pending)
 
-- [x] `DEV_DATA_RESET_AND_SYNC.md` — CSV load, reset, pull when GitHub ahead
-- [ ] Phase 4 VM SSH/webhook/Funnel — **in progress** at school; outputs → `project_code/docs/DEPLOYMENT_LOG.md`
-
-**Local only (not in git)**: face-to-face talk track + live ops log
+- [x] `LAB_DEPLOYMENT_GUIDE.md` §Phase 4 — SSH, webhook, CSV test, reset, git pull (public placeholders)
+- [ ] Live VM verification — output in local `DEPLOYMENT_LOG.md` only
 
 ---
 

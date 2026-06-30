@@ -659,6 +659,151 @@ Run every item in `VERIFICATION_CHECKLIST.md` after initial deploy and after eac
 
 ---
 
+---
+
+## Phase 4 — School lab operations (SSH, webhook, dev data)
+
+Verified steps from live VM ops are recorded locally in `project_code/docs/DEPLOYMENT_LOG.md` (not in git). This section is the **public runbook** (placeholders only, no secrets).
+
+### Recommended order
+
+| Step | Action | Why |
+|------|--------|-----|
+| 1 | `git pull` on VM backend | GitHub is source of truth; may include new migrations |
+| 2 | Enable SSH (`openssh-server`) | Easier than Proxmox Console for later steps |
+| 3 | Optional: import dev CSV for map/load testing | Only on empty DB or after intentional reset |
+| 4 | Reset to production-empty DB after testing | Remove ~7000 test trees |
+| 5 | Webhook secrets + Tailscale Funnel + GitHub webhook | GitHub cannot reach private tailnet without Funnel |
+| 6 | Test push → auto deploy | Validates full pipeline |
+
+**Pull before SSH/webhook?** Yes — always sync code first.  
+**SSH before webhook?** Recommended — webhook setup edits `.env` and logs; SSH simplifies this.
+
+### Sync VM when GitHub is ahead
+
+All commands on **Ubuntu VM** at `/opt/tree-app/backend`:
+
+```bash
+cd /opt/tree-app/backend
+git fetch origin
+git log --oneline HEAD..origin/main    # commits behind GitHub
+git pull origin main
+bash scripts/deploy.sh                 # pull + npm + pending migrations + pm2 reload
+curl -sf http://127.0.0.1:3000/health && echo OK
+```
+
+**Do not** run full `migrate.js` on a live lab DB with survey data — use `run_pending_migrations.js` (via `deploy.sh`).
+
+### Dev fixtures: `tree_survey_data.csv` (~7000 test trees)
+
+| Item | Detail |
+|------|--------|
+| File | `backend/dev-fixtures/tree_survey_data.csv` |
+| Loaded by | `scripts/migrate.js` only when DB is empty and `SKIP_CSV_IMPORT` is not set |
+| Production | **Never** — `deploy.sh` / `run_pending_migrations.js` skip CSV |
+
+**Import for lab testing (wipes all data):**
+
+```bash
+cd /opt/tree-app/backend
+CONFIRM=YES SKIP_CSV_IMPORT=0 ./scripts/reset_fresh_db.sh
+node scripts/seed_dev_users.js    # dev login admin/12345 — NOT for production admin
+# optional demo boundaries:
+node scripts/seed_dev_boundaries.js
+psql "$DATABASE_URL" -c "SELECT COUNT(*) FROM tree_survey;"
+```
+
+**Restore production-empty state after testing:**
+
+```bash
+CONFIRM=YES SKIP_CSV_IMPORT=1 ./scripts/reset_fresh_db.sh
+node scripts/create_lab_admin.js --username labadmin --password '<STRONG>' --display 'Lab Admin'
+pm2 reload tree-backend
+```
+
+See `backend/dev-fixtures/README.md` and `DATABASE_DESIGN.md` §Production vs development data policy.
+
+### Enable SSH (one-time, Ubuntu VM)
+
+If `ssh vm121@<tailscale-ip>` returns **Connection refused**, install sshd on the VM (Proxmox Console if needed):
+
+```bash
+sudo apt update
+sudo apt install -y openssh-server
+sudo systemctl enable --now ssh
+sudo ufw allow OpenSSH
+systemctl is-active ssh
+ss -ltnp | grep ':22'
+```
+
+From a dev machine on the same tailnet:
+
+```bash
+ssh vm121@<TAILSCALE_IP>
+curl -sf https://<HOST>.<TAILNET>.ts.net/health
+```
+
+Tailscale replaces school VPN for SSH/HTTPS maintenance. Proxmox UI (`134.208.x.x:8006`) still needs VPN when off-campus.
+
+### Webhook auto-deploy
+
+**Why Funnel:** GitHub webhook servers are on the public internet; `*.ts.net` is reachable inside tailnet only unless **Tailscale Funnel** exposes port 443.
+
+**On VM (after SSH):**
+
+```bash
+cd /opt/tree-app/backend
+# Generate and add to .env (store in password manager):
+#   DEPLOY_WEBHOOK_SECRET=<openssl rand -hex 32>
+#   ADMIN_API_TOKEN=<openssl rand -hex 32>
+pm2 reload tree-backend
+
+sudo tailscale funnel --bg --https=443 http://127.0.0.1:443
+sudo tailscale funnel status
+```
+
+**GitHub** → repo `tree-project-backend` → Settings → Webhooks:
+
+- URL: `https://<HOST>.<TAILNET>.ts.net/webhook/deploy`
+- Secret: same as `DEPLOY_WEBHOOK_SECRET`
+- Events: push
+
+**Verify:**
+
+```bash
+curl -s -H "X-Admin-Token: <ADMIN_API_TOKEN>" \
+  https://<HOST>.<TAILNET>.ts.net/webhook/status
+tail -n 30 /opt/tree-app/logs/deploy.log
+```
+
+Status endpoint uses header **`X-Admin-Token`**, not `Authorization: Bearer`.
+
+**DB backup cron (recommended same session):**
+
+```bash
+crontab -e
+# 0 3 * * * /opt/tree-app/backend/scripts/backup_db.sh >> /opt/tree-app/logs/backup.log 2>&1
+```
+
+### Recipient: pull when GitHub is newer
+
+**Developer laptop** (first time or behind):
+
+```bash
+git config --global user.name "Your Name"
+git config --global user.email "you@example.com"
+git clone https://github.com/icmnlab/tree-project-backend.git
+git clone https://github.com/icmnlab/tree-project-frontend.git
+# or if already cloned:
+git pull origin main
+```
+
+First `git push` opens browser login (Git Credential Manager). Must be org **Collaborator (Write)**.
+
+Daily loop: `DEVELOPMENT_WORKFLOW.md` — branch → PR → CI green → merge → VM webhook deploys backend.
+
+---
+
 ## Redeploy / Webhook
 
 ### Automatic (webhook configured)
@@ -948,263 +1093,6 @@ Document org-specific RPO/RTO in local ops notes.
 
 ---
 
-## Dev test data, database reset, and code sync
-
-Lab VM runs **Ubuntu**. All commands below are **bash on the server** unless labeled **Windows (dev PC)**.
-
-### Policy: three kinds of data
-
-| Kind | Example | Load on production VM? |
-|------|---------|-------------------------|
-| **Schema + reference** | tree species, status options, synonyms | Yes (via migrations) |
-| **Dev CSV (~7000 trees)** | `dev-fixtures/tree_survey_data.csv` | **Only for deliberate QA** — never for real go-live |
-| **Real survey data** | Field BLE / manual entry | Normal operation |
-
-**Why separate?** The CSV is port-authority **test inventory** for map/load/regression. Production should start empty and fill from field work. `migrate.js` has triple guards: production deploy uses `run_pending_migrations.js` only; `SKIP_CSV_IMPORT=1`; skip if `tree_survey` already has rows.
-
-### Load dev CSV (~7000 test trees) for QA
-
-**When**: Empty `tree_survey` table and you **intentionally** want demo map data on the lab VM.
-
-**Option A — Full rebuild with CSV** (wipes everything):
-
-```bash
-cd /opt/tree-app/backend
-CONFIRM=YES SKIP_CSV_IMPORT=0 ./scripts/reset_fresh_db.sh
-node scripts/create_lab_admin.js --username labadmin --password '<STRONG>' --display 'Lab Admin'
-# Optional demo boundaries (not in migrate):
-node scripts/seed_dev_boundaries.js
-pm2 reload tree-backend
-```
-
-**Option B — Fresh empty DB, then migrate with CSV** (only if `tree_survey` is empty):
-
-```bash
-cd /opt/tree-app/backend
-# Do NOT set SKIP_CSV_IMPORT
-node scripts/migrate.js
-```
-
-**Option C — Small field-test fixtures** (GPS near phone, maintenance/history scenarios):
-
-```bash
-cd /opt/tree-app/backend
-node scripts/seed_field_test_dataset.js --lat=24.15 --lon=120.65 --project-code=TIPC-XX
-node scripts/seed_field_test_dataset.js --lat=24.15 --lon=120.65 --project-code=TIPC-XX --apply
-# Cleanup when done:
-node scripts/seed_field_test_dataset.js --cleanup --apply
-```
-
-**Verify import**:
-
-```bash
-psql "$DATABASE_URL" -c "SELECT COUNT(*) FROM tree_survey;"
-psql "$DATABASE_URL" -c "SELECT project_location, COUNT(*) FROM tree_survey GROUP BY 1 ORDER BY 2 DESC LIMIT 5;"
-curl -sf http://127.0.0.1:3000/health
-```
-
-**Windows (dev PC)** — same CSV logic on local Postgres:
-
-```powershell
-cd tree-project-backend
-# .env with local DATABASE_URL
-node scripts/migrate.js          # imports CSV if tree_survey empty
-# OR skip CSV:
-$env:SKIP_CSV_IMPORT="1"; node scripts/migrate.js
-```
-
-### Reset database after QA (back to clean production-like state)
-
-**Why**: Remove ~7000 test trees and any QA edits before handover or go-live demo.
-
-```bash
-cd /opt/tree-app/backend
-CONFIRM=YES SKIP_CSV_IMPORT=1 ./scripts/reset_fresh_db.sh
-node scripts/create_lab_admin.js --username labadmin --password '<STRONG>' --display 'Lab Admin'
-pm2 reload tree-backend
-curl -sf http://127.0.0.1:3000/health
-psql "$DATABASE_URL" -c "SELECT COUNT(*) FROM tree_survey;"   # expect 0
-```
-
-| After reset | State |
-|-------------|--------|
-| `tree_survey`, `projects`, `users` | Empty |
-| `tree_species`, `species_synonyms`, `tree_status_options` | Reference seeds restored |
-| Admin | **Must recreate** with `create_lab_admin.js` — never `seed_dev_users.js` on prod VM |
-
-**Never** run `seed_dev_users.js` on the lab production VM (creates weak `admin/12345`).
-
-### Sync server when GitHub is ahead
-
-**Yes — the backend on the VM should pull** when `icmnlab/tree-project-backend` has newer commits.
-
-**Check before pull** (on Ubuntu VM):
-
-```bash
-cd /opt/tree-app/backend
-git remote -v
-git fetch origin
-git log --oneline HEAD..origin/main    # commits you are missing
-git status
-```
-
-**Recommended — use deploy script** (pull + npm + incremental migration + PM2 + health + rollback):
-
-```bash
-cd /opt/tree-app/backend
-bash scripts/deploy.sh
-```
-
-**Manual equivalent**:
-
-```bash
-cd /opt/tree-app/backend
-git pull origin main
-npm install --production
-node scripts/run_pending_migrations.js    # NOT migrate.js on existing prod DB
-pm2 reload ecosystem.config.js
-curl -sf http://127.0.0.1:3000/health
-```
-
-| Command | Use on live VM with data? |
-|---------|---------------------------|
-| `git pull` + `run_pending_migrations.js` | **Yes** — normal updates |
-| `migrate.js` | **No** — full bootstrap; CSV risk if `SKIP_CSV_IMPORT` unset |
-| `deploy.sh --full-migrate` | **No** except empty DB disaster recovery |
-
-### Recipient / developer machine (GitHub ahead of local)
-
-Same pattern on **Windows or Ubuntu dev PC**:
-
-```bash
-cd tree-project-backend   # or tree-project-frontend
-git fetch origin
-git log --oneline HEAD..origin/main
-git pull origin main
-```
-
-First-time clone (after collaborator invite):
-
-```bash
-git clone https://github.com/icmnlab/tree-project-backend.git
-git clone https://github.com/icmnlab/tree-project-frontend.git
-```
-
-First push from a new developer: see `DEVELOPMENT_WORKFLOW.md` and `HANDOFF.md` §6.3 (Git Credential Manager / PAT).
-
----
-
-## Enable SSH on Ubuntu VM (one-time)
-
-**Why**: Tailscale reaches the VM, but port 22 needs `openssh-server`. Previously only Proxmox Console was used.
-
-**On VM** (Proxmox Console or existing SSH):
-
-```bash
-sudo apt update
-sudo apt install -y openssh-server
-sudo systemctl enable --now ssh
-sudo ufw allow OpenSSH
-systemctl is-active ssh
-ss -ltnp | grep ':22'
-```
-
-**From Windows dev PC** (PowerShell — connectivity test only):
-
-```powershell
-Test-NetConnection 100.116.125.118 -Port 22
-ssh vm121@100.116.125.118
-# or
-ssh vm121@vm121-standard-pc-i440fx-piix-1996.tail146e6a.ts.net
-```
-
-**From Ubuntu/macOS**:
-
-```bash
-ssh vm121@100.116.125.118
-```
-
-Document actual output in local `project_code/docs/DEPLOYMENT_LOG.md` (not git).
-
----
-
-## Webhook + Tailscale Funnel (Ubuntu VM)
-
-**Why Funnel**: GitHub webhook servers are on the public internet. Tailscale alone does not expose the VM to GitHub; Funnel publishes nginx `:443` or use manual `git pull` + `deploy.sh`.
-
-### Step 1 — Pull latest backend first
-
-```bash
-cd /opt/tree-app/backend
-git fetch origin && git pull origin main
-npm install --production
-pm2 reload tree-backend
-```
-
-### Step 2 — Generate secrets in `.env`
-
-```bash
-cd /opt/tree-app/backend
-WEBHOOK_SECRET=$(openssl rand -hex 32)
-ADMIN_TOKEN=$(openssl rand -hex 32)
-echo "DEPLOY_WEBHOOK_SECRET=$WEBHOOK_SECRET"
-echo "ADMIN_API_TOKEN=$ADMIN_TOKEN"
-nano .env    # paste values; save
-pm2 reload tree-backend
-```
-
-Store values in password manager. **Do not commit `.env`.**
-
-### Step 3 — Tailscale Funnel (requires tailnet admin)
-
-```bash
-sudo tailscale funnel --bg --https=443 http://127.0.0.1:443
-sudo tailscale funnel status
-```
-
-### Step 4 — GitHub webhook
-
-Repo `icmnlab/tree-project-backend` → **Settings → Webhooks → Add webhook**:
-
-| Field | Value |
-|-------|-------|
-| Payload URL | `https://<hostname>.<TAILNET>.ts.net/webhook/deploy` |
-| Content type | `application/json` |
-| Secret | Same as `DEPLOY_WEBHOOK_SECRET` |
-| Events | Just the push event |
-
-### Step 5 — Verify (Ubuntu on VM)
-
-```bash
-curl -sf http://127.0.0.1:3000/health
-tail -n 30 /opt/tree-app/logs/deploy.log
-pm2 logs tree-backend --lines 30
-```
-
-**From Windows** (webhook status — use `curl.exe`):
-
-```powershell
-curl.exe -s -H "X-Admin-Token: <ADMIN_TOKEN>" https://<hostname>.<TAILNET>.ts.net/webhook/status
-```
-
-Unsigned POST should return `401 Invalid signature` (proves route works):
-
-```powershell
-curl.exe -s -X POST https://<hostname>.<TAILNET>.ts.net/webhook/deploy -H "Content-Type: application/json" -d "{}"
-```
-
-### Step 6 — DB backup cron (optional, same session)
-
-```bash
-crontab -e
-# add:
-0 3 * * * /opt/tree-app/backend/scripts/backup_db.sh >> /opt/tree-app/logs/backup.log 2>&1
-```
-
-**Alternative without Funnel**: Manual deploy only — `bash scripts/deploy.sh` after each `git pull`. Document choice in local ops log.
-
----
-
 ## Deferred Web Portal
 
 **Status (2026-06)**: Deferred. In-app admin screens cover user management, invite codes, and project administration. A standalone browser admin portal is **out of scope** for current handover.
@@ -1252,6 +1140,5 @@ Suggested priority if revived: P0 users + invites → P1 projects/boundaries →
 | `LICENSE` | MIT license and copyright |
 | `HANDOFF.md` | System overview, local dev, webhook mechanism |
 | `HANDOFF_SECRETS_CHECKLIST.md` | Secret inventory and rotation |
-| `DEVELOPMENT_WORKFLOW.md` | Branch, PR, CI, recipient pull |
-| `LOCAL_DEVELOPER_SETUP.md` | First-time dev machine setup |
+| `VERIFICATION_CHECKLIST.md` | Post-deploy validation |
 | `ml_service/README.md` | Optional ML service setup |

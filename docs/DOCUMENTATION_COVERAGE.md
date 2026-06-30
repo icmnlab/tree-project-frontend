@@ -18,9 +18,7 @@ Honest map of **what is documented** vs **what exists on GitHub**. Use with `COD
 | Controllers / services documented? | **Yes** — `backend/docs/SOURCE_LAYOUT.md` |
 | All GitHub files in scope? | **Application + ops yes**; binary assets, lockfiles, CI YAML summarized below |
 
-**Not done (deferred)**: Phase 4 VM-specific runbook (SSH/webhook/Funnel) until school-side verification.
-
-**Documentation set complete** for handover except Phase 4 ops (2026-06-29).
+**Not done (deferred)**: None for documentation — Phase 4 **VM verification** (SSH/webhook live output) recorded in local `DEPLOYMENT_LOG.md` only until verified.
 
 ---
 
@@ -110,7 +108,7 @@ Content from old ops-heavy Chinese prose was **merged** into English runbooks, n
 |-----|----------|--------|
 | OpenAPI request/response schemas | **By design — shallow** | Documented in `OPENAPI_SCOPE.md`; deepen when external codegen needed |
 | Per-endpoint RBAC in OpenAPI | **By design** | `API_REFERENCE.md` + middleware code |
-| VM webhook/Funnel steps | Medium | Phase 4 after school |
+| VM webhook/Funnel live verification | Low | Runbook in `LAB_DEPLOYMENT_GUIDE.md` §Phase 4; paste outputs to local `DEPLOYMENT_LOG.md` |
 | Play Store / upload keystore | Low | **`ANDROID_RELEASE_AND_PLAY_STORE.md`** added |
 
 **When code changes**: update ARCHITECTURE + API_REFERENCE + openapi regen + affected module guide in same PR.
