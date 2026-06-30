@@ -303,7 +303,7 @@ Mount: `/api/admin` · `routes/admin.js`
 
 ## OpenAPI
 
-Machine-readable spec: **`tree-project-backend/openapi/openapi.yaml`** (OpenAPI 3.0.3).
+Machine-readable spec: **[openapi/openapi.yaml](https://github.com/icmnlab/tree-project-backend/blob/main/openapi/openapi.yaml)** (OpenAPI 3.0.3).
 
 | Action | Command |
 |--------|---------|
@@ -311,7 +311,7 @@ Machine-readable spec: **`tree-project-backend/openapi/openapi.yaml`** (OpenAPI 
 | Import | Postman → Import → `openapi/openapi.yaml` |
 | Preview | `npx @redocly/cli preview-docs openapi/openapi.yaml` |
 
-See `backend/openapi/README.md`. Request/response schemas are minimal; roles and bodies remain in this markdown catalog and route source.
+See [openapi/README.md](https://github.com/icmnlab/tree-project-backend/blob/main/openapi/README.md). Request/response schemas are minimal; roles and bodies remain in this markdown catalog and route source.
 
 To verify an endpoint against code:
 

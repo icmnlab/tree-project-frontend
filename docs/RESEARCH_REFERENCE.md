@@ -48,9 +48,9 @@ They are **kept in git** so future developers understand *why* certain paths wer
 | Audience | Entry |
 |----------|-------|
 | Developers | [`ARCHITECTURE.md`](./ARCHITECTURE.md) → [`HANDOFF.md`](./HANDOFF.md) |
-| API consumers | [`API_REFERENCE.md`](./API_REFERENCE.md) · [`backend/openapi/openapi.yaml`](../../backend/openapi/openapi.yaml) |
+| API consumers | [`API_REFERENCE.md`](./API_REFERENCE.md) · [openapi.yaml](https://github.com/icmnlab/tree-project-backend/blob/main/openapi/openapi.yaml) |
 | DBAs / backend | [`DATABASE_SCHEMA.md`](./DATABASE_SCHEMA.md) |
-| Backend layers | [`backend/docs/SOURCE_LAYOUT.md`](../../backend/docs/SOURCE_LAYOUT.md) |
+| Backend layers | [SOURCE_LAYOUT.md](https://github.com/icmnlab/tree-project-backend/blob/main/docs/SOURCE_LAYOUT.md) |
 | Field crews | [`FIELD_SURVEY_SOP.md`](./FIELD_SURVEY_SOP.md) |
 | Deploy | [`LAB_DEPLOYMENT_GUIDE.md`](./LAB_DEPLOYMENT_GUIDE.md) |
 

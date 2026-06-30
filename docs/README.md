@@ -16,7 +16,7 @@ Documentation for **Sustainable TreeAI** (`tree-project-frontend` + `tree-projec
 | **Ops / deploy** | **[LAB_DEPLOYMENT_GUIDE.md](./LAB_DEPLOYMENT_GUIDE.md)** | VM operators |
 | **Field crews** | **[FIELD_SURVEY_SOP.md](./FIELD_SURVEY_SOP.md)** | Surveyors (Chinese-friendly) |
 
-**Repo roots**: `frontend/README.md` and `backend/README.md` are **code READMEs** (stack, build). The **documentation hub is this file** — do not start from scattered markdown elsewhere.
+**Repo roots**: [frontend README.md](../README.md) and [backend README.md](https://github.com/icmnlab/tree-project-backend/blob/main/README.md) are **code READMEs** (stack, build). The **documentation hub is this file** — do not start from scattered markdown elsewhere.
 
 **Language**: English is the canonical language for architecture, API, and workflow docs (Western eng-team standard). Some operational docs (`HANDOFF.md`, `FIELD_SURVEY_SOP.md`) mix Chinese for the Taiwan lab. See [Language policy](#language-policy) below.
 
@@ -91,17 +91,17 @@ Start with **[RESEARCH_REFERENCE.md](./RESEARCH_REFERENCE.md)** for tier definit
 | `DBH_PURE_VISION_RESEARCH.md` | Vision-only DBH research (V1) |
 | `HANDOFF_EXTERNAL_GNSS_AND_BLE.md` | External GNSS (cancelled procurement) |
 
-### Backend repo
+### Backend repo ([tree-project-backend](https://github.com/icmnlab/tree-project-backend))
 
 | Document | Purpose |
 |----------|---------|
-| `backend/README.md` | Backend quick start and architecture diagram |
-| `backend/docs/SOURCE_LAYOUT.md` | Controllers, services, middleware, utils catalog |
-| `backend/openapi/openapi.yaml` | OpenAPI 3.0 spec (Postman / Swagger) |
-| `OPENAPI_SCOPE.md` | What OpenAPI includes; schema deepening policy |
-| `backend/openapi/README.md` | How to regenerate and import the spec |
-| `backend/tests/FRAMEWORK.md` | Integration test framework |
-| `backend/ml_service/README.md` | Optional ML service |
+| [README.md](https://github.com/icmnlab/tree-project-backend/blob/main/README.md) | Backend quick start and architecture diagram |
+| [docs/SOURCE_LAYOUT.md](https://github.com/icmnlab/tree-project-backend/blob/main/docs/SOURCE_LAYOUT.md) | Controllers, services, middleware, utils catalog |
+| [openapi/openapi.yaml](https://github.com/icmnlab/tree-project-backend/blob/main/openapi/openapi.yaml) | OpenAPI 3.0 spec (Postman / Swagger) |
+| [OPENAPI_SCOPE.md](./OPENAPI_SCOPE.md) | What OpenAPI includes; schema deepening policy |
+| [openapi/README.md](https://github.com/icmnlab/tree-project-backend/blob/main/openapi/README.md) | How to regenerate and import the spec |
+| [tests/FRAMEWORK.md](https://github.com/icmnlab/tree-project-backend/blob/main/tests/FRAMEWORK.md) | Integration test framework |
+| [ml_service/README.md](https://github.com/icmnlab/tree-project-backend/blob/main/ml_service/README.md) | Optional ML service |
 
 ### Meta
 

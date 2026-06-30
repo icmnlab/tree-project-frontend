@@ -14,9 +14,11 @@ Both repos live under **`icmnlab`**:
 | Repo | Start here |
 |------|------------|
 | **frontend** | [`docs/README.md`](./README.md) → this file |
-| **backend** | [`docs/README.md`](../../backend/docs/README.md) → links back to frontend `docs/` |
+| **backend** | [backend docs/README.md](https://github.com/icmnlab/tree-project-backend/blob/main/docs/README.md) → links back to this hub |
 
 Do **not** start from scattered markdown at repo root alone — the hub orders documents by priority.
+
+> **Only cloned one repo?** Clone **both** under the same parent folder (e.g. `treeproject/tree-project-frontend` + `treeproject/tree-project-backend`). Docs live mostly in frontend; backend [docs/README.md](https://github.com/icmnlab/tree-project-backend/blob/main/docs/README.md) links back here.
 
 ---
 
@@ -27,7 +29,7 @@ Do **not** start from scattered markdown at repo root alone — the hub orders d
 | **1** | 2–3 h | `README.md` (hub) → `HANDOFF.md` §1–§5 → `ARCHITECTURE.md` → clone both repos → run backend + `flutter run` |
 | **1** | 1 h | `CODEBASE_INVENTORY.md` (skim) → `API_REFERENCE.md` (bookmark) |
 | **2** | 2 h | Your domain: survey → `SURVEY_HISTORY.md`; boundaries → `BOUNDARY_SYSTEM_DESIGN.md`; BLE → `VLGEO2_STD_APPLICATION_GUIDE.md` |
-| **2** | 1 h | `DATABASE_DESIGN.md` → `DATABASE_SCHEMA.md` → `backend/docs/SOURCE_LAYOUT.md` |
+| **2** | 1 h | `DATABASE_DESIGN.md` → `DATABASE_SCHEMA.md` → [backend SOURCE_LAYOUT.md](https://github.com/icmnlab/tree-project-backend/blob/main/docs/SOURCE_LAYOUT.md) |
 | **3** | 2 h | `BUILD_GUIDE.md` + `LOCAL_DEVELOPER_SETUP.md` → create `key.properties`, `.env` |
 | **3b** | 30 min | `DEVELOPMENT_WORKFLOW.md` — branch, PR, CI, Co-authored-by policy |
 | **3c** | 2–4 h (optional) | **`DEVELOPMENT_WORKFLOW.md` §「Guided exercise — fix ST-1」** — when working on species/transfer; local ops §K–§M |
@@ -75,7 +77,7 @@ As the **original author**, you do **not** need to recite every file in a face-t
 | Area | Documented? | Primary docs |
 |------|-------------|--------------|
 | PostgreSQL schema & migrations | Yes | `DATABASE_DESIGN.md`, `DATABASE_SCHEMA.md`, `DATABASE_NORMALIZATION.md` |
-| Backend routes / services / middleware | Yes | `API_REFERENCE.md`, `backend/docs/SOURCE_LAYOUT.md`, OpenAPI |
+| Backend routes / services / middleware | Yes | `API_REFERENCE.md`, [SOURCE_LAYOUT.md](https://github.com/icmnlab/tree-project-backend/blob/main/docs/SOURCE_LAYOUT.md), [OpenAPI](https://github.com/icmnlab/tree-project-backend/blob/main/openapi/openapi.yaml) |
 | Flutter screens / services | Yes (by feature) | `ARCHITECTURE.md` §5, `CODEBASE_INVENTORY.md`, module guides |
 | Local secrets & build files | Yes | `LOCAL_DEVELOPER_SETUP.md`, `BUILD_GUIDE.md`, `HANDOFF_SECRETS_CHECKLIST.md` |
 | Play Store / release signing | Yes | `ANDROID_RELEASE_AND_PLAY_STORE.md` |
