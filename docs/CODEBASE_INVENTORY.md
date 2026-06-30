@@ -274,7 +274,12 @@ Convert local `DEPLOYMENT_LOG.md` ops into public `LAB_DEPLOYMENT_GUIDE.md` afte
 - [x] `DATABASE_DESIGN.md` — why 49 SQL files, entity model, handover talking points
 - [x] `OPENAPI_SCOPE.md` — schema deepening explained; shallow spec is intentional
 
-**Local only (not in git)**: face-to-face talk track in `project_code/docs/FACE_TO_FACE_HANDOFF.md` + `HANDOVER_SCRIPT.md`
+### Phase 10 — Dev data, reset, git sync (complete 2026-06-29; VM ops logged locally)
+
+- [x] `DEV_DATA_RESET_AND_SYNC.md` — CSV load, reset, pull when GitHub ahead
+- [ ] Phase 4 VM SSH/webhook/Funnel — **in progress** at school; outputs → `project_code/docs/DEPLOYMENT_LOG.md`
+
+**Local only (not in git)**: face-to-face talk track + live ops log
 
 ---
 

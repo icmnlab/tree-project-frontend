@@ -172,6 +172,29 @@ Never run full `migrate.js` on production with survey data unless you intend a f
 | **Android APK** | Manual `flutter build apk` per `BUILD_GUIDE.md` |
 | **Play Store** | Manual AAB per `ANDROID_RELEASE_AND_PLAY_STORE.md` |
 
+See **`DEV_DATA_RESET_AND_SYNC.md`** for: loading test CSV, resetting DB, and when GitHub is ahead of VM/laptop.
+
+---
+
+## Sync when GitHub is ahead
+
+Both repos are independent. If `icmnlab/main` has commits you lack:
+
+```bash
+git checkout main
+git fetch origin
+git log HEAD..origin/main --oneline   # preview
+git pull origin main
+```
+
+| Location | After pull |
+|----------|------------|
+| **Lab VM** `/opt/tree-app/backend` | `bash scripts/deploy.sh` (not pull alone) |
+| **Local backend** | `npm ci` + `node scripts/run_pending_migrations.js` |
+| **Local frontend** | `flutter pub get` + `flutter test` |
+
+**Yes — if the server or recipient PC is behind GitHub, pull before SSH/webhook work or development.** Docs and scripts on disk must match the repo you think you are running.
+
 CI validates quality; it does not publish mobile apps.
 
 ---
