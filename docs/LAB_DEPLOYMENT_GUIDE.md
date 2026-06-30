@@ -734,7 +734,7 @@ See `backend/dev-fixtures/README.md` and `DATABASE_DESIGN.md` §Production vs de
 | SSH fails with wrong `100.113.x.x` IP | VM Tailscale IP is **`100.116.125.118`**; client must be on same tailnet (`tailscale status`) |
 | `psql: role "vm121" does not exist` | Shell did not load `.env`; run `set -a && source .env && set +a` before `psql "$DATABASE_URL"` |
 | `pm2 reload` ignores new `.env` values | Use `pm2 reload tree-backend --update-env` |
-| Tree detail page shows all fields as 無 | Often stale list row; fixed in app by refetching `GET /tree_survey/by_id/:id` on open. Verify DB with SQL below |
+| Tree detail page shows all fields as 無 | **Map → detail path**: `/map` returns lightweight markers; detail page must refetch `by_id` (fixed in `fix/map-detail-refetch-from-map`). Rebuild APK after merge |
 | Admin user shows no assigned areas in user form | **Expected** for `系統管理員` — API bypasses `user_projects`; do not confuse with surveyor role permissions |
 
 **Tree detail diagnostic SQL (on VM):**
