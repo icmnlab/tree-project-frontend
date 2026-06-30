@@ -69,6 +69,8 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
     _treeData = Map<String, dynamic>.from(widget.treeData);
     _loadPermissions();
     _loadImages();
+    // 列表／地圖列可能只有部分欄位；進詳情時以 by_id 補齊（現場 transfer 後尤甚）
+    _refreshTreeData(silent: true);
   }
 
   Future<void> _loadImages() async {
@@ -125,21 +127,22 @@ class _TreeSurveyDetailPageState extends State<TreeSurveyDetailPage> {
     }
   }
 
-  // [V2] 新增一個方法來從後端重新獲取最新的樹木資料
-  Future<void> _refreshTreeData() async {
+  // [V2] 從後端重新獲取最新的樹木資料（列表列可能缺欄位）
+  Future<void> _refreshTreeData({bool silent = false}) async {
+    final id = _numericTreeId();
+    if (id == null) return;
     final treeService = TreeService();
     try {
-      final treeId = _treeData['id'].toString();
-      final response = await treeService.getTreeById(treeId);
+      final response = await treeService.getTreeById(id.toString());
       if (response['success'] == true && response['data'] != null) {
         if (mounted) {
-      setState(() {
-            _treeData = response['data'];
-      });
+          setState(() {
+            _treeData = Map<String, dynamic>.from(response['data'] as Map);
+          });
         }
       }
     } catch (e) {
-      if (mounted) {
+      if (mounted && !silent) {
         ScaffoldMessenger.of(context)
             .showSnackBar(const SnackBar(content: Text('無法重新整理資料')));
       }

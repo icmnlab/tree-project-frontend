@@ -710,6 +710,7 @@ CONFIRM=YES SKIP_CSV_IMPORT=0 bash scripts/reset_fresh_db.sh
 node scripts/seed_dev_users.js    # dev login admin/12345 — NOT for production admin
 # optional demo boundaries:
 node scripts/seed_dev_boundaries.js
+set -a && source .env && set +a    # required: DATABASE_URL uses treeapp, not shell user
 psql "$DATABASE_URL" -c "SELECT COUNT(*) FROM tree_survey;"
 ```
 
@@ -718,7 +719,7 @@ psql "$DATABASE_URL" -c "SELECT COUNT(*) FROM tree_survey;"
 ```bash
 CONFIRM=YES SKIP_CSV_IMPORT=1 bash scripts/reset_fresh_db.sh
 node scripts/create_lab_admin.js --username labadmin --password '<STRONG>' --display 'Lab Admin'
-pm2 reload tree-backend
+pm2 reload tree-backend --update-env
 ```
 
 See `backend/dev-fixtures/README.md` and `DATABASE_DESIGN.md` §Production vs development data policy.
@@ -731,6 +732,29 @@ See `backend/dev-fixtures/README.md` and `DATABASE_DESIGN.md` §Production vs de
 | `reset_fetsh_db.sh: No such file` | Typo — filename is **`reset_fresh_db.sh`** |
 | `curl -sf https://127.0.0.1:3000/health` silent fail | Use **`http://`** for local PM2; HTTPS only via nginx/`*.ts.net` |
 | SSH fails with wrong `100.113.x.x` IP | VM Tailscale IP is **`100.116.125.118`**; client must be on same tailnet (`tailscale status`) |
+| `psql: role "vm121" does not exist` | Shell did not load `.env`; run `set -a && source .env && set +a` before `psql "$DATABASE_URL"` |
+| `pm2 reload` ignores new `.env` values | Use `pm2 reload tree-backend --update-env` |
+| Tree detail page shows all fields as 無 | **Map → detail path**: `/map` returns lightweight markers; detail page must refetch `by_id` (fixed in `fix/map-detail-refetch-from-map`). Rebuild APK after merge |
+| Admin user shows no assigned areas in user form | **Expected** for `系統管理員` — API bypasses `user_projects`; do not confuse with surveyor role permissions |
+
+**Tree detail diagnostic SQL (on VM):**
+
+```bash
+cd /opt/tree-app/backend && set -a && source .env && set +a
+psql "$DATABASE_URL" -c "SELECT id, system_tree_id, project_tree_id, species_id, species_name, dbh_cm, tree_height_m, status FROM tree_survey ORDER BY id DESC LIMIT 5;"
+psql "$DATABASE_URL" -c "SELECT * FROM tree_survey WHERE id = 7062;"   # use numeric id, not literal <TREE_ID>
+```
+
+**`NODE_ENV` on lab VM** (align `.env` with `ecosystem.config.js`):
+
+| Value | When to use |
+|-------|-------------|
+| `production` | **Recommended** for lab VM after empty DB + `create_lab_admin.js` |
+| `development` | Local dev only; blocks looking like production; may disagree with PM2 `env.NODE_ENV` |
+
+PM2 sets `NODE_ENV=production` in `ecosystem.config.js`; dotenv does not override it. Verify: `pm2 describe tree-backend | grep -i node_env`. After changing `.env`: `pm2 reload tree-backend --update-env`.
+
+Lab ops log (SQL findings, empty DB reset): local `project_code/docs/DEPLOYMENT_LOG.md` §G.
 
 ### Enable SSH (one-time, Ubuntu VM)
 

@@ -16,7 +16,6 @@ Documentation for **Sustainable TreeAI** (`tree-project-frontend` + `tree-projec
 | 5 | **[HANDOFF.md](./HANDOFF.md)** | Run locally, run tests, find other docs |
 | 6 | **[DEVELOPMENT_WORKFLOW.md](./DEVELOPMENT_WORKFLOW.md)** | Git branch, PR, CI gates, daily dev loop |
 | 7 | **[HANDOFF_SECRETS_CHECKLIST.md](./HANDOFF_SECRETS_CHECKLIST.md)** | API keys and `.env` setup |
-| 7 | **[DEV_DATA_RESET_AND_SYNC.md](./DEV_DATA_RESET_AND_SYNC.md)** | Test CSV, DB reset, pull when GitHub ahead |
 | 8 | **[LAB_DEPLOYMENT_GUIDE.md](./LAB_DEPLOYMENT_GUIDE.md)** | Deploy to a production server |
 
 ## By topic
