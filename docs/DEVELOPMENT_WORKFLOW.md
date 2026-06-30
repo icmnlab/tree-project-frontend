@@ -2,7 +2,7 @@
 
 How to develop, test, review, and merge changes — GitHub Flow + CI gates.
 
-**Last reviewed**: 2026-06-29  
+**Last reviewed**: 2026-06-30  
 **Related**: `HANDOFF.md` §4–§6 · `LOCAL_DEVELOPER_SETUP.md` · `backend/tests/FRAMEWORK.md`
 
 ---
@@ -153,9 +153,111 @@ chore: regenerate openapi.yaml
 
 **Author policy (lab handover)**: commit from a **terminal** with `git commit -m "..."` only. Do **not** add `Co-authored-by: Cursor` or other AI trailers. Avoid Cursor IDE's built-in commit UI if it injects co-author lines.
 
+**Author policy (lab handover)**: commit from a **terminal outside Cursor** with `git commit --no-verify -m "..."`. Verify with `git log -1 --format=%B` — no `Co-authored-by: Cursor` line. Do not use Cursor's Source Control commit button if it injects AI trailers.
+
 ---
 
-## Database changes
+## Git identity — whose contribution is it?
+
+**Question**: If I clone `icmnlab/tree-project-*` and push as a collaborator, do commits count as someone else?
+
+**No.** GitHub attributes each commit to the **author on the commit object**, set by **your local** `git config`:
+
+```powershell
+git config user.name    # e.g. anita
+git config user.email   # e.g. anita.likebear@gmail.com
+```
+
+| What | Who it affects |
+|------|----------------|
+| `origin` URL = `https://github.com/icmnlab/...` | Where code is pushed (the **org repo**) — correct for everyone |
+| `git config user.name` / `user.email` | **Your name** on commits and GitHub contribution graph |
+| GitHub login used for `git push` | Must be a **collaborator** with write access — can differ from commit email |
+
+**Requirements for GitHub to link commits to your profile**:
+
+1. `user.email` matches a **verified email** on your GitHub account (or your `@users.noreply.github.com` address).
+2. You push branches / merge PRs under **your** GitHub user (e.g. `anita`), not the org account.
+
+**Using `origin` instead of `icmnlab` remote name**: Anita's setup already has `origin` → `icmnlab` — all commands below use `origin`; no second remote required.
+
+---
+
+## Existing clone — first sync (already at `D:\treeproject`)
+
+For collaborators who **already cloned** before PR merges (typical handover):
+
+### Backend (`D:\treeproject\tree-project-backend`)
+
+```powershell
+cd D:\treeproject\tree-project-backend
+git remote -v          # expect origin → icmnlab/tree-project-backend
+git fetch origin
+git status             # expect: on main, clean (as of 2026-06-30 handover)
+git pull origin main   # sync to merge commit 0bce9f6 (webhook smoke test) or newer
+```
+
+**Why pull?** — GitHub `main` moved after PR #1; local was "up to date" only until someone merged on the web.
+
+### Frontend (`D:\treeproject\tree-project-frontend`)
+
+```powershell
+cd D:\treeproject\tree-project-frontend
+git remote -v          # expect origin → icmnlab/tree-project-frontend
+git fetch origin
+git pull origin main   # sync PR #1 merge (map detail fix) + later commits
+
+# Discard Flutter auto-generated noise (do NOT commit):
+git restore linux/flutter/ macos/Flutter/ windows/flutter/
+git status             # should be clean
+
+flutter pub get
+```
+
+**If `assets/images/` error after pull**: ensure `main` includes `assets/images/.gitkeep` (chore PR); or `mkdir assets\images` once.
+
+### One-time local files (not in git)
+
+```powershell
+cd D:\treeproject\tree-project-frontend\android
+copy key.properties.example key.properties
+# Edit: set GOOGLE_MAPS_API_KEY (Maps); signing fields optional for debug
+```
+
+See `LOCAL_DEVELOPER_SETUP.md` — **do not create** `pubspec.yaml` (already in repo).
+
+### Build APK pointing at lab VM
+
+```powershell
+cd D:\treeproject\tree-project-frontend
+flutter build apk --release `
+  --dart-define=API_BASE_URL=https://vm121-standard-pc-i440fx-piix-1996.tail146e6a.ts.net/api `
+  --dart-define=SELF_SIGNED_TRUSTED_HOSTS=.ts.net
+```
+
+App login: **管理員登入** → username `admin_icmnlab` (not display name).
+
+---
+
+## Daily loop (after initial sync)
+
+```
+1. git pull origin main
+2. git checkout -b feat/my-change
+3. Code + flutter test / node tests/runner.js
+4. git add <files>
+5. git commit --no-verify -m "feat: short description"
+6. git log -1 --format=%B    # confirm no Co-authored-by
+7. git push -u origin feat/my-change
+8. GitHub → Open PR → CI green → Merge
+9. git checkout main && git pull origin main
+```
+
+**Local WIP when pulling**: `git stash` → `git pull origin main` → `git stash pop`.
+
+**Backend merge to `main`** → lab VM webhook runs `deploy.sh` (after Funnel targets `:3000` and webhook Secret matches — see local `DEPLOYMENT_LOG.md` §I.5).
+
+---
 
 | Environment | Command |
 |-------------|---------|
@@ -191,10 +293,13 @@ See local ops log `project_code/docs/DEPLOYMENT_LOG.md` §G.4 for full checklist
 ## New team member onboarding
 
 1. Collaborator invite on both `icmnlab` repos  
-2. `git config` identity + first push auth (`HANDOFF.md` §6.3)  
-3. `LOCAL_DEVELOPER_SETUP.md`  
-4. This file — daily loop  
-5. `ONBOARDING_READING_PATH.md` — full doc map  
+2. `git config user.name` + `user.email` — **your** identity ([Git identity](#git-identity--whose-contribution-is-it))  
+3. Clone **or** [Existing clone — first sync](#existing-clone--first-sync-already-at-dtreeproject) if already at `D:\treeproject`  
+4. `LOCAL_DEVELOPER_SETUP.md` — `key.properties`; optional backend `.env` for local server  
+5. This file — [Daily loop](#daily-loop-after-initial-sync)  
+6. `ONBOARDING_READING_PATH.md` — full doc map  
+
+Lab VM ops: local `project_code/docs/DEPLOYMENT_LOG.md` §I–J (not in git).
 
 ### First push exercise (recommended for handover)
 
@@ -210,7 +315,8 @@ cd tree-project-backend
 git checkout -b chore/my-first-push
 # edit docs/README.md — add one line under "Last updated"
 git add docs/README.md
-git commit -m "docs: handover first-push marker"
+git commit --no-verify -m "docs: handover first-push marker"
+git log -1 --format=%B
 git push -u origin chore/my-first-push
 # GitHub → Open Pull Request → wait for CI → Merge
 ```
