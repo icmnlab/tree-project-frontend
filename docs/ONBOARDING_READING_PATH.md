@@ -18,7 +18,7 @@ Both repos live under **`icmnlab`**:
 
 Do **not** start from scattered markdown at repo root alone — the hub orders documents by priority.
 
-> **Only cloned one repo?** Clone **both** under the same parent folder (e.g. `treeproject/tree-project-frontend` + `treeproject/tree-project-backend`). Docs live mostly in frontend; backend [docs/README.md](https://github.com/icmnlab/tree-project-backend/blob/main/docs/README.md) links back here.
+> **Only cloned one repo?** Clone **both** under the same parent folder (e.g. `treeproject/tree-project-frontend` + `treeproject/tree-project-backend`). Docs live mostly in frontend; backend [docs/README.md](https://github.com/icmnlab/tree-project-backend/blob/main/docs/README.md) links back here. **Contribute** via **fork + PR** to `icmnlab` — see `DEVELOPMENT_WORKFLOW.md` §Fork and remotes.
 
 ---
 
@@ -93,7 +93,7 @@ Big-tech pattern: **schema and migration index in git**; production row data nev
 
 1. Toolchain installed (Flutter, Node, PostgreSQL or remote DB)
 2. Secrets created per `HANDOFF_SECRETS_CHECKLIST.md` (`.env`, `key.properties`, Maps keys)
-3. GitHub write access to `icmnlab` repos
+3. GitHub **forks** of both `icmnlab` repos (see `DEVELOPMENT_WORKFLOW.md` §Fork and remotes)
 
 **Not in git** (by design): passwords, keystores, school VM console steps until Phase 4 runbook is finalized.
 

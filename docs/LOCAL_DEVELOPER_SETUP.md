@@ -35,7 +35,7 @@ git config --global user.name "Your Name"
 git config --global user.email "you@example.com"
 ```
 
-First `git push` to `icmnlab` → browser login via Git Credential Manager (must be org collaborator).
+First `git push` to **your fork** (`origin`) → browser login via Git Credential Manager. You do **not** need org Collaborator access — fork + PR instead. See `DEVELOPMENT_WORKFLOW.md`.
 
 ---
 

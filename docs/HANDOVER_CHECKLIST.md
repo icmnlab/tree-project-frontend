@@ -41,6 +41,15 @@ Procedure: `LAB_DEPLOYMENT_GUIDE.md` §0.1 or `scripts/prepare_fresh_handover.ps
 - [ ] Docs reviewed: `HANDOFF.md`, `ARCHITECTURE.md`, `VERIFICATION_CHECKLIST.md`, `FIELD_SURVEY_SOP.md`
 - [ ] Root contains `LICENSE`, `AUTHORS.md`
 - [ ] Fresh snapshot pushed to recipient org; deliverer private history archived
+- [ ] **Contribution model documented**: developers use **fork + PR** to `icmnlab/main`; org **maintainers** merge (not open Collaborator write for day-to-day dev)
+
+---
+
+## 1b. Developer access (recipient org admin)
+
+- [ ] Branch protection on `main` in both repos (require PR + CI)
+- [ ] Developers **fork** repos — **no** Collaborator (Write) unless a dedicated release maintainer needs direct merge rights
+- [ ] First-push exercise completed: fork → feature branch → PR → CI → merge (`DEVELOPMENT_WORKFLOW.md`)
 
 ---
 
